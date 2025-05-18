@@ -3,6 +3,9 @@ import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import dotenv from 'dotenv';
+import { registerSeatHandlers } from './socketHandlers/seatHandler';
+import { setupLobbyHandlers } from './events/lobbyHandlers';
+import errorRoutes from './routes/errorRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -11,29 +14,57 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3001',
-    methods: ['GET', 'POST']
-  }
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    methods: ['GET', 'POST'],
+    credentials: true
+  },
+  pingTimeout: 120000,
+  pingInterval: 25000,
+  connectTimeout: 60000,
+  transports: ['polling'],
+  allowUpgrades: false,
+  maxHttpBufferSize: 1e8
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Routes
+app.use('/api', errorRoutes);
 
 // Basic route
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Poker Game API' });
 });
 
-// Socket.IO connection handling
-io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
+// Test route for connection check
+app.get('/api/test', (req, res) => {
+  res.json({ status: 'ok', message: 'Backend server is running' });
+});
 
-  socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
+// Socket connections
+io.on('connection', (socket) => {
+  console.log(`New client connected: ${socket.id}`);
+  
+  // Register event handlers for this socket
+  setupLobbyHandlers(io, socket);
+  
+  socket.on('disconnect', (reason) => {
+    console.log(`Client disconnected: ${socket.id}, reason: ${reason}`);
+  });
+
+  socket.on('error', (error) => {
+    console.error(`Socket error for ${socket.id}:`, error);
   });
 });
+
+// Register global seat handlers
+registerSeatHandlers(io);
 
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -41,4 +72,4 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
   res.status(500).json({ message: 'Something went wrong!' });
 });
 
-export { app, httpServer, io };
+export { app, httpServer };
