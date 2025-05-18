@@ -53,6 +53,11 @@ A real-time multiplayer Texas Hold'em poker game implementation.
   * Polling transport for improved stability
   * Enhanced error handling and reporting
   * Connection status indicators
+- Enhanced WebSocket connection reliability
+  * Hybrid transport (polling + WebSocket)
+  * Smart reconnection handling
+  * Connection timeout management
+  * Session restoration on reconnect
 
 ## Technical Implementation
 

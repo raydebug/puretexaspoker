@@ -7,8 +7,10 @@
 - [x] Development environment setup
 - [x] WebSocket server setup
   * [x] Connection stability improvements
-  * [x] Poll transport configuration
+  * [x] Hybrid transport configuration (polling + WebSocket)
   * [x] Connection timeout handling
+  * [x] Reconnection and session restoration
+  * [x] Error handling and reporting
 - [x] Frontend basic structure
 - [x] Real-time communication
 - [x] Game Lobby
