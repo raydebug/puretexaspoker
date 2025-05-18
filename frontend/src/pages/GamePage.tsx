@@ -10,6 +10,8 @@ import { socketService } from '../services/socketService';
 import { GameState, Player } from '../types/game';
 import { SeatAction } from '../components/SeatMenu';
 import { TableData } from '../types/table';
+import SoundControls from '../components/SoundControls';
+import { soundService } from '../services/soundService';
 
 const GameContainer = styled.div`
   min-height: 100vh;
@@ -165,20 +167,25 @@ const GamePage: React.FC = () => {
       case 'bet':
         if (amount) {
           socketService.placeBet(gameState.id, currentPlayer.id, amount);
+          soundService.play('chipBet');
         }
         break;
       case 'check':
         socketService.check(gameState.id, currentPlayer.id);
+        soundService.play('check');
         break;
       case 'fold':
         socketService.fold(gameState.id, currentPlayer.id);
+        soundService.play('fold');
         break;
     }
   };
 
   const handleSeatAction = (action: SeatAction, playerId: string) => {
     if (!gameState) return;
-
+    
+    soundService.play('buttonClick');
+    
     switch (action) {
       case 'leaveMidway':
         socketService.updatePlayerStatus(gameState.id, playerId, true);
@@ -285,6 +292,7 @@ const GamePage: React.FC = () => {
         onAction={handleAction}
       />
       {error && <ErrorMessage>{error}</ErrorMessage>}
+      <SoundControls />
     </GameContainer>
   );
 };

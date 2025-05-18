@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { Card as CardType } from '../types/game';
+import { soundService } from '../services/soundService';
 
 const dealAnimation = keyframes`
   from {
@@ -73,9 +74,25 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({ card, delay, isVisib
   const [isFlipped, setIsFlipped] = useState(false);
 
   useEffect(() => {
+    // Play card deal sound
+    const dealTimeout = setTimeout(() => {
+      soundService.play('cardDeal');
+    }, delay * 1000);
+
+    // Set card as dealt
     setIsDealt(true);
-    const timer = setTimeout(() => setIsFlipped(true), delay * 1000 + 500);
-    return () => clearTimeout(timer);
+    
+    // Flip card after a delay
+    const flipTimeout = setTimeout(() => {
+      setIsFlipped(true);
+      // Play card flip sound
+      soundService.play('cardFlip');
+    }, delay * 1000 + 500);
+    
+    return () => {
+      clearTimeout(dealTimeout);
+      clearTimeout(flipTimeout);
+    };
   }, [delay]);
 
   if (!isVisible) {

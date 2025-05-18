@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
+import { soundService } from '../services/soundService';
 
 // Animation that moves chips from a player position to the pot
 const moveToCenter = keyframes`
@@ -118,6 +119,19 @@ export const ChipAnimation: React.FC<ChipAnimationProps> = ({
   }));
 
   useEffect(() => {
+    // Play appropriate chip sound based on animation type
+    const soundEffect = animationType === 'bet' ? 'chipBet' : 'chipCollect';
+    soundService.play(soundEffect);
+    
+    // Play sounds for additional chips with delay
+    if (chipCount > 1) {
+      for (let i = 1; i < chipCount; i++) {
+        setTimeout(() => {
+          soundService.play(soundEffect);
+        }, i * 100);
+      }
+    }
+    
     // Hide chips and call onComplete after animation finishes
     const timeout = setTimeout(() => {
       setVisible(false);
@@ -125,7 +139,7 @@ export const ChipAnimation: React.FC<ChipAnimationProps> = ({
     }, 1000 + chipCount * 100); // Animation time + delays
     
     return () => clearTimeout(timeout);
-  }, [chipCount, onComplete]);
+  }, [chipCount, onComplete, animationType]);
 
   if (!visible) return null;
 
