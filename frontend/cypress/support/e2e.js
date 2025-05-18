@@ -44,7 +44,7 @@ Cypress.Commands.add('waitForTurn', () => {
   cy.get('[data-current-player="true"]', { timeout: 20000 }).should('exist');
 });
 
-Cypress.Commands.add('check', () => {
+Cypress.Commands.add('checkAction', () => {
   cy.get('button').contains('Check').click();
 });
 

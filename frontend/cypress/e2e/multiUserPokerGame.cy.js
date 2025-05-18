@@ -32,11 +32,16 @@ describe('Multi-User Poker Game - Three Complete Games', () => {
         // Give the frontend time to start
         cy.wait(5000);
       });
+      
+    // Create a session for cookie persistence
+    cy.session('poker_game_session', () => {
+      // Visit the homepage to establish a proper session
+      cy.visit('/');
+    });
   });
   
   beforeEach(() => {
-    // Preserve cookies between tests
-    Cypress.Cookies.preserveOnce('poker_nickname', 'poker_seat_number');
+    // No additional session needed since we've set it up in the before hook
   });
   
   /**
@@ -144,7 +149,7 @@ describe('Multi-User Poker Game - Three Complete Games', () => {
       // Perform the chosen action
       switch(action) {
         case 'check':
-          cy.check();
+          cy.checkAction();
           break;
         case 'call':
           cy.call();
