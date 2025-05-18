@@ -43,44 +43,48 @@ class SocketService {
       if (!this.socket) {
         this.socket = io('http://localhost:3001', {
           reconnection: true,
-          reconnectionAttempts: 10,
-          reconnectionDelay: 2000,
-          reconnectionDelayMax: 10000,
-          timeout: 60000,
-          // Use polling only without websocket to prevent connection loops
-          transports: ['polling'],
-          forceNew: true,
+          reconnectionAttempts: 5,
+          reconnectionDelay: 1000,
+          reconnectionDelayMax: 5000,
+          timeout: 20000,
+          transports: ['polling', 'websocket'],
           autoConnect: true,
-          path: '/socket.io/'
+          forceNew: true,
         });
         this.setupListeners();
         
-        // Set a timeout to detect connection issues
+        // Set a reasonable connection timeout
         const connectionTimeout = setTimeout(() => {
           if (!this.socket?.connected) {
             console.error('Connection timeout - could not connect to server');
             this.emitError({ message: 'Connection timeout. Server may be down.', context: 'connection' });
           }
-        }, 20000);
+        }, 10000);
         
-        // Clear timeout on successful connection
+        // Clear timeout on connect
         this.socket.on('connect', () => {
           console.log('Connected to server successfully');
           clearTimeout(connectionTimeout);
+          
+          // Attempt to restore session after successful connection
+          const savedNickname = cookieService.getNickname();
+          const savedSeatNumber = cookieService.getSeatNumber();
+          
+          if (savedNickname) {
+            if (savedSeatNumber !== null) {
+              this.requestSeat(savedNickname, savedSeatNumber);
+            } else {
+              // Join as observer if no seat is saved
+              this.joinAsObserver(savedNickname);
+            }
+          }
         });
         
-        // Attempt to restore session if credentials exist
-        const savedNickname = cookieService.getNickname();
-        const savedSeatNumber = cookieService.getSeatNumber();
-        
-        if (savedNickname) {
-          if (savedSeatNumber !== null) {
-            this.requestSeat(savedNickname, savedSeatNumber);
-          } else {
-            // Join as observer if no seat is saved
-            this.joinAsObserver(savedNickname);
-          }
-        }
+        // Add concise error handling
+        this.socket.on('connect_error', (error) => {
+          console.error('Connection error:', error.message);
+          clearTimeout(connectionTimeout);
+        });
       }
       return this.socket;
     } catch (error) {
@@ -100,14 +104,28 @@ class SocketService {
         }
       }
       
-      // Properly tear down socket connection
-      this.socket.removeAllListeners();
+      console.log('Disconnecting socket...');
+      
+      // Remove all event listeners first
+      this.socket.off('connect');
+      this.socket.off('disconnect');
+      this.socket.off('connect_error');
+      this.socket.off('reconnect_attempt');
+      this.socket.off('reconnect');
+      this.socket.off('reconnect_error');
+      this.socket.off('reconnect_failed');
+      this.socket.off('error');
+      
+      // Then properly disconnect the socket
       this.socket.disconnect();
       this.socket = null;
       
       // Clear any cached data
       this.gameState = null;
       this.currentPlayer = null;
+      this.observers = [];
+      
+      console.log('Socket disconnected successfully');
     }
   }
 
@@ -311,10 +329,6 @@ class SocketService {
   private setupListeners() {
     if (!this.socket) return;
 
-    this.socket.on('connect', () => {
-      console.log('Connected to server');
-    });
-
     this.socket.on('disconnect', (reason) => {
       console.log(`Disconnected from server: ${reason}`);
       
@@ -324,32 +338,25 @@ class SocketService {
       }
     });
     
-    this.socket.on('connect_error', (error) => {
-      console.error('Connection error:', error.message);
-      errorTrackingService.trackError(error, 'socket:connect_error');
-    });
-    
     this.socket.on('reconnect_attempt', (attemptNumber) => {
       console.log(`Reconnection attempt: ${attemptNumber}`);
     });
     
     this.socket.on('reconnect', (attemptNumber) => {
       console.log(`Reconnected after ${attemptNumber} attempts`);
+      
+      // Try to restore session after reconnect
+      const savedNickname = cookieService.getNickname();
+      if (savedNickname) {
+        const savedSeatNumber = cookieService.getSeatNumber();
+        if (savedSeatNumber !== null) {
+          this.requestSeat(savedNickname, savedSeatNumber);
+        } else {
+          this.joinAsObserver(savedNickname);
+        }
+      }
     });
     
-    this.socket.on('reconnect_error', (error) => {
-      console.error('Reconnection error:', error.message);
-      errorTrackingService.trackError(error, 'socket:reconnect_error');
-    });
-    
-    this.socket.on('reconnect_failed', () => {
-      console.error('Failed to reconnect after maximum attempts');
-      this.emitError({ 
-        message: 'Failed to reconnect to server after several attempts. Please refresh the page.',
-        context: 'socket:reconnect_failed'
-      });
-    });
-
     // --- Error listener ---
     this.socket.on('error', (error: { message: string; context?: string }) => {
       errorTrackingService.trackError(error.message, error.context || 'socket:error');

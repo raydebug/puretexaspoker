@@ -18,11 +18,10 @@ const io = new Server(httpServer, {
     methods: ['GET', 'POST'],
     credentials: true
   },
-  pingTimeout: 120000,
-  pingInterval: 25000,
-  connectTimeout: 60000,
-  transports: ['polling'],
-  allowUpgrades: false,
+  pingTimeout: 60000,
+  pingInterval: 10000,
+  connectTimeout: 30000,
+  transports: ['polling', 'websocket'],
   maxHttpBufferSize: 1e8
 });
 
