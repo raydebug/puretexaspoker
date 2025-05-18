@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { socketService } from '../services/socketService';
+import { soundService } from '../services/soundService';
+import { media } from '../styles/GlobalStyles';
 
 interface ChatMessage {
   id: string;
@@ -20,12 +22,12 @@ interface ChatBoxProps {
   gameId: string;
 }
 
-const ChatContainer = styled.div`
+const ChatContainer = styled.div<{ isCollapsed: boolean }>`
   position: fixed;
   bottom: 2rem;
   left: 2rem;
   width: 300px;
-  height: 400px;
+  height: ${props => props.isCollapsed ? '50px' : '400px'};
   background-color: rgba(0, 0, 0, 0.8);
   border-radius: 1rem;
   padding: 1rem;
@@ -34,20 +36,41 @@ const ChatContainer = styled.div`
   border: 2px solid #1b4d3e;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   z-index: 100;
+  transition: height 0.3s ease-in-out;
+  overflow: hidden;
+  
+  ${media.md`
+    width: 250px;
+    bottom: 1rem;
+    left: 1rem;
+  `}
+  
+  ${media.sm`
+    width: calc(100% - 2rem);
+    left: 1rem;
+    border-radius: 0.5rem;
+  `}
 `;
 
-const ChatHeader = styled.div`
+const ChatHeader = styled.div<{ isCollapsed: boolean }>`
   color: #ffd700;
   font-weight: bold;
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin-bottom: 0.5rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid #4caf50;
+  margin-bottom: ${props => props.isCollapsed ? '0' : '0.5rem'};
+  padding-bottom: ${props => props.isCollapsed ? '0' : '0.5rem'};
+  border-bottom: ${props => props.isCollapsed ? 'none' : '1px solid #4caf50'};
   font-size: 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  cursor: pointer;
+  user-select: none;
+`;
+
+const CollapseIcon = styled.span<{ isCollapsed: boolean }>`
+  transform: rotate(${props => props.isCollapsed ? '180deg' : '0deg'});
+  transition: transform 0.3s ease;
 `;
 
 const MessageList = styled.div`
@@ -82,6 +105,11 @@ const Message = styled.div<{ $isSystem?: boolean; $isPrivate?: boolean }>`
   color: ${props => props.$isSystem ? '#ffd700' : 'white'};
   font-size: 0.9rem;
   word-break: break-word;
+  
+  ${media.sm`
+    font-size: 0.8rem;
+    padding: 0.4rem;
+  `}
 `;
 
 const Sender = styled.span<{ $isSystem?: boolean; $isPrivate?: boolean }>`
@@ -113,6 +141,11 @@ const ChatInput = styled.input`
     outline: none;
     border-color: #4caf50;
   }
+  
+  ${media.sm`
+    padding: 0.4rem;
+    font-size: 0.9rem;
+  `}
 `;
 
 const SendButton = styled.button`
@@ -132,6 +165,20 @@ const SendButton = styled.button`
     background-color: #333;
     cursor: not-allowed;
   }
+  
+  ${media.sm`
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+  `}
+`;
+
+const UnreadBadge = styled.span`
+  background-color: #e74c3c;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 0.7rem;
+  margin-left: 8px;
 `;
 
 export const ChatBox: React.FC<ChatBoxProps> = ({ currentPlayer, gameId }) => {
@@ -139,6 +186,8 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ currentPlayer, gameId }) => {
   const [messageText, setMessageText] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [recipient, setRecipient] = useState('');
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const messageListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -154,10 +203,25 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ currentPlayer, gameId }) => {
 
     // Set up socket listeners for messages
     socketService.onChatMessage((message: ChatMessage) => {
+      // Play different sounds based on message type
+      if (message.isPrivate) {
+        soundService.play('notification');
+      } else if (message.sender !== currentPlayer.name) {
+        soundService.play('message');
+      }
+      
       setMessages(prevMessages => [...prevMessages, message]);
+      
+      // Increment unread count if chat is collapsed
+      if (isCollapsed) {
+        setUnreadCount(prev => prev + 1);
+      }
     });
 
     socketService.onSystemMessage((message: string) => {
+      // Play sound for system messages
+      soundService.play('notification');
+      
       const systemMessage: ChatMessage = {
         id: `system-${Date.now()}`,
         sender: 'System',
@@ -165,7 +229,13 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ currentPlayer, gameId }) => {
         timestamp: Date.now(),
         isSystem: true
       };
+      
       setMessages(prevMessages => [...prevMessages, systemMessage]);
+      
+      // Increment unread count if chat is collapsed
+      if (isCollapsed) {
+        setUnreadCount(prev => prev + 1);
+      }
     });
 
     return () => {
@@ -173,14 +243,21 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ currentPlayer, gameId }) => {
       socketService.offChatMessage();
       socketService.offSystemMessage();
     };
-  }, []);
+  }, [currentPlayer.name, isCollapsed]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
-    if (messageListRef.current) {
+    if (messageListRef.current && !isCollapsed) {
       messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, isCollapsed]);
+  
+  // Reset unread count when expanding chat
+  useEffect(() => {
+    if (!isCollapsed) {
+      setUnreadCount(0);
+    }
+  }, [isCollapsed]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -203,8 +280,8 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ currentPlayer, gameId }) => {
     }
     
     if (msgText) {
-      const newMessage: ChatMessage = {
-        id: `${currentPlayer.id}-${Date.now()}`,
+      const message: ChatMessage = {
+        id: `msg-${Date.now()}`,
         sender: currentPlayer.name,
         text: msgText,
         timestamp: Date.now(),
@@ -212,81 +289,81 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ currentPlayer, gameId }) => {
         recipient: msgIsPrivate ? msgRecipient : undefined
       };
       
-      // Update local state immediately for better UX
-      setMessages(prevMessages => [...prevMessages, newMessage]);
+      socketService.sendChatMessage(gameId, message);
       
-      // Send to server
-      socketService.sendChatMessage(gameId, newMessage);
+      // Play sound for sent message
+      soundService.play('message');
       
-      // Reset form
+      // Reset form state
       setMessageText('');
-      if (msgIsPrivate && !isPrivate) {
-        setIsPrivate(true);
-        setRecipient(msgRecipient);
+      if (isPrivate && !msgText.startsWith('@')) {
+        setIsPrivate(false);
+        setRecipient('');
       }
+    }
+  };
+  
+  const toggleCollapse = () => {
+    setIsCollapsed(!isCollapsed);
+    if (isCollapsed) {
+      setUnreadCount(0);
     }
   };
 
   const formatTime = (timestamp: number) => {
-    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   return (
-    <ChatContainer>
-      <ChatHeader>
-        <span>Game Chat</span>
-        {isPrivate && (
-          <span style={{ fontSize: '0.8rem', color: '#e066ff' }}>
-            Private: @{recipient}
-            <button 
-              onClick={() => {
-                setIsPrivate(false);
-                setRecipient('');
-              }}
-              style={{ 
-                marginLeft: '5px', 
-                background: 'none', 
-                border: 'none', 
-                color: '#e066ff',
-                cursor: 'pointer',
-                fontSize: '0.8rem'
-              }}
-            >
-              ✕
-            </button>
-          </span>
-        )}
+    <ChatContainer isCollapsed={isCollapsed}>
+      <ChatHeader isCollapsed={isCollapsed} onClick={toggleCollapse}>
+        <div>
+          Game Chat
+          {isCollapsed && unreadCount > 0 && (
+            <UnreadBadge>{unreadCount}</UnreadBadge>
+          )}
+        </div>
+        <CollapseIcon isCollapsed={isCollapsed}>
+          ▼
+        </CollapseIcon>
       </ChatHeader>
-      <MessageList ref={messageListRef}>
-        {messages.map((msg) => (
-          <Message 
-            key={msg.id} 
-            $isSystem={msg.isSystem}
-            $isPrivate={msg.isPrivate}
-          >
-            <Sender 
-              $isSystem={msg.isSystem}
-              $isPrivate={msg.isPrivate}
-            >
-              {msg.sender}
-              {msg.isPrivate && !msg.isSystem && ` → ${msg.recipient}`}:
-            </Sender>
-            {msg.text}
-            <Time>{formatTime(msg.timestamp)}</Time>
-          </Message>
-        ))}
-      </MessageList>
-      <ChatForm onSubmit={handleSubmit}>
-        <ChatInput 
-          type="text"
-          value={messageText}
-          onChange={(e) => setMessageText(e.target.value)}
-          placeholder={isPrivate ? `Private to @${recipient}` : "Type a message..."}
-        />
-        <SendButton type="submit" disabled={!messageText.trim()}>
-          Send
-        </SendButton>
-      </ChatForm>
+      
+      {!isCollapsed && (
+        <>
+          <MessageList ref={messageListRef}>
+            {messages.map((message) => (
+              <Message 
+                key={message.id} 
+                $isSystem={message.isSystem}
+                $isPrivate={message.isPrivate}
+              >
+                <Sender 
+                  $isSystem={message.isSystem}
+                  $isPrivate={message.isPrivate}
+                >
+                  {message.sender}
+                  {message.isPrivate && message.recipient && ` → ${message.recipient}`}:
+                </Sender>
+                {message.text}
+                <Time>{formatTime(message.timestamp)}</Time>
+              </Message>
+            ))}
+          </MessageList>
+          
+          <ChatForm onSubmit={handleSubmit}>
+            <ChatInput 
+              type="text" 
+              value={messageText}
+              onChange={(e) => setMessageText(e.target.value)}
+              placeholder={isPrivate ? `To ${recipient}...` : "Type a message..."}
+            />
+            <SendButton type="submit" disabled={!messageText.trim()}>
+              Send
+            </SendButton>
+          </ChatForm>
+        </>
+      )}
     </ChatContainer>
   );
 }; 
