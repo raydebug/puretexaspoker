@@ -40,52 +40,74 @@ class SocketService {
 
   connect() {
     try {
-      if (!this.socket) {
-        this.socket = io('http://localhost:3001', {
-          reconnection: true,
-          reconnectionAttempts: 5,
-          reconnectionDelay: 1000,
-          reconnectionDelayMax: 5000,
-          timeout: 20000,
-          transports: ['polling', 'websocket'],
-          autoConnect: true,
-          forceNew: true,
-        });
-        this.setupListeners();
-        
-        // Set a reasonable connection timeout
-        const connectionTimeout = setTimeout(() => {
-          if (!this.socket?.connected) {
-            console.error('Connection timeout - could not connect to server');
-            this.emitError({ message: 'Connection timeout. Server may be down.', context: 'connection' });
-          }
-        }, 10000);
-        
-        // Clear timeout on connect
-        this.socket.on('connect', () => {
-          console.log('Connected to server successfully');
-          clearTimeout(connectionTimeout);
-          
-          // Attempt to restore session after successful connection
-          const savedNickname = cookieService.getNickname();
-          const savedSeatNumber = cookieService.getSeatNumber();
-          
-          if (savedNickname) {
-            if (savedSeatNumber !== null) {
-              this.requestSeat(savedNickname, savedSeatNumber);
-            } else {
-              // Join as observer if no seat is saved
-              this.joinAsObserver(savedNickname);
-            }
-          }
-        });
-        
-        // Add concise error handling
-        this.socket.on('connect_error', (error) => {
-          console.error('Connection error:', error.message);
-          clearTimeout(connectionTimeout);
-        });
+      // If we already have a socket that's connected, don't create a new one
+      if (this.socket?.connected) {
+        console.log('Socket already connected, reusing existing connection');
+        return this.socket;
       }
+      
+      // If we already have a socket that's connecting, don't create a new one
+      if (this.socket && !this.socket.connected) {
+        console.log('Socket already exists but not connected, waiting for connection');
+        return this.socket;
+      }
+      
+      // Clean up any existing connection first
+      if (this.socket) {
+        this.disconnect();
+      }
+      
+      console.log('Creating new socket connection to server');
+      this.socket = io('http://localhost:3001', {
+        reconnection: true, 
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        timeout: 20000,
+        transports: ['polling', 'websocket'],
+        forceNew: true,
+        // Don't auto-connect, we'll do it manually
+        autoConnect: false
+      });
+      
+      this.setupListeners();
+      
+      // Set a reasonable connection timeout
+      const connectionTimeout = setTimeout(() => {
+        if (this.socket && !this.socket.connected) {
+          console.error('Connection timeout - could not connect to server');
+          this.emitError({ message: 'Connection timeout. Server may be down.', context: 'connection' });
+        }
+      }, 10000);
+      
+      // Clear timeout on connect
+      this.socket.on('connect', () => {
+        console.log('Connected to server successfully');
+        clearTimeout(connectionTimeout);
+        
+        // Attempt to restore session after successful connection
+        const savedNickname = cookieService.getNickname();
+        const savedSeatNumber = cookieService.getSeatNumber();
+        
+        if (savedNickname) {
+          if (savedSeatNumber !== null) {
+            this.requestSeat(savedNickname, savedSeatNumber);
+          } else {
+            // Join as observer if no seat is saved
+            this.joinAsObserver(savedNickname);
+          }
+        }
+      });
+      
+      // Add concise error handling
+      this.socket.on('connect_error', (error) => {
+        console.error('Connection error:', error.message);
+        clearTimeout(connectionTimeout);
+      });
+      
+      // Connect manually after all listeners are set up
+      this.socket.connect();
+      
       return this.socket;
     } catch (error) {
       errorTrackingService.trackError(error as Error, 'socket:connect');
@@ -106,7 +128,10 @@ class SocketService {
       
       console.log('Disconnecting socket...');
       
-      // Remove all event listeners first
+      // First disable reconnection to prevent auto-reconnect cycles
+      this.socket.io.opts.reconnection = false;
+      
+      // Remove all event listeners first to prevent duplicate handlers
       this.socket.off('connect');
       this.socket.off('disconnect');
       this.socket.off('connect_error');
@@ -115,6 +140,21 @@ class SocketService {
       this.socket.off('reconnect_error');
       this.socket.off('reconnect_failed');
       this.socket.off('error');
+      this.socket.off('gameState');
+      this.socket.off('playerJoined');
+      this.socket.off('playerLeft');
+      this.socket.off('observer:joined');
+      this.socket.off('observer:left');
+      this.socket.off('seat:update');
+      this.socket.off('seat:accepted');
+      this.socket.off('seat:error');
+      this.socket.off('player:statusUpdated');
+      this.socket.off('player:stoodUp');
+      this.socket.off('chat:message');
+      this.socket.off('chat:system');
+      this.socket.off('tablesUpdate');
+      this.socket.off('tableJoined');
+      this.socket.off('tableError');
       
       // Then properly disconnect the socket
       this.socket.disconnect();
@@ -328,6 +368,11 @@ class SocketService {
 
   private setupListeners() {
     if (!this.socket) return;
+    
+    console.log('Setting up socket event listeners');
+    
+    // First remove any existing handlers to prevent duplicates
+    this.removeAllSocketListeners();
 
     this.socket.on('disconnect', (reason) => {
       console.log(`Disconnected from server: ${reason}`);
@@ -582,6 +627,35 @@ class SocketService {
     this.socket.on('tableError', (error: string) => {
       this.emitError({ message: error, context: 'table:join' });
     });
+  }
+
+  private removeAllSocketListeners() {
+    if (!this.socket) return;
+    
+    // Remove all event listeners to prevent duplicates
+    this.socket.off('connect');
+    this.socket.off('disconnect');
+    this.socket.off('connect_error');
+    this.socket.off('reconnect_attempt');
+    this.socket.off('reconnect');
+    this.socket.off('reconnect_error');
+    this.socket.off('reconnect_failed');
+    this.socket.off('error');
+    this.socket.off('gameState');
+    this.socket.off('playerJoined');
+    this.socket.off('playerLeft');
+    this.socket.off('observer:joined');
+    this.socket.off('observer:left');
+    this.socket.off('seat:update');
+    this.socket.off('seat:accepted');
+    this.socket.off('seat:error');
+    this.socket.off('player:statusUpdated');
+    this.socket.off('player:stoodUp');
+    this.socket.off('chat:message');
+    this.socket.off('chat:system');
+    this.socket.off('tablesUpdate');
+    this.socket.off('tableJoined');
+    this.socket.off('tableError');
   }
 
   getGameState(): GameState | null {

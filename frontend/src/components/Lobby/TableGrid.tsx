@@ -154,11 +154,12 @@ export const TableGrid: React.FC<TableGridProps> = ({ filters }) => {
 
     socketService.onError(handleError);
 
-    // Request tables data
+    // Request tables data - only if we have a valid socket connection
     socketService.requestLobbyTables();
 
     return () => {
       socketService.offTablesUpdate();
+      // Don't disconnect here - connection will be managed by the socket service
     };
   }, []);
 
