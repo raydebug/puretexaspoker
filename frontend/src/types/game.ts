@@ -4,14 +4,24 @@ export interface Card {
   isVisible?: boolean;
 }
 
+export interface Avatar {
+  type: 'image' | 'initials' | 'default';
+  imageUrl?: string;
+  initials?: string;
+  color?: string;
+}
+
 export interface Player {
   id: string;
   position: number;
+  seatNumber: number;
   name: string;
   chips: number;
   currentBet: number;
   isDealer: boolean;
+  isAway: boolean;
   cards: Card[];
+  avatar: Avatar;
 }
 
 export interface GameState {
@@ -20,7 +30,7 @@ export interface GameState {
   communityCards: Card[];
   pot: number;
   currentPlayerId: string | null;
-  phase: 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
+  phase: 'waiting' | 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
   minBet: number;
   currentBet: number;
 }

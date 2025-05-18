@@ -13,27 +13,31 @@ export interface Hand {
   name: string; // Name of the hand (e.g., "Royal Flush", "Full House")
 }
 
+export interface Avatar {
+  type: 'image' | 'initials' | 'default';
+  imageUrl?: string;
+  initials?: string;
+  color?: string;
+}
+
 export interface Player {
   id: string;
   name: string;
+  seatNumber: number;
+  position: number;
   chips: number;
-  hand: Card[];
-  isActive: boolean;
-  isDealer: boolean;
   currentBet: number;
-  position: number; // Position at the table (0-8)
+  isDealer: boolean;
+  isAway: boolean;
+  cards: string[];
+  avatar: Avatar;
 }
 
 export interface GameState {
   id: string;
   players: Player[];
-  communityCards: Card[];
   pot: number;
-  currentBet: number;
-  dealerPosition: number;
-  currentPlayerPosition: number;
-  phase: 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
-  status: 'waiting' | 'playing' | 'finished';
-  smallBlind: number;
-  bigBlind: number;
+  communityCards: string[];
+  currentPlayerId: string | null;
+  phase: 'waiting' | 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
 } 

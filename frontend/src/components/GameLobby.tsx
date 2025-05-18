@@ -1,6 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
+import { cookieService } from '../services/cookieService';
+import { OnlineList } from './OnlineList';
+import { socketService } from '../services/socketService';
+import { Player } from '../types/game';
 
 const LobbyContainer = styled.div`
   min-height: 100vh;
@@ -42,16 +46,16 @@ const DealerPosition = styled.div`
   font-weight: bold;
 `;
 
-const Seat = styled.button<{ isOccupied: boolean }>`
+const Seat = styled.button<{ $isOccupied: boolean }>`
   position: absolute;
   width: 40px;
   height: 40px;
   padding: 0;
-  background-color: ${props => props.isOccupied ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.7)'};
+  background-color: ${props => props.$isOccupied ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.7)'};
   color: white;
-  border: 2px solid ${props => props.isOccupied ? '#ff4444' : '#ffd700'};
+  border: 2px solid ${props => props.$isOccupied ? '#ff4444' : '#ffd700'};
   border-radius: 50%;
-  cursor: ${props => props.isOccupied ? 'not-allowed' : 'pointer'};
+  cursor: ${props => props.$isOccupied ? 'not-allowed' : 'pointer'};
   transition: all 0.2s;
   display: flex;
   align-items: center;
@@ -61,7 +65,7 @@ const Seat = styled.button<{ isOccupied: boolean }>`
   z-index: 1;
 
   &:hover {
-    background-color: ${props => props.isOccupied ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.8)'};
+    background-color: ${props => props.$isOccupied ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.8)'};
   }
 
   &:disabled {
@@ -197,6 +201,8 @@ export const GameLobby: React.FC<GameLobbyProps> = ({ onJoinGame }) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [occupiedSeats, setOccupiedSeats] = useState<{[key: number]: string}>({});
   const [currentSeat, setCurrentSeat] = useState<number | null>(null);
+  const [onlinePlayers, setOnlinePlayers] = useState<Player[]>([]);
+  const [observers, setObservers] = useState<string[]>([]);
   const navigate = useNavigate();
 
   // Table dimensions (should match styled component)
@@ -205,13 +211,46 @@ export const GameLobby: React.FC<GameLobbyProps> = ({ onJoinGame }) => {
   const BORDER = 8;
   const SEAT_RADIUS = 20; // half of seat size (40px)
 
+  // Load saved data and connect socket on component mount
+  useEffect(() => {
+    const savedNickname = cookieService.getNickname();
+    const savedSeatNumber = cookieService.getSeatNumber();
+    
+    if (savedNickname) {
+      setNickname(savedNickname);
+      setIsLoggedIn(true);
+      setShowSeatSelection(true);
+      
+      if (savedSeatNumber !== null) {
+        setCurrentSeat(savedSeatNumber);
+        setOccupiedSeats(prev => ({
+          ...prev,
+          [savedSeatNumber]: savedNickname
+        }));
+      }
+    }
+
+    // Connect socket and listen for online users updates
+    socketService.connect();
+    socketService.onOnlineUsersUpdate((players, observers) => {
+      setOnlinePlayers(players);
+      setObservers(observers);
+    });
+
+    return () => {
+      socketService.disconnect();
+    };
+  }, []);
+
   const handleLogin = () => {
     if (!nickname.trim()) {
       setError('Please enter a nickname');
       return;
     }
+    cookieService.setNickname(nickname.trim());
     setIsLoggedIn(true);
     setError(null);
+    socketService.joinAsObserver(nickname.trim());
   };
 
   const handleJoinGame = () => {
@@ -230,6 +269,7 @@ export const GameLobby: React.FC<GameLobbyProps> = ({ onJoinGame }) => {
   const handleConfirmSeat = () => {
     if (selectedSeat !== null) {
       if (currentSeat !== null) {
+        cookieService.clearGameData(); // Clear previous seat data
         setOccupiedSeats(prev => {
           const newSeats = { ...prev };
           delete newSeats[currentSeat];
@@ -237,6 +277,7 @@ export const GameLobby: React.FC<GameLobbyProps> = ({ onJoinGame }) => {
         });
       }
 
+      cookieService.setSeatNumber(selectedSeat);
       setOccupiedSeats(prev => ({
         ...prev,
         [selectedSeat]: nickname
@@ -265,6 +306,15 @@ export const GameLobby: React.FC<GameLobbyProps> = ({ onJoinGame }) => {
       top: `calc(50% + ${y}px)`
     };
   };
+
+  useEffect(() => {
+    // Count how many seats are occupied
+    const occupiedCount = Object.keys(occupiedSeats).length;
+    // If at least 2 players and current player has a seat, navigate to game page
+    if (occupiedCount >= 2 && currentSeat !== null) {
+      navigate('/game');
+    }
+  }, [occupiedSeats, currentSeat, navigate]);
 
   if (!isLoggedIn) {
     return (
@@ -309,7 +359,7 @@ export const GameLobby: React.FC<GameLobbyProps> = ({ onJoinGame }) => {
           {[0, 1, 2, 3, 4].map((seatNumber) => (
             <SeatContainer key={seatNumber} style={getSeatPosition(seatNumber)}>
               <Seat
-                isOccupied={!!occupiedSeats[seatNumber] && occupiedSeats[seatNumber] !== nickname}
+                $isOccupied={!!occupiedSeats[seatNumber] && occupiedSeats[seatNumber] !== nickname}
                 onClick={() => handleSeatClick(seatNumber)}
                 disabled={!!occupiedSeats[seatNumber] && occupiedSeats[seatNumber] !== nickname}
               >
@@ -323,6 +373,14 @@ export const GameLobby: React.FC<GameLobbyProps> = ({ onJoinGame }) => {
         </Table>
         {error && <ErrorMessage>{error}</ErrorMessage>}
       </SeatSelectionContainer>
+
+      {isLoggedIn && (
+        <OnlineList
+          players={onlinePlayers}
+          observers={observers}
+          currentPlayerId={onlinePlayers.find(p => p.name === nickname)?.id}
+        />
+      )}
 
       {showConfirmation && (
         <>
