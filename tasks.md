@@ -131,17 +131,17 @@
 - [x] Game flow integration tests
 - [x] Online users integration tests
 - [ ] End-to-end tests
-  * [ ] Game flow testing
-  * [ ] Player interactions
-  * [ ] Session persistence
-  * [ ] Multi-player scenarios
-  * [ ] Game phase transitions
-  * [ ] Player status updates
-  * [ ] Current player display
-  * [ ] Multi-user full game testing
-  * [ ] Three complete game playthrough
-  * [ ] Game mechanics verification
-  * [ ] All E2E tests must pass
+  * [x] Game flow testing
+  * [x] Player interactions
+  * [x] Session persistence
+  * [x] Multi-player scenarios
+  * [x] Game phase transitions
+  * [x] Player status updates
+  * [x] Current player display
+  * [x] Multi-user full game testing
+  * [x] Three complete game playthrough
+  * [x] Game mechanics verification
+  * [ ] All E2E tests must pass (In progress: Fixed session handling and custom commands issues, working on element selectors)
 - [x] Performance testing
 - [x] Load testing
 
