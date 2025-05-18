@@ -19,22 +19,20 @@ const io = new Server(httpServer, {
     credentials: true
   },
   pingTimeout: 60000,
-  pingInterval: 10000,
+  pingInterval: 25000,
   connectTimeout: 30000,
   transports: ['polling', 'websocket'],
-  maxHttpBufferSize: 1e8
+  allowEIO3: true,
+  maxHttpBufferSize: 1e8,
 });
 
 // Middleware
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
-}));
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
-app.use('/api', errorRoutes);
+app.use('/api/errors', errorRoutes);
 
 // Basic route
 app.get('/', (req, res) => {
@@ -48,27 +46,27 @@ app.get('/api/test', (req, res) => {
 
 // Socket connections
 io.on('connection', (socket) => {
-  console.log(`New client connected: ${socket.id}`);
+  console.log(`Client connected: ${socket.id}`);
   
-  // Register event handlers for this socket
-  setupLobbyHandlers(io, socket);
-  
+  // Common socket setup
   socket.on('disconnect', (reason) => {
     console.log(`Client disconnected: ${socket.id}, reason: ${reason}`);
   });
+  
+  // Register event handlers
+  registerSeatHandlers(io);
+  setupLobbyHandlers(io, socket);
 
-  socket.on('error', (error) => {
-    console.error(`Socket error for ${socket.id}:`, error);
+  // Add a ping handler
+  socket.on('ping', () => {
+    socket.emit('pong');
   });
 });
 
-// Register global seat handlers
-registerSeatHandlers(io);
-
 // Error handling middleware
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use((err: any, req: any, res: any, next: any) => {
   console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!' });
+  res.status(500).json({ message: 'An unexpected error occurred' });
 });
 
-export { app, httpServer };
+export { app, httpServer, io };
