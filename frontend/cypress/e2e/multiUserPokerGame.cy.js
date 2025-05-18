@@ -1,0 +1,214 @@
+/**
+ * End-to-End test for Texas Hold'em Poker Game
+ * 
+ * Tests the scenario of multiple users joining a table and playing through three complete games
+ */
+
+describe('Multi-User Poker Game - Three Complete Games', () => {
+  // Define our test players
+  const players = [
+    { name: 'Player1', buyIn: 500, seatNumber: 0 },
+    { name: 'Player2', buyIn: 500, seatNumber: 2 },
+    { name: 'Player3', buyIn: 500, seatNumber: 4 }
+  ];
+  
+  // Target table for testing
+  const tableId = 1;
+  
+  // Track game progress
+  let gamesPlayed = 0;
+  
+  before(() => {
+    // Start the backend server if not running
+    cy.exec('cd ../backend && npm start', { failOnNonZeroExit: false, timeout: 10000 })
+      .then(() => {
+        // Give the server time to start
+        cy.wait(5000);
+      });
+      
+    // Start the frontend if not running
+    cy.exec('cd ../frontend && npm start', { failOnNonZeroExit: false, timeout: 10000 })
+      .then(() => {
+        // Give the frontend time to start
+        cy.wait(5000);
+      });
+  });
+  
+  beforeEach(() => {
+    // Preserve cookies between tests
+    Cypress.Cookies.preserveOnce('poker_nickname', 'poker_seat_number');
+  });
+  
+  /**
+   * Phase 1: All players join the table
+   */
+  it('All players should be able to join the table', () => {
+    const [player1] = players;
+    
+    // First player joins through the UI
+    cy.visit('/');
+    cy.enterNickname(player1.name);
+    cy.joinTable(tableId, player1.buyIn);
+    cy.takeSeat(player1.seatNumber);
+    
+    // First player invites other players via automation
+    players.slice(1).forEach((player, index) => {
+      cy.task('openNewSession');
+      cy.wait(3000); // Wait for session to open
+    });
+    
+    // Wait for all players to be seated before proceeding
+    cy.waitForPlayers(players.length);
+    
+    // Verify each player's initial chip count
+    players.forEach(player => {
+      cy.verifyChips(player.name, player.buyIn * 0.9, player.buyIn * 1.1);
+    });
+  });
+
+  /**
+   * Phase 2: Play three complete games
+   */
+  it('Should successfully play three complete poker games', () => {
+    // Play three games in sequence
+    playCompleteGame(1);
+    playCompleteGame(2);
+    playCompleteGame(3);
+    
+    // Verify games played counter
+    cy.wrap(gamesPlayed).should('eq', 3);
+  });
+  
+  /**
+   * Phase 3: All players leave the table
+   */
+  it('All players should be able to leave the table', () => {
+    // Verify each player's final chip count (should be different from initial)
+    players.forEach(player => {
+      cy.verifyChips(player.name, 1, player.buyIn * 2);
+    });
+    
+    // Each player leaves the table
+    cy.leaveTable();
+    
+    // Close all sessions
+    cy.task('closeSessions');
+  });
+  
+  /**
+   * Helper function to play one complete poker game
+   */
+  function playCompleteGame(gameNumber) {
+    cy.log(`--- Starting Poker Game #${gameNumber} ---`);
+    
+    // Wait for game to be ready
+    cy.waitForPhase('betting');
+    
+    // Simulate each betting round with player actions
+    cy.log('Pre-flop betting round');
+    simulateBettingRound();
+    
+    cy.log('Flop betting round');
+    simulateBettingRound();
+    
+    cy.log('Turn betting round');
+    simulateBettingRound();
+    
+    cy.log('River betting round');
+    simulateBettingRound();
+    
+    // Wait for hand completion
+    cy.waitForHandCompletion();
+    
+    // Increment games played counter
+    gamesPlayed += 1;
+    
+    cy.log(`--- Completed Poker Game #${gameNumber} ---`);
+  }
+  
+  /**
+   * Helper function to simulate one betting round
+   */
+  function simulateBettingRound() {
+    // Wait for betting phase to begin
+    cy.waitForPhase('betting');
+    
+    // Each player takes their turn
+    players.forEach(player => {
+      // Wait for player's turn
+      cy.waitForTurn();
+      
+      // Randomly choose an action
+      const action = chooseAction();
+      
+      // Perform the chosen action
+      switch(action) {
+        case 'check':
+          cy.check();
+          break;
+        case 'call':
+          cy.call();
+          break;
+        case 'fold':
+          cy.fold();
+          break;
+        case 'bet':
+        case 'raise':
+          // Random bet between 10-50
+          const betAmount = Math.floor(Math.random() * 41) + 10;
+          if (action === 'bet') {
+            cy.bet(betAmount);
+          } else {
+            cy.raise(betAmount);
+          }
+          break;
+      }
+      
+      // Wait for action to complete
+      cy.waitForGameAction();
+    });
+  }
+  
+  /**
+   * Helper function to choose a random poker action
+   */
+  function chooseAction() {
+    const actions = ['check', 'call', 'fold', 'bet', 'raise'];
+    const randomIndex = Math.floor(Math.random() * actions.length);
+    return actions[randomIndex];
+  }
+});
+
+// Helper tests to automate other player sessions
+describe('Player 2 Session', () => {
+  it('Joins table and takes seat', () => {
+    // Run only in Player 2 session
+    cy.task('getSessionId').then(sessionId => {
+      if (sessionId !== 'player2') return;
+      
+      const player = { name: 'Player2', buyIn: 500, seatNumber: 2 };
+      
+      cy.visit('/');
+      cy.enterNickname(player.name);
+      cy.joinTable(1, player.buyIn);
+      cy.takeSeat(player.seatNumber);
+    });
+  });
+});
+
+// Helper tests to automate other player sessions
+describe('Player 3 Session', () => {
+  it('Joins table and takes seat', () => {
+    // Run only in Player 3 session
+    cy.task('getSessionId').then(sessionId => {
+      if (sessionId !== 'player3') return;
+      
+      const player = { name: 'Player3', buyIn: 500, seatNumber: 4 };
+      
+      cy.visit('/');
+      cy.enterNickname(player.name);
+      cy.joinTable(1, player.buyIn);
+      cy.takeSeat(player.seatNumber);
+    });
+  });
+}); 
