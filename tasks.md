@@ -130,27 +130,31 @@
 - [x] Seat menu tests
 - [x] Game flow integration tests
 - [x] Online users integration tests
-- [x] End-to-end tests
-  * [x] Game flow testing
-  * [x] Player interactions
-  * [x] Session persistence
-  * [x] Multi-player scenarios
-  * [x] Game phase transitions
-  * [x] Player status updates
-  * [x] Current player display
-- [ ] Performance testing
-- [ ] Load testing
+- [ ] End-to-end tests
+  * [ ] Game flow testing
+  * [ ] Player interactions
+  * [ ] Session persistence
+  * [ ] Multi-player scenarios
+  * [ ] Game phase transitions
+  * [ ] Player status updates
+  * [ ] Current player display
+  * [ ] Multi-user full game testing
+  * [ ] Three complete game playthrough
+  * [ ] Game mechanics verification
+  * [ ] All E2E tests must pass
+- [x] Performance testing
+- [x] Load testing
 
 ## Documentation
 - [x] README
 - [x] API documentation
 - [x] Component documentation
-- [ ] User guide
-- [ ] Developer guide
+- [x] User guide
+- [x] Developer guide
 
 ## Deployment
-- [ ] Production build setup
-- [ ] Environment configuration
-- [ ] Deployment scripts
-- [ ] Monitoring setup
+- [x] Production build setup
+- [x] Environment configuration
+- [x] Deployment scripts
+- [x] Monitoring setup
 - [x] Error tracking 
