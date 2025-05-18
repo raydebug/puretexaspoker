@@ -11,6 +11,12 @@
   * [x] Connection timeout handling
   * [x] Reconnection and session restoration
   * [x] Error handling and reporting
+  * [x] Fixed connection/disconnection cycle issues
+  * [x] Connection state tracking
+  * [x] Proper event listener cleanup
+  * [x] Table joining with connection recovery
+  * [x] Safe transport upgrade mechanism
+  * [x] Connection verification for critical operations
 - [x] Frontend basic structure
 - [x] Real-time communication
 - [x] Game Lobby
@@ -82,8 +88,21 @@
 - [x] Current player indicators
 - [x] Player avatars
 - [x] Chip animations
-- [ ] Sound effects
-- [ ] Mobile responsiveness
+- [x] Sound effects
+  * [x] Card dealing and flipping sounds
+  * [x] Chip betting and collecting sounds
+  * [x] Player action sounds (check, fold)
+  * [x] Notification sounds
+  * [x] Chat message sounds
+  * [x] System sound effects
+  * [x] Volume controls with mute option
+  * [x] Sound preference persistence
+- [x] Mobile responsiveness
+  * [x] Responsive game board layout
+  * [x] Collapsible chat interface
+  * [x] Flexible component sizing
+  * [x] Media query breakpoints
+  * [x] Adaptive typography
 
 ## Backend Features
 - [x] WebSocket server

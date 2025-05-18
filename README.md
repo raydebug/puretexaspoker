@@ -289,4 +289,23 @@ MIT
 - Ensured proper TypeScript type checking in the table joining flow
 - Added error handling for server connection problems
 
+### Socket.IO Connection Stability Improvements (May 19, 2024)
+- Fixed persistent connection/disconnection cycle issues
+- Improved WebSocket configuration with hybrid transport (websocket → polling)
+- Added connection state tracking to prevent duplicates
+- Implemented proper event listener cleanup to prevent memory leaks
+- Added better error reporting for connection failures
+- Added connection timeout management
+- Standardized socket.io path across frontend and backend
+- Optimized ping/pong interval settings
+
+### Socket.IO Table Joining Fix (May 20, 2024)
+- Fixed issue with joining tables when socket is disconnected
+- Added delayed transport upgrade to prevent disconnection during protocol changes
+- Improved error messaging for connection state problems
+- Added connection restoration when joining tables
+- Implemented safer transport upgrade mechanism
+- Added connection verification before critical operations
+- Added resilience to handle brief disconnections
+
 ## Features 
