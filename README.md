@@ -186,8 +186,19 @@ npm run cypress:open
 # Run Cypress tests headlessly
 npm run cypress:run
 
+# Run specific Cypress test
+npm run cypress:run -- --spec "cypress/e2e/game-flow.cy.ts"
+
 # Run E2E tests with development server
 npm run test:e2e
+
+# Available End-to-End Test Suites:
+# - game-flow.cy.ts: Tests basic game flow and interactions
+# - session-persistence.cy.ts: Tests session persistence across page reloads
+# - player-interactions.cy.ts: Tests player interactions with the UI
+# - game-phases.cy.ts: Tests game phase transitions and betting rounds
+# - multiUserPokerGame.cy.js: Tests multi-user gameplay with three complete games
+# - pokerGameMechanics.cy.js: Tests poker game mechanics verification
 ```
 
 Test suites include:
@@ -209,6 +220,9 @@ Test suites include:
    - Session persistence
    - Multi-player scenarios
    - Game phase transitions
+   - Current player highlighting
+   - Multi-user full game playthrough
+   - Game mechanics verification
    - Real-time updates
    - Error handling
 
