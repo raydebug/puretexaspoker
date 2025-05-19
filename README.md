@@ -162,123 +162,70 @@ Chat features include:
 - Visual styling to distinguish between different message types
 - Automatic scrolling to latest messages
 
-## Testing
+## E2E Test Coverage
 
-The project includes comprehensive test coverage for all features:
+The application includes comprehensive end-to-end tests covering:
 
-### End-to-End Tests
+### Game Flow
+- Player joining and seat management
+- Betting actions and validation
+- Game phase transitions
+- Player status changes
+- Session persistence
 
-> **Note:** Only the root-level `cypress` folder is used for all E2E tests. Any legacy or duplicate Cypress folders/configs in `frontend/` have been removed for clarity and to avoid confusion.
+### Game Actions
+- Invalid betting handling
+- Disconnection/reconnection scenarios
+- Game state synchronization
+- Player timeout handling
+- Game completion and results
+- Chat functionality
+- Player statistics
 
-#### Cypress Cucumber Preprocessor (BDD)
+### Player Interactions
+- Seat management
+- Status updates
+- Betting controls
+- Player list updates
+- Observer/player role changes
 
-- Write BDD-style tests in `.feature` files under `cypress/e2e/features/`.
-- Implement step definitions in TypeScript under `cypress/support/step_definitions/`.
-- Run all e2e tests (including BDD and classic Cypress) with:
-  ```bash
-  npm run cypress:open
-  npm run cypress:run
-  ```
-- Example feature file: `cypress/e2e/features/join-game.feature`
-- Example step definition: `cypress/support/step_definitions/join-game.steps.ts`
+### Game Phases
+- Pre-flop
+- Flop
+- Turn
+- River
+- Showdown
 
-#### Classic Cypress
+## Running Tests
 
-- Run a specific Cypress test:
-  ```bash
-  npm run cypress:run -- --spec "cypress/e2e/game-flow.cy.ts"
-  ```
-- Run E2E tests with the development server:
-  ```bash
-  npm run test:e2e
-  ```
-
-### Available End-to-End Test Suites
-
-- `game-flow.cy.ts`: Tests game flow, player interactions, and session persistence.
-- `game-phases.cy.ts`: Tests game phase transitions and pot display.
-- `multiUserPokerGame.cy.ts`: Tests multi-user gameplay and session management.
-- `player-interactions.cy.ts`: Tests player interactions, chat, and game actions.
-- `session-persistence.cy.ts`: Tests session persistence after page reload.
-
-### Unit Tests
-
-Run unit tests with:
 ```bash
-npm run test
+# Install dependencies
+npm install
+
+# Run e2e tests
+npm run cypress:run
+
+# Run e2e tests with UI
+npm run cypress:open
 ```
-
-### Integration Tests
-
-Run integration tests with:
-```bash
-npm run test:integration
-```
-
-## State Persistence
-
-The game implements cookie-based persistence for:
-- Player nickname
-- Seat assignments
-- Game session data
-- Player status (away/present)
-
-This ensures that players can:
-- Maintain their session after page reloads
-- Automatically reconnect to their previous game
-- Keep their seat position and status
-- Resume gameplay seamlessly
-
-## User Types and Status
-
-The game supports two types of users:
-1. Players
-   - Users who have taken a seat at the table
-   - Can participate in the game
-   - Shown at the top of the online users list
-   - Have chips and can place bets
-   - Can temporarily leave the game (away status)
-   - Can return to active play
-   - Can stand up to become observers
-
-2. Observers
-   - Users who are watching the game
-   - Cannot participate in gameplay
-   - Listed below players in the online users list
-   - Can become players by taking an available seat
-
-## Seat Menu System
-
-Players have access to a context menu with the following actions:
-- Leave Midway (temporary absence)
-- I Am Back (return from absence)
-- Stand Up (become observer)
-- Leave Table (exit game)
-
-The game automatically handles away players by:
-- Skipping their turn in betting rounds
-- Displaying visual indicators of away status
-- Maintaining their position and chips
-- Allowing seamless return to play
 
 ## Development
 
-### Dependencies
+```bash
+# Start development server
+npm run dev
 
-Frontend:
-- React
-- TypeScript
-- Socket.IO Client
-- Styled Components
-- js-cookie (for state persistence)
-- Jest and React Testing Library (for testing)
-- Cypress (for end-to-end testing)
+# Build for production
+npm run build
+```
 
-Backend:
-- Node.js
-- Express
-- Socket.IO
-- TypeScript
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
 ## License
 
