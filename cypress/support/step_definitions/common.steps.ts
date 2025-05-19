@@ -11,7 +11,7 @@ When('I join the game with nickname {string}', (nickname: string) => {
 });
 
 When('I take a seat', () => {
-  cy.get('.seat-button').first().click();
+  cy.get('[data-testid="seat-button"]').first().click();
   cy.contains('Yes').click();
 });
 

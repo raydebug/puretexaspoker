@@ -1,10 +1,5 @@
 import { Given, When, Then } from '@badeball/cypress-cucumber-preprocessor';
 
-When('I take a seat', () => {
-  cy.get('.seat-button').first().click();
-  cy.contains('Yes').click();
-});
-
 Then('I should see {string} in the online users list', (text: string) => {
   cy.get('.online-list').should('contain', text);
 });
