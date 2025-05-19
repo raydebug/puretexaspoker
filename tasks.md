@@ -185,6 +185,7 @@
 - [x] Add proper server management in Cypress config
 - [x] Add missing betting round simulation
 - [x] Remove duplicate test files
+- [x] Remove unused/legacy Cypress folder and configs from frontend directory. Standardize on root-level cypress folder.
 
 ## Pending Tasks
 - [ ] Fix failing e2e tests:

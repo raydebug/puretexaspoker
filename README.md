@@ -168,6 +168,8 @@ The project includes comprehensive test coverage for all features:
 
 ### End-to-End Tests
 
+> **Note:** Only the root-level `cypress` folder is used for all E2E tests. Any legacy or duplicate Cypress folders/configs in `frontend/` have been removed for clarity and to avoid confusion.
+
 #### Cypress Cucumber Preprocessor (BDD)
 
 - Write BDD-style tests in `.feature` files under `cypress/e2e/features/`.
@@ -325,5 +327,11 @@ MIT
 - **Session Handling Improvement**:
   - Updated the session management to use modern Cypress.on('test:before:run') session approach
   - Simplified support file structure for better maintainability
+
+### Socket.IO Memory Leak Fixes
+- Fixed memory leaks in socket.io event listeners by properly cleaning up listeners on disconnect
+- Added proper interval cleanup for heartbeat mechanism
+- Increased max listeners limit to prevent warnings
+- Improved socket connection stability
 
 ## Features 

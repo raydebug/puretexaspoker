@@ -3,6 +3,7 @@ import { GameState, Player } from '../types/game';
 import { cookieService } from './cookieService';
 import { errorTrackingService } from './errorTrackingService';
 import { TableData } from '../types/table';
+import { EventEmitter } from 'events';
 
 export type SeatState = { [seatNumber: number]: string | null };
 
@@ -43,6 +44,7 @@ class SocketService {
   private connectionAttempts: number = 0;
   private maxConnectionAttempts: number = 3;
   private reconnectionBackoff: number = 2000; // Start with 2 seconds
+  private heartbeatInterval: NodeJS.Timeout | undefined;
 
   connect() {
     try {
@@ -793,46 +795,38 @@ class SocketService {
     });
     
     // Add heartbeat check to keep connection alive
-    let heartbeatInterval = setInterval(() => {
+    this.heartbeatInterval = setInterval(() => {
       if (this.socket?.connected) {
         this.socket.emit('ping');
       } else {
-        clearInterval(heartbeatInterval);
+        clearInterval(this.heartbeatInterval);
+        this.heartbeatInterval = undefined;
       }
     }, 25000);
     
     // Store interval to be cleared when needed
     this.socket.io.on('close', () => {
-      clearInterval(heartbeatInterval);
+      if (this.heartbeatInterval) {
+        clearInterval(this.heartbeatInterval);
+        this.heartbeatInterval = undefined;
+      }
     });
   }
 
   private removeAllSocketListeners() {
     if (!this.socket) return;
     
-    console.log('Removing all socket event listeners');
+    // Remove all event listeners
+    this.socket.removeAllListeners();
     
-    // Remove all event listeners to prevent duplicates
-    this.socket.removeAllListeners('connect');
-    this.socket.removeAllListeners('disconnect');
-    this.socket.removeAllListeners('connect_error');
-    this.socket.removeAllListeners('error');
-    this.socket.removeAllListeners('gameState');
-    this.socket.removeAllListeners('playerJoined');
-    this.socket.removeAllListeners('playerLeft');
-    this.socket.removeAllListeners('observer:joined');
-    this.socket.removeAllListeners('observer:left');
-    this.socket.removeAllListeners('seat:update');
-    this.socket.removeAllListeners('seat:accepted');
-    this.socket.removeAllListeners('seat:error');
-    this.socket.removeAllListeners('player:statusUpdated');
-    this.socket.removeAllListeners('player:stoodUp');
-    this.socket.removeAllListeners('chat:message');
-    this.socket.removeAllListeners('chat:system');
-    this.socket.removeAllListeners('tablesUpdate');
-    this.socket.removeAllListeners('tableJoined');
-    this.socket.removeAllListeners('tableError');
-    this.socket.removeAllListeners('pong');
+    // Remove all socket.io listeners
+    this.socket.io.removeAllListeners();
+    
+    // Clear any intervals
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = undefined;
+    }
   }
 
   getGameState(): GameState | null {

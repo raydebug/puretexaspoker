@@ -1,41 +1,38 @@
-import { When, Then } from '@badeball/cypress-cucumber-preprocessor';
+import { Given, When, Then } from '@badeball/cypress-cucumber-preprocessor';
 
 When('I reload the page', () => {
   cy.reload();
 });
 
-Then('I should be in the same seat position', () => {
-  // Get the seat position before reload
-  cy.get('.player-seat').invoke('attr', 'data-seat-position').as('originalSeatPosition');
-  
-  // After reload, verify the seat position is the same
-  cy.get('.player-seat').should(($seat) => {
-    const currentPosition = $seat.attr('data-seat-position');
-    expect(currentPosition).to.equal(Cypress.env('originalSeatPosition'));
+Then('I should remain in the same seat position', () => {
+  cy.get('.player-seat').then(($seat) => {
+    const originalPosition = $seat.position();
+    cy.reload();
+    cy.get('.player-seat').should(($newSeat) => {
+      const newPosition = $newSeat.position();
+      expect(newPosition).to.deep.equal(originalPosition);
+    });
   });
 });
 
-Then('my game state should be preserved', () => {
-  // Verify game state elements are present and correct
+Then('the game state should be preserved', () => {
   cy.get('.player-seat').should('exist');
   cy.get('.dealer-button').should('be.visible');
   cy.get('.pot').should('be.visible');
   cy.get('.current-bet').should('be.visible');
 });
 
-When('I simulate a connection loss', () => {
-  // Simulate WebSocket disconnection
+When('I lose connection', () => {
   cy.window().then((win) => {
     win.dispatchEvent(new Event('offline'));
   });
 });
 
 Then('I should see a reconnection message', () => {
-  cy.contains('Reconnecting...').should('be.visible');
+  cy.get('.reconnection-message').should('be.visible');
 });
 
-When('the connection is restored', () => {
-  // Simulate WebSocket reconnection
+When('I restore connection', () => {
   cy.window().then((win) => {
     win.dispatchEvent(new Event('online'));
   });

@@ -1,5 +1,9 @@
 import { Given, When, Then } from '@badeball/cypress-cucumber-preprocessor';
 
+When('I join the game with nickname {string}', (nickname: string) => {
+  cy.joinGame(nickname);
+});
+
 When('I take a seat', () => {
   cy.get('.seat-button').first().click();
   cy.contains('Yes').click();

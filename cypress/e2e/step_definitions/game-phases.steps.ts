@@ -1,5 +1,9 @@
 import { Given, When, Then } from '@badeball/cypress-cucumber-preprocessor';
 
+When('I join the game with nickname {string}', (nickname: string) => {
+  cy.joinGame(nickname);
+});
+
 Then('I should see {string} in the game status', (status) => {
   cy.get('.game-status').should('contain', status);
 });
