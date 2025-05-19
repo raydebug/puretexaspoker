@@ -308,4 +308,21 @@ MIT
 - Added connection verification before critical operations
 - Added resilience to handle brief disconnections
 
+## Recent Changes
+
+### Codebase Cleanup (2024-07-12)
+
+- **Removed Duplicate Cypress Configuration**:
+  - Eliminated the top-level cypress directory which was causing configuration conflicts
+  - Consolidated all E2E tests in the frontend/cypress directory
+
+- **Command Standardization**:
+  - Renamed the `check` command to `checkAction` to avoid collision with Cypress's built-in command
+  - Consolidated duplicate Cypress commands from multiple files into a single commands.js file
+  - Updated type definitions in commands.d.ts to include all available custom commands
+
+- **Session Handling Improvement**:
+  - Updated the session management to use modern Cypress.on('test:before:run') session approach
+  - Simplified support file structure for better maintainability
+
 ## Features 
