@@ -152,6 +152,15 @@
   * [x] Add proper server management in Cypress config
   * [x] Add missing betting round simulation
   * [x] Remove duplicate test files
+  * [x] Migrate game flow tests to Cucumber
+  * [x] Migrate player interactions tests to Cucumber
+  * [x] Migrate session persistence tests to Cucumber
+  * [ ] Migrate multi-player scenarios to Cucumber
+  * [ ] Migrate game phase transitions to Cucumber
+  * [ ] Migrate player status updates to Cucumber
+  * [ ] Migrate current player display to Cucumber
+  * [ ] Migrate multi-user game testing to Cucumber
+  * [ ] Migrate game mechanics verification to Cucumber
 - [x] Performance testing
 - [x] Load testing
 
@@ -184,5 +193,11 @@
   - [ ] Check frontend connection to backend
   - [ ] Debug lobby rendering logic
 - [ ] Ensure all e2e tests pass
-- [ ] Migrate all Cypress e2e tests to Cucumber BDD format using Cypress Cucumber Preprocessor
+- [ ] Complete migration of remaining Cypress e2e tests to Cucumber BDD format:
+  - [ ] Multi-player scenarios
+  - [ ] Game phase transitions
+  - [ ] Player status updates
+  - [ ] Current player display
+  - [ ] Multi-user game testing
+  - [ ] Game mechanics verification
 - [ ] Write new e2e tests in BDD format for any missing scenarios 
