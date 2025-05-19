@@ -1,11 +1,5 @@
 /// <reference types="cypress" />
 
-declare namespace Cypress {
-  interface Chainable {
-    waitForHandCompletion(): void;
-  }
-}
-
 describe('Player Interactions', () => {
   beforeEach(() => {
     // Visit the site before each test
@@ -160,7 +154,7 @@ describe('Player Interactions', () => {
     cy.contains('button', 'Yes').click();
     
     // Record dealer button position
-    let initialDealerPosition;
+    let initialDealerPosition: string | undefined;
     cy.get('.dealer-button')
       .invoke('attr', 'data-position')
       .then(position => {
