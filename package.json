@@ -20,7 +20,11 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@badeball/cypress-cucumber-preprocessor": "^22.0.1",
+    "@bahmutov/cypress-esbuild-preprocessor": "^2.2.5",
+    "@cypress/browserify-preprocessor": "^3.0.2",
     "@cypress/vite-dev-server": "^6.0.3",
+    "@cypress/webpack-preprocessor": "^6.0.4",
     "@testing-library/cypress": "^10.0.3",
     "@types/node": "^22.15.19",
     "concurrently": "^8.2.2",

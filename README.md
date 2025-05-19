@@ -168,23 +168,24 @@ The project includes comprehensive test coverage for all features:
 
 ### End-to-End Tests
 
-Run Cypress tests with the following commands:
+#### Cypress Cucumber Preprocessor (BDD)
 
-- Open Cypress test runner:
+- Write BDD-style tests in `.feature` files under `cypress/e2e/features/`.
+- Implement step definitions in TypeScript under `cypress/support/step_definitions/`.
+- Run all e2e tests (including BDD and classic Cypress) with:
   ```bash
   npm run cypress:open
-  ```
-
-- Run Cypress tests headlessly:
-  ```bash
   npm run cypress:run
   ```
+- Example feature file: `cypress/e2e/features/join-game.feature`
+- Example step definition: `cypress/support/step_definitions/join-game.steps.ts`
+
+#### Classic Cypress
 
 - Run a specific Cypress test:
   ```bash
   npm run cypress:run -- --spec "cypress/e2e/game-flow.cy.ts"
   ```
-
 - Run E2E tests with the development server:
   ```bash
   npm run test:e2e

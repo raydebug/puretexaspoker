@@ -183,4 +183,6 @@
   - [ ] Verify backend is sending table data
   - [ ] Check frontend connection to backend
   - [ ] Debug lobby rendering logic
-- [ ] Ensure all e2e tests pass 
+- [ ] Ensure all e2e tests pass
+- [ ] Migrate all Cypress e2e tests to Cucumber BDD format using Cypress Cucumber Preprocessor
+- [ ] Write new e2e tests in BDD format for any missing scenarios 
