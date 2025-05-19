@@ -24,7 +24,8 @@
       * [x] Table preview cards
       * [x] Join confirmation dialog
       * [x] Real-time table status updates
-      * [x] Table navigation
+      * [x] Table navigationPlease complete this task and update tasks.md accordingly: E
+
       * [x] Player count per table
       * [x] Table filtering/sorting
       * [x] Quick join functionality
@@ -131,17 +132,21 @@
 - [x] Game flow integration tests
 - [x] Online users integration tests
 - [ ] End-to-end tests
-  * [x] Game flow testing
-  * [x] Player interactions
-  * [x] Session persistence
-  * [x] Multi-player scenarios
-  * [x] Game phase transitions
-  * [x] Player status updates
-  * [x] Current player display
-  * [x] Multi-user full game testing
-  * [x] Three complete game playthrough
-  * [x] Game mechanics verification
-  * [ ] All E2E tests must pass (In progress: Fixed session handling and custom commands issues, working on element selectors)
+  * [ ] Game flow testing
+  * [ ] Player interactions
+  * [ ] Session persistence
+  * [ ] Multi-player scenarios
+  * [ ] Game phase transitions
+  * [ ] Player status updates
+  * [ ] Current player display
+  * [ ] Multi-user full game testing
+  * [ ] Three complete game playthrough
+  * [ ] Game mechanics verification
+  * [x] Remove duplicate Cypress configuration
+  * [x] Fix command naming conflicts
+  * [x] Consolidate custom commands
+  * [x] Update session handling
+  * [ ] All E2E tests must pass
 - [x] Performance testing
 - [x] Load testing
 
