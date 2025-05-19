@@ -1,10 +1,5 @@
 import { Given, When, Then } from '@badeball/cypress-cucumber-preprocessor';
 
-When('I take a seat', () => {
-  cy.get('.seat-button').first().click();
-  cy.contains('Yes').click();
-});
-
 When('it is my turn', () => {
   cy.contains('Your Turn', { timeout: 10000 }).should('be.visible');
 });

@@ -4,11 +4,6 @@ Then('I should see {string} in the game status', (status) => {
   cy.get('.game-status').should('contain', status);
 });
 
-When('I take a seat', () => {
-  cy.get('.seat-button').first().click();
-  cy.contains('Yes').click();
-});
-
 Then('I should see the dealer button', () => {
   cy.get('.dealer-button').should('be.visible');
 });
