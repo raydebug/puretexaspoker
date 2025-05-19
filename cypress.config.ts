@@ -1,20 +1,22 @@
 import { defineConfig } from 'cypress';
 import { devServer } from '@cypress/vite-dev-server';
 import createBundler from '@bahmutov/cypress-esbuild-preprocessor';
-import addCucumberPreprocessorPlugin from '@badeball/cypress-cucumber-preprocessor/addCucumberPreprocessorPlugin';
-import createEsbuildPlugin from '@badeball/cypress-cucumber-preprocessor/esbuild';
+import { addCucumberPreprocessorPlugin } from '@badeball/cypress-cucumber-preprocessor';
+import { createEsbuildPlugin } from '@badeball/cypress-cucumber-preprocessor/esbuild';
 
 export default defineConfig({
   e2e: {
     baseUrl: 'http://localhost:3000',
     supportFile: 'cypress/support/e2e.ts',
-    specPattern: 'cypress/e2e/**/*.{feature,cy.{js,jsx,ts,tsx}}',
-    async setupNodeEvents(on, config) {
-      // Cucumber preprocessor plugin
+    specPattern: '**/*.feature',
+    async setupNodeEvents(on: Cypress.PluginEvents, config: Cypress.PluginConfigOptions) {
       await addCucumberPreprocessorPlugin(on, config);
-      on('file:preprocessor', createBundler({
-        plugins: [createEsbuildPlugin(config)],
-      }));
+      on(
+        'file:preprocessor',
+        createBundler({
+          plugins: [createEsbuildPlugin(config)],
+        })
+      );
       // Existing dev-server setup
       on('dev-server:start', async (options) => {
         return devServer({
@@ -41,6 +43,12 @@ export default defineConfig({
       });
       return config;
     },
+    video: false,
+    screenshotOnRunFailure: true,
+    defaultCommandTimeout: 10000,
+    requestTimeout: 10000,
+    responseTimeout: 10000,
+    pageLoadTimeout: 30000,
   },
   component: {
     devServer: {
