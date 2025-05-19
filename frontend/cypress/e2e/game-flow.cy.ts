@@ -11,6 +11,11 @@ declare namespace Cypress {
 
 describe('Poker Game Flow', () => {
   beforeEach(() => {
+    // Create a session for cookie persistence
+    cy.session('poker_flow_session', () => {
+      cy.visit('/');
+    });
+    
     cy.visit('/');
   });
 
