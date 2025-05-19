@@ -170,16 +170,35 @@ Cypress.Commands.add('joinGame', (nickname: string) => {
       cy.visit('/join');
     }
     
-    // Enter nickname if an input is present
-    cy.get('input').then($inputs => {
-      const nicknameInput = $inputs.filter('[placeholder*="nickname"], [placeholder*="Nickname"], [type="text"]').first();
-      if (nicknameInput.length) {
-        cy.wrap(nicknameInput).type(nickname);
+    // Wait for the page to load and try to find the input
+    cy.get('body').should('be.visible');
+    cy.wait(1000); // Add a short wait to ensure page is fully loaded
+    
+    // Try different selectors for the nickname input
+    cy.get('body').then($body => {
+      if ($body.find('input[type="text"]').length > 0) {
+        // If there's a text input, use it
+        cy.get('input[type="text"]').type(nickname);
+      } else if ($body.find('input').length > 0) {
+        // If there's any input, use the first one
+        cy.get('input').first().type(nickname);
+      } else {
+        // If no input is found, log an error
+        cy.log('No input field found for nickname');
+        throw new Error('No input field found for nickname');
       }
     });
     
     // Click the appropriate button to join
-    cy.contains('button', /join|enter|start/i, { matchCase: false }).click();
+    cy.get('body').then($body => {
+      if ($body.find('button:contains("Join"), button:contains("Enter"), button:contains("Start")').length > 0) {
+        cy.contains('button', /join|enter|start/i, { matchCase: false }).click();
+      } else {
+        // If no button is found, log an error
+        cy.log('No join button found');
+        throw new Error('No join button found');
+      }
+    });
   });
 });
 
