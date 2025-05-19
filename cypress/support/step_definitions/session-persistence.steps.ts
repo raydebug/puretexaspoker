@@ -1,25 +1,4 @@
-import { Given, When, Then } from '@badeball/cypress-cucumber-preprocessor';
-
-Given('I am on the game page', () => {
-  cy.visit('/');
-});
-
-When('I join the game with nickname {string}', (nickname: string) => {
-  cy.joinGame(nickname);
-});
-
-Then('I should see {string} displayed', (text: string) => {
-  cy.contains(text).should('be.visible');
-});
-
-When('I take a seat', () => {
-  cy.get('.seat-button').first().click();
-  cy.contains('Yes').click();
-});
-
-Then('I should see my player seat', () => {
-  cy.get('.player-seat').should('exist');
-});
+import { When, Then } from '@badeball/cypress-cucumber-preprocessor';
 
 When('I reload the page', () => {
   cy.reload();
