@@ -1,9 +1,5 @@
 import { Given, When, Then } from '@badeball/cypress-cucumber-preprocessor';
 
-Then('the online users list should not be visible', () => {
-  cy.get('.online-list').should('not.exist');
-});
-
 Then('I should see {string} in the online users list', (text: string) => {
   cy.get('.online-list').should('contain', text);
 });

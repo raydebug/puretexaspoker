@@ -10,11 +10,6 @@ When('I join the game with nickname {string}', (nickname: string) => {
   cy.joinGame(nickname);
 });
 
-When('I take a seat', () => {
-  cy.get('.seat-button').first().click();
-  cy.contains('Yes').click();
-});
-
 When('it is my turn', () => {
   cy.contains('Your Turn', { timeout: 10000 }).should('be.visible');
 });
@@ -24,14 +19,6 @@ When('it is my turn again', () => {
 });
 
 // Common verification steps
-Then('I should see {string} displayed', (text: string) => {
-  cy.contains(text).should('be.visible');
-});
-
-Then('I should see my player seat', () => {
-  cy.get('.player-seat').should('exist');
-});
-
 Then('I should see the betting controls', () => {
   cy.get('.betting-controls').should('be.visible');
 });
@@ -60,11 +47,6 @@ When('I set my status to {string}', (status: 'away' | 'back') => {
 
 When('I open the seat menu', () => {
   cy.openSeatMenu();
-});
-
-// Common list verification steps
-Then('the online users list should not be visible', () => {
-  cy.get('.online-list').should('not.exist');
 });
 
 Then('I should see {string} in the online users list', (text: string) => {

@@ -1,9 +1,5 @@
 import { Given, When, Then } from '@badeball/cypress-cucumber-preprocessor';
 
-Then('the online users list should not be visible', () => {
-  cy.get('.online-list').should('not.exist');
-});
-
 When('I take a seat', () => {
   cy.get('.seat-button').first().click();
   cy.contains('Yes').click();
