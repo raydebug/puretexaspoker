@@ -26,7 +26,7 @@ export interface ChatMessage {
 }
 
 class SocketService {
-  private socket: Socket | null = null;
+  private socket: (Socket & EventEmitter) | null = null;
   private gameState: GameState | null = null;
   private currentPlayer: Player | null = null;
   private observers: string[] = [];
@@ -98,16 +98,19 @@ class SocketService {
       console.log(`Creating new socket connection to server (attempt ${this.connectionAttempts})`);
       
       // Create socket with more stable configuration
-      this.socket = io('http://localhost:3001', {
+      const socket = io('http://localhost:3001', {
+        transports: ['websocket'],
         reconnection: true,
-        reconnectionAttempts: 3,
+        reconnectionAttempts: 5,
         reconnectionDelay: 1000,
         timeout: 10000,
-        transports: ['polling'], // Start with polling only for stability
         forceNew: true,
         autoConnect: false,
         path: '/socket.io'
       });
+
+      // Cast socket to both Socket and EventEmitter
+      this.socket = socket as unknown as Socket & EventEmitter;
       
       // Set up listeners BEFORE connecting
       this.setupListeners();
@@ -536,7 +539,7 @@ class SocketService {
     }
   }
 
-  private setupListeners() {
+  private setupListeners(): void {
     if (!this.socket) return;
     
     console.log('Setting up socket event listeners');
@@ -827,6 +830,15 @@ class SocketService {
       clearInterval(this.heartbeatInterval);
       this.heartbeatInterval = undefined;
     }
+
+    // Clear all callback arrays
+    this.seatUpdateListeners = [];
+    this.seatErrorListeners = [];
+    this.onlineUsersListeners = [];
+    this.errorListeners = [];
+    this.chatMessageListeners = [];
+    this.systemMessageListeners = [];
+    this.tablesUpdateListeners = [];
   }
 
   getGameState(): GameState | null {

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { cookieService } from '../services/cookieService';
-import { OnlineList } from './OnlineList';
 import { socketService } from '../services/socketService';
 import { Player } from '../types/game';
 
@@ -188,6 +187,81 @@ const ModalButtons = styled.div`
   margin-top: 1rem;
 `;
 
+const GameStatus = styled.div`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: #ffd700;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 2px solid #ffd700;
+  font-weight: bold;
+  z-index: 1;
+`;
+
+const OnlineList = styled.div`
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 20px;
+  border-radius: 8px;
+  color: white;
+  min-width: 200px;
+
+  .online-list {
+    margin-bottom: 20px;
+  }
+
+  .players-list {
+    margin-bottom: 20px;
+  }
+
+  .observers-list {
+    margin-bottom: 20px;
+  }
+
+  .player-name {
+    display: block;
+    margin: 5px 0;
+    font-weight: normal;
+    opacity: 1;
+  }
+`;
+
+const PlayerSeat = styled.div`
+  width: 100px;
+  height: 100px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid #666;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: #fff;
+  }
+`;
+
+const BettingControls = styled.div`
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 20px;
+  border-radius: 8px;
+  color: white;
+`;
+
 interface GameLobbyProps {
   onJoinGame: (nickname: string, seatNumber: number) => void;
 }
@@ -290,8 +364,20 @@ export const GameLobby: React.FC<GameLobbyProps> = ({ onJoinGame }) => {
   };
 
   const handleCancelSeat = () => {
-    setSelectedSeat(null);
     setShowConfirmation(false);
+    setSelectedSeat(null);
+  };
+
+  const handleBet = (amount: number) => {
+    if (currentSeat !== null) {
+      socketService.placeBet('game1', 'player1', amount);
+    }
+  };
+
+  const handleFold = () => {
+    if (currentSeat !== null) {
+      socketService.fold('game1', 'player1');
+    }
   };
 
   const getSeatPosition = (seatNumber: number) => {
@@ -316,82 +402,127 @@ export const GameLobby: React.FC<GameLobbyProps> = ({ onJoinGame }) => {
     }
   }, [occupiedSeats, currentSeat, navigate]);
 
-  if (!isLoggedIn) {
-    return (
-      <LobbyContainer>
-        <Title>Poker Game</Title>
+  const renderSeats = () => {
+    const seats = [];
+    for (let i = 0; i < 9; i++) {
+      const position = getSeatPosition(i);
+      const isOccupied = occupiedSeats[i] !== undefined;
+      const isCurrentSeat = currentSeat === i;
+      
+      seats.push(
+        <SeatContainer key={i} style={{ left: position.left, top: position.top }}>
+          <Seat
+            $isOccupied={isOccupied}
+            onClick={() => handleSeatClick(i)}
+            disabled={isOccupied && !isCurrentSeat}
+            data-testid="seat-button"
+          >
+            {isOccupied ? <PlusIcon>×</PlusIcon> : <PlusIcon>+</PlusIcon>}
+          </Seat>
+          {isOccupied && (
+            <PlayerName>
+              {occupiedSeats[i]}
+              {isCurrentSeat && ' (You)'}
+            </PlayerName>
+          )}
+        </SeatContainer>
+      );
+    }
+    return seats;
+  };
+
+  useEffect(() => {
+    const handleOnlineUsersUpdate = (players: Player[], observers: string[]) => {
+      setOnlinePlayers(players);
+      setObservers(observers);
+    };
+
+    const unsubscribe = socketService.onOnlineUsersUpdate(handleOnlineUsersUpdate);
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  return (
+    <LobbyContainer>
+      <Title>Texas Hold'em Poker</Title>
+      {!isLoggedIn ? (
         <LoginContainer>
+          <WelcomeMessage>Welcome to Texas Hold'em Poker!</WelcomeMessage>
           <NicknameInput
             type="text"
             placeholder="Enter your nickname"
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
-            maxLength={20}
+            data-testid="nickname-input"
           />
-          <Button onClick={handleLogin} disabled={!nickname.trim()}>
-            Login
+          <Button onClick={handleLogin} data-testid="join-game-button">
+            Join Game
           </Button>
           {error && <ErrorMessage>{error}</ErrorMessage>}
         </LoginContainer>
-      </LobbyContainer>
-    );
-  }
-
-  if (!showSeatSelection) {
-    return (
-      <LobbyContainer>
-        <Title>Poker Game</Title>
-        <WelcomeMessage>Welcome, {nickname}!</WelcomeMessage>
-        <Button onClick={handleJoinGame}>
-          Join Game
-        </Button>
-      </LobbyContainer>
-    );
-  }
-
-  return (
-    <LobbyContainer>
-      <Title>Poker Game</Title>
-      <WelcomeMessage>Welcome, {nickname}!</WelcomeMessage>
-      <SeatSelectionContainer>
-        <Table>
-          <DealerPosition>Dealer</DealerPosition>
-          {[0, 1, 2, 3, 4].map((seatNumber) => (
-            <SeatContainer key={seatNumber} style={getSeatPosition(seatNumber)}>
-              <Seat
-                $isOccupied={!!occupiedSeats[seatNumber] && occupiedSeats[seatNumber] !== nickname}
-                onClick={() => handleSeatClick(seatNumber)}
-                disabled={!!occupiedSeats[seatNumber] && occupiedSeats[seatNumber] !== nickname}
-              >
-                {occupiedSeats[seatNumber] ? null : <PlusIcon>+</PlusIcon>}
-              </Seat>
-              {occupiedSeats[seatNumber] && (
-                <PlayerName>{occupiedSeats[seatNumber]}</PlayerName>
-              )}
-            </SeatContainer>
-          ))}
-        </Table>
-        {error && <ErrorMessage>{error}</ErrorMessage>}
-      </SeatSelectionContainer>
-
-      {isLoggedIn && (
-        <OnlineList
-          players={onlinePlayers}
-          observers={observers}
-          currentPlayerId={onlinePlayers.find(p => p.name === nickname)?.id}
-        />
+      ) : (
+        <>
+          {!showSeatSelection ? (
+            <>
+              <WelcomeMessage>Welcome, {nickname}!</WelcomeMessage>
+              <Button onClick={handleJoinGame} data-testid="join-game-button">
+                Join Game
+              </Button>
+            </>
+          ) : (
+            <>
+              <Table>
+                <DealerPosition>Dealer</DealerPosition>
+                {renderSeats()}
+                <GameStatus className="game-status">
+                  {currentSeat !== null ? 'Your Turn' : 'Waiting for players...'}
+                </GameStatus>
+                {currentSeat !== null && (
+                  <BettingControls className="betting-controls">
+                    <Button onClick={() => handleBet(10)}>Bet 10</Button>
+                    <Button onClick={() => handleBet(20)}>Bet 20</Button>
+                    <Button onClick={handleFold}>Fold</Button>
+                  </BettingControls>
+                )}
+              </Table>
+              <OnlineList>
+                <div className="online-list">
+                  <h3>Online Players</h3>
+                  {onlinePlayers.map((player) => (
+                    <span key={player.id} className="player-name">
+                      {player.name} {player.isAway ? "(Away)" : ""}
+                    </span>
+                  ))}
+                </div>
+                <div className="players-list">
+                  <h3>Players</h3>
+                  {Object.entries(occupiedSeats).map(([seat, name]) => (
+                    <span key={seat} className="player-name">
+                      {name}
+                    </span>
+                  ))}
+                </div>
+                <div className="observers-list">
+                  <h3>Observers</h3>
+                  {observers.map((name) => (
+                    <span key={name} className="player-name">
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              </OnlineList>
+            </>
+          )}
+        </>
       )}
-
       {showConfirmation && (
         <>
           <ModalOverlay />
           <Modal>
-            <div>
-              {currentSeat !== null 
-                ? `Do you want to move from Seat ${currentSeat + 1} to Seat ${selectedSeat! + 1}?`
-                : `Do you want to sit at Seat ${selectedSeat! + 1}?`
-              }
-            </div>
+            <h2>Confirm Seat Selection</h2>
+            <p>Are you sure you want to take seat {selectedSeat}?</p>
             <ModalButtons>
               <Button onClick={handleConfirmSeat}>Yes</Button>
               <Button onClick={handleCancelSeat}>No</Button>
