@@ -146,9 +146,12 @@
   * [x] Fix command naming conflicts
   * [x] Consolidate custom commands
   * [x] Update session handling
-  * [x] Fix TypeScript configuration issues 
+  * [x] Fix TypeScript configuration issues
   * [x] Improve robustness of test commands
-  * [ ] All E2E tests must pass
+  * [x] Standardize on TypeScript for test files
+  * [x] Add proper server management in Cypress config
+  * [x] Add missing betting round simulation
+  * [x] Remove duplicate test files
 - [x] Performance testing
 - [x] Load testing
 
@@ -164,4 +167,20 @@
 - [x] Environment configuration
 - [x] Deployment scripts
 - [x] Monitoring setup
-- [x] Error tracking 
+- [x] Error tracking
+
+## Completed Tasks
+- [x] Fix TypeScript configuration issues
+- [x] Improve robustness of test commands
+- [x] Standardize on TypeScript for test files
+- [x] Add proper server management in Cypress config
+- [x] Add missing betting round simulation
+- [x] Remove duplicate test files
+
+## Pending Tasks
+- [ ] Fix failing e2e tests:
+  - [ ] Ensure UI elements render correctly (e.g., `.player-seat`, `.seat-button`, `.chat-input`)
+  - [ ] Verify backend is sending table data
+  - [ ] Check frontend connection to backend
+  - [ ] Debug lobby rendering logic
+- [ ] Ensure all e2e tests pass 

@@ -166,65 +166,51 @@ Chat features include:
 
 The project includes comprehensive test coverage for all features:
 
-### Unit and Integration Tests
-```bash
-# Run all unit and integration tests
-npm test
-
-# Run tests with coverage report
-npm test -- --coverage
-
-# Run tests in watch mode during development
-npm test -- --watch
-```
-
 ### End-to-End Tests
+
+Run Cypress tests with the following commands:
+
+- Open Cypress test runner:
+  ```bash
+  npm run cypress:open
+  ```
+
+- Run Cypress tests headlessly:
+  ```bash
+  npm run cypress:run
+  ```
+
+- Run a specific Cypress test:
+  ```bash
+  npm run cypress:run -- --spec "cypress/e2e/game-flow.cy.ts"
+  ```
+
+- Run E2E tests with the development server:
+  ```bash
+  npm run test:e2e
+  ```
+
+### Available End-to-End Test Suites
+
+- `game-flow.cy.ts`: Tests game flow, player interactions, and session persistence.
+- `game-phases.cy.ts`: Tests game phase transitions and pot display.
+- `multiUserPokerGame.cy.ts`: Tests multi-user gameplay and session management.
+- `player-interactions.cy.ts`: Tests player interactions, chat, and game actions.
+- `session-persistence.cy.ts`: Tests session persistence after page reload.
+
+### Unit Tests
+
+Run unit tests with:
 ```bash
-# Open Cypress test runner
-npm run cypress:open
-
-# Run Cypress tests headlessly
-npm run cypress:run
-
-# Run specific Cypress test
-npm run cypress:run -- --spec "cypress/e2e/game-flow.cy.ts"
-
-# Run E2E tests with development server
-npm run test:e2e
-
-# Available End-to-End Test Suites:
-# - game-flow.cy.ts: Tests basic game flow and interactions
-# - session-persistence.cy.ts: Tests session persistence across page reloads
-# - player-interactions.cy.ts: Tests player interactions with the UI
-# - game-phases.cy.ts: Tests game phase transitions and betting rounds
-# - multiUserPokerGame.cy.js: Tests multi-user gameplay with three complete games
-# - pokerGameMechanics.cy.js: Tests poker game mechanics verification
+npm run test
 ```
 
-Test suites include:
+### Integration Tests
 
-1. Unit Tests
-   - Component tests (using React Testing Library)
-   - Socket service tests (with mocked WebSocket connections)
-   - State management tests
-
-2. Integration Tests
-   - Game flow testing (player actions, state changes)
-   - Online users list functionality
-   - Player status management
-   - Seat menu interactions
-
-3. End-to-End Tests
-   - Complete game flow testing
-   - Player interactions and state changes
-   - Session persistence
-   - Multi-player scenarios
-   - Game phase transitions
-   - Current player highlighting
-   - Multi-user full game playthrough
-   - Game mechanics verification
-   - Real-time updates
-   - Error handling
+Run integration tests with:
+```bash
+npm run test:integration
+```
 
 ## State Persistence
 
