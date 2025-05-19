@@ -37,81 +37,164 @@ class SocketService {
   private systemMessageListeners: SystemMessageCallback[] = [];
   private tablesUpdateListeners: TablesUpdateCallback[] = [];
   private lobbyTables: TableData[] = [];
+  private isConnecting: boolean = false;
+  private lastConnectionAttempt: number = 0;
+  private connectionLock: boolean = false;
+  private connectionAttempts: number = 0;
+  private maxConnectionAttempts: number = 3;
+  private reconnectionBackoff: number = 2000; // Start with 2 seconds
 
   connect() {
     try {
-      // If we already have a socket that's connected, don't create a new one
+      const now = Date.now();
+      
+      // Rate limiting - prevent multiple connection attempts in quick succession
+      if (now - this.lastConnectionAttempt < 5000) {
+        console.log('Rate limiting connection attempts, last attempt was less than 5 seconds ago');
+        return this.socket;
+      }
+      this.lastConnectionAttempt = now;
+      
+      // Lock-based protection against multiple concurrent connection attempts
+      if (this.connectionLock) {
+        console.log('Connection attempt in progress, waiting for lock');
+        return this.socket;
+      }
+      
+      // If already connected, don't create a new one
       if (this.socket?.connected) {
         console.log('Socket already connected, reusing existing connection');
         return this.socket;
       }
       
-      // If we already have a socket that's connecting, don't create a new one
-      if (this.socket && !this.socket.connected) {
-        console.log('Socket already exists but not connected, waiting for connection');
+      // Track connection attempts
+      if (this.connectionAttempts >= this.maxConnectionAttempts) {
+        console.error(`Reached maximum connection attempts (${this.maxConnectionAttempts}), stopping reconnection`);
+        this.emitError({ 
+          message: `Failed to connect after ${this.maxConnectionAttempts} attempts`, 
+          context: 'socket:max_attempts' 
+        });
+        // Reset counter after a longer period
+        setTimeout(() => {
+          this.connectionAttempts = 0;
+        }, 30000);
         return this.socket;
       }
       
-      // Clean up any existing connection first
+      this.connectionLock = true;
+      this.isConnecting = true;
+      this.connectionAttempts++;
+      
+      // If socket exists but is disconnected, close it properly first
       if (this.socket) {
-        this.disconnect();
+        console.log('Cleaning up existing socket before reconnecting');
+        this.removeAllSocketListeners();
+        this.socket.close();
+        this.socket = null;
       }
       
-      console.log('Creating new socket connection to server');
+      console.log(`Creating new socket connection to server (attempt ${this.connectionAttempts})`);
+      
+      // Create socket with more stable configuration
       this.socket = io('http://localhost:3001', {
-        reconnection: true, 
-        reconnectionAttempts: 5,
+        reconnection: true,
+        reconnectionAttempts: 3,
         reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000,
-        timeout: 20000,
-        transports: ['polling', 'websocket'],
+        timeout: 10000,
+        transports: ['polling'], // Start with polling only for stability
         forceNew: true,
-        // Don't auto-connect, we'll do it manually
-        autoConnect: false
+        autoConnect: false,
+        path: '/socket.io'
       });
       
+      // Set up listeners BEFORE connecting
       this.setupListeners();
       
-      // Set a reasonable connection timeout
+      // Connect after all listeners are set up
+      console.log('Connecting to socket server...');
+      this.socket.connect();
+      
+      // Set a connection timeout
       const connectionTimeout = setTimeout(() => {
         if (this.socket && !this.socket.connected) {
           console.error('Connection timeout - could not connect to server');
-          this.emitError({ message: 'Connection timeout. Server may be down.', context: 'connection' });
+          this.isConnecting = false;
+          this.connectionLock = false;
+          this.socket.disconnect();
+          this.socket = null;
+          this.emitError({ 
+            message: 'Connection timeout. Server may be down.', 
+            context: 'socket:timeout' 
+          });
         }
       }, 10000);
       
-      // Clear timeout on connect
+      // Clear timeout on successful connection or error
       this.socket.on('connect', () => {
-        console.log('Connected to server successfully');
         clearTimeout(connectionTimeout);
-        
-        // Attempt to restore session after successful connection
-        const savedNickname = cookieService.getNickname();
-        const savedSeatNumber = cookieService.getSeatNumber();
-        
-        if (savedNickname) {
-          if (savedSeatNumber !== null) {
-            this.requestSeat(savedNickname, savedSeatNumber);
-          } else {
-            // Join as observer if no seat is saved
-            this.joinAsObserver(savedNickname);
-          }
-        }
+        this.onSuccessfulConnection();
       });
       
-      // Add concise error handling
       this.socket.on('connect_error', (error) => {
-        console.error('Connection error:', error.message);
         clearTimeout(connectionTimeout);
+        console.error('Connection error:', error.message);
+        this.isConnecting = false;
+        this.connectionLock = false;
+        this.emitError({ 
+          message: `Failed to connect: ${error.message}`, 
+          context: 'socket:connect_error' 
+        });
+        
+        // Exponential backoff for reconnection
+        const backoffTime = this.reconnectionBackoff * Math.pow(2, this.connectionAttempts - 1);
+        console.log(`Will retry connection in ${backoffTime/1000} seconds`);
+        
+        // Try to reconnect after backoff
+        setTimeout(() => {
+          this.connectionLock = false;
+          this.connect();
+        }, backoffTime);
       });
-      
-      // Connect manually after all listeners are set up
-      this.socket.connect();
       
       return this.socket;
     } catch (error) {
+      this.isConnecting = false;
+      this.connectionLock = false;
       errorTrackingService.trackError(error as Error, 'socket:connect');
       throw error;
+    }
+  }
+
+  private onSuccessfulConnection() {
+    console.log('Connected to server successfully with ID:', this.socket?.id);
+    this.isConnecting = false;
+    this.connectionLock = false;
+    this.connectionAttempts = 0; // Reset counter on successful connection
+    this.reconnectionBackoff = 2000; // Reset backoff on successful connection
+    
+    // Don't automatically upgrade transport - this causes issues
+    // Let the connection remain stable with whatever transport worked
+    
+    // Attempt to restore session after successful connection
+    const savedNickname = cookieService.getNickname();
+    const savedSeatNumber = cookieService.getSeatNumber();
+    
+    if (savedNickname) {
+      if (savedSeatNumber !== null) {
+        // Delay restoring seat to ensure stable connection
+        setTimeout(() => {
+          if (this.socket?.connected) {
+            this.requestSeat(savedNickname, savedSeatNumber);
+          }
+        }, 1000);
+      } else {
+        // Join as observer if no seat is saved, with slight delay
+        setTimeout(() => {
+          if (this.socket?.connected) {
+            this.joinAsObserver(savedNickname);
+          }
+        }, 1000);
+      }
     }
   }
 
@@ -128,37 +211,20 @@ class SocketService {
       
       console.log('Disconnecting socket...');
       
-      // First disable reconnection to prevent auto-reconnect cycles
+      this.connectionLock = true; // Prevent reconnection during disconnection
+      
+      // First disable auto-reconnection
       this.socket.io.opts.reconnection = false;
       
-      // Remove all event listeners first to prevent duplicate handlers
-      this.socket.off('connect');
-      this.socket.off('disconnect');
-      this.socket.off('connect_error');
-      this.socket.off('reconnect_attempt');
-      this.socket.off('reconnect');
-      this.socket.off('reconnect_error');
-      this.socket.off('reconnect_failed');
-      this.socket.off('error');
-      this.socket.off('gameState');
-      this.socket.off('playerJoined');
-      this.socket.off('playerLeft');
-      this.socket.off('observer:joined');
-      this.socket.off('observer:left');
-      this.socket.off('seat:update');
-      this.socket.off('seat:accepted');
-      this.socket.off('seat:error');
-      this.socket.off('player:statusUpdated');
-      this.socket.off('player:stoodUp');
-      this.socket.off('chat:message');
-      this.socket.off('chat:system');
-      this.socket.off('tablesUpdate');
-      this.socket.off('tableJoined');
-      this.socket.off('tableError');
+      // Remove all socket event listeners
+      this.removeAllSocketListeners();
       
-      // Then properly disconnect the socket
+      // Then properly close and disconnect the socket
       this.socket.disconnect();
+      this.socket.close();
       this.socket = null;
+      this.isConnecting = false;
+      this.connectionLock = false;
       
       // Clear any cached data
       this.gameState = null;
@@ -197,8 +263,11 @@ class SocketService {
       if (!nickname) {
         throw new Error('Nickname is required');
       }
-      if (this.socket) {
+      if (this.socket && this.socket.connected) {
         this.socket.emit('observer:join', { nickname });
+      } else {
+        console.warn('Cannot join as observer: socket not connected');
+        this.connect(); // Ensure socket is connected before continuing
       }
     } catch (error) {
       errorTrackingService.trackError(error as Error, 'joinAsObserver', { nickname });
@@ -207,6 +276,9 @@ class SocketService {
 
   onOnlineUsersUpdate(callback: OnlineUsersCallback) {
     this.onlineUsersListeners.push(callback);
+    return () => {
+      this.onlineUsersListeners = this.onlineUsersListeners.filter(cb => cb !== callback);
+    };
   }
 
   private emitOnlineUsersUpdate() {
@@ -227,13 +299,24 @@ class SocketService {
       if (!nickname || seatNumber === undefined) {
         throw new Error('Invalid seat request parameters');
       }
-      if (this.socket) {
-        this.socket.emit('seat:request', { nickname, seatNumber });
-        // Add player to observers initially
-        if (!this.observers.includes(nickname)) {
-          this.observers.push(nickname);
-          this.emitOnlineUsersUpdate();
-        }
+      
+      if (!this.socket?.connected) {
+        console.warn('Socket not connected when requesting seat, connecting first');
+        this.connect();
+        
+        // Add a listener for when connection is established
+        this.socket?.once('connect', () => {
+          this.socket?.emit('seat:request', { nickname, seatNumber });
+        });
+        return;
+      }
+      
+      this.socket.emit('seat:request', { nickname, seatNumber });
+      
+      // Add player to observers initially
+      if (!this.observers.includes(nickname)) {
+        this.observers.push(nickname);
+        this.emitOnlineUsersUpdate();
       }
     } catch (error) {
       errorTrackingService.trackError(error as Error, 'requestSeat', {
@@ -246,10 +329,16 @@ class SocketService {
 
   onSeatUpdate(callback: SeatUpdateCallback) {
     this.seatUpdateListeners.push(callback);
+    return () => {
+      this.seatUpdateListeners = this.seatUpdateListeners.filter(cb => cb !== callback);
+    };
   }
 
   onSeatError(callback: SeatErrorCallback) {
     this.seatErrorListeners.push(callback);
+    return () => {
+      this.seatErrorListeners = this.seatErrorListeners.filter(cb => cb !== callback);
+    };
   }
 
   private emitSeatUpdate(seats: SeatState) {
@@ -267,52 +356,69 @@ class SocketService {
   }
 
   placeBet(gameId: string, playerId: string, amount: number) {
-    if (this.socket) {
+    if (this.socket?.connected) {
       this.socket.emit('placeBet', { gameId, playerId, amount });
+    } else {
+      console.warn('Cannot place bet: socket not connected');
     }
   }
 
   check(gameId: string, playerId: string) {
-    if (this.socket) {
+    if (this.socket?.connected) {
       this.socket.emit('check', { gameId, playerId });
+    } else {
+      console.warn('Cannot check: socket not connected');
     }
   }
 
   fold(gameId: string, playerId: string) {
-    if (this.socket) {
+    if (this.socket?.connected) {
       this.socket.emit('fold', { gameId, playerId });
+    } else {
+      console.warn('Cannot fold: socket not connected');
     }
   }
 
   // --- Seat action methods ---
   updatePlayerStatus(gameId: string, playerId: string, isAway: boolean) {
-    if (this.socket) {
+    if (this.socket?.connected) {
       this.socket.emit('player:status', { gameId, playerId, isAway });
+    } else {
+      console.warn('Cannot update status: socket not connected');
     }
   }
 
   standUp(gameId: string, playerId: string) {
-    if (this.socket) {
+    if (this.socket?.connected) {
       this.socket.emit('player:standUp', { gameId, playerId });
+    } else {
+      console.warn('Cannot stand up: socket not connected');
     }
   }
 
   leaveTable(gameId: string, playerId: string) {
-    if (this.socket) {
+    if (this.socket?.connected) {
       this.socket.emit('player:leaveTable', { gameId, playerId });
       cookieService.clearGameData();
+    } else {
+      console.warn('Cannot leave table: socket not connected');
     }
   }
 
   // --- Chat methods ---
   sendChatMessage(gameId: string, message: ChatMessage) {
-    if (this.socket) {
+    if (this.socket?.connected) {
       this.socket.emit('chat:message', { gameId, message });
+    } else {
+      console.warn('Cannot send chat message: socket not connected');
     }
   }
 
   onChatMessage(callback: ChatMessageCallback) {
     this.chatMessageListeners.push(callback);
+    return () => {
+      this.chatMessageListeners = this.chatMessageListeners.filter(cb => cb !== callback);
+    };
   }
 
   offChatMessage() {
@@ -321,6 +427,9 @@ class SocketService {
 
   onSystemMessage(callback: SystemMessageCallback) {
     this.systemMessageListeners.push(callback);
+    return () => {
+      this.systemMessageListeners = this.systemMessageListeners.filter(cb => cb !== callback);
+    };
   }
 
   offSystemMessage() {
@@ -337,13 +446,25 @@ class SocketService {
 
   // --- Lobby methods ---
   requestLobbyTables() {
-    if (this.socket) {
-      this.socket.emit('getLobbyTables');
+    if (!this.socket || !this.socket.connected) {
+      console.log('Socket not connected, connecting before requesting tables');
+      this.connect();
+      
+      // Request tables once connected
+      this.socket?.once('connect', () => {
+        this.socket?.emit('getLobbyTables');
+      });
+      return;
     }
+    
+    this.socket.emit('getLobbyTables');
   }
 
   onTablesUpdate(callback: TablesUpdateCallback) {
     this.tablesUpdateListeners.push(callback);
+    return () => {
+      this.tablesUpdateListeners = this.tablesUpdateListeners.filter(cb => cb !== callback);
+    };
   }
 
   offTablesUpdate() {
@@ -361,8 +482,55 @@ class SocketService {
 
   // Updated to match the expected signature for lobby
   joinTable(tableId: number, buyIn: number) {
-    if (this.socket) {
+    if (this.socket?.connected) {
+      console.log(`Joining table ${tableId} with buy-in ${buyIn}`);
       this.socket.emit('joinTable', { tableId, buyIn });
+    } else {
+      console.warn('Socket not connected when trying to join table, connecting first');
+      
+      // Clear any existing connection attempts and reset state
+      if (this.socket) {
+        this.removeAllSocketListeners();
+        this.socket.off('connect');
+      }
+      
+      // Force reset connection state to ensure we can connect
+      this.isConnecting = false;
+      this.connectionLock = false;
+      this.lastConnectionAttempt = 0;
+      
+      // Create a fresh connection
+      const socket = this.connect();
+      
+      if (socket) {
+        // Use a unique event name to avoid conflicts
+        const uniqueEventName = `connect_join_table_${Date.now()}`;
+        
+        // Register the connect handler with our unique name
+        socket.once('connect', () => {
+          console.log(`Socket connected (${socket.id}), waiting to join table ${tableId}`);
+          
+          // Wait for connection to stabilize before joining
+          setTimeout(() => {
+            // Check again if the socket is still connected
+            if (socket.connected) {
+              console.log(`Now joining table ${tableId} with buy-in ${buyIn}`);
+              socket.emit('joinTable', { tableId, buyIn });
+            } else {
+              console.error('Connection was lost after initial connect');
+              this.emitError({ 
+                message: 'Failed to join table: connection was lost', 
+                context: 'table:join_failed' 
+              });
+            }
+          }, 2000); // Wait 2 seconds for connection to stabilize
+        });
+      } else {
+        this.emitError({ 
+          message: 'Failed to create socket connection for joining table', 
+          context: 'table:connection_failed' 
+        });
+      }
     }
   }
 
@@ -374,36 +542,32 @@ class SocketService {
     // First remove any existing handlers to prevent duplicates
     this.removeAllSocketListeners();
 
+    // --- Basic connection status ---
+    this.socket.on('connect', () => {
+      this.onSuccessfulConnection();
+    });
+    
     this.socket.on('disconnect', (reason) => {
       console.log(`Disconnected from server: ${reason}`);
+      this.isConnecting = false;
       
-      // If the disconnection was initiated by the server, don't attempt to reconnect
-      if (reason === 'io server disconnect') {
-        this.socket?.disconnect();
-      }
-    });
-    
-    this.socket.on('reconnect_attempt', (attemptNumber) => {
-      console.log(`Reconnection attempt: ${attemptNumber}`);
-    });
-    
-    this.socket.on('reconnect', (attemptNumber) => {
-      console.log(`Reconnected after ${attemptNumber} attempts`);
-      
-      // Try to restore session after reconnect
-      const savedNickname = cookieService.getNickname();
-      if (savedNickname) {
-        const savedSeatNumber = cookieService.getSeatNumber();
-        if (savedSeatNumber !== null) {
-          this.requestSeat(savedNickname, savedSeatNumber);
-        } else {
-          this.joinAsObserver(savedNickname);
-        }
+      // If the server forcibly closed the connection, don't auto-reconnect
+      if (reason === 'io server disconnect' || reason === 'transport close') {
+        console.log('Server closed connection, not attempting to reconnect');
+        this.connectionLock = false;
+      } else if (reason !== 'io client disconnect') {
+        // Only attempt to reconnect for server-side disconnects
+        console.log('Disconnected due to error, attempting reconnection in 3 seconds');
+        setTimeout(() => {
+          this.connectionLock = false;
+          this.connect();
+        }, 3000);
       }
     });
     
     // --- Error listener ---
     this.socket.on('error', (error: { message: string; context?: string }) => {
+      console.error('Socket error:', error.message);
       errorTrackingService.trackError(error.message, error.context || 'socket:error');
       this.emitError(error);
     });
@@ -627,35 +791,48 @@ class SocketService {
     this.socket.on('tableError', (error: string) => {
       this.emitError({ message: error, context: 'table:join' });
     });
+    
+    // Add heartbeat check to keep connection alive
+    let heartbeatInterval = setInterval(() => {
+      if (this.socket?.connected) {
+        this.socket.emit('ping');
+      } else {
+        clearInterval(heartbeatInterval);
+      }
+    }, 25000);
+    
+    // Store interval to be cleared when needed
+    this.socket.io.on('close', () => {
+      clearInterval(heartbeatInterval);
+    });
   }
 
   private removeAllSocketListeners() {
     if (!this.socket) return;
     
+    console.log('Removing all socket event listeners');
+    
     // Remove all event listeners to prevent duplicates
-    this.socket.off('connect');
-    this.socket.off('disconnect');
-    this.socket.off('connect_error');
-    this.socket.off('reconnect_attempt');
-    this.socket.off('reconnect');
-    this.socket.off('reconnect_error');
-    this.socket.off('reconnect_failed');
-    this.socket.off('error');
-    this.socket.off('gameState');
-    this.socket.off('playerJoined');
-    this.socket.off('playerLeft');
-    this.socket.off('observer:joined');
-    this.socket.off('observer:left');
-    this.socket.off('seat:update');
-    this.socket.off('seat:accepted');
-    this.socket.off('seat:error');
-    this.socket.off('player:statusUpdated');
-    this.socket.off('player:stoodUp');
-    this.socket.off('chat:message');
-    this.socket.off('chat:system');
-    this.socket.off('tablesUpdate');
-    this.socket.off('tableJoined');
-    this.socket.off('tableError');
+    this.socket.removeAllListeners('connect');
+    this.socket.removeAllListeners('disconnect');
+    this.socket.removeAllListeners('connect_error');
+    this.socket.removeAllListeners('error');
+    this.socket.removeAllListeners('gameState');
+    this.socket.removeAllListeners('playerJoined');
+    this.socket.removeAllListeners('playerLeft');
+    this.socket.removeAllListeners('observer:joined');
+    this.socket.removeAllListeners('observer:left');
+    this.socket.removeAllListeners('seat:update');
+    this.socket.removeAllListeners('seat:accepted');
+    this.socket.removeAllListeners('seat:error');
+    this.socket.removeAllListeners('player:statusUpdated');
+    this.socket.removeAllListeners('player:stoodUp');
+    this.socket.removeAllListeners('chat:message');
+    this.socket.removeAllListeners('chat:system');
+    this.socket.removeAllListeners('tablesUpdate');
+    this.socket.removeAllListeners('tableJoined');
+    this.socket.removeAllListeners('tableError');
+    this.socket.removeAllListeners('pong');
   }
 
   getGameState(): GameState | null {

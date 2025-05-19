@@ -18,7 +18,18 @@ describe('Multi-User Poker Game - Three Complete Games', () => {
   // Track game progress
   let gamesPlayed = 0;
   
-  before(() => {
+  beforeEach(() => {
+    // Create a session for cookie persistence inside the test
+    cy.session('poker_game_session', () => {
+      // Visit the homepage to establish a proper session
+      cy.visit('/');
+    });
+  });
+  
+  /**
+   * Phase 1: All players join the table
+   */
+  it('All players should be able to join the table', () => {
     // Start the backend server if not running
     cy.exec('cd ../backend && npm start', { failOnNonZeroExit: false, timeout: 10000 })
       .then(() => {
@@ -33,21 +44,6 @@ describe('Multi-User Poker Game - Three Complete Games', () => {
         cy.wait(5000);
       });
       
-    // Create a session for cookie persistence
-    cy.session('poker_game_session', () => {
-      // Visit the homepage to establish a proper session
-      cy.visit('/');
-    });
-  });
-  
-  beforeEach(() => {
-    // No additional session needed since we've set it up in the before hook
-  });
-  
-  /**
-   * Phase 1: All players join the table
-   */
-  it('All players should be able to join the table', () => {
     const [player1] = players;
     
     // First player joins through the UI
@@ -186,6 +182,13 @@ describe('Multi-User Poker Game - Three Complete Games', () => {
 
 // Helper tests to automate other player sessions
 describe('Player 2 Session', () => {
+  beforeEach(() => {
+    // Create a session for Player 2
+    cy.session('player2_session', () => {
+      cy.visit('/');
+    });
+  });
+  
   it('Joins table and takes seat', () => {
     // Run only in Player 2 session
     cy.task('getSessionId').then(sessionId => {
@@ -203,6 +206,13 @@ describe('Player 2 Session', () => {
 
 // Helper tests to automate other player sessions
 describe('Player 3 Session', () => {
+  beforeEach(() => {
+    // Create a session for Player 3
+    cy.session('player3_session', () => {
+      cy.visit('/');
+    });
+  });
+  
   it('Joins table and takes seat', () => {
     // Run only in Player 3 session
     cy.task('getSessionId').then(sessionId => {

@@ -49,12 +49,64 @@ const StakesHeader = styled.h2`
 
 const Grid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+`;
+
+const Card = styled.div`
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 10px;
   padding: 1.5rem;
-  background: rgba(27, 77, 62, 0.2);
-  border-radius: 8px;
+  border: 1px solid #8b0000;
+  transition: all 0.2s;
+  cursor: pointer;
+  
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    border-color: #ffd700;
+  }
+`;
+
+const TableName = styled.h3`
+  color: #ffd700;
+  margin: 0 0 1rem 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const Status = styled.span<{ $isRunning?: boolean }>`
+  font-size: 0.8rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  background: ${props => props.$isRunning ? '#2c8a3d' : '#8b0000'};
+  color: white;
+`;
+
+const InfoRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+`;
+
+const JoinButton = styled.button`
+  width: 100%;
+  padding: 0.75rem;
   margin-top: 1rem;
+  border-radius: 4px;
+  border: none;
+  background: #2c8a3d;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: #37a34a;
+  }
 `;
 
 const StakesSection = styled.div`
@@ -279,11 +331,31 @@ export const TableGrid: React.FC<TableGridProps> = ({ filters }) => {
           <StakesHeader>{stakes} Stakes</StakesHeader>
           <Grid>
             {tablesByStakes[stakes].map((table) => (
-              <TableCard
-                key={table.id}
-                table={table}
-                onClick={() => handleTableClick(table)}
-              />
+              <Card key={table.id} onClick={() => handleTableClick(table)} data-table-id={table.id}>
+                <TableName>
+                  {table.name}
+                  <Status $isRunning={table.status === 'active'}>
+                    {table.status === 'active' ? 'Running' : 'Waiting'}
+                  </Status>
+                </TableName>
+                
+                <InfoRow>
+                  <span>Players:</span>
+                  <span>{table.players}/{table.maxPlayers}</span>
+                </InfoRow>
+                
+                <InfoRow>
+                  <span>Stakes:</span>
+                  <span>{table.stakes}</span>
+                </InfoRow>
+                
+                <InfoRow>
+                  <span>Game:</span>
+                  <span>{table.gameType}</span>
+                </InfoRow>
+                
+                <JoinButton>Join Table</JoinButton>
+              </Card>
             ))}
           </Grid>
         </StakesSection>

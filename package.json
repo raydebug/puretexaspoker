@@ -1,0 +1,31 @@
+{
+  "name": "texas-poker-game",
+  "version": "1.0.0",
+  "description": "Texas Hold'em Poker Game",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "frontend": "cd frontend && npm start",
+    "backend": "cd backend && npm start",
+    "start": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "test:e2e": "start-server-and-test start http://localhost:3000 cypress:run"
+  },
+  "keywords": [
+    "poker",
+    "texas-holdem",
+    "multiplayer"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@cypress/vite-dev-server": "^6.0.3",
+    "@testing-library/cypress": "^10.0.3",
+    "@types/node": "^22.15.19",
+    "concurrently": "^8.2.2",
+    "cypress": "^14.3.3",
+    "start-server-and-test": "^2.0.3",
+    "typescript": "^5.8.3"
+  }
+}
