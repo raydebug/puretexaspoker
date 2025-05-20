@@ -28,30 +28,68 @@ export class WebSocketService {
   }
 
   private setupSocketHandlers(): void {
-    this.io.on('connection', (socket) => {
+    this.io.on('connection', (socket: Socket) => {
       console.log('Client connected:', socket.id);
 
-      socket.on('joinGame', (gameId: string, player: Player) => {
-        this.handleJoinGame(socket, gameId, player);
+      socket.on('joinGame', (player: Player) => {
+        this.gameService.addPlayer(player);
+        this.broadcastGameState();
       });
 
-      socket.on('leaveGame', (gameId: string, playerId: string) => {
-        this.handleLeaveGame(socket, gameId, playerId);
+      socket.on('leaveGame', (playerId: string) => {
+        this.gameService.removePlayer(playerId);
+        this.broadcastGameState();
       });
 
-      socket.on('placeBet', (gameId: string, playerId: string, amount: number) => {
-        this.handlePlaceBet(socket, gameId, playerId, amount);
+      socket.on('startGame', () => {
+        try {
+          this.gameService.startGame();
+          this.broadcastGameState();
+        } catch (error: any) {
+          socket.emit('error', error.message || 'Failed to start game');
+        }
       });
 
-      socket.on('fold', (gameId: string, playerId: string) => {
-        this.handleFold(socket, gameId, playerId);
+      socket.on('placeBet', ({ playerId, amount }: { playerId: string; amount: number }) => {
+        try {
+          this.gameService.placeBet(playerId, amount);
+          const gameState = this.gameService.getGameState();
+          const event = gameState.currentBet === amount ? 'playerCalled' : 'playerRaised';
+          this.io.emit(event, { playerId, amount });
+          this.broadcastGameState();
+        } catch (error: any) {
+          socket.emit('error', error.message || 'Failed to place bet');
+        }
       });
 
-      socket.on('check', (gameId: string, playerId: string) => {
-        this.handleCheck(socket, gameId, playerId);
+      socket.on('fold', (playerId: string) => {
+        try {
+          this.gameService.fold(playerId);
+          this.io.emit('playerFolded', { playerId });
+          this.broadcastGameState();
+        } catch (error: any) {
+          socket.emit('error', error.message || 'Failed to fold');
+        }
       });
 
-      // Chat handlers
+      socket.on('playerAway', (playerId: string) => {
+        try {
+          this.gameService.updatePlayerStatus(playerId, true);
+          this.broadcastGameState();
+        } catch (error: any) {
+          socket.emit('error', error.message || 'Failed to update player status');
+        }
+      });
+
+      socket.on('playerBack', (playerId: string) => {
+        try {
+          this.gameService.updatePlayerStatus(playerId, false);
+          this.broadcastGameState();
+        } catch (error: any) {
+          socket.emit('error', error.message || 'Failed to update player status');
+        }
+      });
+
       socket.on('chat:message', ({ gameId, message }: { gameId: string, message: ChatMessage }) => {
         this.handleChatMessage(socket, gameId, message);
       });
@@ -61,107 +99,14 @@ export class WebSocketService {
       });
 
       socket.on('disconnect', () => {
-        this.handleDisconnect(socket);
+        console.log('Client disconnected:', socket.id, 'reason:', socket.disconnect);
       });
     });
   }
 
-  private handleJoinGame(socket: Socket, gameId: string, player: Player): void {
-    try {
-      socket.join(gameId);
-      socket.data.player = player;
-      socket.data.gameId = gameId;
-
-      if (!this.activeGames.has(gameId)) {
-        this.activeGames.set(gameId, new Set());
-      }
-      this.activeGames.get(gameId)?.add(player.id);
-
-      this.gameService.addPlayer(player);
-      const gameState = this.gameService.getGameState();
-
-      socket.emit('gameStateUpdate', gameState);
-      
-      // Send chat history and notify others
-      socket.emit('chat:history', this.chatService.getHistory(gameId));
-      this.chatService.notifyGameEvent(gameId, 'playerJoined', player.name);
-    } catch (error) {
-      errorTrackingService.trackError(error as Error, 'handleJoinGame', { gameId, player });
-      socket.emit('error', { message: 'Failed to join game' });
-    }
-  }
-
-  private handleLeaveGame(socket: Socket, gameId: string, playerId: string): void {
-    try {
-      socket.leave(gameId);
-      this.activeGames.get(gameId)?.delete(playerId);
-      
-      const player = this.gameService.getPlayer(playerId);
-      this.gameService.removePlayer(playerId);
-      
-      const gameState = this.gameService.getGameState();
-      this.io.to(gameId).emit('gameStateUpdate', gameState);
-      
-      // Notify others about player leaving
-      if (player) {
-        this.chatService.notifyGameEvent(gameId, 'playerLeft', player.name);
-      }
-    } catch (error) {
-      errorTrackingService.trackError(error as Error, 'handleLeaveGame', { gameId, playerId });
-      socket.emit('error', { message: 'Failed to leave game' });
-    }
-  }
-
-  private handlePlaceBet(socket: Socket, gameId: string, playerId: string, amount: number): void {
-    try {
-      const player = this.gameService.getPlayer(playerId);
-      this.gameService.placeBet(playerId, amount);
-      const gameState = this.gameService.getGameState();
-      this.io.to(gameId).emit('gameStateUpdate', gameState);
-      
-      // Notify about bet
-      if (player) {
-        const event = gameState.currentBet === amount ? 'playerCalled' : 'playerRaised';
-        this.chatService.notifyGameEvent(gameId, event, player.name);
-      }
-    } catch (error) {
-      errorTrackingService.trackError(error as Error, 'handlePlaceBet', { gameId, playerId, amount });
-      socket.emit('error', { message: 'Failed to place bet' });
-    }
-  }
-
-  private handleFold(socket: Socket, gameId: string, playerId: string): void {
-    try {
-      const player = this.gameService.getPlayer(playerId);
-      this.gameService.fold(playerId);
-      const gameState = this.gameService.getGameState();
-      this.io.to(gameId).emit('gameStateUpdate', gameState);
-      
-      // Notify about fold
-      if (player) {
-        this.chatService.notifyGameEvent(gameId, 'playerFolded', player.name);
-      }
-    } catch (error) {
-      errorTrackingService.trackError(error as Error, 'handleFold', { gameId, playerId });
-      socket.emit('error', { message: 'Failed to fold' });
-    }
-  }
-
-  private handleCheck(socket: Socket, gameId: string, playerId: string): void {
-    try {
-      const player = this.gameService.getPlayer(playerId);
-      this.gameService.check(playerId);
-      const gameState = this.gameService.getGameState();
-      this.io.to(gameId).emit('gameStateUpdate', gameState);
-      
-      // Notify about check
-      if (player) {
-        this.chatService.notifyGameEvent(gameId, 'playerChecked', player.name);
-      }
-    } catch (error) {
-      errorTrackingService.trackError(error as Error, 'handleCheck', { gameId, playerId });
-      socket.emit('error', { message: 'Failed to check' });
-    }
+  private broadcastGameState(): void {
+    const gameState = this.gameService.getGameState();
+    this.io.emit('gameStateUpdate', gameState);
   }
 
   private handleChatMessage(socket: Socket, gameId: string, message: ChatMessage): void {
@@ -185,29 +130,5 @@ export class WebSocketService {
       socket.emit('error', { message: 'Failed to retrieve chat history' });
     }
   }
-
-  private handleDisconnect(socket: Socket): void {
-    try {
-      const player = socket.data.player;
-      const gameId = socket.data.gameId;
-      
-      if (player && gameId) {
-        this.activeGames.get(gameId)?.delete(player.id);
-        this.gameService.updatePlayerStatus(player.id, true); // Mark as away
-        
-        const gameState = this.gameService.getGameState();
-        this.io.to(gameId).emit('gameStateUpdate', gameState);
-        
-        // Notify others about player going away
-        this.chatService.notifyGameEvent(gameId, 'playerWentAway', player.name);
-      }
-      
-      console.log('Client disconnected:', socket.id);
-    } catch (error) {
-      errorTrackingService.trackError(error as Error, 'handleDisconnect', { 
-        socketId: socket.id,
-        player: socket.data?.player?.name
-      });
-    }
-  }
+} 
 } 
