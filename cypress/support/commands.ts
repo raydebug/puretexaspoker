@@ -25,6 +25,9 @@ declare global {
       setPlayerStatus(status: 'away' | 'back'): void;
       joinGame(nickname: string): void;
       placeBet(amount: number): void;
+      waitForGameStart(): void;
+      verifyPlayerState(nickname: string, chips: number): void;
+      verifyGamePhase(phase: string): void;
     }
   }
 }
@@ -150,89 +153,53 @@ Cypress.Commands.add('verifyChips', (playerName: string, expectedChipsMin: numbe
 
 // Player status commands
 Cypress.Commands.add('openSeatMenu', () => {
-  cy.get('.player-seat').click();
+  cy.get('[data-testid="player-seat"]').first().click();
 });
 
 Cypress.Commands.add('setPlayerStatus', (status: 'away' | 'back') => {
-  cy.openSeatMenu();
-  if (status === 'away') {
-    cy.contains('Leave Midway').click();
-  } else {
-    cy.contains('I Am Back').click();
-  }
+  cy.get('[data-testid="player-menu"]').click();
+  cy.get(`[data-testid="${status}-button"]`).click();
 });
 
 Cypress.Commands.add('joinGame', (nickname: string) => {
-  // First check if we need to navigate to the join page
-  cy.url().then(url => {
-    if (!url.includes('/join') && !url.includes('/?/')) {
-      cy.visit('/join');
-    }
-  });
-  
-  // Wait for the page to load
-  cy.get('body').should('be.visible');
-  cy.wait(1000); // Give the page a moment to fully load
-  
-  // Try multiple strategies to find the input field:
-  // 1. Look for the newly added data-testid
-  cy.get('body').then($body => {
-    if ($body.find('[data-testid="nickname-input"]').length > 0) {
-      cy.get('[data-testid="nickname-input"]').clear().type(nickname);
-    } 
-    // 2. Look for any text input field
-    else if ($body.find('input[type="text"]').length > 0) {
-      cy.get('input[type="text"]').clear().type(nickname);
-    }
-    // 3. Fall back to any input field
-    else if ($body.find('input').length > 0) {
-      cy.get('input').first().clear().type(nickname);
-    }
-    else {
-      cy.log('No input field for nickname found, creating one');
-      // Inject an input field for testing purposes
-      cy.window().then(win => {
-        const input = win.document.createElement('input');
-        input.type = 'text';
-        input.value = nickname;
-        input.id = 'test-nickname-input';
-        win.document.body.appendChild(input);
-      });
-      cy.get('#test-nickname-input').should('exist');
-    }
-  });
-  
-  // Try to find and click the join/submit button
-  cy.get('body').then($body => {
-    if ($body.find('button[type="submit"]').length > 0) {
-      cy.get('button[type="submit"]').click();
-    }
-    else if ($body.find('button:contains("Join")').length > 0) {
-      cy.contains('button', 'Join').click();
-    }
-    else if ($body.find('button').length > 0) {
-      cy.get('button').first().click();
-    }
-    else {
-      cy.log('No button found to submit nickname');
-      // Trigger a form submission
-      cy.window().then(win => {
-        win.sessionStorage.setItem('playerNickname', nickname);
-        win.location.href = '/lobby';
-      });
-    }
-  });
-  
-  // Wait for redirection or UI update
-  cy.wait(1000);
+  cy.visit('/');
+  cy.get('[data-testid="nickname-input"]').type(nickname);
+  cy.get('[data-testid="join-button"]').click();
+  cy.waitForGameStart();
 });
 
 // Place a bet with a specific amount
 Cypress.Commands.add('placeBet', (amount: number) => {
-  cy.get('.betting-controls').within(() => {
-    cy.get('input[type="number"]').type(amount.toString());
-    cy.contains('Bet').click();
-  });
+  cy.get('[data-testid="bet-amount"]').type(amount.toString());
+  cy.get('[data-testid="place-bet-button"]').click();
+});
+
+Cypress.Commands.add('waitForGameStart', () => {
+  cy.get('[data-testid="game-table"]', { timeout: 10000 }).should('be.visible');
+  cy.get('[data-testid="dealer-button"]').should('exist');
+});
+
+Cypress.Commands.add('verifyPlayerState', (nickname: string, chips: number) => {
+  cy.contains(nickname).should('be.visible');
+  cy.contains(`Chips: ${chips}`).should('be.visible');
+});
+
+Cypress.Commands.add('verifyGamePhase', (phase: string) => {
+  cy.get('[data-testid="game-phase"]').should('contain', phase);
+});
+
+// Error handling
+Cypress.on('uncaught:exception', (err) => {
+  console.error('Uncaught exception:', err);
+  return false;
+});
+
+// Logging
+Cypress.on('test:after:run', (attributes) => {
+  console.log('Test completed:', attributes.title);
+  if (attributes.state === 'failed') {
+    console.error('Test failed:', attributes.error);
+  }
 });
 
 // Export an empty object to make TypeScript happy
