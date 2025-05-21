@@ -96,8 +96,8 @@ export const JoinPage: React.FC = () => {
     // Store nickname in cookies for persistence
     Cookies.set('playerNickname', nickname, { expires: 7 });
     
-    // Navigate to the lobby
-    navigate('/lobby');
+    // Navigate to the game page
+    navigate('/game/1');
   };
   
   return (
@@ -124,7 +124,7 @@ export const JoinPage: React.FC = () => {
           
           {error && <ErrorMessage>{error}</ErrorMessage>}
           
-          <Button type="submit">Join Game</Button>
+          <Button type="submit" data-testid="join-button">Join Game</Button>
         </form>
       </LoginForm>
     </Container>

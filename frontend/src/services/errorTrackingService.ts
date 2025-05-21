@@ -1,5 +1,3 @@
-import { Player } from '../types/game';
-
 export interface ErrorDetails {
   message: string;
   context: string;

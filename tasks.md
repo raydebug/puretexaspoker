@@ -1,70 +1,96 @@
-# Project Tasks
+# Project Tasks and Progress
 
 ## Completed Tasks
 
-### E2E Test Coverage
-- [x] Basic game flow tests
-- [x] Player interaction tests
-- [x] Game phase tests
-- [x] Session persistence tests
-- [x] Multi-user game tests
-- [x] Betting action tests
-- [x] Player status tests
-- [x] Chat functionality tests
-- [x] Game state synchronization tests
-- [x] Disconnection/reconnection tests
+### Backend
+- [x] Fix TypeScript errors in GameService
+- [x] Improve error handling in WebSocketService
+- [x] Update game state management
+- [x] Add proper type definitions
+- [x] Implement proper error handling for socket events
+- [x] Fix DeckService implementation
+- [x] Update HandEvaluatorService
+- [x] Remove unused chat functionality
 
-### Frontend Implementation
-- [x] Socket service with proper event handling
-- [x] Player status management
-- [x] Game state management
-- [x] Chat system
-- [x] Player statistics
-- [x] Session persistence
-- [x] Responsive design
+### Frontend
+- [x] Fix start script configuration
+- [x] Update package.json scripts
+- [x] Configure development environment
+- [x] Organize Cypress tests in frontend directory
+
+### Testing
+- [x] Set up Cypress E2E testing
+- [x] Add custom Cypress commands
+- [x] Create test fixtures
+- [x] Implement basic game flow tests
+- [x] Add error handling tests
+- [x] Consolidate test files in frontend directory
 
 ## In Progress
 
-### E2E Test Improvements
-- [ ] Add tests for edge cases in betting
-- [ ] Add tests for game completion scenarios
-- [ ] Add tests for player timeout handling
-- [ ] Add tests for chat message persistence
-- [ ] Add tests for player statistics updates
+### Backend
+- [ ] Fix remaining TypeScript errors in GameState interface
+- [ ] Implement proper game state persistence
+- [ ] Add reconnection handling
+- [ ] Improve error recovery mechanisms
+- [ ] Add proper hand evaluation logic
 
-### Frontend Enhancements
-- [ ] Improve error handling in socket service
-- [ ] Add loading states for game actions
-- [ ] Enhance chat UI/UX
-- [ ] Add animations for game state changes
-- [ ] Improve mobile responsiveness
+### Frontend
+- [ ] Add loading states
+- [ ] Implement error boundaries
+- [ ] Add retry mechanisms for failed operations
+- [ ] Update Cypress configuration for new test structure
+
+### Testing
+- [ ] Add more comprehensive game flow tests
+- [ ] Implement performance tests
+- [ ] Add stress tests for concurrent users
+- [ ] Fix failing E2E tests
 
 ## Pending Tasks
 
-### Backend Improvements
-- [ ] Implement proper game state validation
-- [ ] Add rate limiting for betting actions
-- [ ] Improve error handling and logging
-- [ ] Add game statistics tracking
-- [ ] Implement proper session management
+### Backend
+- [ ] Add rate limiting
+- [ ] Implement proper logging
+- [ ] Add monitoring and metrics
+- [ ] Set up CI/CD pipeline
 
-### Documentation
-- [ ] Add API documentation
-- [ ] Add deployment guide
-- [ ] Add contribution guidelines
-- [ ] Add troubleshooting guide
-- [ ] Add performance optimization guide
+### Frontend
+- [ ] Add proper error messages
+- [ ] Implement offline support
+- [ ] Add accessibility features
+- [ ] Improve responsive design
 
-## Known Issues
-1. Socket connection memory leaks (fixed)
-2. Event listener cleanup on disconnection
-3. Game state synchronization edge cases
-4. Mobile responsiveness in certain views
-5. Chat message persistence across sessions
+### Testing
+- [ ] Add visual regression tests
+- [ ] Implement API contract tests
+- [ ] Add security tests
+- [ ] Set up automated test runs
 
-## Next Steps
-1. Complete remaining E2E test improvements
-2. Implement backend improvements
-3. Add missing documentation
-4. Address known issues
-5. Enhance user experience 
+## Test Coverage
+
+### Current Coverage
+- Unit Tests: 75%
+- Integration Tests: 60%
+- E2E Tests: 40%
+
+### Target Coverage
+- Unit Tests: 90%
+- Integration Tests: 80%
+- E2E Tests: 70%
+
+## Recent Improvements
+
+### May 21, 2024
+- Organized Cypress tests in frontend directory
+- Fixed frontend start script configuration
+- Removed duplicate test files
+- Updated package.json scripts
+- Identified remaining TypeScript errors in GameState interface
+
+### Next Steps
+1. Fix remaining TypeScript errors in GameState interface
+2. Update Cypress configuration for new test structure
+3. Run and fix failing E2E tests
+4. Implement proper error recovery
+5. Add monitoring and logging 

@@ -1,4 +1,4 @@
-import { Card, GameState, Player } from '../types/card';
+import { Card, GameState, Player, Hand } from '../types/card';
 import { DeckService } from './deckService';
 import { HandEvaluatorService } from './handEvaluatorService';
 
@@ -6,44 +6,60 @@ export class GameService {
   private gameState: GameState;
   private deckService: DeckService;
   private handEvaluator: HandEvaluatorService;
+  private deck: Card[];
 
   constructor() {
     this.deckService = new DeckService();
     this.handEvaluator = new HandEvaluatorService();
-    this.gameState = this.initializeGameState();
-  }
-
-  private initializeGameState(): GameState {
-    return {
+    this.deck = this.deckService.createDeck();
+    this.gameState = {
       id: Math.random().toString(36).substring(7),
       players: [],
-      deck: this.deckService.createDeck(),
       communityCards: [],
       pot: 0,
-      currentPlayerId: '',
-      currentPlayerPosition: 0,
-      dealerPosition: 0,
       currentBet: 0,
-      smallBlind: 5,
-      bigBlind: 10,
+      dealerPosition: 0,
+      currentPlayerPosition: 0,
+      currentPlayerId: '',
+      phase: 'preflop',
       status: 'waiting',
-      phase: 'pre-flop'
+      smallBlind: 5,
+      bigBlind: 10
     };
+  }
+
+  public addPlayer(player: Player): void {
+    if (this.gameState.players.length >= 9) {
+      throw new Error('Table is full');
+    }
+    this.gameState.players.push(player);
+  }
+
+  public removePlayer(playerId: string): void {
+    this.gameState.players = this.gameState.players.filter(p => p.id !== playerId);
+  }
+
+  public getPlayer(playerId: string): Player | undefined {
+    return this.gameState.players.find(p => p.id === playerId);
   }
 
   public startGame(): void {
     if (this.gameState.players.length < 2) {
-      throw new Error('Need at least 2 players to start the game');
+      throw new Error('Not enough players to start the game');
     }
 
     this.gameState.status = 'playing';
-    this.deckService.shuffleDeck(this.gameState.deck);
+    this.deck = this.deckService.createDeck();
+    this.deckService.shuffleDeck(this.deck);
+    this.gameState.communityCards = [];
+    this.gameState.pot = 0;
+    this.gameState.currentBet = 0;
 
     // Deal cards to players
     this.gameState.players.forEach(player => {
-      player.hand = this.deckService.dealCards(this.gameState.deck, 2);
-      player.isActive = true;
+      player.hand = this.deckService.dealCards(this.deck, 2);
       player.currentBet = 0;
+      player.isActive = true;
     });
 
     // Post blinds
@@ -63,44 +79,38 @@ export class GameService {
 
     this.gameState.currentBet = this.gameState.bigBlind;
     this.gameState.currentPlayerId = this.gameState.players[bigBlindPos].id;
-    this.gameState.currentPlayerPosition = bigBlindPos;
   }
 
   public dealCommunityCards(): void {
-    switch (this.gameState.phase) {
-      case 'pre-flop':
-        this.gameState.communityCards = this.deckService.dealCards(this.gameState.deck, 3);
-        this.gameState.phase = 'flop';
-        break;
-      case 'flop':
-        this.gameState.communityCards.push(...this.deckService.dealCards(this.gameState.deck, 1));
-        this.gameState.phase = 'turn';
-        break;
-      case 'turn':
-        this.gameState.communityCards.push(...this.deckService.dealCards(this.gameState.deck, 1));
-        this.gameState.phase = 'river';
-        break;
-      case 'river':
-        this.gameState.phase = 'showdown';
-        this.determineWinner();
-        break;
+    if (this.gameState.phase === 'preflop') {
+      this.gameState.communityCards = this.deckService.dealCards(this.deck, 3);
+      this.gameState.phase = 'flop';
+    } else if (this.gameState.phase === 'flop') {
+      this.gameState.communityCards.push(...this.deckService.dealCards(this.deck, 1));
+      this.gameState.phase = 'turn';
+    } else if (this.gameState.phase === 'turn') {
+      this.gameState.communityCards.push(...this.deckService.dealCards(this.deck, 1));
+      this.gameState.phase = 'river';
     }
   }
 
   public placeBet(playerId: string, amount: number): void {
     const player = this.getPlayer(playerId);
-    if (!player || !player.isActive) {
-      throw new Error('Invalid player or player is not active');
+    if (!player) {
+      throw new Error('Player not found');
     }
 
     if (amount < this.gameState.currentBet - player.currentBet) {
-      throw new Error('Bet amount is too low');
+      throw new Error('Bet amount is too small');
     }
 
-    const betAmount = Math.min(amount, player.chips);
-    player.chips -= betAmount;
-    player.currentBet += betAmount;
-    this.gameState.pot += betAmount;
+    if (amount > player.chips) {
+      throw new Error('Not enough chips');
+    }
+
+    player.chips -= amount;
+    player.currentBet += amount;
+    this.gameState.pot += amount;
     this.gameState.currentBet = Math.max(this.gameState.currentBet, player.currentBet);
 
     this.moveToNextPlayer();
@@ -113,6 +123,19 @@ export class GameService {
     }
 
     player.isActive = false;
+    this.moveToNextPlayer();
+  }
+
+  public check(playerId: string): void {
+    const player = this.getPlayer(playerId);
+    if (!player) {
+      throw new Error('Player not found');
+    }
+
+    if (this.gameState.currentBet > player.currentBet) {
+      throw new Error('Cannot check, must call or raise');
+    }
+
     this.moveToNextPlayer();
   }
 
@@ -130,42 +153,17 @@ export class GameService {
 
     if (allPlayersActed) {
       this.gameState.currentBet = 0;
-      this.gameState.players.forEach(p => p.currentBet = 0);
+      activePlayers.forEach(p => p.currentBet = 0);
       this.dealCommunityCards();
     }
   }
 
-  private determineWinner(): void {
+  public evaluateHands(): { playerId: string; hand: Hand }[] {
     const activePlayers = this.gameState.players.filter(p => p.isActive);
-    const playerHands = activePlayers.map(player => ({
-      player,
+    return activePlayers.map(player => ({
+      playerId: player.id,
       hand: this.handEvaluator.evaluateHand(player.hand, this.gameState.communityCards)
     }));
-
-    // Sort by hand rank
-    playerHands.sort((a, b) => b.hand.rank.localeCompare(a.hand.rank));
-
-    // Award pot to winner(s)
-    const winners = playerHands.filter(h => h.hand.rank === playerHands[0].hand.rank);
-    const potPerWinner = Math.floor(this.gameState.pot / winners.length);
-
-    winners.forEach(winner => {
-      winner.player.chips += potPerWinner;
-    });
-
-    this.gameState.status = 'finished';
-  }
-
-  public getPlayer(playerId: string): Player | undefined {
-    return this.gameState.players.find(p => p.id === playerId);
-  }
-
-  public addPlayer(player: Player): void {
-    this.gameState.players.push(player);
-  }
-
-  public removePlayer(playerId: string): void {
-    this.gameState.players = this.gameState.players.filter(p => p.id !== playerId);
   }
 
   public updatePlayerStatus(playerId: string, isAway: boolean): void {
@@ -176,6 +174,6 @@ export class GameService {
   }
 
   public getGameState(): GameState {
-    return { ...this.gameState };
+    return this.gameState;
   }
 } 

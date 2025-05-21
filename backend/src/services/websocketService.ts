@@ -1,29 +1,19 @@
 import { Server, Socket } from 'socket.io';
 import { GameService } from './gameService';
-import { GameState, Player } from '../types/card';
-import { createChatService } from './chatService';
-import { errorTrackingService } from './errorTrackingService';
-
-export interface ChatMessage {
-  id: string;
-  sender: string;
-  text: string;
-  timestamp: number;
-  isSystem?: boolean;
-  isPrivate?: boolean;
-  recipient?: string;
-}
+import { Player } from '../types/card';
 
 export class WebSocketService {
   private io: Server;
   private gameService: GameService;
-  private chatService: ReturnType<typeof createChatService>;
-  private activeGames: Map<string, Set<string>> = new Map(); // gameId -> Set of playerIds
 
-  constructor(io: Server) {
-    this.io = io;
+  constructor(server: any) {
+    this.io = new Server(server, {
+      cors: {
+        origin: 'http://localhost:3000',
+        methods: ['GET', 'POST']
+      }
+    });
     this.gameService = new GameService();
-    this.chatService = createChatService(io);
     this.setupSocketHandlers();
   }
 
@@ -33,18 +23,18 @@ export class WebSocketService {
 
       socket.on('joinGame', (player: Player) => {
         this.gameService.addPlayer(player);
-        this.broadcastGameState();
+        this.io.emit('gameState', this.gameService.getGameState());
       });
 
       socket.on('leaveGame', (playerId: string) => {
         this.gameService.removePlayer(playerId);
-        this.broadcastGameState();
+        this.io.emit('gameState', this.gameService.getGameState());
       });
 
       socket.on('startGame', () => {
         try {
           this.gameService.startGame();
-          this.broadcastGameState();
+          this.io.emit('gameState', this.gameService.getGameState());
         } catch (error: any) {
           socket.emit('error', error.message || 'Failed to start game');
         }
@@ -52,11 +42,15 @@ export class WebSocketService {
 
       socket.on('placeBet', ({ playerId, amount }: { playerId: string; amount: number }) => {
         try {
+          const player = this.gameService.getPlayer(playerId);
+          if (!player) {
+            throw new Error('Player not found');
+          }
           this.gameService.placeBet(playerId, amount);
           const gameState = this.gameService.getGameState();
+          this.io.emit('gameState', gameState);
           const event = gameState.currentBet === amount ? 'playerCalled' : 'playerRaised';
           this.io.emit(event, { playerId, amount });
-          this.broadcastGameState();
         } catch (error: any) {
           socket.emit('error', error.message || 'Failed to place bet');
         }
@@ -64,38 +58,26 @@ export class WebSocketService {
 
       socket.on('fold', (playerId: string) => {
         try {
+          const player = this.gameService.getPlayer(playerId);
+          if (!player) {
+            throw new Error('Player not found');
+          }
           this.gameService.fold(playerId);
+          this.io.emit('gameState', this.gameService.getGameState());
           this.io.emit('playerFolded', { playerId });
-          this.broadcastGameState();
         } catch (error: any) {
           socket.emit('error', error.message || 'Failed to fold');
         }
       });
 
       socket.on('playerAway', (playerId: string) => {
-        try {
-          this.gameService.updatePlayerStatus(playerId, true);
-          this.broadcastGameState();
-        } catch (error: any) {
-          socket.emit('error', error.message || 'Failed to update player status');
-        }
+        this.gameService.updatePlayerStatus(playerId, true);
+        this.io.emit('gameState', this.gameService.getGameState());
       });
 
       socket.on('playerBack', (playerId: string) => {
-        try {
-          this.gameService.updatePlayerStatus(playerId, false);
-          this.broadcastGameState();
-        } catch (error: any) {
-          socket.emit('error', error.message || 'Failed to update player status');
-        }
-      });
-
-      socket.on('chat:message', ({ gameId, message }: { gameId: string, message: ChatMessage }) => {
-        this.handleChatMessage(socket, gameId, message);
-      });
-
-      socket.on('chat:getHistory', (gameId: string) => {
-        this.handleGetChatHistory(socket, gameId);
+        this.gameService.updatePlayerStatus(playerId, false);
+        this.io.emit('gameState', this.gameService.getGameState());
       });
 
       socket.on('disconnect', () => {
@@ -103,32 +85,4 @@ export class WebSocketService {
       });
     });
   }
-
-  private broadcastGameState(): void {
-    const gameState = this.gameService.getGameState();
-    this.io.emit('gameStateUpdate', gameState);
-  }
-
-  private handleChatMessage(socket: Socket, gameId: string, message: ChatMessage): void {
-    try {
-      this.chatService.sendMessage(gameId, message);
-    } catch (error) {
-      errorTrackingService.trackError(error as Error, 'handleChatMessage', { 
-        gameId, 
-        sender: message.sender
-      });
-      socket.emit('error', { message: 'Failed to send chat message' });
-    }
-  }
-
-  private handleGetChatHistory(socket: Socket, gameId: string): void {
-    try {
-      const history = this.chatService.getHistory(gameId);
-      socket.emit('chat:history', history);
-    } catch (error) {
-      errorTrackingService.trackError(error as Error, 'handleGetChatHistory', { gameId });
-      socket.emit('error', { message: 'Failed to retrieve chat history' });
-    }
-  }
-} 
 } 

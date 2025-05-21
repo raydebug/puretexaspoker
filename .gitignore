@@ -1,51 +1,56 @@
-# Node modules
+# Dependencies
 node_modules/
+.pnp/
+.pnp.js
 
-# Build output
-dist/
+# Testing
+coverage/
+.nyc_output/
+cypress/videos/
+cypress/screenshots/
+
+# Production
 build/
+dist/
+out/
+
+# Misc
+.DS_Store
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
 
 # Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# OS generated files
-.DS_Store
-Thumbs.db
-
-# Env files
-.env
-.env.*
+logs/
+*.log
 
 # Editor directories and files
-.vscode/
 .idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
+.vscode/
+*.swp
+*.swo
+*~
 
 # TypeScript
 *.tsbuildinfo
 
-# Coverage
-coverage/
-
-# Cache
+# Temporary files
+*.tmp
+*.temp
 .cache/
-.next/
 
-# React specific
-*.env.local
-*.env.development.local
-*.env.test.local
-*.env.production.local
+# System Files
+.DS_Store
+Thumbs.db
 
 # Cypress
-cypress/screenshots/
-cypress/videos/
-
-# Misc
-*.log
-*.tgz 
+cypress/fixtures/
+cypress/plugins/
+cypress/support/
+cypress/tsconfig.json 

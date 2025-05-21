@@ -255,11 +255,30 @@ const BettingControls = styled.div`
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 10px;
+  gap: 1rem;
   background: rgba(0, 0, 0, 0.8);
-  padding: 20px;
+  padding: 1rem;
   border-radius: 8px;
+  border: 2px solid #ffd700;
+`;
+
+const BetInput = styled.input`
+  width: 100px;
+  padding: 0.5rem;
+  border: 2px solid #ffd700;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.7);
   color: white;
+  text-align: center;
+
+  &:focus {
+    outline: none;
+    border-color: #ffeb3b;
+  }
+`;
+
+const BetButton = styled(Button)`
+  min-width: 80px;
 `;
 
 interface GameLobbyProps {
@@ -268,22 +287,18 @@ interface GameLobbyProps {
 
 export const GameLobby: React.FC<GameLobbyProps> = ({ onJoinGame }) => {
   const [nickname, setNickname] = useState('');
-  const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string>('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [showSeatSelection, setShowSeatSelection] = useState(false);
-  const [showConfirmation, setShowConfirmation] = useState(false);
-  const [occupiedSeats, setOccupiedSeats] = useState<{[key: number]: string}>({});
+  const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
+  const [showSeatModal, setShowSeatModal] = useState(false);
   const [currentSeat, setCurrentSeat] = useState<number | null>(null);
-  const [onlinePlayers, setOnlinePlayers] = useState<Player[]>([]);
+  const [occupiedSeats, setOccupiedSeats] = useState<{ [key: number]: string }>({});
+  const [gameStatus, setGameStatus] = useState('Waiting for players...');
+  const [isPlayerTurn, setIsPlayerTurn] = useState(false);
+  const [betAmount, setBetAmount] = useState(0);
+  const [players, setPlayers] = useState<Player[]>([]);
   const [observers, setObservers] = useState<string[]>([]);
   const navigate = useNavigate();
-
-  // Table dimensions (should match styled component)
-  const TABLE_WIDTH = 800;
-  const TABLE_HEIGHT = 400;
-  const BORDER = 8;
-  const SEAT_RADIUS = 20; // half of seat size (40px)
 
   // Load saved data and connect socket on component mount
   useEffect(() => {
@@ -293,7 +308,6 @@ export const GameLobby: React.FC<GameLobbyProps> = ({ onJoinGame }) => {
     if (savedNickname) {
       setNickname(savedNickname);
       setIsLoggedIn(true);
-      setShowSeatSelection(true);
       
       if (savedSeatNumber !== null) {
         setCurrentSeat(savedSeatNumber);
@@ -307,7 +321,7 @@ export const GameLobby: React.FC<GameLobbyProps> = ({ onJoinGame }) => {
     // Connect socket and listen for online users updates
     socketService.connect();
     socketService.onOnlineUsersUpdate((players, observers) => {
-      setOnlinePlayers(players);
+      setPlayers(players);
       setObservers(observers);
     });
 
@@ -317,18 +331,14 @@ export const GameLobby: React.FC<GameLobbyProps> = ({ onJoinGame }) => {
   }, []);
 
   const handleLogin = () => {
-    if (!nickname.trim()) {
+    if (nickname.trim()) {
+      cookieService.setNickname(nickname.trim());
+      setError('');
+      setIsLoggedIn(true);
+      socketService.joinAsObserver(nickname.trim());
+    } else {
       setError('Please enter a nickname');
-      return;
     }
-    cookieService.setNickname(nickname.trim());
-    setIsLoggedIn(true);
-    setError(null);
-    socketService.joinAsObserver(nickname.trim());
-  };
-
-  const handleJoinGame = () => {
-    setShowSeatSelection(true);
   };
 
   const handleSeatClick = (seatNumber: number) => {
@@ -337,7 +347,7 @@ export const GameLobby: React.FC<GameLobbyProps> = ({ onJoinGame }) => {
     if (occupiedSeats[seatNumber] && occupiedSeats[seatNumber] !== nickname) return;
 
     setSelectedSeat(seatNumber);
-    setShowConfirmation(true);
+    setShowSeatModal(true);
   };
 
   const handleConfirmSeat = () => {
@@ -359,12 +369,12 @@ export const GameLobby: React.FC<GameLobbyProps> = ({ onJoinGame }) => {
 
       setCurrentSeat(selectedSeat);
       onJoinGame(nickname.trim(), selectedSeat);
-      setShowConfirmation(false);
+      setShowSeatModal(false);
     }
   };
 
   const handleCancelSeat = () => {
-    setShowConfirmation(false);
+    setShowSeatModal(false);
     setSelectedSeat(null);
   };
 
@@ -381,16 +391,11 @@ export const GameLobby: React.FC<GameLobbyProps> = ({ onJoinGame }) => {
   };
 
   const getSeatPosition = (seatNumber: number) => {
-    // Seat 0 at bottom center (angle 90deg), others clockwise
-    const angle = (seatNumber * 72 + 90) * (Math.PI / 180); // 0: 90deg (bottom), 1: 162deg, ...
-    const a = (TABLE_WIDTH / 2) - BORDER - SEAT_RADIUS; // horizontal radius
-    const b = (TABLE_HEIGHT / 2) - BORDER - SEAT_RADIUS; // vertical radius
-    const x = Math.cos(angle) * a;
-    const y = Math.sin(angle) * b;
-    return {
-      left: `calc(50% + ${x}px)` ,
-      top: `calc(50% + ${y}px)`
-    };
+    const angle = (seatNumber * 360) / 9;
+    const radius = 150;
+    const x = radius * Math.cos((angle * Math.PI) / 180);
+    const y = radius * Math.sin((angle * Math.PI) / 180);
+    return { x, y };
   };
 
   useEffect(() => {
@@ -403,21 +408,33 @@ export const GameLobby: React.FC<GameLobbyProps> = ({ onJoinGame }) => {
   }, [occupiedSeats, currentSeat, navigate]);
 
   const renderSeats = () => {
-    const seats = [];
-    for (let i = 0; i < 9; i++) {
-      const position = getSeatPosition(i);
+    return Array.from({ length: 9 }, (_, i) => {
+      const { x, y } = getSeatPosition(i);
       const isOccupied = occupiedSeats[i] !== undefined;
       const isCurrentSeat = currentSeat === i;
       
-      seats.push(
-        <SeatContainer key={i} style={{ left: position.left, top: position.top }}>
+      return (
+        <SeatContainer
+          key={i}
+          style={{
+            left: `calc(50% + ${x}px)`,
+            top: `calc(50% + ${y}px)`
+          }}
+        >
           <Seat
+            data-testid="player-seat"
             $isOccupied={isOccupied}
             onClick={() => handleSeatClick(i)}
             disabled={isOccupied && !isCurrentSeat}
-            data-testid="seat-button"
           >
-            {isOccupied ? <PlusIcon>×</PlusIcon> : <PlusIcon>+</PlusIcon>}
+            {isOccupied ? (
+              <PlayerSeat>
+                {occupiedSeats[i]}
+                {isCurrentSeat && ' (You)'}
+              </PlayerSeat>
+            ) : (
+              <PlusIcon>+</PlusIcon>
+            )}
           </Seat>
           {isOccupied && (
             <PlayerName>
@@ -427,29 +444,14 @@ export const GameLobby: React.FC<GameLobbyProps> = ({ onJoinGame }) => {
           )}
         </SeatContainer>
       );
-    }
-    return seats;
+    });
   };
-
-  useEffect(() => {
-    const handleOnlineUsersUpdate = (players: Player[], observers: string[]) => {
-      setOnlinePlayers(players);
-      setObservers(observers);
-    };
-
-    const unsubscribe = socketService.onOnlineUsersUpdate(handleOnlineUsersUpdate);
-
-    return () => {
-      unsubscribe();
-    };
-  }, []);
 
   return (
     <LobbyContainer>
-      <Title>Texas Hold'em Poker</Title>
+      <Title>Texas Poker Game</Title>
       {!isLoggedIn ? (
         <LoginContainer>
-          <WelcomeMessage>Welcome to Texas Hold'em Poker!</WelcomeMessage>
           <NicknameInput
             type="text"
             placeholder="Enter your nickname"
@@ -457,67 +459,71 @@ export const GameLobby: React.FC<GameLobbyProps> = ({ onJoinGame }) => {
             onChange={(e) => setNickname(e.target.value)}
             data-testid="nickname-input"
           />
-          <Button onClick={handleLogin} data-testid="join-game-button">
+          {error && <ErrorMessage>{error}</ErrorMessage>}
+          <Button
+            onClick={handleLogin}
+            disabled={!nickname.trim()}
+            data-testid="join-button"
+          >
             Join Game
           </Button>
-          {error && <ErrorMessage>{error}</ErrorMessage>}
         </LoginContainer>
       ) : (
         <>
-          {!showSeatSelection ? (
-            <>
-              <WelcomeMessage>Welcome, {nickname}!</WelcomeMessage>
-              <Button onClick={handleJoinGame} data-testid="join-game-button">
-                Join Game
-              </Button>
-            </>
-          ) : (
-            <>
-              <Table>
-                <DealerPosition>Dealer</DealerPosition>
-                {renderSeats()}
-                <GameStatus className="game-status">
-                  {currentSeat !== null ? 'Your Turn' : 'Waiting for players...'}
-                </GameStatus>
-                {currentSeat !== null && (
-                  <BettingControls className="betting-controls">
-                    <Button onClick={() => handleBet(10)}>Bet 10</Button>
-                    <Button onClick={() => handleBet(20)}>Bet 20</Button>
-                    <Button onClick={handleFold}>Fold</Button>
-                  </BettingControls>
-                )}
-              </Table>
-              <OnlineList>
-                <div className="online-list">
-                  <h3>Online Players</h3>
-                  {onlinePlayers.map((player) => (
-                    <span key={player.id} className="player-name">
-                      {player.name} {player.isAway ? "(Away)" : ""}
-                    </span>
-                  ))}
-                </div>
-                <div className="players-list">
-                  <h3>Players</h3>
-                  {Object.entries(occupiedSeats).map(([seat, name]) => (
-                    <span key={seat} className="player-name">
-                      {name}
-                    </span>
-                  ))}
-                </div>
-                <div className="observers-list">
-                  <h3>Observers</h3>
-                  {observers.map((name) => (
-                    <span key={name} className="player-name">
-                      {name}
-                    </span>
-                  ))}
-                </div>
-              </OnlineList>
-            </>
-          )}
+          <WelcomeMessage>Welcome, {nickname}!</WelcomeMessage>
+          <Table>
+            <DealerPosition>Dealer</DealerPosition>
+            {renderSeats()}
+            <GameStatus className="game-status">
+              {currentSeat !== null ? 'Your Turn' : 'Waiting for players...'}
+            </GameStatus>
+            {currentSeat !== null && (
+              <BettingControls className="betting-controls">
+                <BetInput
+                  type="number"
+                  value={betAmount}
+                  onChange={(e) => setBetAmount(Number(e.target.value))}
+                  data-testid="bet-input"
+                />
+                <BetButton
+                  onClick={() => handleBet(betAmount)}
+                  disabled={!isPlayerTurn}
+                  data-testid="bet-button"
+                >
+                  Bet
+                </BetButton>
+              </BettingControls>
+            )}
+          </Table>
+          <OnlineList>
+            <div className="online-list">
+              <h3>Online Players</h3>
+              {players.map((player) => (
+                <span key={player.id} className="player-name">
+                  {player.name} {player.isAway ? "(Away)" : ""}
+                </span>
+              ))}
+            </div>
+            <div className="players-list">
+              <h3>Players</h3>
+              {Object.entries(occupiedSeats).map(([seat, name]) => (
+                <span key={seat} className="player-name">
+                  {name}
+                </span>
+              ))}
+            </div>
+            <div className="observers-list">
+              <h3>Observers</h3>
+              {observers.map((name) => (
+                <span key={name} className="player-name">
+                  {name}
+                </span>
+              ))}
+            </div>
+          </OnlineList>
         </>
       )}
-      {showConfirmation && (
+      {showSeatModal && (
         <>
           <ModalOverlay />
           <Modal>

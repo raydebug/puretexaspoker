@@ -25,8 +25,11 @@ export interface ChatMessage {
   recipient?: string;
 }
 
+// Extend Socket type to include EventEmitter methods
+type ExtendedSocket = Socket & EventEmitter;
+
 class SocketService {
-  private socket: (Socket & EventEmitter) | null = null;
+  private socket: ExtendedSocket | null = null;
   private gameState: GameState | null = null;
   private currentPlayer: Player | null = null;
   private observers: string[] = [];
@@ -109,8 +112,9 @@ class SocketService {
         path: '/socket.io'
       });
 
-      // Cast socket to both Socket and EventEmitter
-      this.socket = socket as unknown as Socket & EventEmitter;
+      // Cast socket to ExtendedSocket type and set up event emitter
+      this.socket = socket as unknown as ExtendedSocket;
+      EventEmitter.defaultMaxListeners = 20;
       
       // Set up listeners BEFORE connecting
       this.setupListeners();
@@ -508,9 +512,6 @@ class SocketService {
       const socket = this.connect();
       
       if (socket) {
-        // Use a unique event name to avoid conflicts
-        const uniqueEventName = `connect_join_table_${Date.now()}`;
-        
         // Register the connect handler with our unique name
         socket.once('connect', () => {
           console.log(`Socket connected (${socket.id}), waiting to join table ${tableId}`);
@@ -839,6 +840,29 @@ class SocketService {
     this.chatMessageListeners = [];
     this.systemMessageListeners = [];
     this.tablesUpdateListeners = [];
+
+    // Remove specific event listeners that might be causing leaks
+    this.socket.off('disconnect');
+    this.socket.off('observer:join');
+    this.socket.off('seat:request');
+    this.socket.off('connect');
+    this.socket.off('connect_error');
+    this.socket.off('error');
+    this.socket.off('observer:joined');
+    this.socket.off('observer:left');
+    this.socket.off('seat:update');
+    this.socket.off('seat:accepted');
+    this.socket.off('seat:error');
+    this.socket.off('gameState');
+    this.socket.off('playerJoined');
+    this.socket.off('playerLeft');
+    this.socket.off('player:statusUpdated');
+    this.socket.off('player:stoodUp');
+    this.socket.off('chat:message');
+    this.socket.off('chat:system');
+    this.socket.off('tablesUpdate');
+    this.socket.off('tableJoined');
+    this.socket.off('tableError');
   }
 
   getGameState(): GameState | null {

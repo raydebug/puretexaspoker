@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import styled from 'styled-components';
-import { TableCard } from './TableCard';
 import { JoinDialog } from './JoinDialog';
 import { socketService } from '../../services/socketService';
 import { TableData } from '../../types/table';

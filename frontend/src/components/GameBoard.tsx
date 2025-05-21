@@ -186,6 +186,7 @@ const PlayerSeat = styled.div<{ position: number; isActive: boolean; isAway: boo
   `}
 `;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const PlayerInfo = styled.div`
   display: flex;
   align-items: center;
@@ -193,6 +194,7 @@ const PlayerInfo = styled.div`
   margin-bottom: 10px;
 `;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const PlayerDetails = styled.div`
   flex: 1;
   text-align: left;
@@ -244,32 +246,18 @@ const PlayerBet = styled.div`
   `}
 `;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const PlayerTurn = styled.div`
   font-size: 0.9rem;
   color: #ffd700;
   font-weight: bold;
 `;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const PlayerCards = styled.div`
   display: flex;
   gap: 5px;
-  justify-content: center;
-`;
-
-const StatusIcon = styled.div`
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  width: 24px;
-  height: 24px;
-  background-color: #ff9800;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  color: white;
-  border: 2px solid #1b4d3e;
+  margin-top: 5px;
 `;
 
 interface ChipAnimationState {
@@ -302,31 +290,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   
   // Last game state for comparison to detect changes
   const lastGameStateRef = useRef<GameState | null>(null);
-  
-  // Function to calculate the center pot position
-  const getPotPosition = () => {
-    if (!tableRef.current) return { x: 400, y: 160 }; // Default fallback
-    
-    const tableRect = tableRef.current.getBoundingClientRect();
-    return {
-      x: tableRect.width / 2,
-      y: tableRect.height / 2 - 20 // Slightly above center for pot
-    };
-  };
-  
-  // Function to calculate player position
-  const getPlayerPosition = (playerPosition: number) => {
-    if (!tableRef.current) return { x: 0, y: 0 };
-    
-    const tableRect = tableRef.current.getBoundingClientRect();
-    const radius = 180;
-    const angle = (playerPosition * 72 - 90) * (Math.PI / 180);
-    
-    return {
-      x: tableRect.width / 2 + Math.cos(angle) * radius,
-      y: tableRect.height / 2 + Math.sin(angle) * radius
-    };
-  };
 
   // Detect player bet changes and trigger animations
   useEffect(() => {
@@ -375,74 +338,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     if (menuState && onPlayerAction) {
       onPlayerAction(action, menuState.playerId);
     }
-  };
-
-  const renderPlayer = (player: Player) => {
-    const isCurrentPlayer = player.id === currentPlayer.id;
-    const isCurrentTurn = gameState.currentPlayerId === player.id;
-
-    return (
-      <PlayerSeat
-        key={player.id}
-        position={player.position}
-        isActive={isCurrentPlayer}
-        isAway={player.isAway}
-        onClick={(e) => handleSeatClick(e, player)}
-      >
-        <PlayerInfo>
-          <Avatar 
-            avatar={player.avatar}
-            size="medium"
-            isActive={player.id === gameState.currentPlayerId}
-            isAway={player.isAway}
-          />
-          <PlayerDetails>
-            <PlayerName>{player.name}</PlayerName>
-            <PlayerChips>Chips: {player.chips}</PlayerChips>
-            {player.currentBet > 0 && <PlayerBet>Bet: {player.currentBet}</PlayerBet>}
-            {isCurrentTurn && <PlayerTurn>Your Turn</PlayerTurn>}
-          </PlayerDetails>
-        </PlayerInfo>
-        <PlayerCards>
-          {player.cards.map((card, index) => (
-            <AnimatedCard
-              key={index}
-              card={card}
-              isVisible={isCurrentPlayer}
-              delay={index * 0.2}
-            />
-          ))}
-        </PlayerCards>
-      </PlayerSeat>
-    );
-  };
-
-  // Render chip animations based on current state
-  const renderChipAnimations = () => {
-    const potPosition = getPotPosition();
-    
-    return chipAnimations.map((animation, index) => {
-      const player = gameState.players.find(p => p.id === animation.playerId);
-      if (!player) return null;
-      
-      const playerPosition = getPlayerPosition(player.position);
-      
-      return (
-        <ChipAnimation
-          key={`${animation.playerId}-${animation.timestamp}`}
-          amount={animation.amount}
-          startPosition={playerPosition}
-          endPosition={potPosition}
-          animationType="bet"
-          onComplete={() => {
-            // Remove this animation when complete
-            setChipAnimations(prev => 
-              prev.filter((_, i) => i !== index)
-            );
-          }}
-        />
-      );
-    });
   };
 
   return (

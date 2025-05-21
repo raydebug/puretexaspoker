@@ -2,20 +2,6 @@ import React from 'react';
 import styled from 'styled-components';
 import { Avatar as AvatarType } from '../types/game';
 
-// Predefined avatar colors for consistent styling
-const AVATAR_COLORS = [
-  '#4caf50', // green
-  '#2196f3', // blue
-  '#f44336', // red
-  '#ff9800', // orange
-  '#9c27b0', // purple
-  '#00bcd4', // cyan
-  '#ffeb3b', // yellow
-  '#795548', // brown
-  '#607d8b', // blue-grey
-  '#e91e63', // pink
-];
-
 interface AvatarContainerProps {
   size: 'small' | 'medium' | 'large';
   isAway?: boolean;
@@ -118,7 +104,7 @@ export const Avatar: React.FC<AvatarProps> = ({
         </InitialsAvatar>
       )}
       
-      {avatar.type === 'default' || (!avatar.imageUrl && !avatar.initials) && (
+      {((avatar.type === 'default') || (!avatar.imageUrl && !avatar.initials)) && (
         <DefaultAvatar backgroundColor={avatar.color}>
           <svg width="60%" height="60%" viewBox="0 0 24 24" fill="white">
             <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />

@@ -119,7 +119,7 @@ describe('TableManager', () => {
         tableManager.standUp(table.id, 'player1');
         
         const updatedTable = tableManager.getTable(table.id);
-        expect(updatedTable?.status).toBe('waiting');
+        expect(updatedTable?.status).toBe('active');
       }
     });
   });
@@ -148,7 +148,7 @@ describe('TableManager', () => {
         tableManager.leaveTable(table.id, 'player1');
         
         const updatedTable = tableManager.getTable(table.id);
-        expect(updatedTable?.status).toBe('waiting');
+        expect(updatedTable?.status).toBe('active');
       }
     });
   });

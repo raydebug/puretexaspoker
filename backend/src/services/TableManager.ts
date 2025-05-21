@@ -79,8 +79,8 @@ class TableManager {
     });
 
     // Update table data
-    table.observers++;
-    this.tables.set(tableId, table);
+    const updatedTable = { ...table, observers: table.observers + 1 };
+    this.tables.set(tableId, updatedTable);
 
     return { success: true };
   }
@@ -99,15 +99,16 @@ class TableManager {
     }
 
     // Update table data
+    const updatedTable = { ...table };
     if (player.role === 'player') {
-      table.players--;
-      table.status = table.players === 0 ? 'waiting' : 'active';
+      updatedTable.players--;
+      updatedTable.status = updatedTable.players === 0 ? 'waiting' : 'active';
     } else {
-      table.observers--;
+      updatedTable.observers--;
     }
 
     players.delete(playerId);
-    this.tables.set(tableId, table);
+    this.tables.set(tableId, updatedTable);
     return true;
   }
 
@@ -149,10 +150,11 @@ class TableManager {
     players.set(playerId, player);
 
     // Update table
-    table.players++;
-    table.observers--;
-    table.status = table.players === table.maxPlayers ? 'full' : 'active';
-    this.tables.set(tableId, table);
+    const updatedTable = { ...table };
+    updatedTable.players++;
+    updatedTable.observers--;
+    updatedTable.status = updatedTable.players === updatedTable.maxPlayers ? 'full' : 'active';
+    this.tables.set(tableId, updatedTable);
 
     return { success: true };
   }
@@ -176,10 +178,11 @@ class TableManager {
     players.set(playerId, player);
 
     // Update table
-    table.players--;
-    table.observers++;
-    table.status = table.players === 0 ? 'waiting' : 'active';
-    this.tables.set(tableId, table);
+    const updatedTable = { ...table };
+    updatedTable.players--;
+    updatedTable.observers++;
+    updatedTable.status = updatedTable.players === 0 ? 'waiting' : 'active';
+    this.tables.set(tableId, updatedTable);
 
     return true;
   }
