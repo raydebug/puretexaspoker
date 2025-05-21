@@ -1,32 +1,45 @@
 # Texas Hold'em Poker Game
 
-A multiplayer Texas Hold'em poker game built with React, TypeScript, and WebSocket.
+A modern Texas Hold'em poker game built with React, TypeScript, and Socket.IO.
 
 ## Project Structure
 
 ```
 .
-├── backend/           # Backend server code
-│   ├── src/          # Source files
-│   └── __tests__/    # Backend tests
-├── frontend/         # Frontend React application
-│   ├── src/         # Source files
-│   └── cypress/     # E2E tests
-└── docs/            # Documentation
+├── backend/                 # Backend server
+│   ├── src/
+│   │   ├── types/          # TypeScript type definitions
+│   │   ├── socketHandlers/ # Socket.IO event handlers
+│   │   └── server.ts       # Express server setup
+│   └── package.json
+├── frontend/               # Frontend application
+│   ├── src/
+│   │   ├── components/     # React components
+│   │   ├── types/         # TypeScript type definitions
+│   │   └── App.tsx        # Main application component
+│   ├── cypress/           # E2E tests
+│   │   ├── e2e/          # Test specifications
+│   │   └── support/      # Test support files
+│   └── package.json
+└── README.md
 ```
 
 ## Prerequisites
 
-- Node.js (v14 or higher)
-- npm (v6 or higher)
+- Node.js 18 or higher
+- npm 9 or higher
+- Git
 
 ## Setup
 
-1. Install dependencies:
+1. Clone the repository:
    ```bash
-   # Install root dependencies
-   npm install
+   git clone <repository-url>
+   cd <repository-name>
+   ```
 
+2. Install dependencies:
+   ```bash
    # Install backend dependencies
    cd backend
    npm install
@@ -36,66 +49,76 @@ A multiplayer Texas Hold'em poker game built with React, TypeScript, and WebSock
    npm install
    ```
 
-2. Start the development servers:
+3. Start the development servers:
    ```bash
-   # Start both frontend and backend
+   # Start both servers (from root directory)
    npm start
 
-   # Or start them separately:
-   # Terminal 1 (Backend)
-   cd backend
-   npm start
+   # Or start servers individually
+   # Start backend server (from backend directory)
+   npm run dev
 
-   # Terminal 2 (Frontend)
-   cd frontend
-   npm start
+   # Start frontend server (from frontend directory)
+   npm run dev
    ```
 
 ## Testing
 
-### Backend Tests
+The project uses Cypress for end-to-end testing. To run the tests:
+
 ```bash
-cd backend
-npm test
+# From the frontend directory
+npm run test:e2e        # Run tests in headless mode
+npm run test:e2e:open   # Open Cypress test runner
 ```
 
-### Frontend Tests
-```bash
-cd frontend
-npm test
-```
+### Test Structure
 
-### E2E Tests
-```bash
-cd frontend
-npm run cypress:open  # Opens Cypress Test Runner
-# or
-npm run cypress:run   # Runs tests in headless mode
-```
+- `basic.cy.ts`: Basic game functionality tests
+- `game-flow.cy.ts`: Complete game flow tests including dealer button movement and blind posting
+- `table-management.cy.ts`: Table and seat management tests
+- `player-management.cy.ts`: Player actions and state tests
+- `error-handling.cy.ts`: Error and edge case tests
+
+### Test Features
+
+- Multiple window support for testing multiplayer scenarios
+- Automatic test retries for improved reliability
+- Backend server management in tests
+- Comprehensive game flow testing
+- Detailed test failure messages for fast debugging
+- Type-safe test commands and assertions
 
 ## Development
 
-- Frontend runs on http://localhost:3000
-- Backend runs on http://localhost:3001
-- WebSocket server runs on ws://localhost:3001
+- Backend runs on port 3001
+- Frontend runs on port 3000
+- TypeScript is used for type safety
+- Socket.IO handles real-time communication
+- Styled-components for styling
+- Cypress for E2E testing
 
 ## Features
 
 - Real-time multiplayer gameplay
-- Texas Hold'em poker rules
-- Player management
-- Game state persistence
-- Error handling and recovery
+- Modern UI with responsive design
+- Type-safe code with TypeScript
 - Comprehensive test coverage
+- Shared types between frontend and backend
+- Automatic test retries for reliability
+- Backend server management in tests
+- Multiple window support for testing
+- Detailed test failure messages
+- Strict type checking for game state and player data
 
 ## Contributing
 
 1. Fork the repository
-2. Create your feature branch
+2. Create a feature branch
 3. Commit your changes
 4. Push to the branch
 5. Create a Pull Request
 
 ## License
 
-MIT 
+This project is licensed under the MIT License. 
