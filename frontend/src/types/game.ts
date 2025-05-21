@@ -1,42 +1,27 @@
-export interface Card {
-  rank: string;
-  suit: string;
-  isVisible?: boolean;
+import { Card, Player, GameState, Hand, Avatar } from '../../../backend/src/types/shared';
+
+export type { Card, Player, GameState, Hand, Avatar };
+
+export interface GameAction {
+  type: 'bet' | 'call' | 'raise' | 'fold' | 'check';
+  amount?: number;
 }
 
-export interface Avatar {
-  type: 'image' | 'initials' | 'default';
-  imageUrl?: string;
-  initials?: string;
-  color?: string;
+export interface GameSettings {
+  minPlayers: number;
+  maxPlayers: number;
+  startingChips: number;
+  smallBlind: number;
+  bigBlind: number;
+  timeBank: number;
+  turnTime: number;
 }
 
-export interface Player {
-  id: string;
-  position: number;
-  seatNumber: number;
-  name: string;
-  chips: number;
-  currentBet: number;
-  isDealer: boolean;
-  isAway: boolean;
-  cards: Card[];
-  avatar: Avatar;
-}
-
-export interface GameState {
-  id: string;
-  players: Player[];
-  communityCards: Card[];
-  pot: number;
-  currentPlayerId: string | null;
-  phase: 'waiting' | 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
-  minBet: number;
-  currentBet: number;
-}
-
-export interface Hand {
-  name: string;
-  rank: number;
-  cards: Card[];
+export interface GameStats {
+  totalHands: number;
+  totalPot: number;
+  averagePot: number;
+  biggestPot: number;
+  playersJoined: number;
+  playersLeft: number;
 } 

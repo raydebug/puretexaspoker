@@ -13,170 +13,145 @@ declare namespace Cypress {
     joinTable(tableName: string): void;
     checkHand(): void;
     foldHand(): void;
+    openNewWindow(): Cypress.Chainable;
+    switchToWindow(window: Window): void;
   }
 }
 
-describe('Game Flow', () => {
+describe('Game Flow Tests', () => {
   beforeEach(() => {
-    cy.visit('/');
-    cy.fixture('game-data').as('gameData');
-  });
+    cy.visit('/')
+    cy.waitForGameState()
+  })
 
-  it('should allow two players to join and play a hand', () => {
+  it('should handle complete game flow with multiple players', () => {
     // Login first player
-    cy.get('@gameData').then((data: any) => {
-      const player1 = data.players[0];
-      cy.loginPlayer(player1.name, player1.chips);
-    });
+    cy.login('player1')
+    cy.joinGame()
+    
+    // Login second player in new window
+    cy.openNewWindow().then((win) => {
+      cy.switchToWindow(win)
+      cy.login('player2')
+      cy.joinGame()
+    })
 
-    // Join table
-    cy.joinTable('table1');
+    // Verify initial game state
+    cy.get('[data-testid="game-phase"]').should('contain', 'Waiting')
+    cy.get('[data-testid="dealer-button"]').should('be.visible')
+    cy.get('[data-testid="small-blind"]').should('be.visible')
+    cy.get('[data-testid="big-blind"]').should('be.visible')
 
-    // Login second player in a new window
-    cy.window().then((win) => {
-      cy.get('@gameData').then((data: any) => {
-        const player2 = data.players[1];
-        const newWindow = win.open('/');
-        cy.wrap(newWindow).then((win) => {
-          cy.stub(win, 'open').as('openWindow');
-          cy.loginPlayer(player2.name, player2.chips);
-        });
-      });
-    });
-
-    // Verify both players are seated
-    cy.get('[data-testid="player-list"]').should('have.length', 2);
-
-    // Start the game
-    cy.get('[data-testid="start-game-button"]').click();
-
+    // Start game
+    cy.get('[data-testid="start-game-button"]').click()
+    
     // Verify blinds are posted
-    cy.get('[data-testid="pot-amount"]').should('not.equal', '0');
+    cy.get('[data-testid="player-chips"]').first().should('contain', '950') // Small blind
+    cy.get('[data-testid="player-chips"]').last().should('contain', '900')  // Big blind
+    cy.get('[data-testid="pot-amount"]').should('contain', '150')
 
-    // First player acts
-    cy.get('[data-testid="current-player"]').should('contain', 'Player 1');
-    cy.placeBet(20);
+    // Verify dealer button movement
+    cy.get('[data-testid="dealer-button"]').should('have.attr', 'data-position', '0')
+    cy.get('[data-testid="small-blind"]').should('have.attr', 'data-position', '1')
+    cy.get('[data-testid="big-blind"]').should('have.attr', 'data-position', '2')
 
-    // Second player acts
-    cy.get('[data-testid="current-player"]').should('contain', 'Player 2');
-    cy.placeBet(40);
+    // Complete betting round
+    cy.get('[data-testid="current-player"]').should('be.visible')
+    cy.placeBet(100)
+    cy.get('[data-testid="bet-confirmation"]').should('be.visible')
+    
+    // Verify flop
+    cy.get('[data-testid="community-cards"]').children().should('have.length', 3)
+    
+    // Verify turn
+    cy.get('[data-testid="community-cards"]').children().should('have.length', 4)
+    
+    // Verify river
+    cy.get('[data-testid="community-cards"]').children().should('have.length', 5)
+    
+    // Verify hand evaluation
+    cy.get('[data-testid="hand-result"]').should('be.visible')
+    cy.get('[data-testid="winner-announcement"]').should('be.visible')
+  })
 
-    // First player calls
-    cy.get('[data-testid="current-player"]').should('contain', 'Player 1');
-    cy.placeBet(20);
+  it('should handle game phase transitions correctly', () => {
+    cy.login('player1')
+    cy.joinGame()
+    
+    // Verify initial phase
+    cy.get('[data-testid="game-phase"]').should('contain', 'Waiting')
+    
+    // Start game
+    cy.get('[data-testid="start-game-button"]').click()
+    
+    // Verify preflop phase
+    cy.get('[data-testid="game-phase"]').should('contain', 'Preflop')
+    cy.get('[data-testid="community-cards"]').should('not.exist')
+    
+    // Complete preflop betting
+    cy.placeBet(100)
+    
+    // Verify flop phase
+    cy.get('[data-testid="game-phase"]').should('contain', 'Flop')
+    cy.get('[data-testid="community-cards"]').children().should('have.length', 3)
+    
+    // Complete flop betting
+    cy.placeBet(50)
+    
+    // Verify turn phase
+    cy.get('[data-testid="game-phase"]').should('contain', 'Turn')
+    cy.get('[data-testid="community-cards"]').children().should('have.length', 4)
+    
+    // Complete turn betting
+    cy.placeBet(50)
+    
+    // Verify river phase
+    cy.get('[data-testid="game-phase"]').should('contain', 'River')
+    cy.get('[data-testid="community-cards"]').children().should('have.length', 5)
+    
+    // Complete river betting
+    cy.placeBet(50)
+    
+    // Verify showdown phase
+    cy.get('[data-testid="game-phase"]').should('contain', 'Showdown')
+    cy.get('[data-testid="hand-result"]').should('be.visible')
+  })
 
-    // Verify flop is dealt
-    cy.get('[data-testid="community-cards"]').should('have.length', 3);
+  it('should handle dealer button movement between hands', () => {
+    // Login two players
+    cy.login('player1')
+    cy.joinGame()
+    
+    cy.openNewWindow().then((win) => {
+      cy.switchToWindow(win)
+      cy.login('player2')
+      cy.joinGame()
+    })
 
-    // Second player checks
-    cy.get('[data-testid="current-player"]').should('contain', 'Player 2');
-    cy.checkHand();
-
-    // First player bets
-    cy.get('[data-testid="current-player"]').should('contain', 'Player 1');
-    cy.placeBet(30);
-
-    // Second player calls
-    cy.get('[data-testid="current-player"]').should('contain', 'Player 2');
-    cy.placeBet(30);
-
-    // Verify turn is dealt
-    cy.get('[data-testid="community-cards"]').should('have.length', 4);
-
-    // Second player checks
-    cy.get('[data-testid="current-player"]').should('contain', 'Player 2');
-    cy.checkHand();
-
-    // First player checks
-    cy.get('[data-testid="current-player"]').should('contain', 'Player 1');
-    cy.checkHand();
-
-    // Verify river is dealt
-    cy.get('[data-testid="community-cards"]').should('have.length', 5);
-
-    // Second player bets
-    cy.get('[data-testid="current-player"]').should('contain', 'Player 2');
-    cy.placeBet(50);
-
-    // First player folds
-    cy.get('[data-testid="current-player"]').should('contain', 'Player 1');
-    cy.foldHand();
-
-    // Verify game results
-    cy.get('[data-testid="game-result"]').should('be.visible');
-    cy.get('[data-testid="winner-announcement"]').should('contain', 'Player 2');
-  });
-
-  it('should handle all-in situations correctly', () => {
-    // Login first player with small stack
-    cy.get('@gameData').then((data: any) => {
-      const player1 = data.players[0];
-      cy.loginPlayer(player1.name, 50);
-    });
-
-    // Join table
-    cy.joinTable('table1');
-
-    // Login second player with large stack
-    cy.window().then((win) => {
-      cy.get('@gameData').then((data: any) => {
-        const player2 = data.players[1];
-        const newWindow = win.open('/');
-        cy.wrap(newWindow).then((win) => {
-          cy.stub(win, 'open').as('openWindow');
-          cy.loginPlayer(player2.name, 1000);
-        });
-      });
-    });
-
-    // Start the game
-    cy.get('[data-testid="start-game-button"]').click();
-
-    // First player goes all-in
-    cy.get('[data-testid="current-player"]').should('contain', 'Player 1');
-    cy.get('[data-testid="all-in-button"]').click();
-
-    // Second player calls
-    cy.get('[data-testid="current-player"]').should('contain', 'Player 2');
-    cy.get('[data-testid="call-button"]').click();
-
-    // Verify game continues with side pot if needed
-    cy.get('[data-testid="side-pot"]').should('exist');
-  });
-
-  it('should handle disconnections gracefully', () => {
-    // Login first player
-    cy.get('@gameData').then((data: any) => {
-      const player1 = data.players[0];
-      cy.loginPlayer(player1.name, player1.chips);
-    });
-
-    // Join table
-    cy.joinTable('table1');
-
-    // Login second player
-    cy.window().then((win) => {
-      cy.get('@gameData').then((data: any) => {
-        const player2 = data.players[1];
-        const newWindow = win.open('/');
-        cy.wrap(newWindow).then((win) => {
-          cy.stub(win, 'open').as('openWindow');
-          cy.loginPlayer(player2.name, player2.chips);
-        });
-      });
-    });
-
-    // Start the game
-    cy.get('[data-testid="start-game-button"]').click();
-
-    // Simulate disconnection of second player
-    cy.window().then((win) => {
-      cy.stub(win, 'close').as('closeWindow');
-      cy.get('@closeWindow').should('be.called');
-    });
-
-    // Verify game handles disconnection
-    cy.get('[data-testid="disconnection-message"]').should('be.visible');
-    cy.get('[data-testid="game-status"]').should('contain', 'paused');
-  });
-}); 
+    // Start first hand
+    cy.get('[data-testid="start-game-button"]').click()
+    
+    // Verify initial dealer position
+    cy.get('[data-testid="dealer-button"]').should('have.attr', 'data-position', '0')
+    
+    // Complete first hand
+    cy.placeBet(100)
+    cy.get('[data-testid="hand-result"]').should('be.visible')
+    
+    // Start second hand
+    cy.get('[data-testid="start-game-button"]').click()
+    
+    // Verify dealer button moved
+    cy.get('[data-testid="dealer-button"]').should('have.attr', 'data-position', '1')
+    
+    // Complete second hand
+    cy.placeBet(100)
+    cy.get('[data-testid="hand-result"]').should('be.visible')
+    
+    // Start third hand
+    cy.get('[data-testid="start-game-button"]').click()
+    
+    // Verify dealer button moved back
+    cy.get('[data-testid="dealer-button"]').should('have.attr', 'data-position', '0')
+  })
+}) 

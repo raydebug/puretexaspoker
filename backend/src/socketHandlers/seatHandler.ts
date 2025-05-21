@@ -15,6 +15,13 @@ let gameState: GameState = {
   pot: 0,
   communityCards: [],
   currentPlayerId: null,
+  currentPlayerPosition: 0,
+  dealerPosition: 0,
+  status: 'waiting',
+  currentBet: 0,
+  minBet: 10,
+  smallBlind: 5,
+  bigBlind: 10,
   phase: 'waiting'
 };
 
@@ -39,7 +46,6 @@ const broadcastGameState = (io: Server) => {
 
 // Helper function to generate a default avatar
 const generateDefaultAvatar = (nickname: string): Avatar => {
-  // Generate a deterministic color based on the nickname
   const getColorIndex = (name: string): number => {
     let hash = 0;
     for (let i = 0; i < name.length; i++) {
@@ -47,23 +53,19 @@ const generateDefaultAvatar = (nickname: string): Avatar => {
     }
     return Math.abs(hash) % AVATAR_COLORS.length;
   };
-
-  // Avatar colors
   const AVATAR_COLORS = [
     '#1abc9c', '#2ecc71', '#3498db', '#9b59b6', '#16a085',
     '#27ae60', '#2980b9', '#8e44ad', '#f1c40f', '#e67e22',
     '#e74c3c', '#f39c12', '#d35400', '#c0392b', '#7f8c8d'
   ];
-
-  // Generate initials from nickname
   const getInitials = (name: string): string => {
-    const parts = name.trim().split(' ');
-    if (parts.length === 1) {
-      return parts[0].substring(0, 2).toUpperCase();
-    }
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
   };
-
   return {
     type: 'initials',
     initials: getInitials(nickname),
@@ -103,14 +105,19 @@ export function registerSeatHandlers(io: Server) {
           const player: Player = {
             id: socket.id,
             name: nickname,
-            seatNumber,
+            seatNumber: seatNumber,
             position: seatNumber,
             chips: 1000,
             currentBet: 0,
             isDealer: false,
             isAway: false,
+            isActive: true,
             cards: [],
-            avatar: generateDefaultAvatar(nickname)
+            avatar: {
+              type: 'initials',
+              initials: getInitials(nickname),
+              color: '#1abc9c'
+            }
           };
 
           // Remove from previous seat if any
