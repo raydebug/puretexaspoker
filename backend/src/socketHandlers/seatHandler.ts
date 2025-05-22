@@ -1,5 +1,5 @@
 import { Server, Socket } from 'socket.io';
-import { Player, GameState, Avatar } from '../types/game';
+import { Player, GameState, Avatar } from '../types/shared';
 
 interface SeatState {
   [seatNumber: number]: string | null; // nickname or null
@@ -115,7 +115,7 @@ export function registerSeatHandlers(io: Server) {
             cards: [],
             avatar: {
               type: 'initials',
-              initials: getInitials(nickname),
+              initials: nickname.substring(0, 2).toUpperCase(),
               color: '#1abc9c'
             }
           };

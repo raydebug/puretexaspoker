@@ -1,3 +1,5 @@
+import { Card } from './card';
+
 export interface Player {
   id: string;
   name: string;
@@ -8,12 +10,12 @@ export interface Player {
   isDealer: boolean;
   isAway: boolean;
   isActive: boolean;
-  cards: string[];
+  cards: Card[];
   avatar: Avatar;
 }
 
 export interface Avatar {
-  type: 'image' | 'initials';
+  type: 'image' | 'initials' | 'default';
   imageUrl?: string;
   initials?: string;
   color: string;
@@ -22,15 +24,15 @@ export interface Avatar {
 export interface GameState {
   id: string;
   players: Player[];
+  communityCards: Card[];
   pot: number;
-  communityCards: string[];
   currentPlayerId: string | null;
   currentPlayerPosition: number;
   dealerPosition: number;
+  phase: 'waiting' | 'preflop' | 'flop' | 'turn' | 'river' | 'showdown' | 'finished';
   status: 'waiting' | 'playing' | 'finished';
   currentBet: number;
   minBet: number;
   smallBlind: number;
   bigBlind: number;
-  phase: 'waiting' | 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
 } 

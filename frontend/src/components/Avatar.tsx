@@ -4,12 +4,23 @@ import { Avatar as AvatarType } from '../types/shared';
 
 interface AvatarProps {
   avatar: AvatarType;
-  size?: number;
+  size?: 'small' | 'medium' | 'large';
+  isActive?: boolean;
+  isAway?: boolean;
 }
 
-const AvatarContainer = styled.div<{ size: number }>`
-  width: ${props => props.size}px;
-  height: ${props => props.size}px;
+const getSizeInPx = (size: 'small' | 'medium' | 'large'): number => {
+  switch (size) {
+    case 'small': return 32;
+    case 'medium': return 48;
+    case 'large': return 64;
+    default: return 48;
+  }
+};
+
+const AvatarContainer = styled.div<{ size: 'small' | 'medium' | 'large', isActive?: boolean, isAway?: boolean }>`
+  width: ${props => getSizeInPx(props.size)}px;
+  height: ${props => getSizeInPx(props.size)}px;
   border-radius: 50%;
   overflow: hidden;
   display: flex;
@@ -17,6 +28,8 @@ const AvatarContainer = styled.div<{ size: number }>`
   justify-content: center;
   background-color: ${props => props.theme.colors.background};
   border: 2px solid ${props => props.theme.colors.border};
+  opacity: ${props => props.isAway ? 0.5 : 1};
+  box-shadow: ${props => props.isActive ? props.theme.shadows.md : 'none'};
 `;
 
 const AvatarImage = styled.img`
@@ -40,7 +53,7 @@ const InitialsAvatar = styled(DefaultAvatar)`
   color: white;
 `;
 
-export const Avatar: React.FC<AvatarProps> = ({ avatar, size = 40 }) => {
+export const Avatar: React.FC<AvatarProps> = ({ avatar, size = 'medium', isActive, isAway }) => {
   const renderAvatarContent = () => {
     switch (avatar.type) {
       case 'image':
@@ -79,7 +92,7 @@ export const Avatar: React.FC<AvatarProps> = ({ avatar, size = 40 }) => {
   };
 
   return (
-    <AvatarContainer size={size}>
+    <AvatarContainer size={size} isActive={isActive} isAway={isAway}>
       {renderAvatarContent()}
     </AvatarContainer>
   );

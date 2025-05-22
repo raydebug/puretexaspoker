@@ -4,8 +4,7 @@
   "description": "Backend for Texas Hold'em Poker Game",
   "main": "dist/server.js",
   "scripts": {
-    "start": "node dist/server.js",
-    "dev": "nodemon src/server.ts",
+    "start": "ts-node src/server.ts",
     "build": "tsc",
     "test": "jest",
     "test:watch": "jest --watch",

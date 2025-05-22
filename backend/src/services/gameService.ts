@@ -1,46 +1,34 @@
-import { Card, GameState, Player, Hand } from '../types/card';
+import { GameState, Player, Card, Hand } from '../types/shared';
 import { DeckService } from './deckService';
-import { HandEvaluatorService } from './handEvaluatorService';
+import { HandEvaluator } from './handEvaluator';
 
 export class GameService {
   private gameState: GameState;
   private deckService: DeckService;
-  private handEvaluator: HandEvaluatorService;
-  private deck: Card[];
+  private handEvaluator: HandEvaluator;
 
   constructor() {
     this.deckService = new DeckService();
-    this.handEvaluator = new HandEvaluatorService();
-    this.deck = this.deckService.createDeck();
-    this.gameState = {
+    this.handEvaluator = new HandEvaluator();
+    this.gameState = this.initializeGameState();
+  }
+
+  private initializeGameState(): GameState {
+    return {
       id: Math.random().toString(36).substring(7),
       players: [],
       communityCards: [],
       pot: 0,
-      currentBet: 0,
-      dealerPosition: 0,
+      currentPlayerId: null,
       currentPlayerPosition: 0,
-      currentPlayerId: '',
-      phase: 'preflop',
+      dealerPosition: 0,
+      phase: 'waiting',
       status: 'waiting',
+      currentBet: 0,
+      minBet: 0,
       smallBlind: 5,
       bigBlind: 10
     };
-  }
-
-  public addPlayer(player: Player): void {
-    if (this.gameState.players.length >= 9) {
-      throw new Error('Table is full');
-    }
-    this.gameState.players.push(player);
-  }
-
-  public removePlayer(playerId: string): void {
-    this.gameState.players = this.gameState.players.filter(p => p.id !== playerId);
-  }
-
-  public getPlayer(playerId: string): Player | undefined {
-    return this.gameState.players.find(p => p.id === playerId);
   }
 
   public startGame(): void {
@@ -49,20 +37,16 @@ export class GameService {
     }
 
     this.gameState.status = 'playing';
-    this.deck = this.deckService.createDeck();
-    this.deckService.shuffleDeck(this.deck);
-    this.gameState.communityCards = [];
-    this.gameState.pot = 0;
-    this.gameState.currentBet = 0;
+    this.gameState.phase = 'preflop';
+    this.deckService.shuffle();
 
     // Deal cards to players
     this.gameState.players.forEach(player => {
-      player.hand = this.deckService.dealCards(this.deck, 2);
-      player.currentBet = 0;
+      player.cards = this.deckService.dealCards(2);
       player.isActive = true;
     });
 
-    // Post blinds
+    // Set blinds
     const smallBlindPos = (this.gameState.dealerPosition + 1) % this.gameState.players.length;
     const bigBlindPos = (this.gameState.dealerPosition + 2) % this.gameState.players.length;
 
@@ -78,19 +62,26 @@ export class GameService {
     this.gameState.pot += this.gameState.bigBlind;
 
     this.gameState.currentBet = this.gameState.bigBlind;
-    this.gameState.currentPlayerId = this.gameState.players[bigBlindPos].id;
+    this.gameState.minBet = this.gameState.bigBlind;
   }
 
   public dealCommunityCards(): void {
-    if (this.gameState.phase === 'preflop') {
-      this.gameState.communityCards = this.deckService.dealCards(this.deck, 3);
-      this.gameState.phase = 'flop';
-    } else if (this.gameState.phase === 'flop') {
-      this.gameState.communityCards.push(...this.deckService.dealCards(this.deck, 1));
-      this.gameState.phase = 'turn';
-    } else if (this.gameState.phase === 'turn') {
-      this.gameState.communityCards.push(...this.deckService.dealCards(this.deck, 1));
-      this.gameState.phase = 'river';
+    switch (this.gameState.phase) {
+      case 'preflop':
+        this.gameState.communityCards = this.deckService.dealCards(3);
+        this.gameState.phase = 'flop';
+        break;
+      case 'flop':
+        this.gameState.communityCards.push(...this.deckService.dealCards(1));
+        this.gameState.phase = 'turn';
+        break;
+      case 'turn':
+        this.gameState.communityCards.push(...this.deckService.dealCards(1));
+        this.gameState.phase = 'river';
+        break;
+      case 'river':
+        this.gameState.phase = 'showdown';
+        break;
     }
   }
 
@@ -101,19 +92,13 @@ export class GameService {
     }
 
     if (amount < this.gameState.currentBet - player.currentBet) {
-      throw new Error('Bet amount is too small');
-    }
-
-    if (amount > player.chips) {
-      throw new Error('Not enough chips');
+      throw new Error('Bet amount is too low');
     }
 
     player.chips -= amount;
     player.currentBet += amount;
     this.gameState.pot += amount;
     this.gameState.currentBet = Math.max(this.gameState.currentBet, player.currentBet);
-
-    this.moveToNextPlayer();
   }
 
   public fold(playerId: string): void {
@@ -123,19 +108,6 @@ export class GameService {
     }
 
     player.isActive = false;
-    this.moveToNextPlayer();
-  }
-
-  public check(playerId: string): void {
-    const player = this.getPlayer(playerId);
-    if (!player) {
-      throw new Error('Player not found');
-    }
-
-    if (this.gameState.currentBet > player.currentBet) {
-      throw new Error('Cannot check, must call or raise');
-    }
-
     this.moveToNextPlayer();
   }
 
@@ -153,17 +125,24 @@ export class GameService {
 
     if (allPlayersActed) {
       this.gameState.currentBet = 0;
-      activePlayers.forEach(p => p.currentBet = 0);
       this.dealCommunityCards();
     }
   }
 
-  public evaluateHands(): { playerId: string; hand: Hand }[] {
-    const activePlayers = this.gameState.players.filter(p => p.isActive);
-    return activePlayers.map(player => ({
-      playerId: player.id,
-      hand: this.handEvaluator.evaluateHand(player.hand, this.gameState.communityCards)
-    }));
+  public getGameState(): GameState {
+    return this.gameState;
+  }
+
+  public getPlayer(playerId: string): Player | undefined {
+    return this.gameState.players.find(p => p.id === playerId);
+  }
+
+  public addPlayer(player: Player): void {
+    this.gameState.players.push(player);
+  }
+
+  public removePlayer(playerId: string): void {
+    this.gameState.players = this.gameState.players.filter(p => p.id !== playerId);
   }
 
   public updatePlayerStatus(playerId: string, isAway: boolean): void {
@@ -173,7 +152,11 @@ export class GameService {
     }
   }
 
-  public getGameState(): GameState {
-    return this.gameState;
+  public evaluateHands(): { playerId: string; hand: Hand }[] {
+    const activePlayers = this.gameState.players.filter(p => p.isActive);
+    return activePlayers.map(player => ({
+      playerId: player.id,
+      hand: this.handEvaluator.evaluateHand(player.cards, this.gameState.communityCards)
+    }));
   }
 } 

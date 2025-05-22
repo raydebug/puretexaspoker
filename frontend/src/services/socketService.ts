@@ -1,5 +1,5 @@
 import { io, Socket } from 'socket.io-client';
-import { GameState, Player } from '../types/game';
+import { GameState, Player, Avatar as AvatarType } from '../types/shared';
 import { cookieService } from './cookieService';
 import { errorTrackingService } from './errorTrackingService';
 import { TableData } from '../types/table';
@@ -624,9 +624,14 @@ class SocketService {
             pot: 0,
             communityCards: [],
             currentPlayerId: null,
-            phase: 'waiting',
-            minBet: 10, // Default minimum bet
-            currentBet: 0
+            currentPlayerPosition: 0,
+            dealerPosition: 0,
+            status: 'waiting',
+            currentBet: 0,
+            minBet: 10,
+            smallBlind: 5,
+            bigBlind: 10,
+            phase: 'waiting'
           };
         }
         
@@ -756,17 +761,14 @@ class SocketService {
         const player: Player = {
           id: this.socket?.id || 'unknown',
           name: nickname,
-          chips: data.buyIn,
+          seatNumber: data.buyIn,
+          position: data.buyIn,
+          chips: 1000,
           currentBet: 0,
-          seatNumber: 0, // This will be updated when they sit down
-          position: 0,  // This will be updated when they sit down
           isDealer: false,
           isAway: false,
-          avatar: {
-            type: 'initials',
-            initials: nickname.substring(0, 2).toUpperCase(),
-            color: '#1abc9c' // Default color
-          },
+          isActive: true,
+          avatar: createObserverAvatar(nickname),
           cards: []
         };
         
@@ -781,9 +783,14 @@ class SocketService {
             pot: 0,
             communityCards: [],
             currentPlayerId: null,
-            phase: 'waiting',
-            minBet: 10, // Default minimum bet
-            currentBet: 0
+            currentPlayerPosition: 0,
+            dealerPosition: 0,
+            status: 'waiting',
+            currentBet: 0,
+            minBet: 10,
+            smallBlind: 5,
+            bigBlind: 10,
+            phase: 'waiting'
           };
         }
         
@@ -877,5 +884,11 @@ class SocketService {
     this.currentPlayer = player;
   }
 }
+
+const createObserverAvatar = (nickname: string): AvatarType => ({
+  type: 'initials',
+  initials: nickname.substring(0, 2).toUpperCase(),
+  color: '#1abc9c'
+});
 
 export const socketService = new SocketService(); 

@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { cookieService } from '../services/cookieService';
 import { socketService } from '../services/socketService';
-import { Player } from '../types/game';
+import { Player } from '../types/shared';
 
 const LobbyContainer = styled.div`
   min-height: 100vh;
@@ -321,7 +321,7 @@ export const GameLobby: React.FC<GameLobbyProps> = ({ onJoinGame }) => {
     // Connect socket and listen for online users updates
     socketService.connect();
     socketService.onOnlineUsersUpdate((players, observers) => {
-      setPlayers(players);
+      setPlayers(players as Player[]);
       setObservers(observers);
     });
 
