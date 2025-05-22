@@ -159,4 +159,17 @@ export class GameService {
       hand: this.handEvaluator.evaluateHand(player.cards, this.gameState.communityCards)
     }));
   }
+
+  public check(playerId: string): void {
+    const player = this.getPlayer(playerId);
+    if (!player) {
+      throw new Error('Player not found');
+    }
+
+    if (this.gameState.currentBet > 0) {
+      throw new Error('Cannot check, must call or raise');
+    }
+
+    this.moveToNextPlayer();
+  }
 } 

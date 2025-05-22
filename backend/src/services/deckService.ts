@@ -22,9 +22,10 @@ export class DeckService {
   }
 
   public shuffle(): void {
-    for (let i = this.deck.length - 1; i > 0; i--) {
+    const deck = this.deck;
+    for (let i = deck.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [this.deck[i], this.deck[j]] = [this.deck[j], this.deck[i]];
+      [deck[i], deck[j]] = [deck[j], deck[i]];
     }
   }
 
@@ -37,8 +38,9 @@ export class DeckService {
   }
 
   public reset(deck: Card[]): void {
+    const newDeck = this.createDeck();
     deck.length = 0;
-    deck.push(...this.createDeck());
+    deck.push(...newDeck);
   }
 
   public getRemainingCards(deck: Card[]): number {
