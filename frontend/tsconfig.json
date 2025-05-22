@@ -19,9 +19,11 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "types": ["jest", "node"]
+    "types": ["jest", "node", "cypress"],
+    "baseUrl": "."
   },
   "include": [
-    "src"
+    "src",
+    "cypress/**/*.ts"
   ]
 } 
