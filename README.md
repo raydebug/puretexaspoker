@@ -6,13 +6,13 @@ A modern Texas Hold'em poker game built with React, TypeScript, and Socket.IO.
 
 ```
 .
-├── backend/                 # Backend server
+├── backend/                 # Backend server (port 3001)
 │   ├── src/
 │   │   ├── types/          # TypeScript type definitions
 │   │   ├── socketHandlers/ # Socket.IO event handlers
 │   │   └── server.ts       # Express server setup
 │   └── package.json
-├── frontend/               # Frontend application
+├── frontend/               # Frontend application (port 3000)
 │   ├── src/
 │   │   ├── components/     # React components
 │   │   ├── types/         # TypeScript type definitions
@@ -29,8 +29,9 @@ A modern Texas Hold'em poker game built with React, TypeScript, and Socket.IO.
 - Node.js 18 or higher
 - npm 9 or higher
 - Git
+- TypeScript installed globally (`npm install -g typescript`)
 
-## Setup
+## Development Setup
 
 1. Clone the repository:
    ```bash
@@ -40,6 +41,9 @@ A modern Texas Hold'em poker game built with React, TypeScript, and Socket.IO.
 
 2. Install dependencies:
    ```bash
+   # Install root dependencies
+   npm install
+
    # Install backend dependencies
    cd backend
    npm install
@@ -51,25 +55,60 @@ A modern Texas Hold'em poker game built with React, TypeScript, and Socket.IO.
 
 3. Start the development servers:
    ```bash
+   # Kill any existing processes on ports 3000 and 3001
+   npm run kill-ports
+
    # Start both servers (from root directory)
    npm start
 
-   # Or start servers individually
-   # Start backend server (from backend directory)
-   npm run dev
+   # Or start servers individually:
+   # Backend (from backend directory)
+   cd backend && npm start
 
-   # Start frontend server (from frontend directory)
-   npm run dev
+   # Frontend (from frontend directory)
+   cd frontend && npm start
    ```
+
+## Development Commands
+
+```bash
+# Run backend unit tests
+cd backend && npm test
+
+# Run frontend unit tests
+cd frontend && npm test
+
+# Run Cypress E2E tests
+npm run cypress:run
+
+# Build frontend for production
+cd frontend && npm run build
+
+# Build backend for production
+cd backend && npm run build
+```
 
 ## Testing
 
-The project uses Cypress for end-to-end testing. To run the tests:
+The project uses Jest for unit tests and Cypress for end-to-end testing.
+
+### Unit Tests
+Run unit tests for each part of the application:
+```bash
+# Backend tests
+cd backend && npm test
+
+# Frontend tests
+cd frontend && npm test
+```
+
+### End-to-End Tests
+Cypress is used for E2E testing. To run the tests:
 
 ```bash
-# From the frontend directory
-npm run test:e2e        # Run tests in headless mode
-npm run test:e2e:open   # Open Cypress test runner
+# From the root directory
+npm run cypress:run        # Run tests in headless mode
+npm run cypress:open       # Open Cypress test runner
 ```
 
 ### Test Structure
@@ -89,14 +128,26 @@ npm run test:e2e:open   # Open Cypress test runner
 - Detailed test failure messages for fast debugging
 - Type-safe test commands and assertions
 
-## Development
+## Known Issues and Solutions
 
-- Backend runs on port 3001
-- Frontend runs on port 3000
-- TypeScript is used for type safety
-- Socket.IO handles real-time communication
-- Styled-components for styling
-- Cypress for E2E testing
+### Backend Issues
+1. TypeScript compilation errors:
+   - Missing properties in GameState type
+   - Type mismatches for Card[] vs string[]
+   - Missing method implementations in GameService
+
+### Frontend Issues
+1. Missing type definitions:
+   ```
+   TS7016: Could not find a declaration file for module 'js-cookie'
+   ```
+   Solution: Install @types/js-cookie
+
+### Server Issues
+1. Port conflicts:
+   - Port 3000 already in use
+   - Port 3001 already in use
+   Solution: Use kill-ports script before starting servers
 
 ## Features
 
@@ -118,6 +169,13 @@ npm run test:e2e:open   # Open Cypress test runner
 3. Commit your changes
 4. Push to the branch
 5. Create a Pull Request
+
+See [workflow.md](workflow.md) for detailed development workflow guidelines.
+
+## Documentation
+
+- [workflow.md](workflow.md): Development workflow and best practices
+- [apis.md](apis.md): API documentation and specifications
 
 ## License
 
