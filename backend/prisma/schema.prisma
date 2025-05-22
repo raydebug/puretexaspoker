@@ -1,0 +1,82 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Player {
+  id          String        @id @default(uuid())
+  nickname    String        @unique
+  chips       Int
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  playerTables PlayerTable[]
+  messages    Message[]
+  gameActions GameAction[]
+}
+
+model Table {
+  id          String        @id @default(uuid())
+  name        String
+  maxPlayers  Int
+  smallBlind  Int
+  bigBlind    Int
+  minBuyIn    Int
+  maxBuyIn    Int
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  playerTables PlayerTable[]
+  games       Game[]
+}
+
+model PlayerTable {
+  id        String   @id @default(uuid())
+  playerId  String
+  tableId   String
+  seatNumber Int
+  buyIn     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  player    Player   @relation(fields: [playerId], references: [id])
+  table     Table    @relation(fields: [tableId], references: [id])
+
+  @@unique([tableId, seatNumber])
+}
+
+model Game {
+  id        String      @id @default(uuid())
+  tableId   String
+  status    String      @default("waiting")
+  pot       Int         @default(0)
+  deck      String?     // JSON string of remaining cards
+  board     String?     // JSON string of community cards
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  table     Table       @relation(fields: [tableId], references: [id])
+  actions   GameAction[]
+}
+
+model GameAction {
+  id        String   @id @default(uuid())
+  gameId    String
+  playerId  String
+  type      String   // bet, fold, check, etc.
+  amount    Int?     // for bets/raises
+  createdAt DateTime @default(now())
+  game      Game     @relation(fields: [gameId], references: [id])
+  player    Player   @relation(fields: [playerId], references: [id])
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  content   String
+  playerId  String
+  createdAt DateTime @default(now())
+  player    Player   @relation(fields: [playerId], references: [id])
+} 
