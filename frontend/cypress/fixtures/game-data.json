@@ -1,0 +1,48 @@
+{
+  "players": [
+    {
+      "nickname": "Player1",
+      "chips": 1000
+    },
+    {
+      "nickname": "Player2",
+      "chips": 1000
+    }
+  ],
+  "tables": [
+    {
+      "name": "Table 1",
+      "maxPlayers": 9,
+      "smallBlind": 10,
+      "bigBlind": 20,
+      "minBuyIn": 200,
+      "maxBuyIn": 2000
+    }
+  ],
+  "messages": [
+    {
+      "content": "Hello everyone!",
+      "timestamp": "2024-05-22T23:00:00.000Z",
+      "playerId": "player1"
+    }
+  ],
+  "gameStates": {
+    "preFlop": "PRE_FLOP",
+    "flop": "FLOP",
+    "turn": "TURN",
+    "river": "RIVER",
+    "showdown": "SHOWDOWN"
+  },
+  "testHands": {
+    "royalFlush": ["AH", "KH", "QH", "JH", "TH"],
+    "straightFlush": ["9H", "8H", "7H", "6H", "5H"],
+    "fourOfAKind": ["AS", "AH", "AD", "AC", "KH"],
+    "fullHouse": ["AS", "AH", "AD", "KS", "KH"],
+    "flush": ["AH", "JH", "8H", "6H", "2H"],
+    "straight": ["9S", "8H", "7D", "6C", "5H"],
+    "threeOfAKind": ["AS", "AH", "AD", "KH", "QC"],
+    "twoPair": ["AS", "AH", "KS", "KH", "QC"],
+    "onePair": ["AS", "AH", "KH", "QC", "JD"],
+    "highCard": ["AH", "KS", "QH", "JC", "9D"]
+  }
+} 

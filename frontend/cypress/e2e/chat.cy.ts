@@ -8,7 +8,7 @@ describe('Chat Functionality', () => {
     // Login first player
     cy.get('@gameData').then((data: any) => {
       const player1 = data.players[0];
-      cy.loginPlayer(player1.name, player1.chips);
+      cy.loginPlayer(player1.nickname, player1.chips);
     });
 
     // Join table
@@ -21,7 +21,7 @@ describe('Chat Functionality', () => {
         const newWindow = win.open('/');
         cy.wrap(newWindow).then((win) => {
           cy.stub(win, 'open').as('openWindow');
-          cy.loginPlayer(player2.name, player2.chips);
+          cy.loginPlayer(player2.nickname, player2.chips);
         });
       });
     });
@@ -38,8 +38,8 @@ describe('Chat Functionality', () => {
     cy.window().then((win) => {
       cy.get('@gameData').then((data: any) => {
         const player2 = data.players[1];
-        cy.get('[data-testid="chat-input"]').type(`Hello from ${player2.name}{enter}`);
-        cy.get('[data-testid="chat-messages"]').should('contain', `Hello from ${player2.name}`);
+        cy.get('[data-testid="chat-input"]').type(`Hello from ${player2.nickname}{enter}`);
+        cy.get('[data-testid="chat-messages"]').should('contain', `Hello from ${player2.nickname}`);
       });
     });
 
@@ -55,7 +55,7 @@ describe('Chat Functionality', () => {
     // Login player
     cy.get('@gameData').then((data: any) => {
       const player = data.players[0];
-      cy.loginPlayer(player.name, player.chips);
+      cy.loginPlayer(player.nickname, player.chips);
     });
 
     // Join table
@@ -77,7 +77,7 @@ describe('Chat Functionality', () => {
     // Login player
     cy.get('@gameData').then((data: any) => {
       const player = data.players[0];
-      cy.loginPlayer(player.name, player.chips);
+      cy.loginPlayer(player.nickname, player.chips);
     });
 
     // Join table
@@ -105,7 +105,7 @@ describe('Chat Functionality', () => {
     // Login player
     cy.get('@gameData').then((data: any) => {
       const player = data.players[0];
-      cy.loginPlayer(player.name, player.chips);
+      cy.loginPlayer(player.nickname, player.chips);
     });
 
     // Join table
