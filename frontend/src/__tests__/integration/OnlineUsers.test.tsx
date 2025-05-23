@@ -1,7 +1,11 @@
+import '@testing-library/jest-dom';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { OnlineList } from '../../components/OnlineList';
 import { Player } from '../../types/game';
+import { MemoryRouter } from 'react-router-dom';
+import { ThemeProvider } from 'styled-components';
+import { theme } from '../../styles/theme';
 
 describe('Online Users Integration Tests', () => {
   const mockPlayers: Player[] = [
@@ -14,6 +18,8 @@ describe('Online Users Integration Tests', () => {
       currentBet: 0,
       isDealer: false,
       isAway: false,
+      isActive: true,
+      avatar: { type: 'initials', initials: 'AP', color: '#000' },
       cards: [],
     },
     {
@@ -25,6 +31,8 @@ describe('Online Users Integration Tests', () => {
       currentBet: 0,
       isDealer: false,
       isAway: true,
+      isActive: true,
+      avatar: { type: 'initials', initials: 'AW', color: '#000' },
       cards: [],
     },
   ];
@@ -33,33 +41,49 @@ describe('Online Users Integration Tests', () => {
 
   test('displays both players and observers correctly', () => {
     render(
-      <OnlineList
-        players={mockPlayers}
-        observers={mockObservers}
-        currentPlayerId="player1"
-      />
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <OnlineList
+            players={mockPlayers}
+            observers={mockObservers}
+            currentPlayerId="player1"
+          />
+        </ThemeProvider>
+      </MemoryRouter>
     );
 
     // Check players section
-    expect(screen.getByText('Players')).toBeInTheDocument();
+    expect(
+      screen.getByText((content, element) =>
+        (element?.textContent?.replace(/\s+/g, '') ?? '') === 'Players(2)'
+      )
+    ).toBeInTheDocument();
     expect(screen.getByText(/Active Player \(Seat 2\)/)).toBeInTheDocument();
     expect(screen.getByText(/Away Player \(Seat 3\)/)).toBeInTheDocument();
     expect(screen.getByText('(You)')).toBeInTheDocument();
     expect(screen.getByText('(Away)')).toBeInTheDocument();
 
     // Check observers section
-    expect(screen.getByText('Observers')).toBeInTheDocument();
+    expect(
+      screen.getByText((content, element) =>
+        (element?.textContent?.replace(/\s+/g, '') ?? '') === 'Observers(2)'
+      )
+    ).toBeInTheDocument();
     expect(screen.getByText('Observer 1')).toBeInTheDocument();
     expect(screen.getByText('Observer 2')).toBeInTheDocument();
   });
 
   test('highlights current player correctly', () => {
     render(
-      <OnlineList
-        players={mockPlayers}
-        observers={mockObservers}
-        currentPlayerId="player1"
-      />
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <OnlineList
+            players={mockPlayers}
+            observers={mockObservers}
+            currentPlayerId="player1"
+          />
+        </ThemeProvider>
+      </MemoryRouter>
     );
 
     const currentPlayerElement = screen.getByText(/Active Player \(Seat 2\)/).closest('li');
@@ -71,11 +95,15 @@ describe('Online Users Integration Tests', () => {
 
   test('shows away status indicator for away players', () => {
     render(
-      <OnlineList
-        players={mockPlayers}
-        observers={mockObservers}
-        currentPlayerId="player1"
-      />
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <OnlineList
+            players={mockPlayers}
+            observers={mockObservers}
+            currentPlayerId="player1"
+          />
+        </ThemeProvider>
+      </MemoryRouter>
     );
 
     const awayPlayerElement = screen.getByText(/Away Player \(Seat 3\)/).closest('li');
@@ -87,11 +115,15 @@ describe('Online Users Integration Tests', () => {
 
   test('updates when players change status', async () => {
     const { rerender } = render(
-      <OnlineList
-        players={mockPlayers}
-        observers={mockObservers}
-        currentPlayerId="player1"
-      />
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <OnlineList
+            players={mockPlayers}
+            observers={mockObservers}
+            currentPlayerId="player1"
+          />
+        </ThemeProvider>
+      </MemoryRouter>
     );
 
     // Initially, Active Player is not away
@@ -105,11 +137,15 @@ describe('Online Users Integration Tests', () => {
 
     // Rerender with updated players
     rerender(
-      <OnlineList
-        players={updatedPlayers}
-        observers={mockObservers}
-        currentPlayerId="player1"
-      />
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <OnlineList
+            players={updatedPlayers}
+            observers={mockObservers}
+            currentPlayerId="player1"
+          />
+        </ThemeProvider>
+      </MemoryRouter>
     );
 
     // Check if the status is updated
@@ -120,28 +156,44 @@ describe('Online Users Integration Tests', () => {
 
   test('handles empty observers list', () => {
     render(
-      <OnlineList
-        players={mockPlayers}
-        observers={[]}
-        currentPlayerId="player1"
-      />
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <OnlineList
+            players={mockPlayers}
+            observers={[]}
+            currentPlayerId="player1"
+          />
+        </ThemeProvider>
+      </MemoryRouter>
     );
 
-    expect(screen.getByText('Observers')).toBeInTheDocument();
+    expect(
+      screen.getByText((content, element) =>
+        (element?.textContent?.replace(/\s+/g, '') ?? '') === 'Observers(0)'
+      )
+    ).toBeInTheDocument();
     expect(screen.queryByText('Observer 1')).not.toBeInTheDocument();
     expect(screen.queryByText('Observer 2')).not.toBeInTheDocument();
   });
 
   test('handles empty players list', () => {
     render(
-      <OnlineList
-        players={[]}
-        observers={mockObservers}
-        currentPlayerId="player1"
-      />
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <OnlineList
+            players={[]}
+            observers={mockObservers}
+            currentPlayerId="player1"
+          />
+        </ThemeProvider>
+      </MemoryRouter>
     );
 
-    expect(screen.getByText('Players')).toBeInTheDocument();
+    expect(
+      screen.getByText((content, element) =>
+        (element?.textContent?.replace(/\s+/g, '') ?? '') === 'Players(0)'
+      )
+    ).toBeInTheDocument();
     expect(screen.queryByText(/Active Player/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Away Player/)).not.toBeInTheDocument();
     expect(screen.getByText('No players seated')).toBeInTheDocument();
@@ -149,11 +201,15 @@ describe('Online Users Integration Tests', () => {
 
   test('shows current player status correctly', () => {
     render(
-      <OnlineList
-        players={mockPlayers}
-        observers={mockObservers}
-        currentPlayerId="player1"
-      />
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <OnlineList
+            players={mockPlayers}
+            observers={mockObservers}
+            currentPlayerId="player1"
+          />
+        </ThemeProvider>
+      </MemoryRouter>
     );
 
     const currentPlayerElement = screen.getByText(/Active Player \(Seat 2\)/).closest('li');

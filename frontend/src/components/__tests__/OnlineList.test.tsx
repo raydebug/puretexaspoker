@@ -1,7 +1,11 @@
+import '@testing-library/jest-dom';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { OnlineList } from '../OnlineList';
 import { Player } from '../../types/game';
+import { MemoryRouter } from 'react-router-dom';
+import { ThemeProvider } from 'styled-components';
+import { theme } from '../../styles/theme';
 
 describe('OnlineList', () => {
   const mockPlayers: Player[] = [
@@ -14,6 +18,8 @@ describe('OnlineList', () => {
       currentBet: 0,
       isDealer: false,
       isAway: false,
+      isActive: true,
+      avatar: { type: 'initials', initials: 'P1', color: '#000' },
       cards: []
     },
     {
@@ -25,6 +31,8 @@ describe('OnlineList', () => {
       currentBet: 0,
       isDealer: false,
       isAway: false,
+      isActive: true,
+      avatar: { type: 'initials', initials: 'P2', color: '#000' },
       cards: []
     }
   ];
@@ -33,25 +41,41 @@ describe('OnlineList', () => {
 
   it('renders both players and observers sections', () => {
     render(
-      <OnlineList
-        players={mockPlayers}
-        observers={mockObservers}
-        currentPlayerId="1"
-      />
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <OnlineList
+            players={mockPlayers}
+            observers={mockObservers}
+            currentPlayerId="1"
+          />
+        </ThemeProvider>
+      </MemoryRouter>
     );
 
     // Check section titles
-    expect(screen.getByText('Players (2)')).toBeInTheDocument();
-    expect(screen.getByText('Observers (2)')).toBeInTheDocument();
+    expect(
+      screen.getByText((content, element) =>
+        (element?.textContent?.replace(/\s+/g, '') ?? '') === 'Players(2)'
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText((content, element) =>
+        (element?.textContent?.replace(/\s+/g, '') ?? '') === 'Observers(2)'
+      )
+    ).toBeInTheDocument();
   });
 
   it('displays player names with seat numbers', () => {
     render(
-      <OnlineList
-        players={mockPlayers}
-        observers={mockObservers}
-        currentPlayerId="1"
-      />
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <OnlineList
+            players={mockPlayers}
+            observers={mockObservers}
+            currentPlayerId="1"
+          />
+        </ThemeProvider>
+      </MemoryRouter>
     );
 
     // Check player entries
@@ -61,11 +85,15 @@ describe('OnlineList', () => {
 
   it('displays observer names', () => {
     render(
-      <OnlineList
-        players={mockPlayers}
-        observers={mockObservers}
-        currentPlayerId="1"
-      />
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <OnlineList
+            players={mockPlayers}
+            observers={mockObservers}
+            currentPlayerId="1"
+          />
+        </ThemeProvider>
+      </MemoryRouter>
     );
 
     // Check observer entries
@@ -75,11 +103,15 @@ describe('OnlineList', () => {
 
   it('highlights current user', () => {
     const { container } = render(
-      <OnlineList
-        players={mockPlayers}
-        observers={mockObservers}
-        currentPlayerId="1"
-      />
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <OnlineList
+            players={mockPlayers}
+            observers={mockObservers}
+            currentPlayerId="1"
+          />
+        </ThemeProvider>
+      </MemoryRouter>
     );
 
     // Find all user items
@@ -100,24 +132,40 @@ describe('OnlineList', () => {
 
   it('handles empty lists gracefully', () => {
     render(
-      <OnlineList
-        players={[]}
-        observers={[]}
-        currentPlayerId="1"
-      />
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <OnlineList
+            players={[]}
+            observers={[]}
+            currentPlayerId="1"
+          />
+        </ThemeProvider>
+      </MemoryRouter>
     );
 
-    expect(screen.getByText('Players (0)')).toBeInTheDocument();
-    expect(screen.getByText('Observers (0)')).toBeInTheDocument();
+    expect(
+      screen.getByText((content, element) =>
+        (element?.textContent?.replace(/\s+/g, '') ?? '') === 'Players(0)'
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText((content, element) =>
+        (element?.textContent?.replace(/\s+/g, '') ?? '') === 'Observers(0)'
+      )
+    ).toBeInTheDocument();
   });
 
   it('shows "You" indicator for current player', () => {
     render(
-      <OnlineList
-        players={mockPlayers}
-        observers={mockObservers}
-        currentPlayerId="1"
-      />
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <OnlineList
+            players={mockPlayers}
+            observers={mockObservers}
+            currentPlayerId="1"
+          />
+        </ThemeProvider>
+      </MemoryRouter>
     );
 
     expect(screen.getByText('(You)')).toBeInTheDocument();
@@ -129,11 +177,15 @@ describe('OnlineList', () => {
     );
 
     render(
-      <OnlineList
-        players={playersWithAway}
-        observers={mockObservers}
-        currentPlayerId="1"
-      />
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <OnlineList
+            players={playersWithAway}
+            observers={mockObservers}
+            currentPlayerId="1"
+          />
+        </ThemeProvider>
+      </MemoryRouter>
     );
 
     expect(screen.getByText('(Away)')).toBeInTheDocument();
