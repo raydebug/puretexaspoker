@@ -6,14 +6,17 @@ export class GameService {
   private gameState: GameState;
   private deckService: DeckService;
   private handEvaluator: HandEvaluator;
+  private deck: Card[];
 
   constructor() {
     this.deckService = new DeckService();
     this.handEvaluator = new HandEvaluator();
+    this.deck = [];
     this.gameState = this.initializeGameState();
   }
 
   private initializeGameState(): GameState {
+    this.deckService.reset(this.deck);
     return {
       id: Math.random().toString(36).substring(7),
       players: [],
@@ -38,11 +41,11 @@ export class GameService {
 
     this.gameState.status = 'playing';
     this.gameState.phase = 'preflop';
-    this.deckService.shuffle();
+    this.deckService.shuffle(this.deck);
 
     // Deal cards to players
     this.gameState.players.forEach(player => {
-      player.cards = this.deckService.dealCards(2);
+      player.cards = this.deckService.dealCards(2, this.deck);
       player.isActive = true;
     });
 
@@ -68,15 +71,15 @@ export class GameService {
   public dealCommunityCards(): void {
     switch (this.gameState.phase) {
       case 'preflop':
-        this.gameState.communityCards = this.deckService.dealCards(3);
+        this.gameState.communityCards = this.deckService.dealCards(3, this.deck);
         this.gameState.phase = 'flop';
         break;
       case 'flop':
-        this.gameState.communityCards.push(...this.deckService.dealCards(1));
+        this.gameState.communityCards.push(...this.deckService.dealCards(1, this.deck));
         this.gameState.phase = 'turn';
         break;
       case 'turn':
-        this.gameState.communityCards.push(...this.deckService.dealCards(1));
+        this.gameState.communityCards.push(...this.deckService.dealCards(1, this.deck));
         this.gameState.phase = 'river';
         break;
       case 'river':

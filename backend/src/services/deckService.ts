@@ -21,20 +21,19 @@ export class DeckService {
     return deck;
   }
 
-  public shuffle(): void {
-    const deck = this.deck;
+  public shuffle(deck: Card[]): void {
     for (let i = deck.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [deck[i], deck[j]] = [deck[j], deck[i]];
     }
   }
 
-  public dealCards(count: number): Card[] {
-    if (this.deck.length < count) {
+  public dealCards(count: number, deck: Card[]): Card[] {
+    if (deck.length < count) {
       throw new Error('Not enough cards in deck');
     }
 
-    return this.deck.splice(0, count);
+    return deck.splice(0, count);
   }
 
   public reset(deck: Card[]): void {

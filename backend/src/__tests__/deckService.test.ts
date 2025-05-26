@@ -34,13 +34,13 @@ describe('DeckService', () => {
   describe('shuffle', () => {
     it('should shuffle the deck', () => {
       const originalDeck = [...deck];
-      deckService.shuffle();
+      deckService.shuffle(deck);
       expect(deck).not.toEqual(originalDeck);
     });
 
     it('should maintain all cards after shuffling', () => {
       const originalCardStrings = deck.map(card => `${card.suit}-${card.rank}`).sort();
-      deckService.shuffle();
+      deckService.shuffle(deck);
       const shuffledCardStrings = deck.map(card => `${card.suit}-${card.rank}`).sort();
       expect(shuffledCardStrings).toEqual(originalCardStrings);
     });
@@ -48,25 +48,25 @@ describe('DeckService', () => {
 
   describe('dealCards', () => {
     it('should deal the correct number of cards', () => {
-      const dealtCards = deckService.dealCards(5);
+      const dealtCards = deckService.dealCards(5, deck);
       expect(dealtCards.length).toBe(5);
-      expect(deck.length).toBe(47);
+      expect(deckService.getRemainingCards(deck)).toBe(47);
     });
 
     it('should throw error when trying to deal more cards than available', () => {
-      expect(() => deckService.dealCards(53)).toThrow('Not enough cards in deck');
+      expect(() => deckService.dealCards(53, deck)).toThrow('Not enough cards in deck');
     });
   });
 
   describe('reset', () => {
     it('should reset the deck to 52 cards', () => {
-      deckService.dealCards(5);
+      deckService.dealCards(5, deck);
       deckService.reset(deck);
       expect(deck.length).toBe(52);
     });
 
     it('should create a new deck with all cards', () => {
-      deckService.dealCards(5);
+      deckService.dealCards(5, deck);
       deckService.reset(deck);
       const cardStrings = deck.map(card => `${card.suit}-${card.rank}`);
       const uniqueCards = new Set(cardStrings);
@@ -76,12 +76,12 @@ describe('DeckService', () => {
 
   describe('getRemainingCards', () => {
     it('should return correct number of remaining cards', () => {
-      deckService.dealCards(5);
+      deckService.dealCards(5, deck);
       expect(deckService.getRemainingCards(deck)).toBe(47);
     });
 
     it('should return 0 when deck is empty', () => {
-      deckService.dealCards(52);
+      deckService.dealCards(52, deck);
       expect(deckService.getRemainingCards(deck)).toBe(0);
     });
   });

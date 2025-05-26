@@ -26,12 +26,17 @@ export interface GameState {
   currentPlayerId: string | null;
   currentPlayerPosition: number;
   dealerPosition: number;
+  smallBlindPosition: number;
+  bigBlindPosition: number;
   phase: 'waiting' | 'preflop' | 'flop' | 'turn' | 'river' | 'showdown' | 'finished';
   status: 'waiting' | 'playing' | 'finished';
   currentBet: number;
   minBet: number;
   smallBlind: number;
   bigBlind: number;
+  handEvaluation?: string;
+  winner?: string;
+  isHandComplete?: boolean;
 }
 
 export interface Hand {
