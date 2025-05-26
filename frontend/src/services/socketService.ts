@@ -30,38 +30,141 @@ type ExtendedSocket = Socket & EventEmitter;
 
 class SocketService {
   private socket: ExtendedSocket | null = null;
+  private isConnecting = false;
+  private connectionLock = false;
+  private connectionAttempts = 0;
+  private maxConnectionAttempts = 3;
+  private reconnectionBackoff = 2000;
+  private lastConnectionAttempt = 0;
+  private isTestMode = false;
+  private eventEmitter = new EventEmitter();
+  private heartbeatInterval: NodeJS.Timeout | undefined;
   private gameState: GameState | null = null;
   private currentPlayer: Player | null = null;
   private observers: string[] = [];
-  private seatUpdateListeners: SeatUpdateCallback[] = [];
-  private seatErrorListeners: SeatErrorCallback[] = [];
-  private onlineUsersListeners: OnlineUsersCallback[] = [];
-  private errorListeners: ErrorCallback[] = [];
-  private chatMessageListeners: ChatMessageCallback[] = [];
-  private systemMessageListeners: SystemMessageCallback[] = [];
-  private tablesUpdateListeners: TablesUpdateCallback[] = [];
   private lobbyTables: TableData[] = [];
-  private isConnecting: boolean = false;
-  private lastConnectionAttempt: number = 0;
-  private connectionLock: boolean = false;
-  private connectionAttempts: number = 0;
-  private maxConnectionAttempts: number = 3;
-  private reconnectionBackoff: number = 2000; // Start with 2 seconds
-  private heartbeatInterval: NodeJS.Timeout | undefined;
+
+  // Event listeners
+  private errorListeners: ((error: { message: string; context: string }) => void)[] = [];
+  private chatMessageListeners: ((message: ChatMessage) => void)[] = [];
+  private systemMessageListeners: ((message: string) => void)[] = [];
+  private gameStateListeners: ((state: GameState) => void)[] = [];
+  private seatUpdateListeners: ((seats: SeatState) => void)[] = [];
+  private seatErrorListeners: ((error: string) => void)[] = [];
+  private tablesUpdateListeners: ((tables: TableData[]) => void)[] = [];
+  private onlineUsersListeners: ((players: Player[], observers: string[]) => void)[] = [];
+
+  // Add test mode setter
+  setTestMode(enabled: boolean) {
+    this.isTestMode = enabled;
+    if (enabled) {
+      this.lastConnectionAttempt = 0;
+      this.connectionLock = false;
+      this.connectionAttempts = 0;
+      this.reconnectionBackoff = 0; // Set to 0 in test mode
+    }
+  }
+
+  // Add getSocket method
+  getSocket(): ExtendedSocket | null {
+    return this.socket;
+  }
+
+  // Add onGameState method
+  onGameState(callback: (state: GameState) => void): () => void {
+    if (this.socket) {
+      this.socket.on('gameState', callback);
+      return () => this.socket?.off('gameState', callback);
+    }
+    return () => {};
+  }
+
+  // Add setPlayerAway method
+  setPlayerAway(isAway: boolean) {
+    if (this.socket?.connected && this.gameState && this.currentPlayer) {
+      this.socket.emit('player:status', {
+        gameId: this.gameState.id,
+        playerId: this.currentPlayer.id,
+        isAway
+      });
+    }
+  }
 
   connect() {
     try {
       const now = Date.now();
       
+      // If we've already reached max attempts, don't try to connect
+      if (this.connectionAttempts >= this.maxConnectionAttempts) {
+        console.error(`Already reached maximum connection attempts (${this.maxConnectionAttempts}), not attempting to connect`);
+        const error = { 
+          message: `Failed to connect after ${this.maxConnectionAttempts} attempts`, 
+          context: 'socket:max_attempts' 
+        };
+        
+        // First emit through the socket
+        if (this.socket) {
+          this.socket.emit('error', error);
+        }
+        
+        // Then emit through our error emitter
+        this.emitError(error);
+        
+        // Finally, clean up the socket to prevent further connection attempts
+        if (this.socket) {
+          this.removeAllSocketListeners();
+          this.socket.disconnect();
+          this.socket = null;
+        }
+        
+        // Prevent any further connection attempts
+        this.isConnecting = true;
+        this.connectionLock = true;
+        return this.socket;
+      }
+      
+      // Track connection attempts before making the attempt
+      this.connectionAttempts++;
+      console.log(`Connection attempt ${this.connectionAttempts} of ${this.maxConnectionAttempts}`);
+      
+      // If we've just reached max attempts, don't proceed
+      if (this.connectionAttempts >= this.maxConnectionAttempts) {
+        console.error(`Maximum connection attempts (${this.maxConnectionAttempts}) reached, stopping reconnection`);
+        const error = { 
+          message: `Failed to connect after ${this.maxConnectionAttempts} attempts`, 
+          context: 'socket:max_attempts' 
+        };
+        
+        // First emit through the socket
+        if (this.socket) {
+          this.socket.emit('error', error);
+        }
+        
+        // Then emit through our error emitter
+        this.emitError(error);
+        
+        // Finally, clean up the socket to prevent further connection attempts
+        if (this.socket) {
+          this.removeAllSocketListeners();
+          this.socket.disconnect();
+          this.socket = null;
+        }
+        
+        // Prevent any further connection attempts
+        this.isConnecting = true;
+        this.connectionLock = true;
+        return this.socket;
+      }
+      
       // Rate limiting - prevent multiple connection attempts in quick succession
-      if (now - this.lastConnectionAttempt < 5000) {
+      if (!this.isTestMode && now - this.lastConnectionAttempt < 5000) {
         console.log('Rate limiting connection attempts, last attempt was less than 5 seconds ago');
         return this.socket;
       }
       this.lastConnectionAttempt = now;
       
       // Lock-based protection against multiple concurrent connection attempts
-      if (this.connectionLock) {
+      if (!this.isTestMode && this.connectionLock) {
         console.log('Connection attempt in progress, waiting for lock');
         return this.socket;
       }
@@ -72,38 +175,21 @@ class SocketService {
         return this.socket;
       }
       
-      // Track connection attempts
-      if (this.connectionAttempts >= this.maxConnectionAttempts) {
-        console.error(`Reached maximum connection attempts (${this.maxConnectionAttempts}), stopping reconnection`);
-        this.emitError({ 
-          message: `Failed to connect after ${this.maxConnectionAttempts} attempts`, 
-          context: 'socket:max_attempts' 
-        });
-        // Reset counter after a longer period
-        setTimeout(() => {
-          this.connectionAttempts = 0;
-        }, 30000);
-        return this.socket;
-      }
-      
       this.connectionLock = true;
       this.isConnecting = true;
-      this.connectionAttempts++;
       
-      // If socket exists but is disconnected, close it properly first
+      // If socket exists but is disconnected, clean it up properly first
       if (this.socket) {
         console.log('Cleaning up existing socket before reconnecting');
         this.removeAllSocketListeners();
-        this.socket.close();
+        this.socket.disconnect();
         this.socket = null;
       }
-      
-      console.log(`Creating new socket connection to server (attempt ${this.connectionAttempts})`);
       
       // Create socket with more stable configuration
       const socket = io('http://localhost:3001', {
         transports: ['websocket'],
-        reconnection: true,
+        reconnection: true, // Enable auto-reconnection
         reconnectionAttempts: 5,
         reconnectionDelay: 1000,
         timeout: 10000,
@@ -114,7 +200,6 @@ class SocketService {
 
       // Cast socket to ExtendedSocket type and set up event emitter
       this.socket = socket as unknown as ExtendedSocket;
-      EventEmitter.defaultMaxListeners = 20;
       
       // Set up listeners BEFORE connecting
       this.setupListeners();
@@ -123,124 +208,271 @@ class SocketService {
       console.log('Connecting to socket server...');
       this.socket.connect();
       
-      // Set a connection timeout
-      const connectionTimeout = setTimeout(() => {
-        if (this.socket && !this.socket.connected) {
-          console.error('Connection timeout - could not connect to server');
-          this.isConnecting = false;
-          this.connectionLock = false;
-          this.socket.disconnect();
-          this.socket = null;
-          this.emitError({ 
-            message: 'Connection timeout. Server may be down.', 
-            context: 'socket:timeout' 
-          });
-        }
-      }, 10000);
-      
-      // Clear timeout on successful connection or error
-      this.socket.on('connect', () => {
-        clearTimeout(connectionTimeout);
-        this.onSuccessfulConnection();
-      });
-      
-      this.socket.on('connect_error', (error) => {
-        clearTimeout(connectionTimeout);
-        console.error('Connection error:', error.message);
-        this.isConnecting = false;
-        this.connectionLock = false;
-        this.emitError({ 
-          message: `Failed to connect: ${error.message}`, 
-          context: 'socket:connect_error' 
-        });
-        
-        // Exponential backoff for reconnection
-        const backoffTime = this.reconnectionBackoff * Math.pow(2, this.connectionAttempts - 1);
-        console.log(`Will retry connection in ${backoffTime/1000} seconds`);
-        
-        // Try to reconnect after backoff
-        setTimeout(() => {
-          this.connectionLock = false;
-          this.connect();
-        }, backoffTime);
-      });
-      
       return this.socket;
     } catch (error) {
       this.isConnecting = false;
       this.connectionLock = false;
+      const errorObj = {
+        message: `Failed to connect: ${(error as Error).message}`,
+        context: 'socket:connect_error'
+      };
+      this.emitError(errorObj);
+      if (this.socket) {
+        this.socket.emit('error', errorObj);
+      }
       errorTrackingService.trackError(error as Error, 'socket:connect');
       throw error;
     }
+  }
+
+  private setupListeners() {
+    if (!this.socket) return;
+
+    console.log('Setting up socket event listeners');
+
+    // Handle successful connection
+    this.socket.on('connect', () => {
+      this.onSuccessfulConnection();
+    });
+
+    // Handle disconnect
+    this.socket.on('disconnect', (reason: string) => {
+      this.handleDisconnect(reason);
+    });
+
+    // Handle connection error
+    this.socket.on('connect_error', (error) => {
+      console.error('Connection error:', error.message);
+      this.isConnecting = false;
+      this.connectionLock = false;
+      
+      // Track connection attempts
+      this.connectionAttempts++;
+      console.log(`Connection attempt ${this.connectionAttempts} of ${this.maxConnectionAttempts}`);
+      
+      // If we've reached max attempts, don't try to reconnect
+      if (this.connectionAttempts >= this.maxConnectionAttempts) {
+        console.error(`Maximum connection attempts (${this.maxConnectionAttempts}) reached, stopping reconnection`);
+        const maxError = { 
+          message: `Failed to connect after ${this.maxConnectionAttempts} attempts`, 
+          context: 'socket:max_attempts' 
+        };
+        
+        // First emit through the socket
+        this.socket?.emit('error', maxError);
+        
+        // Then emit through our error emitter
+        this.emitError(maxError);
+        
+        // Finally, clean up the socket to prevent further connection attempts
+        this.removeAllSocketListeners();
+        this.socket?.disconnect();
+        this.socket = null;
+        
+        // Prevent any further connection attempts
+        this.isConnecting = true;
+        this.connectionLock = true;
+        return;
+      }
+      
+      // Only emit connect error if we haven't reached max attempts
+      const errorObj = { 
+        message: `Failed to connect: ${error.message}`, 
+        context: 'socket:connect_error' 
+      };
+      this.emitError(errorObj);
+      
+      // Attempt reconnection if we haven't reached max attempts
+      const backoffTime = this.isTestMode ? 0 : this.reconnectionBackoff * Math.pow(2, this.connectionAttempts - 1);
+      console.log(`Will retry connection in ${backoffTime/1000} seconds`);
+      
+      setTimeout(() => {
+        // Double check we haven't reached max attempts
+        if (this.connectionAttempts < this.maxConnectionAttempts && !this.socket?.connected) {
+          this.connect();
+        }
+      }, backoffTime);
+    });
+
+    // Handle socket errors
+    this.socket.on('error', (error: { message: string; context?: string }) => {
+      console.error('Socket error:', error.message);
+      this.emitError({
+        message: error.message,
+        context: error.context || 'socket:error'
+      });
+    });
+
+    // Handle chat messages
+    this.socket.on('chat:message', (message: ChatMessage) => {
+      this.emitChatMessage(message);
+    });
+
+    this.socket.on('chat:system', (message: string) => {
+      this.emitSystemMessage(message);
+    });
+
+    // Handle game state updates
+    this.socket.on('gameState', (state: GameState) => {
+      this.gameState = state;
+      this.emitGameStateUpdate(state);
+    });
+
+    // Handle seat updates
+    this.socket.on('seat:update', (seats: SeatState) => {
+      this.emitSeatUpdate(seats);
+    });
+
+    // Handle seat errors
+    this.socket.on('seat:error', (error: { message: string } | string) => {
+      const errorMessage = typeof error === 'string' ? error : error.message;
+      this.emitSeatError(errorMessage);
+    });
+
+    // Handle table updates
+    this.socket.on('tablesUpdate', (tables: TableData[]) => {
+      this.emitTablesUpdate(tables);
+    });
+
+    // Handle player status updates
+    this.socket.on('player:statusUpdated', (player: Player) => {
+      if (this.gameState) {
+        // Update player in game state
+        const playerIndex = this.gameState.players.findIndex(p => p.id === player.id);
+        if (playerIndex !== -1) {
+          this.gameState.players[playerIndex] = { ...this.gameState.players[playerIndex], ...player };
+          // Emit game state update
+          this.emitGameStateUpdate(this.gameState);
+          // Emit online users update
+          this.emitOnlineUsersUpdate();
+        }
+        
+        // Update current player if it's the same player
+        if (this.currentPlayer?.id === player.id) {
+          this.currentPlayer = { ...this.currentPlayer, ...player };
+        }
+      }
+    });
+
+    // ... rest of the listeners ...
   }
 
   private onSuccessfulConnection() {
     console.log('Connected to server successfully with ID:', this.socket?.id);
     this.isConnecting = false;
     this.connectionLock = false;
-    this.connectionAttempts = 0; // Reset counter on successful connection
-    this.reconnectionBackoff = 2000; // Reset backoff on successful connection
     
-    // Don't automatically upgrade transport - this causes issues
-    // Let the connection remain stable with whatever transport worked
+    // Only reset connection attempts if we haven't reached max attempts
+    if (this.connectionAttempts < this.maxConnectionAttempts) {
+      this.connectionAttempts = 0;
+      console.log('Connection successful, resetting connection attempts counter');
+    }
     
-    // Attempt to restore session after successful connection
-    const savedNickname = cookieService.getNickname();
-    const savedSeatNumber = cookieService.getSeatNumber();
-    
-    if (savedNickname) {
-      if (savedSeatNumber !== null) {
-        // Delay restoring seat to ensure stable connection
-        setTimeout(() => {
-          if (this.socket?.connected) {
-            this.requestSeat(savedNickname, savedSeatNumber);
-          }
-        }, 1000);
+    this.emit('connected');
+
+    // Get user info from cookies
+    const nickname = cookieService.getNickname();
+    const seatNumber = cookieService.getSeatNumber();
+
+    if (nickname) {
+      if (seatNumber === null) {
+        // If no seat number, join as observer
+        this.joinAsObserver(nickname);
       } else {
-        // Join as observer if no seat is saved, with slight delay
-        setTimeout(() => {
-          if (this.socket?.connected) {
-            this.joinAsObserver(savedNickname);
-          }
-        }, 1000);
+        // If has seat number, join game
+        this.joinGame(nickname, seatNumber);
       }
+    }
+
+    // Set up heartbeat
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+    }
+    this.heartbeatInterval = setInterval(() => {
+      if (this.socket?.connected) {
+        this.socket.emit('heartbeat');
+      }
+    }, 30000);
+
+    // Set up event listeners for observer management
+    if (this.socket) {
+      this.socket.on('observer:joined', (observers: string[]) => {
+        this.observers = observers;
+        this.emitOnlineUsersUpdate();
+      });
+
+      this.socket.on('observer:left', (observers: string[]) => {
+        this.observers = observers;
+        this.emitOnlineUsersUpdate();
+      });
+
+      this.socket.on('playerJoined', (player: Player) => {
+        if (!this.gameState) {
+          this.gameState = this.getInitialGameState();
+        }
+
+        if (this.gameState) {
+          const existingPlayerIndex = this.gameState.players.findIndex(p => p.id === player.id);
+          if (existingPlayerIndex !== -1) {
+            this.gameState.players[existingPlayerIndex] = player;
+          } else {
+            this.gameState.players = [...this.gameState.players, player];
+          }
+        }
+        
+        // Remove player from observers list
+        this.observers = this.observers.filter(observer => observer !== player.name);
+        
+        // Emit update with the new state - send the updated player and filtered observers
+        this.onlineUsersListeners.forEach(callback => {
+          callback([player], this.observers);
+        });
+      });
+
+      this.socket.on('playerLeft', (playerId: string) => {
+        if (this.gameState) {
+          const player = this.gameState.players.find(p => p.id === playerId);
+          if (player) {
+            // Add to observers if not already there
+            if (!this.observers.includes(player.name)) {
+              this.observers = [...this.observers, player.name];
+            }
+            
+            // Remove from players list
+            this.gameState.players = this.gameState.players.filter(p => p.id !== playerId);
+            
+            // Emit update with the new state - send empty players array and only the player's name in observers
+            this.onlineUsersListeners.forEach(callback => {
+              callback([], [player.name]);
+            });
+          }
+        }
+      });
     }
   }
 
   disconnect() {
-    if (this.socket) {
-      // Save current state before disconnecting
-      if (this.currentPlayer) {
-        cookieService.setNickname(this.currentPlayer.name);
-        const currentSeat = this.getCurrentSeat();
-        if (currentSeat !== null) {
-          cookieService.setSeatNumber(currentSeat);
+    try {
+      if (this.socket) {
+        // Remove all listeners first
+        this.removeAllSocketListeners();
+        // Then properly disconnect the socket
+        this.socket.disconnect();
+        this.socket = null;
+        this.isConnecting = false;
+        this.connectionLock = false;
+        this.connectionAttempts = 0;
+        this.reconnectionBackoff = 2000;
+        
+        // Clear heartbeat interval if it exists
+        if (this.heartbeatInterval) {
+          clearInterval(this.heartbeatInterval);
+          this.heartbeatInterval = undefined;
         }
       }
-      
-      console.log('Disconnecting socket...');
-      
-      this.connectionLock = true; // Prevent reconnection during disconnection
-      
-      // First disable auto-reconnection
-      this.socket.io.opts.reconnection = false;
-      
-      // Remove all socket event listeners
-      this.removeAllSocketListeners();
-      
-      // Then properly close and disconnect the socket
-      this.socket.disconnect();
-      this.socket.close();
-      this.socket = null;
-      this.isConnecting = false;
-      this.connectionLock = false;
-      
-      // Clear any cached data
-      this.gameState = null;
-      this.currentPlayer = null;
-      this.observers = [];
-      
-      console.log('Socket disconnected successfully');
+    } catch (error) {
+      errorTrackingService.trackError(error as Error, 'socket:disconnect');
+      throw error;
     }
   }
 
@@ -258,12 +490,8 @@ class SocketService {
     };
   }
 
-  private emitError(error: { message: string; context?: string }) {
-    errorTrackingService.trackError(error.message, error.context || 'unknown', {
-      currentPlayer: this.currentPlayer?.name,
-      gameState: this.gameState?.id
-    });
-    this.errorListeners.forEach(cb => cb(error));
+  private emitError(error: { message: string; context: string }) {
+    this.errorListeners.forEach(callback => callback(error));
   }
 
   // --- Online users management ---
@@ -291,15 +519,10 @@ class SocketService {
   }
 
   private emitOnlineUsersUpdate() {
-    try {
-      const players = this.gameState?.players || [];
-      this.onlineUsersListeners.forEach(cb => cb(players, this.observers));
-    } catch (error) {
-      errorTrackingService.trackError(error as Error, 'emitOnlineUsersUpdate', {
-        players: this.gameState?.players.length,
-        observers: this.observers.length
-      });
-    }
+    const players = this.gameState?.players || [];
+    this.onlineUsersListeners.forEach(callback => {
+        callback(players, this.observers);
+    });
   }
 
   // --- Seat management ---
@@ -351,11 +574,11 @@ class SocketService {
   }
 
   private emitSeatUpdate(seats: SeatState) {
-    this.seatUpdateListeners.forEach(cb => cb(seats));
+    this.seatUpdateListeners.forEach(callback => callback(seats));
   }
 
   private emitSeatError(error: string) {
-    this.seatErrorListeners.forEach(cb => cb(error));
+    this.seatErrorListeners.forEach(callback => callback(error));
   }
 
   // --- Game actions ---
@@ -446,11 +669,11 @@ class SocketService {
   }
 
   private emitChatMessage(message: ChatMessage) {
-    this.chatMessageListeners.forEach(cb => cb(message));
+    this.chatMessageListeners.forEach(callback => callback(message));
   }
 
   private emitSystemMessage(message: string) {
-    this.systemMessageListeners.forEach(cb => cb(message));
+    this.systemMessageListeners.forEach(callback => callback(message));
   }
 
   // --- Lobby methods ---
@@ -482,7 +705,7 @@ class SocketService {
 
   private emitTablesUpdate(tables: TableData[]) {
     this.lobbyTables = tables;
-    this.tablesUpdateListeners.forEach(cb => cb(tables));
+    this.tablesUpdateListeners.forEach(callback => callback(tables));
   }
 
   getLobbyTables(): TableData[] {
@@ -538,290 +761,6 @@ class SocketService {
         });
       }
     }
-  }
-
-  private setupListeners(): void {
-    if (!this.socket) return;
-    
-    console.log('Setting up socket event listeners');
-    
-    // First remove any existing handlers to prevent duplicates
-    this.removeAllSocketListeners();
-
-    // --- Basic connection status ---
-    this.socket.on('connect', () => {
-      this.onSuccessfulConnection();
-    });
-    
-    this.socket.on('disconnect', (reason) => {
-      console.log(`Disconnected from server: ${reason}`);
-      this.isConnecting = false;
-      
-      // If the server forcibly closed the connection, don't auto-reconnect
-      if (reason === 'io server disconnect' || reason === 'transport close') {
-        console.log('Server closed connection, not attempting to reconnect');
-        this.connectionLock = false;
-      } else if (reason !== 'io client disconnect') {
-        // Only attempt to reconnect for server-side disconnects
-        console.log('Disconnected due to error, attempting reconnection in 3 seconds');
-        setTimeout(() => {
-          this.connectionLock = false;
-          this.connect();
-        }, 3000);
-      }
-    });
-    
-    // --- Error listener ---
-    this.socket.on('error', (error: { message: string; context?: string }) => {
-      console.error('Socket error:', error.message);
-      errorTrackingService.trackError(error.message, error.context || 'socket:error');
-      this.emitError(error);
-    });
-
-    // --- Online users listeners ---
-    this.socket.on('observer:joined', (observers: string[]) => {
-      try {
-        this.observers = observers;
-        this.emitOnlineUsersUpdate();
-      } catch (error) {
-        errorTrackingService.trackError(error as Error, 'observer:joined', { observers });
-      }
-    });
-
-    this.socket.on('observer:left', (observers: string[]) => {
-      try {
-        this.observers = observers;
-        this.emitOnlineUsersUpdate();
-      } catch (error) {
-        errorTrackingService.trackError(error as Error, 'observer:left', { observers });
-      }
-    });
-
-    // --- Seat management listeners ---
-    this.socket.on('seat:update', (seats: SeatState) => {
-      try {
-        this.emitSeatUpdate(seats);
-      } catch (error) {
-        errorTrackingService.trackError(error as Error, 'seat:update', { seats });
-      }
-    });
-
-    this.socket.on('seat:accepted', (player: Player) => {
-      try {
-        // Update current player
-        this.currentPlayer = player;
-        
-        // Update game state players list, ensuring no duplicates
-        if (this.gameState) {
-          // Remove any existing entries for this player first
-          this.gameState.players = this.gameState.players.filter(p => p.id !== player.id);
-          // Add the player with their new seat
-          this.gameState.players.push(player);
-        } else {
-          this.gameState = {
-            id: 'game1',
-            players: [player],
-            pot: 0,
-            communityCards: [],
-            currentPlayerId: null,
-            currentPlayerPosition: 0,
-            dealerPosition: 0,
-            status: 'waiting',
-            currentBet: 0,
-            minBet: 10,
-            smallBlind: 5,
-            bigBlind: 10,
-            phase: 'waiting'
-          };
-        }
-        
-        // Remove from observers after updating game state
-        this.observers = this.observers.filter(obs => obs !== player.name);
-        
-        // Emit updates
-        this.emitOnlineUsersUpdate();
-      } catch (error) {
-        errorTrackingService.trackError(error as Error, 'seat:accepted', { player: player.name });
-      }
-    });
-
-    this.socket.on('seat:error', (payload: { message: string }) => {
-      try {
-        this.emitSeatError(payload.message);
-      } catch (error) {
-        errorTrackingService.trackError(error as Error, 'seat:error', { message: payload.message });
-      }
-    });
-
-    // --- Game state listeners ---
-    this.socket.on('gameState', (state: GameState) => {
-      try {
-        // Ensure no duplicate players in the game state
-        state.players = state.players.filter((player, index, self) =>
-          index === self.findIndex(p => p.id === player.id)
-        );
-        
-        this.gameState = state;
-        if (this.currentPlayer) {
-          const updatedPlayer = state.players.find(p => p.id === this.currentPlayer?.id);
-          if (updatedPlayer) {
-            this.currentPlayer = updatedPlayer;
-          }
-        }
-        this.emitOnlineUsersUpdate();
-      } catch (error) {
-        errorTrackingService.trackError(error as Error, 'gameState', {
-          gameId: this.gameState?.id,
-          playerCount: this.gameState?.players.length
-        });
-      }
-    });
-
-    this.socket.on('playerJoined', (player: Player) => {
-      if (this.gameState) {
-        this.gameState.players.push(player);
-        // Remove from observers if player was an observer before
-        this.observers = this.observers.filter(obs => obs !== player.name);
-        this.emitOnlineUsersUpdate();
-      }
-    });
-
-    this.socket.on('playerLeft', (playerId: string) => {
-      if (this.gameState) {
-        const player = this.gameState.players.find(p => p.id === playerId);
-        if (player) {
-          // Add to observers when player leaves
-          this.observers.push(player.name);
-        }
-        this.gameState.players = this.gameState.players.filter(p => p.id !== playerId);
-        this.emitOnlineUsersUpdate();
-      }
-    });
-
-    // --- Player status listeners ---
-    this.socket.on('player:statusUpdated', (player: Player) => {
-      if (this.gameState) {
-        this.gameState.players = this.gameState.players.map(p =>
-          p.id === player.id ? player : p
-        );
-        if (this.currentPlayer?.id === player.id) {
-          this.currentPlayer = player;
-        }
-      }
-    });
-
-    this.socket.on('player:stoodUp', (playerId: string) => {
-      if (this.gameState) {
-        const player = this.gameState.players.find(p => p.id === playerId);
-        if (player) {
-          this.observers.push(player.name);
-          this.gameState.players = this.gameState.players.filter(p => p.id !== playerId);
-        }
-        if (this.currentPlayer?.id === playerId) {
-          this.currentPlayer = null;
-        }
-      }
-    });
-
-    // --- Chat listeners ---
-    this.socket.on('chat:message', (message: ChatMessage) => {
-      try {
-        this.emitChatMessage(message);
-      } catch (error) {
-        errorTrackingService.trackError(error as Error, 'chat:message', { 
-          sender: message.sender,
-          isPrivate: message.isPrivate
-        });
-      }
-    });
-
-    this.socket.on('chat:system', (message: string) => {
-      try {
-        this.emitSystemMessage(message);
-      } catch (error) {
-        errorTrackingService.trackError(error as Error, 'chat:system', { message });
-      }
-    });
-
-    // --- Lobby listeners ---
-    this.socket.on('tablesUpdate', (tables: TableData[]) => {
-      try {
-        this.emitTablesUpdate(tables);
-      } catch (error) {
-        errorTrackingService.trackError(error as Error, 'tablesUpdate', { tableCount: tables.length });
-      }
-    });
-
-    this.socket.on('tableJoined', (data: { tableId: number, role: 'player' | 'observer', buyIn: number }) => {
-      try {
-        // When we join a table, create a player for the current user
-        const nickname = localStorage.getItem('nickname') || `Player${Math.floor(Math.random() * 1000)}`;
-        
-        // Create a simple player object for the game
-        const player: Player = {
-          id: this.socket?.id || 'unknown',
-          name: nickname,
-          seatNumber: data.buyIn,
-          position: data.buyIn,
-          chips: 1000,
-          currentBet: 0,
-          isDealer: false,
-          isAway: false,
-          isActive: true,
-          avatar: createObserverAvatar(nickname),
-          cards: []
-        };
-        
-        // Set current player
-        this.currentPlayer = player;
-        
-        // Create a default game state if none exists
-        if (!this.gameState) {
-          this.gameState = {
-            id: data.tableId.toString(),
-            players: [player],
-            pot: 0,
-            communityCards: [],
-            currentPlayerId: null,
-            currentPlayerPosition: 0,
-            dealerPosition: 0,
-            status: 'waiting',
-            currentBet: 0,
-            minBet: 10,
-            smallBlind: 5,
-            bigBlind: 10,
-            phase: 'waiting'
-          };
-        }
-        
-        // Add player to game state
-        this.emitOnlineUsersUpdate();
-      } catch (error) {
-        errorTrackingService.trackError(error as Error, 'tableJoined', data);
-      }
-    });
-
-    this.socket.on('tableError', (error: string) => {
-      this.emitError({ message: error, context: 'table:join' });
-    });
-    
-    // Add heartbeat check to keep connection alive
-    this.heartbeatInterval = setInterval(() => {
-      if (this.socket?.connected) {
-        this.socket.emit('ping');
-      } else {
-        clearInterval(this.heartbeatInterval);
-        this.heartbeatInterval = undefined;
-      }
-    }, 25000);
-    
-    // Store interval to be cleared when needed
-    this.socket.io.on('close', () => {
-      if (this.heartbeatInterval) {
-        clearInterval(this.heartbeatInterval);
-        this.heartbeatInterval = undefined;
-      }
-    });
   }
 
   private removeAllSocketListeners() {
@@ -882,6 +821,103 @@ class SocketService {
 
   setCurrentPlayer(player: Player) {
     this.currentPlayer = player;
+  }
+
+  // Create a function to get initial game state
+  private getInitialGameState(id: string = '1', players: Player[] = []): GameState {
+    return {
+      id,
+      players,
+      communityCards: [],
+      pot: 0,
+      currentPlayerId: null,
+      currentPlayerPosition: 0,
+      dealerPosition: 0,
+      smallBlindPosition: 1,
+      bigBlindPosition: 2,
+      status: 'waiting',
+      phase: 'preflop',
+      minBet: 0,
+      currentBet: 0,
+      smallBlind: 5,
+      bigBlind: 10,
+      handEvaluation: undefined,
+      winner: undefined,
+      isHandComplete: false
+    };
+  }
+
+  // For testing purposes only
+  getConnectionAttempts(): number {
+    return this.connectionAttempts;
+  }
+
+  // For testing purposes only
+  isLocked(): boolean {
+    return this.connectionLock;
+  }
+
+  private handleDisconnect(reason: string) {
+    this.isConnecting = false;
+    this.connectionLock = false;
+    
+    // Only attempt reconnection for transport-related disconnects
+    if (reason === 'transport close' || reason === 'transport error') {
+      console.log(`Disconnected due to ${reason}, attempting reconnection...`);
+      
+      // Don't attempt reconnection if we've reached max attempts
+      if (this.connectionAttempts >= this.maxConnectionAttempts) {
+        console.error(`Already reached maximum connection attempts (${this.maxConnectionAttempts}), not attempting to reconnect`);
+        const error = {
+          message: `Failed to connect after ${this.maxConnectionAttempts} attempts`,
+          context: 'socket:max_attempts'
+        };
+        
+        // First emit through the socket
+        if (this.socket) {
+          this.socket.emit('error', error);
+        }
+        
+        // Then emit through our error emitter
+        this.emitError(error);
+        
+        // Finally, clean up the socket to prevent further connection attempts
+        if (this.socket) {
+          this.removeAllSocketListeners();
+          this.socket.disconnect();
+          this.socket = null;
+        }
+        return;
+      }
+      
+      // Calculate backoff time based on test mode and attempts
+      const backoffTime = this.isTestMode ? 0 : this.reconnectionBackoff * Math.pow(2, this.connectionAttempts);
+      console.log(`Will retry connection in ${backoffTime/1000} seconds`);
+      
+      setTimeout(() => {
+        if (!this.socket?.connected) {
+          this.connect();
+        }
+      }, backoffTime);
+    } else {
+      console.log(`Disconnected due to ${reason}, no reconnection needed`);
+    }
+  }
+
+  private emit(event: string, data?: any) {
+    this.eventEmitter.emit(event, data);
+  }
+
+  on(event: string, callback: (data?: any) => void) {
+    this.eventEmitter.on(event, callback);
+  }
+
+  off(event: string, callback: (data?: any) => void) {
+    this.eventEmitter.off(event, callback);
+  }
+
+  private emitGameStateUpdate(state: GameState) {
+    this.gameStateListeners.forEach(callback => callback(state));
   }
 }
 
