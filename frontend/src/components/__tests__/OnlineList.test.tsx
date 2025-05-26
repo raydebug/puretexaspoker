@@ -39,17 +39,23 @@ describe('OnlineList', () => {
 
   const mockObservers = ['Observer 1', 'Observer 2'];
 
-  it('renders both players and observers sections', () => {
-    render(
+  const renderWithProviders = (ui: React.ReactElement) => {
+    return render(
       <MemoryRouter>
         <ThemeProvider theme={theme}>
-          <OnlineList
-            players={mockPlayers}
-            observers={mockObservers}
-            currentPlayerId="1"
-          />
+          {ui}
         </ThemeProvider>
       </MemoryRouter>
+    );
+  };
+
+  it('renders both players and observers sections', () => {
+    renderWithProviders(
+      <OnlineList
+        players={mockPlayers}
+        observers={mockObservers}
+        currentPlayerId="1"
+      />
     );
 
     // Check section titles
@@ -66,16 +72,12 @@ describe('OnlineList', () => {
   });
 
   it('displays player names with seat numbers', () => {
-    render(
-      <MemoryRouter>
-        <ThemeProvider theme={theme}>
-          <OnlineList
-            players={mockPlayers}
-            observers={mockObservers}
-            currentPlayerId="1"
-          />
-        </ThemeProvider>
-      </MemoryRouter>
+    renderWithProviders(
+      <OnlineList
+        players={mockPlayers}
+        observers={mockObservers}
+        currentPlayerId="1"
+      />
     );
 
     // Check player entries
@@ -84,16 +86,12 @@ describe('OnlineList', () => {
   });
 
   it('displays observer names', () => {
-    render(
-      <MemoryRouter>
-        <ThemeProvider theme={theme}>
-          <OnlineList
-            players={mockPlayers}
-            observers={mockObservers}
-            currentPlayerId="1"
-          />
-        </ThemeProvider>
-      </MemoryRouter>
+    renderWithProviders(
+      <OnlineList
+        players={mockPlayers}
+        observers={mockObservers}
+        currentPlayerId="1"
+      />
     );
 
     // Check observer entries
@@ -102,16 +100,12 @@ describe('OnlineList', () => {
   });
 
   it('highlights current user', () => {
-    const { container } = render(
-      <MemoryRouter>
-        <ThemeProvider theme={theme}>
-          <OnlineList
-            players={mockPlayers}
-            observers={mockObservers}
-            currentPlayerId="1"
-          />
-        </ThemeProvider>
-      </MemoryRouter>
+    const { container } = renderWithProviders(
+      <OnlineList
+        players={mockPlayers}
+        observers={mockObservers}
+        currentPlayerId="1"
+      />
     );
 
     // Find all user items
@@ -119,28 +113,26 @@ describe('OnlineList', () => {
     
     // Check that the current user's item has the highlight color
     const currentUserItem = Array.from(userItems).find(
-      item => item.textContent === 'Player 1 - Seat 1'
+      item => item.textContent?.includes('Player 1 - Seat 1')
     );
+    expect(currentUserItem).toBeTruthy();
     expect(currentUserItem).toHaveStyle({ color: '#ffd700' });
 
     // Check that other items don't have the highlight color
     const otherUserItem = Array.from(userItems).find(
-      item => item.textContent === 'Player 2 - Seat 2'
+      item => item.textContent?.includes('Player 2 - Seat 2')
     );
+    expect(otherUserItem).toBeTruthy();
     expect(otherUserItem).toHaveStyle({ color: 'white' });
   });
 
   it('handles empty lists gracefully', () => {
-    render(
-      <MemoryRouter>
-        <ThemeProvider theme={theme}>
-          <OnlineList
-            players={[]}
-            observers={[]}
-            currentPlayerId="1"
-          />
-        </ThemeProvider>
-      </MemoryRouter>
+    renderWithProviders(
+      <OnlineList
+        players={[]}
+        observers={[]}
+        currentPlayerId="1"
+      />
     );
 
     expect(
@@ -156,16 +148,12 @@ describe('OnlineList', () => {
   });
 
   it('shows "You" indicator for current player', () => {
-    render(
-      <MemoryRouter>
-        <ThemeProvider theme={theme}>
-          <OnlineList
-            players={mockPlayers}
-            observers={mockObservers}
-            currentPlayerId="1"
-          />
-        </ThemeProvider>
-      </MemoryRouter>
+    renderWithProviders(
+      <OnlineList
+        players={mockPlayers}
+        observers={mockObservers}
+        currentPlayerId="1"
+      />
     );
 
     expect(screen.getByText('(You)')).toBeInTheDocument();
@@ -176,20 +164,17 @@ describe('OnlineList', () => {
       p.id === '1' ? { ...p, isAway: true } : p
     );
 
-    render(
-      <MemoryRouter>
-        <ThemeProvider theme={theme}>
-          <OnlineList
-            players={playersWithAway}
-            observers={mockObservers}
-            currentPlayerId="1"
-          />
-        </ThemeProvider>
-      </MemoryRouter>
+    renderWithProviders(
+      <OnlineList
+        players={playersWithAway}
+        observers={mockObservers}
+        currentPlayerId="1"
+      />
     );
 
     expect(screen.getByText('(Away)')).toBeInTheDocument();
     const awayPlayerItem = screen.getByText('Player 1 - Seat 1').closest('li');
+    expect(awayPlayerItem).toBeTruthy();
     expect(awayPlayerItem).toHaveStyle({ opacity: '0.6' });
   });
 }); 

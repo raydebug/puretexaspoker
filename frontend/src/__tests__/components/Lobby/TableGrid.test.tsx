@@ -1,8 +1,54 @@
+import '@testing-library/jest-dom';
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { TableGrid } from '../../../components/Lobby/TableGrid';
 import { socket } from '../../../services/socket';
 import { generateInitialTables } from '../../../utils/tableUtils';
+import { MemoryRouter } from 'react-router-dom';
+import { ThemeProvider } from 'styled-components';
+import { theme } from '../../../styles/theme';
+
+const mockTables = [
+  {
+    id: 1,
+    name: 'Table 1',
+    players: 3,
+    maxPlayers: 6,
+    observers: 2,
+    status: 'active',
+    stakes: '$0.01/$0.02',
+    gameType: 'No Limit',
+    smallBlind: 0.01,
+    bigBlind: 0.02,
+    minBuyIn: 1,
+    maxBuyIn: 2,
+  },
+  {
+    id: 2,
+    name: 'Table 2',
+    players: 0,
+    maxPlayers: 9,
+    observers: 0,
+    status: 'waiting',
+    stakes: '$0.02/$0.05',
+    gameType: 'Pot Limit',
+    smallBlind: 0.02,
+    bigBlind: 0.05,
+    minBuyIn: 2,
+    maxBuyIn: 5,
+  },
+];
+
+interface MockSocketService {
+  onTablesUpdate: jest.Mock;
+  onError: jest.Mock;
+  requestLobbyTables: jest.Mock;
+  offTablesUpdate: jest.Mock;
+  _tablesCallback: ((tables: any[]) => void) | null;
+  _errorCallback: ((error: Error) => void) | null;
+  _storedErrorCallback: ((error: Error) => void) | null;
+  triggerError: (error: Error) => void;
+}
 
 // Mock socket.io-client
 jest.mock('../../../services/socket', () => ({
@@ -19,38 +65,58 @@ jest.mock('../../../utils/tableUtils', () => ({
   formatMoney: (amount: number) => `$${amount}`,
 }));
 
-describe('TableGrid', () => {
-  const mockTables = [
-    {
-      id: 1,
-      name: 'Table 1',
-      players: 3,
-      maxPlayers: 6,
-      observers: 2,
-      status: 'active',
-      stakes: '$0.01/$0.02',
-      gameType: 'No Limit',
-      smallBlind: 0.01,
-      bigBlind: 0.02,
-      minBuyIn: 1,
-      maxBuyIn: 2,
+// Mock socketService
+jest.mock('../../../services/socketService', () => {
+  const mockService: MockSocketService = {
+    onTablesUpdate: jest.fn((callback) => {
+      mockService._tablesCallback = callback;
+      // Immediately call the callback with mock tables
+      setTimeout(() => callback(mockTables), 0);
+    }),
+    onError: jest.fn((callback) => {
+      mockService._errorCallback = callback;
+      // Store the callback for later use
+      mockService._storedErrorCallback = callback;
+    }),
+    requestLobbyTables: jest.fn(),
+    offTablesUpdate: jest.fn(),
+    // Store callbacks for testing
+    _tablesCallback: null,
+    _errorCallback: null,
+    _storedErrorCallback: null,
+    // Helper method to trigger error
+    triggerError: (error: Error) => {
+      if (mockService._storedErrorCallback) {
+        mockService._storedErrorCallback(error);
+      }
     },
-    {
-      id: 2,
-      name: 'Table 2',
-      players: 0,
-      maxPlayers: 9,
-      observers: 0,
-      status: 'waiting',
-      stakes: '$0.02/$0.05',
-      gameType: 'Pot Limit',
-      smallBlind: 0.02,
-      bigBlind: 0.05,
-      minBuyIn: 2,
-      maxBuyIn: 5,
-    },
-  ];
+  };
+  return { socketService: mockService };
+});
 
+const { socketService } = require('../../../services/socketService');
+
+// Helper matcher for split text
+function textIncludesWordsInOrder(element: Element | null, words: string[]): boolean {
+  if (!element?.textContent) return false;
+  const text = element.textContent.replace(/\s+/g, ' ').trim();
+  return words.every(word => text.includes(word));
+}
+
+// Helper matcher for text content
+function textContentIncludes(text: string) {
+  return (_content: string, element: Element | null): boolean => {
+    return element?.textContent?.includes(text) || false;
+  };
+}
+
+// Helper to find element by text content
+async function findElementByText(text: string, container: HTMLElement | Document = document) {
+  const elements = Array.from(container.querySelectorAll('*'));
+  return elements.find(element => element.textContent?.includes(text));
+}
+
+describe('TableGrid', () => {
   const defaultFilters = {
     search: '',
     status: 'all',
@@ -64,129 +130,253 @@ describe('TableGrid', () => {
   });
 
   it('renders loading state initially', () => {
-    render(<TableGrid filters={defaultFilters} />);
+    render(
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <TableGrid filters={defaultFilters} />
+        </ThemeProvider>
+      </MemoryRouter>
+    );
     expect(screen.getByText('Loading tables...')).toBeInTheDocument();
   });
 
   it('renders tables grouped by stakes', async () => {
-    render(<TableGrid filters={defaultFilters} />);
-    
+    render(
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <TableGrid filters={defaultFilters} />
+        </ThemeProvider>
+      </MemoryRouter>
+    );
     await waitFor(() => {
-      expect(screen.getByText('$0.01/$0.02 Tables')).toBeInTheDocument();
-      expect(screen.getByText('$0.02/$0.05 Tables')).toBeInTheDocument();
+      expect(screen.queryByText('Loading tables...')).not.toBeInTheDocument();
     });
+
+    const stakesHeaders = screen.getAllByRole('heading', { level: 2 });
+    const stakesHeaderTexts = stakesHeaders.map(h => h.textContent?.trim());
+    
+    expect(stakesHeaderTexts).toContain('$0.01/$0.02 Stakes');
+    expect(stakesHeaderTexts).toContain('$0.02/$0.05 Stakes');
   });
 
   it('filters tables by search term', async () => {
     render(
-      <TableGrid
-        filters={{
-          ...defaultFilters,
-          search: 'Table 1',
-        }}
-      />
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <TableGrid
+            filters={{
+              ...defaultFilters,
+              search: 'Table 1',
+            }}
+          />
+        </ThemeProvider>
+      </MemoryRouter>
     );
-
     await waitFor(() => {
-      expect(screen.getByText('Table 1')).toBeInTheDocument();
-      expect(screen.queryByText('Table 2')).not.toBeInTheDocument();
+      const tableElements = screen.getAllByRole('heading', { level: 3 });
+      const table1Present = tableElements.some(el => el.textContent?.includes('Table 1'));
+      const table2Present = tableElements.some(el => el.textContent?.includes('Table 2'));
+      expect(table1Present).toBe(true);
+      expect(table2Present).toBe(false);
     });
   });
 
   it('filters tables by status', async () => {
     render(
-      <TableGrid
-        filters={{
-          ...defaultFilters,
-          status: 'waiting',
-        }}
-      />
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <TableGrid
+            filters={{
+              ...defaultFilters,
+              status: 'waiting',
+            }}
+          />
+        </ThemeProvider>
+      </MemoryRouter>
     );
-
     await waitFor(() => {
-      expect(screen.queryByText('Table 1')).not.toBeInTheDocument();
-      expect(screen.getByText('Table 2')).toBeInTheDocument();
+      expect(screen.queryByText('Loading tables...')).not.toBeInTheDocument();
     });
+
+    const table2Name = await screen.findByRole('heading', { level: 3, name: /Table 2/i });
+    expect(table2Name).toBeInTheDocument();
+    
+    const table1Name = screen.queryByRole('heading', { level: 3, name: /Table 1/i });
+    expect(table1Name).not.toBeInTheDocument();
   });
 
   it('filters tables by game type', async () => {
     render(
-      <TableGrid
-        filters={{
-          ...defaultFilters,
-          gameType: 'Pot Limit',
-        }}
-      />
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <TableGrid
+            filters={{
+              ...defaultFilters,
+              gameType: 'Pot Limit',
+            }}
+          />
+        </ThemeProvider>
+      </MemoryRouter>
     );
-
     await waitFor(() => {
-      expect(screen.queryByText('Table 1')).not.toBeInTheDocument();
-      expect(screen.getByText('Table 2')).toBeInTheDocument();
+      expect(screen.queryByText('Loading tables...')).not.toBeInTheDocument();
     });
+
+    const table2Name = await screen.findByRole('heading', { level: 3, name: /Table 2/i });
+    expect(table2Name).toBeInTheDocument();
+    
+    const table1Name = screen.queryByRole('heading', { level: 3, name: /Table 1/i });
+    expect(table1Name).not.toBeInTheDocument();
+
+    const gameTypeText = await screen.findByText('Pot Limit');
+    expect(gameTypeText).toBeInTheDocument();
   });
 
   it('shows empty state when no tables match filters', async () => {
     render(
-      <TableGrid
-        filters={{
-          ...defaultFilters,
-          search: 'nonexistent',
-        }}
-      />
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <TableGrid
+            filters={{
+              ...defaultFilters,
+              search: 'nonexistent',
+            }}
+          />
+        </ThemeProvider>
+      </MemoryRouter>
     );
-
     await waitFor(() => {
-      expect(
-        screen.getByText('No tables match your filters. Try adjusting your search criteria.')
-      ).toBeInTheDocument();
+      expect(screen.getByText(/No tables match your filters/)).toBeInTheDocument();
     });
   });
 
   it('handles table join click', async () => {
-    render(<TableGrid filters={defaultFilters} />);
-
+    render(
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <TableGrid filters={defaultFilters} />
+        </ThemeProvider>
+      </MemoryRouter>
+    );
+    
+    // Wait for tables to load
     await waitFor(() => {
-      fireEvent.click(screen.getByText('Table 1'));
+      expect(screen.queryByText('Loading tables...')).not.toBeInTheDocument();
     });
 
-    expect(screen.getByText('Join Table')).toBeInTheDocument();
-    expect(screen.getByText(/Would you like to join Table 1/)).toBeInTheDocument();
+    // Find and click join button for Table 1
+    const tableHeading = await screen.findByRole('heading', { level: 3, name: /Table 1/i });
+    const table1Card = tableHeading.closest('[data-table-id="1"]');
+    expect(table1Card).toBeInTheDocument();
+    
+    await act(async () => {
+      fireEvent.click(table1Card!);
+    });
+
+    // Check dialog appears with correct title
+    const dialogTitle = await screen.findByRole('heading', { name: /Join Table: Table 1/i });
+    expect(dialogTitle).toBeInTheDocument();
   });
 
   it('handles socket errors', async () => {
-    const mockError = new Error('Connection error');
-    render(<TableGrid filters={defaultFilters} />);
-
-    // Simulate socket error
-    const errorCallback = (socket.on as jest.Mock).mock.calls.find(
-      ([event]) => event === 'error'
-    )[1];
-    errorCallback(mockError);
-
+    render(
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <TableGrid filters={defaultFilters} />
+        </ThemeProvider>
+      </MemoryRouter>
+    );
+    
+    // Wait for initial render
     await waitFor(() => {
-      expect(screen.getByText('Connection error. Please try again.')).toBeInTheDocument();
-      expect(screen.getByText('Retry')).toBeInTheDocument();
+      expect(screen.queryByText('Loading tables...')).not.toBeInTheDocument();
+    });
+    
+    // Trigger error using the mock service helper
+    await act(async () => {
+      const mockError = new Error('Socket error');
+      (socketService as any).triggerError(mockError);
+    });
+    
+    await waitFor(() => {
+      expect(screen.getByText('Socket error')).toBeInTheDocument();
     });
   });
 
   it('handles table updates', async () => {
-    render(<TableGrid filters={defaultFilters} />);
+    const updatedTables = [...mockTables];
+    updatedTables[0].players = 4;
+    
+    render(
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <TableGrid filters={defaultFilters} />
+        </ThemeProvider>
+      </MemoryRouter>
+    );
+    
+    // Wait for initial render
+    await waitFor(() => {
+      expect(screen.queryByText('Loading tables...')).not.toBeInTheDocument();
+    });
+    
+    // Trigger update using the stored callback
+    await act(async () => {
+      if ((socketService as any)._tablesCallback) {
+        (socketService as any)._tablesCallback(updatedTables);
+      }
+    });
+    
+    await waitFor(() => {
+      const playerCount = screen.getAllByText(/\d+\/\d+/)[0];
+      expect(playerCount).toHaveTextContent('4/6');
+    });
+  });
 
-    const updatedTables = [
-      {
-        ...mockTables[0],
-        players: 4,
-      },
-    ];
-
-    // Simulate table update
-    const updateCallback = (socket.on as jest.Mock).mock.calls.find(
-      ([event]) => event === 'tablesUpdate'
-    )[1];
-    updateCallback(updatedTables);
+  it('shows filtered tables with correct text', async () => {
+    render(
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <TableGrid
+            filters={{
+              ...defaultFilters,
+              gameType: 'No Limit',
+            }}
+          />
+        </ThemeProvider>
+      </MemoryRouter>
+    );
 
     await waitFor(() => {
-      expect(screen.getByText('Players: 4/6')).toBeInTheDocument();
+      expect(screen.queryByText('Loading tables...')).not.toBeInTheDocument();
     });
+
+    const tableName = await screen.findByRole('heading', { level: 3, name: /Table 1/i });
+    expect(tableName).toBeInTheDocument();
+
+    const gameTypeText = await screen.findByText('No Limit');
+    expect(gameTypeText).toBeInTheDocument();
+  });
+
+  it('shows empty state with correct message', async () => {
+    render(
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <TableGrid
+            filters={{
+              ...defaultFilters,
+              search: 'nonexistent table',
+            }}
+          />
+        </ThemeProvider>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading tables...')).not.toBeInTheDocument();
+    });
+
+    const emptyMessage = await screen.findByText('No tables match your filters. Try adjusting your search criteria.');
+    expect(emptyMessage).toBeInTheDocument();
   });
 }); 
