@@ -333,27 +333,27 @@ export const TableGrid: React.FC<TableGridProps> = ({ filters }) => {
               <Card key={table.id} onClick={() => handleTableClick(table)} data-table-id={table.id}>
                 <TableName>
                   {table.name}
-                  <Status $isRunning={table.status === 'active'}>
+                  <Status data-testid={`table-status-${table.id}`} $isRunning={table.status === 'active'}>
                     {table.status === 'active' ? 'Running' : 'Waiting'}
                   </Status>
                 </TableName>
                 
                 <InfoRow>
                   <span>Players:</span>
-                  <span>{table.players}/{table.maxPlayers}</span>
+                  <span data-testid={`table-players-${table.id}`}>{table.players}/{table.maxPlayers}</span>
                 </InfoRow>
                 
                 <InfoRow>
                   <span>Stakes:</span>
-                  <span>{table.stakes}</span>
+                  <span data-testid={`table-stakes-${table.id}`}>{table.stakes}</span>
                 </InfoRow>
                 
                 <InfoRow>
                   <span>Game:</span>
-                  <span>{table.gameType}</span>
+                  <span data-testid={`table-game-type-${table.id}`}>{table.gameType}</span>
                 </InfoRow>
                 
-                <JoinButton>Join Table</JoinButton>
+                <JoinButton data-testid="join-table-button">Join Table</JoinButton>
               </Card>
             ))}
           </Grid>

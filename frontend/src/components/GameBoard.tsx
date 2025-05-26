@@ -108,33 +108,50 @@ const Pot = styled.div`
   `}
 `;
 
-const PlayerSeat = styled.div<{ position: number; isActive: boolean; isAway: boolean }>`
+const PlayerSeat = styled.div<{ position: number }>`
   position: absolute;
   width: 120px;
   height: auto;
   padding: 10px;
   border-radius: 10px;
-  background-color: ${props => props.isActive ? 'rgba(255, 215, 0, 0.2)' : 'rgba(0, 0, 0, 0.5)'};
   color: white;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  cursor: ${props => props.isAway ? 'not-allowed' : 'pointer'};
-  border: 2px solid ${props => props.isActive ? '#ffd700' : 'transparent'};
-  opacity: ${props => props.isAway ? 0.7 : 1};
   transition: all 0.3s ease;
+  position: relative;
   
   ${({ position }: { position: number }) => {
     switch (position) {
-      case 0: return `bottom: 10px; left: 50%; transform: translateX(-50%);`;
-      case 1: return `bottom: 100px; right: 60px;`;
-      case 2: return `top: 50%; right: 30px; transform: translateY(-50%);`;
-      case 3: return `top: 100px; left: 60px;`;
-      case 4: return `top: 50%; left: 30px; transform: translateY(-50%);`;
-      default: return ``;
+      case 0: return 'bottom: 10px; left: 50%; transform: translateX(-50%);';
+      case 1: return 'bottom: 100px; right: 60px;';
+      case 2: return 'top: 50%; right: 30px; transform: translateY(-50%);';
+      case 3: return 'top: 100px; left: 60px;';
+      case 4: return 'top: 50%; left: 30px; transform: translateY(-50%);';
+      default: return '';
     }
   }}
+  
+  &[data-active="true"] {
+    background-color: rgba(255, 215, 0, 0.2);
+    border: 2px solid #ffd700;
+  }
+  
+  &[data-active="false"] {
+    background-color: rgba(0, 0, 0, 0.5);
+    border: 2px solid transparent;
+  }
+  
+  &[data-away="true"] {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+  
+  &[data-away="false"] {
+    cursor: pointer;
+    opacity: 1;
+  }
   
   ${media.lg`
     width: 110px;
@@ -142,12 +159,12 @@ const PlayerSeat = styled.div<{ position: number; isActive: boolean; isAway: boo
     
     ${({ position }: { position: number }) => {
       switch (position) {
-        case 0: return `bottom: 10px; left: 50%; transform: translateX(-50%);`;
-        case 1: return `bottom: 90px; right: 50px;`;
-        case 2: return `top: 50%; right: 25px; transform: translateY(-50%);`;
-        case 3: return `top: 90px; left: 50px;`;
-        case 4: return `top: 50%; left: 25px; transform: translateY(-50%);`;
-        default: return ``;
+        case 0: return 'bottom: 10px; left: 50%; transform: translateX(-50%);';
+        case 1: return 'bottom: 90px; right: 50px;';
+        case 2: return 'top: 50%; right: 25px; transform: translateY(-50%);';
+        case 3: return 'top: 90px; left: 50px;';
+        case 4: return 'top: 50%; left: 25px; transform: translateY(-50%);';
+        default: return '';
       }
     }}
   `}
@@ -158,12 +175,12 @@ const PlayerSeat = styled.div<{ position: number; isActive: boolean; isAway: boo
     
     ${({ position }: { position: number }) => {
       switch (position) {
-        case 0: return `bottom: 10px; left: 50%; transform: translateX(-50%);`;
-        case 1: return `bottom: 80px; right: 40px;`;
-        case 2: return `top: 50%; right: 20px; transform: translateY(-50%);`;
-        case 3: return `top: 80px; left: 40px;`;
-        case 4: return `top: 50%; left: 20px; transform: translateY(-50%);`;
-        default: return ``;
+        case 0: return 'bottom: 10px; left: 50%; transform: translateX(-50%);';
+        case 1: return 'bottom: 80px; right: 40px;';
+        case 2: return 'top: 50%; right: 20px; transform: translateY(-50%);';
+        case 3: return 'top: 80px; left: 40px;';
+        case 4: return 'top: 50%; left: 20px; transform: translateY(-50%);';
+        default: return '';
       }
     }}
   `}
@@ -175,15 +192,29 @@ const PlayerSeat = styled.div<{ position: number; isActive: boolean; isAway: boo
     
     ${({ position }: { position: number }) => {
       switch (position) {
-        case 0: return `bottom: 5px; left: 50%; transform: translateX(-50%);`;
-        case 1: return `bottom: 70px; right: 30px;`;
-        case 2: return `top: 50%; right: 15px; transform: translateY(-50%);`;
-        case 3: return `top: 70px; left: 30px;`;
-        case 4: return `top: 50%; left: 15px; transform: translateY(-50%);`;
-        default: return ``;
+        case 0: return 'bottom: 5px; left: 50%; transform: translateX(-50%);';
+        case 1: return 'bottom: 70px; right: 30px;';
+        case 2: return 'top: 50%; right: 15px; transform: translateY(-50%);';
+        case 3: return 'top: 70px; left: 30px;';
+        case 4: return 'top: 50%; left: 15px; transform: translateY(-50%);';
+        default: return '';
       }
     }}
   `}
+`;
+
+const AwayIndicator = styled.div`
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #ff4444;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  z-index: 1;
 `;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -278,9 +309,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   onPlayerAction
 }) => {
   const [menuState, setMenuState] = useState<{
-    playerId: string;
+    isOpen: boolean;
     position: { x: number; y: number };
-  } | null>(null);
+    player: Player | null;
+  }>({
+    isOpen: false,
+    position: { x: 0, y: 0 },
+    player: null
+  });
   
   // Ref to the table element for calculating positions
   const tableRef = useRef<HTMLDivElement>(null);
@@ -322,53 +358,91 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   }, [gameState]);
 
   const handleSeatClick = (event: React.MouseEvent, player: Player) => {
-    if (player.id === currentPlayer.id) {
-      const rect = (event.target as HTMLElement).getBoundingClientRect();
+    event.preventDefault();
+    if (player.id === currentPlayer?.id) {
       setMenuState({
-        playerId: player.id,
-        position: {
-          x: rect.left,
-          y: rect.bottom + 5
-        }
+        isOpen: true,
+        position: { x: event.clientX, y: event.clientY },
+        player
       });
     }
   };
 
   const handleMenuAction = (action: SeatAction) => {
-    if (menuState && onPlayerAction) {
-      onPlayerAction(action, menuState.playerId);
+    if (menuState.player && onPlayerAction) {
+      onPlayerAction(action, menuState.player.id);
     }
+    setMenuState(prev => ({ ...prev, isOpen: false }));
   };
 
   return (
-    <GameContainer ref={tableRef}>
+    <GameContainer data-testid="game-table">
+      <div data-testid="game-status" className="game-status">
+        {gameState.phase}
+      </div>
+      
       <TableCenter>
-        <CommunityCards>
+        <div data-testid="dealer-button" data-position={gameState.dealerPosition} className="dealer-button">
+          D
+        </div>
+        <div data-testid="small-blind" data-position={gameState.smallBlindPosition} className="small-blind">
+          SB
+        </div>
+        <div data-testid="big-blind" data-position={gameState.bigBlindPosition} className="big-blind">
+          BB
+        </div>
+        
+        <CommunityCards data-testid="community-cards">
           {gameState.communityCards.map((card, index) => (
             <AnimatedCard key={index} card={card} delay={index * 0.2} />
           ))}
         </CommunityCards>
-        <Pot>Pot: {gameState.pot}</Pot>
+        
+        <Pot data-testid="pot-amount">Pot: {gameState.pot}</Pot>
+        
+        <div data-testid="current-bet">
+          Current Bet: {gameState.currentBet}
+        </div>
+        
+        {gameState.phase === 'showdown' && (
+          <div data-testid="hand-evaluation">
+            {gameState.handEvaluation}
+          </div>
+        )}
+        
+        {gameState.winner && (
+          <div data-testid="winner-announcement">
+            Winner: {gameState.winner}
+          </div>
+        )}
+        
+        {gameState.isHandComplete && (
+          <div data-testid="hand-complete">
+            Hand Complete
+          </div>
+        )}
       </TableCenter>
       
-      {gameState.players.map(player => {
-        const isCurrentPlayer = player.id === currentPlayer.id;
+      {gameState.players.map((player, index) => {
+        const isCurrentPlayer = player.id === currentPlayer?.id;
         
         return (
-          <PlayerSeat 
+          <PlayerSeat
             key={player.id}
-            position={player.position}
-            isActive={isCurrentPlayer}
-            isAway={player.isAway}
+            position={index}
+            data-active={isCurrentPlayer}
+            data-away={player.isAway}
+            data-testid={`seat-${index}`}
             onClick={(e) => handleSeatClick(e, player)}
           >
+            {player.isAway && <AwayIndicator>Away</AwayIndicator>}
             <Avatar 
               avatar={player.avatar}
               size="medium"
               isActive={player.id === gameState.currentPlayerId}
               isAway={player.isAway}
             />
-            <PlayerName>{player.name}</PlayerName>
+            <PlayerName data-testid={`player-${player.name}`}>{player.name}</PlayerName>
             <PlayerChips>{player.chips}</PlayerChips>
             {player.currentBet > 0 && (
               <PlayerBet>{player.currentBet}</PlayerBet>
@@ -376,6 +450,23 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           </PlayerSeat>
         );
       })}
+      
+      <div className="betting-controls">
+        <button data-testid="check-button" onClick={() => onPlayerAction?.('check', currentPlayer?.id)}>
+          Check
+        </button>
+        <button data-testid="bet-button" onClick={() => onPlayerAction?.('bet', currentPlayer?.id)}>
+          Bet
+        </button>
+        <button data-testid="fold-button" onClick={() => onPlayerAction?.('fold', currentPlayer?.id)}>
+          Fold
+        </button>
+        {gameState.phase === 'waiting' && (
+          <button data-testid="start-game-button" onClick={() => onPlayerAction?.('start', currentPlayer?.id)}>
+            Start Game
+          </button>
+        )}
+      </div>
       
       {chipAnimations.map((animation, index) => {
         const player = gameState.players.find(p => p.id === animation.playerId);
@@ -417,12 +508,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         );
       })}
       
-      {menuState && (
+      {menuState.isOpen && menuState.player && (
         <SeatMenu
           position={menuState.position}
-          isAway={gameState.players.find(p => p.id === menuState.playerId)?.isAway || false}
+          isAway={menuState.player.isAway}
           onAction={handleMenuAction}
-          onClose={() => setMenuState(null)}
+          onClose={() => setMenuState(prev => ({ ...prev, isOpen: false }))}
         />
       )}
     </GameContainer>

@@ -12,12 +12,16 @@ const MenuContainer = styled.div`
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 `;
 
-const MenuItem = styled.button<{ isWarning?: boolean }>`
+interface MenuItemProps {
+  'data-warning'?: boolean;
+}
+
+const MenuItem = styled.button<MenuItemProps>`
   width: 100%;
   padding: 0.5rem 1rem;
   background: none;
   border: none;
-  color: ${props => props.isWarning ? '#ff4444' : 'white'};
+  color: ${props => props['data-warning'] ? '#ff4444' : 'white'};
   font-size: 0.9rem;
   text-align: left;
   cursor: pointer;
@@ -28,7 +32,7 @@ const MenuItem = styled.button<{ isWarning?: boolean }>`
   transition: all 0.2s;
 
   &:hover {
-    background-color: ${props => props.isWarning ? 'rgba(255, 68, 68, 0.2)' : 'rgba(76, 175, 80, 0.2)'};
+    background-color: ${props => props['data-warning'] ? 'rgba(255, 68, 68, 0.2)' : 'rgba(76, 175, 80, 0.2)'};
   }
 
   &:not(:last-child) {
@@ -41,7 +45,7 @@ const MenuIcon = styled.span`
   opacity: 0.8;
 `;
 
-export type SeatAction = 'leaveMidway' | 'standUp' | 'leaveTable' | 'comeBack';
+export type SeatAction = 'leaveMidway' | 'standUp' | 'leaveTable' | 'comeBack' | 'check' | 'bet' | 'fold' | 'start';
 
 interface SeatMenuProps {
   position: { x: number; y: number };
@@ -66,21 +70,21 @@ export const SeatMenu: React.FC<SeatMenuProps> = ({
       <div onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }} />
       <MenuContainer style={{ top: position.y, left: position.x }}>
         {isAway ? (
-          <MenuItem onClick={() => handleAction('comeBack')}>
+          <MenuItem onClick={() => handleAction('comeBack')} data-testid="come-back-button">
             <MenuIcon>↩️</MenuIcon>
             I Am Back
           </MenuItem>
         ) : (
-          <MenuItem onClick={() => handleAction('leaveMidway')}>
+          <MenuItem onClick={() => handleAction('leaveMidway')} data-testid="leave-midway-button">
             <MenuIcon>⏸️</MenuIcon>
             Leave Midway
           </MenuItem>
         )}
-        <MenuItem onClick={() => handleAction('standUp')}>
+        <MenuItem onClick={() => handleAction('standUp')} data-testid="stand-up-button">
           <MenuIcon>🪑</MenuIcon>
           Stand Up
         </MenuItem>
-        <MenuItem isWarning onClick={() => handleAction('leaveTable')}>
+        <MenuItem data-warning onClick={() => handleAction('leaveTable')} data-testid="leave-table-button">
           <MenuIcon>🚪</MenuIcon>
           Leave Table
         </MenuItem>

@@ -22,12 +22,16 @@ interface ChatBoxProps {
   gameId: string;
 }
 
-const ChatContainer = styled.div<{ isCollapsed: boolean }>`
+interface StyledProps {
+  'data-collapsed': boolean;
+}
+
+const ChatContainer = styled.div<StyledProps>`
   position: fixed;
   bottom: 2rem;
   left: 2rem;
   width: 300px;
-  height: ${props => props.isCollapsed ? '50px' : '400px'};
+  height: ${props => props['data-collapsed'] ? '50px' : '400px'};
   background-color: rgba(0, 0, 0, 0.8);
   border-radius: 1rem;
   padding: 1rem;
@@ -52,14 +56,14 @@ const ChatContainer = styled.div<{ isCollapsed: boolean }>`
   `}
 `;
 
-const ChatHeader = styled.div<{ isCollapsed: boolean }>`
+const ChatHeader = styled.div<StyledProps>`
   color: #ffd700;
   font-weight: bold;
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin-bottom: ${props => props.isCollapsed ? '0' : '0.5rem'};
-  padding-bottom: ${props => props.isCollapsed ? '0' : '0.5rem'};
-  border-bottom: ${props => props.isCollapsed ? 'none' : '1px solid #4caf50'};
+  margin-bottom: ${props => props['data-collapsed'] ? '0' : '0.5rem'};
+  padding-bottom: ${props => props['data-collapsed'] ? '0' : '0.5rem'};
+  border-bottom: ${props => props['data-collapsed'] ? 'none' : '1px solid #4caf50'};
   font-size: 1rem;
   display: flex;
   justify-content: space-between;
@@ -68,8 +72,8 @@ const ChatHeader = styled.div<{ isCollapsed: boolean }>`
   user-select: none;
 `;
 
-const CollapseIcon = styled.span<{ isCollapsed: boolean }>`
-  transform: rotate(${props => props.isCollapsed ? '180deg' : '0deg'});
+const CollapseIcon = styled.span<StyledProps>`
+  transform: rotate(${props => props['data-collapsed'] ? '180deg' : '0deg'});
   transition: transform 0.3s ease;
 `;
 
@@ -316,15 +320,15 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ currentPlayer, gameId }) => {
   };
 
   return (
-    <ChatContainer isCollapsed={isCollapsed}>
-      <ChatHeader isCollapsed={isCollapsed} onClick={toggleCollapse}>
+    <ChatContainer data-collapsed={isCollapsed}>
+      <ChatHeader data-collapsed={isCollapsed} onClick={toggleCollapse}>
         <div>
           Game Chat
           {isCollapsed && unreadCount > 0 && (
             <UnreadBadge>{unreadCount}</UnreadBadge>
           )}
         </div>
-        <CollapseIcon isCollapsed={isCollapsed}>
+        <CollapseIcon data-collapsed={isCollapsed}>
           ▼
         </CollapseIcon>
       </ChatHeader>

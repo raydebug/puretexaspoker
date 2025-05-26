@@ -96,8 +96,8 @@ export const JoinPage: React.FC = () => {
     // Store nickname in cookies for persistence
     Cookies.set('playerNickname', nickname, { expires: 7 });
     
-    // Navigate to the game page
-    navigate('/game/1');
+    // Navigate to the lobby
+    navigate('/');
   };
   
   return (
