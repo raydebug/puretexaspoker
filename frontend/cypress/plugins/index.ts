@@ -1,6 +1,8 @@
 import { defineConfig } from 'cypress'
 
 export default function setupPlugins(on: Cypress.PluginEvents, config: Cypress.PluginConfigOptions) {
+  let sessionId = 1;
+
   on('task', {
     async setupTestGame() {
       // Create two players
@@ -60,6 +62,10 @@ export default function setupPlugins(on: Cypress.PluginEvents, config: Cypress.P
         player2Id: player2.id,
         tableId: table.id
       }
+    },
+
+    getSessionId() {
+      return sessionId++;
     }
   })
 

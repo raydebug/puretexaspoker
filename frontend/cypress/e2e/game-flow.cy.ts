@@ -18,6 +18,16 @@ declare namespace Cypress {
   }
 }
 
+describe('Game Flow', () => {
+  beforeEach(() => {
+    cy.visit('http://localhost:3000');
+  });
+
+  it('should load the game page', () => {
+    cy.get('[data-testid="game-container"]').should('exist');
+  });
+});
+
 describe('Game Flow Tests', () => {
   beforeEach(() => {
     cy.visit('/')

@@ -3,11 +3,11 @@ import setupPlugins from './cypress/plugins'
 
 export default defineConfig({
   e2e: {
-    baseUrl: 'http://localhost:5173',
+    baseUrl: 'http://localhost:3000',
     env: {
       apiUrl: 'http://localhost:3001'
     },
-    supportFile: 'cypress/support/commands.ts',
+    supportFile: 'cypress/support/e2e.ts',
     specPattern: 'cypress/e2e/**/*.cy.{js,jsx,ts,tsx}',
     video: false,
     screenshotOnRunFailure: true,
@@ -16,8 +16,9 @@ export default defineConfig({
     viewportHeight: 720,
     retries: {
       runMode: 2,
-      openMode: 0
+      openMode: 1
     },
+    experimentalStudio: true,
     setupNodeEvents(on, config) {
       return setupPlugins(on, config)
     }

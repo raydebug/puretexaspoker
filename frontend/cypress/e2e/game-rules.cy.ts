@@ -8,7 +8,7 @@ describe('Game Rules', () => {
     // Login player
     cy.get('@gameData').then((data: any) => {
       const player = data.players[0];
-      cy.loginPlayer(player.name, player.chips);
+      cy.loginPlayer(player.nickname, player.chips);
     });
 
     // Join table
@@ -69,21 +69,22 @@ describe('Game Rules', () => {
     // Login first player
     cy.get('@gameData').then((data: any) => {
       const player1 = data.players[0];
-      cy.loginPlayer(player1.name, player1.chips);
+      cy.loginPlayer(player1.nickname, player1.chips);
     });
 
     // Join table
     cy.joinTable('table1');
 
     // Login second player
-    cy.window().then((win) => {
+    cy.window().then((win: Window) => {
       cy.get('@gameData').then((data: any) => {
         const player2 = data.players[1];
-        const newWindow = win.open('/');
-        cy.wrap(newWindow).then((win) => {
-          cy.stub(win, 'open').as('openWindow');
-          cy.loginPlayer(player2.name, player2.chips);
-        });
+        const newWindow = win.open('/', '_blank');
+        if (newWindow) {
+          cy.wrap(newWindow).then((win) => {
+            cy.loginPlayer(player2.nickname, player2.chips);
+          });
+        }
       });
     });
 
@@ -115,21 +116,22 @@ describe('Game Rules', () => {
     // Login first player with small stack
     cy.get('@gameData').then((data: any) => {
       const player1 = data.players[0];
-      cy.loginPlayer(player1.name, 50);
+      cy.loginPlayer(player1.nickname, 50);
     });
 
     // Join table
     cy.joinTable('table1');
 
     // Login second player with large stack
-    cy.window().then((win) => {
+    cy.window().then((win: Window) => {
       cy.get('@gameData').then((data: any) => {
         const player2 = data.players[1];
-        const newWindow = win.open('/');
-        cy.wrap(newWindow).then((win) => {
-          cy.stub(win, 'open').as('openWindow');
-          cy.loginPlayer(player2.name, 1000);
-        });
+        const newWindow = win.open('/', '_blank');
+        if (newWindow) {
+          cy.wrap(newWindow).then((win) => {
+            cy.loginPlayer(player2.nickname, 1000);
+          });
+        }
       });
     });
 
@@ -151,21 +153,22 @@ describe('Game Rules', () => {
     // Login first player
     cy.get('@gameData').then((data: any) => {
       const player1 = data.players[0];
-      cy.loginPlayer(player1.name, player1.chips);
+      cy.loginPlayer(player1.nickname, player1.chips);
     });
 
     // Join table
     cy.joinTable('table1');
 
     // Login second player
-    cy.window().then((win) => {
+    cy.window().then((win: Window) => {
       cy.get('@gameData').then((data: any) => {
         const player2 = data.players[1];
-        const newWindow = win.open('/');
-        cy.wrap(newWindow).then((win) => {
-          cy.stub(win, 'open').as('openWindow');
-          cy.loginPlayer(player2.name, player2.chips);
-        });
+        const newWindow = win.open('/', '_blank');
+        if (newWindow) {
+          cy.wrap(newWindow).then((win) => {
+            cy.loginPlayer(player2.nickname, player2.chips);
+          });
+        }
       });
     });
 

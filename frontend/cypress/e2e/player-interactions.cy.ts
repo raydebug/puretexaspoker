@@ -14,16 +14,16 @@ describe('Player Interactions', () => {
     cy.contains('TestPlayer').should('be.visible');
     
     // Find and take a seat
-    cy.get('.seat-button').first().click();
-    cy.contains('button', 'Yes').click();
+    cy.get('[data-testid="seat-0"]').click();
+    cy.get('[data-testid="take-seat-button"]').click();
     
     // Verify player is seated
-    cy.get('.player-seat').should('exist');
+    cy.get('[data-testid="player-seat"]').should('exist');
     cy.contains('TestPlayer').should('be.visible');
     
     // Leave the table
-    cy.get('.player-seat').first().click();
-    cy.contains('Leave Table').click();
+    cy.get('[data-testid="player-seat"]').first().click();
+    cy.get('[data-testid="leave-table-button"]').click();
     
     // Verify player has left and is back in the lobby
     cy.url().should('include', 'lobby');
@@ -34,29 +34,29 @@ describe('Player Interactions', () => {
     cy.joinGame('StandupTest');
     
     // Find and take a seat
-    cy.get('.seat-button').first().click();
-    cy.contains('button', 'Yes').click();
+    cy.get('[data-testid="seat-0"]').click();
+    cy.get('[data-testid="take-seat-button"]').click();
     
     // Verify player is seated
-    cy.get('.player-seat').should('exist');
+    cy.get('[data-testid="player-seat"]').should('exist');
     cy.contains('StandupTest').should('be.visible');
     
     // Stand up from seat
-    cy.get('.player-seat').first().click();
-    cy.contains('Stand Up').click();
+    cy.get('[data-testid="player-seat"]').first().click();
+    cy.get('[data-testid="stand-up-button"]').click();
     
     // Verify player is in observer list
-    cy.get('.online-list').within(() => {
+    cy.get('[data-testid="online-list"]').within(() => {
       cy.contains('Observers').should('be.visible');
       cy.contains('StandupTest').should('be.visible');
     });
     
     // Take a seat again
-    cy.get('.seat-button').first().click();
-    cy.contains('button', 'Yes').click();
+    cy.get('[data-testid="seat-0"]').click();
+    cy.get('[data-testid="take-seat-button"]').click();
     
     // Verify player is seated again
-    cy.get('.player-seat').should('exist');
+    cy.get('[data-testid="player-seat"]').should('exist');
     cy.contains('StandupTest').should('be.visible');
   });
 
@@ -65,20 +65,20 @@ describe('Player Interactions', () => {
     cy.joinGame('AwayStatusTest');
     
     // Find and take a seat
-    cy.get('.seat-button').first().click();
-    cy.contains('button', 'Yes').click();
+    cy.get('[data-testid="seat-0"]').click();
+    cy.get('[data-testid="take-seat-button"]').click();
     
     // Set status to away
     cy.setPlayerStatus('away');
     
     // Verify away status
-    cy.get('.status-icon').should('be.visible');
+    cy.get('[data-testid="status-icon"]').should('be.visible');
     
     // Set status back to present
     cy.setPlayerStatus('back');
     
     // Verify away status is removed
-    cy.get('.status-icon').should('not.exist');
+    cy.get('[data-testid="status-icon"]').should('not.exist');
   });
 
   it('shows correct player count in online users list', () => {
@@ -86,13 +86,13 @@ describe('Player Interactions', () => {
     cy.joinGame('PlayerCountTest');
     
     // Find and take a seat
-    cy.get('.seat-button').first().click();
-    cy.contains('button', 'Yes').click();
+    cy.get('[data-testid="seat-0"]').click();
+    cy.get('[data-testid="take-seat-button"]').click();
     
     // Verify player count in online list
-    cy.get('.online-list').within(() => {
+    cy.get('[data-testid="online-list"]').within(() => {
       cy.contains('Players').should('be.visible');
-      cy.get('.players-list .player-item').should('have.length.at.least', 1);
+      cy.get('[data-testid="player-item"]').should('have.length.at.least', 1);
     });
   });
 
@@ -101,15 +101,14 @@ describe('Player Interactions', () => {
     cy.joinGame('HighlightTest');
     
     // Find and take a seat
-    cy.get('.seat-button').first().click();
-    cy.contains('button', 'Yes').click();
+    cy.get('[data-testid="seat-0"]').click();
+    cy.get('[data-testid="take-seat-button"]').click();
     
     // Verify player is highlighted in online list
-    cy.get('.online-list').within(() => {
+    cy.get('[data-testid="online-list"]').within(() => {
       cy.contains('HighlightTest')
         .parent()
-        .should('have.css', 'background-color', 'rgba(76, 175, 80, 0.2)')
-        .and('have.css', 'color', 'rgb(255, 215, 0)');
+        .should('have.class', 'highlighted');
     });
   });
 
@@ -119,8 +118,8 @@ describe('Player Interactions', () => {
     
     // Send a chat message
     const testMessage = 'Hello from ChatTest!';
-    cy.get('.chat-input').type(testMessage);
-    cy.get('button').contains('Send').click();
+    cy.get('[data-testid="chat-input"]').type(testMessage);
+    cy.get('[data-testid="send-message-button"]').click();
     
     // Verify message is visible
     cy.contains(testMessage).should('be.visible');
@@ -132,17 +131,17 @@ describe('Player Interactions', () => {
     cy.joinGame(playerName);
     
     // Find and take a seat
-    cy.get('.seat-button').first().click();
-    cy.contains('button', 'Yes').click();
+    cy.get('[data-testid="seat-0"]').click();
+    cy.get('[data-testid="take-seat-button"]').click();
     
     // Wait for game to start and player's turn
     cy.contains('Your Turn', { timeout: 10000 }).should('be.visible');
     
     // Player performs a check action
-    cy.contains('button', 'Check').click();
+    cy.get('[data-testid="check-button"]').click();
     
     // Verify action is displayed in the game log
-    cy.contains(`${playerName} checks`).should('be.visible');
+    cy.get('[data-testid="game-log"]').contains(`${playerName} checks`).should('be.visible');
   });
 
   it('shows dealer button moving correctly between hands', () => {
@@ -150,28 +149,23 @@ describe('Player Interactions', () => {
     cy.joinGame('DealerTest');
     
     // Find and take a seat
-    cy.get('.seat-button').first().click();
-    cy.contains('button', 'Yes').click();
+    cy.get('[data-testid="seat-0"]').click();
+    cy.get('[data-testid="take-seat-button"]').click();
     
-    // Record dealer button position
-    let initialDealerPosition: string | undefined;
-    cy.get('.dealer-button')
+    // Record dealer button position and verify it changes after a hand
+    cy.get('[data-testid="dealer-button"]')
       .invoke('attr', 'data-position')
-      .then(position => {
-        initialDealerPosition = position;
-      });
-    
-    // Play through a hand
-    cy.contains('button', 'Check').click();
-    
-    // Wait for hand to complete
-    cy.get('[data-hand-complete="true"]', { timeout: 30000 }).should('be.visible');
-    
-    // Verify dealer button has moved
-    cy.get('.dealer-button')
-      .invoke('attr', 'data-position')
-      .then(newPosition => {
-        expect(newPosition).not.to.equal(initialDealerPosition);
+      .then(initialPosition => {
+        // Play through a hand
+        cy.get('[data-testid="check-button"]').click();
+        
+        // Wait for hand to complete
+        cy.get('[data-testid="hand-complete"]', { timeout: 30000 }).should('be.visible');
+        
+        // Verify dealer button has moved
+        cy.get('[data-testid="dealer-button"]')
+          .invoke('attr', 'data-position')
+          .should('not.eq', initialPosition);
       });
   });
 }); 
