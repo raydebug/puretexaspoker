@@ -12,9 +12,8 @@ function App() {
       <GlobalStyles />
       <div data-testid="game-container">
         <Routes>
-          <Route path="/" element={<JoinPage />} />
+          <Route path="/" element={<LobbyPage />} />
           <Route path="/join" element={<JoinPage />} />
-          <Route path="/lobby" element={<LobbyPage />} />
           <Route path="/join-table" element={<JoinGamePage />} />
           <Route path="/game/:gameId" element={<GamePage />} />
         </Routes>
