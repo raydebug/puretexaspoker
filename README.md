@@ -103,16 +103,20 @@ cd frontend && npm test
 ```
 
 ### End-to-End Tests
-Cypress is used for E2E testing. To run the tests:
+Cypress is used for E2E testing. All E2E tests are located in the frontend directory. To run the tests:
 
 ```bash
-# From the root directory
+# From the frontend directory
+cd frontend
 npm run cypress:run        # Run tests in headless mode
 npm run cypress:open       # Open Cypress test runner
 ```
 
+Note: Make sure both frontend and backend servers are running before executing E2E tests.
+
 ### Test Structure
 
+All E2E tests are located in `frontend/cypress/e2e/`:
 - `basic.cy.ts`: Basic game functionality tests
 - `game-flow.cy.ts`: Complete game flow tests including dealer button movement and blind posting
 - `table-management.cy.ts`: Table and seat management tests
@@ -130,24 +134,7 @@ npm run cypress:open       # Open Cypress test runner
 
 ## Known Issues and Solutions
 
-### Backend Issues
-1. TypeScript compilation errors:
-   - Missing properties in GameState type
-   - Type mismatches for Card[] vs string[]
-   - Missing method implementations in GameService
-
-### Frontend Issues
-1. Missing type definitions:
-   ```
-   TS7016: Could not find a declaration file for module 'js-cookie'
-   ```
-   Solution: Install @types/js-cookie
-
-### Server Issues
-1. Port conflicts:
-   - Port 3000 already in use
-   - Port 3001 already in use
-   Solution: Use kill-ports script before starting servers
+// (This section intentionally left blank; see tasks.md for all open issues)
 
 ## Features
 
