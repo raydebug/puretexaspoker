@@ -9,7 +9,8 @@ export default defineConfig({
     },
     supportFile: 'cypress/support/e2e.ts',
     specPattern: 'cypress/e2e/**/*.cy.{js,jsx,ts,tsx}',
-    video: false,
+    video: true,
+    videoCompression: 32,
     screenshotOnRunFailure: true,
     defaultCommandTimeout: 10000,
     viewportWidth: 1280,
@@ -21,7 +22,8 @@ export default defineConfig({
     experimentalStudio: true,
     setupNodeEvents(on, config) {
       return setupPlugins(on, config)
-    }
+    },
+    chromeWebSecurity: false
   },
   component: {
     devServer: {
@@ -29,11 +31,10 @@ export default defineConfig({
       bundler: 'vite'
     },
     supportFile: 'cypress/support/component.ts',
-    specPattern: 'cypress/component/**/*.cy.ts'
+    specPattern: 'cypress/component/**/*.cy.{js,jsx,ts,tsx}'
   },
   env: {
     apiUrl: process.env.CYPRESS_API_URL || 'http://localhost:3001',
     coverage: false
-  },
-  chromeWebSecurity: false
+  }
 }) 
