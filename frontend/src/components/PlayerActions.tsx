@@ -113,7 +113,7 @@ export const PlayerActions: React.FC<PlayerActionsProps> = ({
   };
 
   return (
-    <ActionsContainer>
+    <ActionsContainer data-testid="player-actions">
       <BetInput
         type="number"
         min={gameState.minBet}
@@ -121,11 +121,13 @@ export const PlayerActions: React.FC<PlayerActionsProps> = ({
         value={betAmount}
         onChange={(e) => setBetAmount(Number(e.target.value))}
         disabled={!isPlayerTurn}
+        data-testid="bet-amount-input"
       />
       <ActionButton
         variant="primary"
         onClick={handleBet}
         disabled={!isPlayerTurn || betAmount < gameState.minBet}
+        data-testid="bet-button"
       >
         Bet
       </ActionButton>
@@ -133,6 +135,7 @@ export const PlayerActions: React.FC<PlayerActionsProps> = ({
         variant="secondary"
         onClick={handleCheck}
         disabled={!isPlayerTurn || !canCheck}
+        data-testid="check-button"
       >
         Check
       </ActionButton>
@@ -140,6 +143,7 @@ export const PlayerActions: React.FC<PlayerActionsProps> = ({
         variant="danger"
         onClick={handleFold}
         disabled={!isPlayerTurn}
+        data-testid="fold-button"
       >
         Fold
       </ActionButton>

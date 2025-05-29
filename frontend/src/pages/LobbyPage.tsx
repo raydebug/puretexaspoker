@@ -223,14 +223,16 @@ const LobbyPage: React.FC = () => {
       </Header>
 
       {userName && (
-        <UserInfo>
-          <UserName data-testid="welcome-message">Welcome, {userName}</UserName>
-          <LogoutButton onClick={handleLogout}>Logout</LogoutButton>
+        <UserInfo data-testid="user-info">
+          <UserName data-testid="user-name">{userName}</UserName>
+          <LogoutButton data-testid="logout-button" onClick={handleLogout}>
+            Logout
+          </LogoutButton>
         </UserInfo>
       )}
 
       <Content>
-        <OnlineList data-testid="online-list">
+        <OnlineList data-testid="online-players-list">
           <h3>Online Players</h3>
           <PlayerList>
             {/* Add player list items here */}
@@ -267,8 +269,10 @@ const LobbyPage: React.FC = () => {
                 autoFocus
                 data-testid="nickname-input"
               />
-              {modalError && <ModalError>{modalError}</ModalError>}
-              <ModalButton type="submit" data-testid="join-button">Enter</ModalButton>
+              {modalError && <ModalError data-testid="modal-error">{modalError}</ModalError>}
+              <ModalButton type="submit" data-testid="submit-nickname">
+                Start Playing
+              </ModalButton>
             </form>
           </Modal>
         </ModalOverlay>

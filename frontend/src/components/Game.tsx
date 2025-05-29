@@ -87,66 +87,58 @@ export const Game: React.FC = () => {
     }
   };
 
-  if (error) {
-    return (
-      <GameContainer data-testid="game-container">
-        <div data-testid="error-message">Error: {error}</div>
-      </GameContainer>
-    );
-  }
-
-  if (!gameState || !currentPlayer) {
-    return (
-      <GameContainer data-testid="game-container">
-        <div data-testid="loading-message">Waiting for game data...</div>
-      </GameContainer>
-    );
-  }
-
   return (
     <GameContainer data-testid="game-container">
-      <GameStatus 
-        gameState={gameState} 
-        currentPlayerId={currentPlayer.id} 
-        data-testid="game-status"
-      />
-      <GameBoard
-        gameState={gameState}
-        currentPlayer={currentPlayer}
-        onPlayerAction={(action: SeatAction, playerId: string) => {
-          switch (action) {
-            case 'leaveMidway':
-              socketService.updatePlayerStatus(gameState.id, playerId, true);
-              break;
-            case 'comeBack':
-              socketService.updatePlayerStatus(gameState.id, playerId, false);
-              break;
-            case 'standUp':
-              socketService.standUp(gameState.id, playerId);
-              break;
-            case 'leaveTable':
-              socketService.leaveTable(gameState.id, playerId);
-              break;
-            default:
-              console.warn('Unknown player action:', action);
-          }
-        }}
-        data-testid="game-board"
-      />
-      <PlayerActions
-        gameState={gameState}
-        currentPlayer={currentPlayer}
-        onAction={handlePlayerAction}
-        data-testid="player-actions"
-      />
-      <ChatBox
-        currentPlayer={{
-          id: currentPlayer.id,
-          name: currentPlayer.name
-        }}
-        gameId={gameState.id}
-        data-testid="chat-box"
-      />
+      {error ? (
+        <div data-testid="error-message">Error: {error}</div>
+      ) : !gameState || !currentPlayer ? (
+        <div data-testid="loading-message">Waiting for game data...</div>
+      ) : (
+        <>
+          <GameStatus 
+            gameState={gameState} 
+            currentPlayerId={currentPlayer.id} 
+            data-testid="game-status"
+          />
+          <GameBoard
+            gameState={gameState}
+            currentPlayer={currentPlayer}
+            onPlayerAction={(action: SeatAction, playerId: string) => {
+              switch (action) {
+                case 'leaveMidway':
+                  socketService.updatePlayerStatus(gameState.id, playerId, true);
+                  break;
+                case 'comeBack':
+                  socketService.updatePlayerStatus(gameState.id, playerId, false);
+                  break;
+                case 'standUp':
+                  socketService.standUp(gameState.id, playerId);
+                  break;
+                case 'leaveTable':
+                  socketService.leaveTable(gameState.id, playerId);
+                  break;
+                default:
+                  console.warn('Unknown player action:', action);
+              }
+            }}
+            data-testid="game-board"
+          />
+          <PlayerActions
+            gameState={gameState}
+            currentPlayer={currentPlayer}
+            onAction={handlePlayerAction}
+            data-testid="player-actions"
+          />
+          <ChatBox
+            currentPlayer={{
+              id: currentPlayer.id,
+              name: currentPlayer.name
+            }}
+            gameId={gameState.id}
+            data-testid="chat-box"
+          />
+        </>
+      )}
     </GameContainer>
   );
 }; 
