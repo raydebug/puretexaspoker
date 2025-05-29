@@ -162,6 +162,7 @@ const ModalError = styled.div`
 `;
 
 const LobbyPage: React.FC = () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const navigate = useNavigate();
   const [userName, setUserName] = useState<string>('');
   const [filters, setFilters] = useState({

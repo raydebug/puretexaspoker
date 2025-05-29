@@ -921,6 +921,7 @@ class SocketService {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const createObserverAvatar = (nickname: string): AvatarType => ({
   type: 'initials',
   initials: nickname.substring(0, 2).toUpperCase(),
