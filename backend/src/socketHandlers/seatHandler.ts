@@ -17,12 +17,17 @@ let gameState: GameState = {
   currentPlayerId: null,
   currentPlayerPosition: 0,
   dealerPosition: 0,
+  smallBlindPosition: 1,
+  bigBlindPosition: 2,
   status: 'waiting',
   currentBet: 0,
   minBet: 10,
   smallBlind: 5,
   bigBlind: 10,
-  phase: 'waiting'
+  phase: 'waiting',
+  handEvaluation: undefined,
+  winner: undefined,
+  isHandComplete: false
 };
 
 for (let i = 0; i < NUM_SEATS; i++) seats[i] = null;
