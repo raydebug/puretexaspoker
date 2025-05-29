@@ -4,31 +4,32 @@ import { describe, expect, it, beforeEach } from '@jest/globals';
 
 describe('GameService', () => {
   let gameService: GameService;
+  let defaultPlayer: Player;
 
   beforeEach(() => {
     gameService = new GameService();
+    defaultPlayer = {
+      id: 'player1',
+      name: 'Player 1',
+      chips: 1000,
+      isActive: true,
+      isDealer: false,
+      currentBet: 0,
+      position: 0,
+      seatNumber: 0,
+      isAway: false,
+      cards: [],
+      avatar: {
+        type: 'default' as 'default' | 'image' | 'initials',
+        color: '#000000'
+      }
+    };
   });
 
   describe('addPlayer', () => {
     it('should add a player with correct initial values', () => {
-      const player: Player = {
-        id: 'player1',
-        name: 'Player 1',
-        chips: 1000,
-        isActive: true,
-        isDealer: false,
-        currentBet: 0,
-        position: 0,
-        seatNumber: 0,
-        isAway: false,
-        cards: [],
-        avatar: {
-          type: 'default' as 'default' | 'image' | 'initials',
-          color: '#000000'
-        }
-      };
-      gameService.addPlayer(player);
-      const addedPlayer = gameService.getPlayer(player.id);
+      gameService.addPlayer(defaultPlayer);
+      const addedPlayer = gameService.getPlayer(defaultPlayer.id);
       expect(addedPlayer).toBeDefined();
       expect(addedPlayer?.name).toBe('Player 1');
       expect(addedPlayer?.chips).toBe(1000);
@@ -80,182 +81,139 @@ describe('GameService', () => {
     });
   });
 
-  describe('placeBet', () => {
-    it('should place a bet correctly', () => {
-      const player: Player = {
-        id: 'player1',
-        name: 'Player 1',
-        chips: 1000,
-        isActive: true,
-        isDealer: false,
-        currentBet: 0,
-        position: 0,
-        seatNumber: 0,
-        isAway: false,
-        cards: [],
-        avatar: {
-          type: 'default' as 'default' | 'image' | 'initials',
-          color: '#000000'
-        }
-      };
-      gameService.addPlayer(player);
-      gameService.placeBet(player.id, 100);
-      const updatedPlayer = gameService.getPlayer(player.id);
-      expect(updatedPlayer?.chips).toBe(900);
-      expect(updatedPlayer?.currentBet).toBe(100);
-      expect(gameService.getGameState().pot).toBe(100);
-      expect(gameService.getGameState().currentBet).toBe(100);
-    });
+  describe('game actions', () => {
+    let player1: Player;
+    let player2: Player;
 
-    it('should throw error when bet amount is greater than player chips', () => {
-      const player: Player = {
-        id: 'player1',
-        name: 'Player 1',
-        chips: 1000,
-        isActive: true,
-        isDealer: false,
-        currentBet: 0,
-        position: 0,
-        seatNumber: 0,
-        isAway: false,
-        cards: [],
-        avatar: {
-          type: 'default' as 'default' | 'image' | 'initials',
-          color: '#000000'
-        }
-      };
-      gameService.addPlayer(player);
-      expect(() => gameService.placeBet(player.id, 2000)).toThrow('Not enough chips');
-    });
-
-    it('should throw error when bet amount is less than current bet', () => {
-      const player1: Player = {
-        id: 'player1',
-        name: 'Player 1',
-        chips: 1000,
-        isActive: true,
-        isDealer: false,
-        currentBet: 0,
-        position: 0,
-        seatNumber: 0,
-        isAway: false,
-        cards: [],
-        avatar: {
-          type: 'default' as 'default' | 'image' | 'initials',
-          color: '#000000'
-        }
-      };
-      const player2: Player = {
-        id: 'player2',
-        name: 'Player 2',
-        chips: 1000,
-        isActive: true,
-        isDealer: false,
-        currentBet: 0,
-        position: 1,
-        seatNumber: 1,
-        isAway: false,
-        cards: [],
-        avatar: {
-          type: 'default' as 'default' | 'image' | 'initials',
-          color: '#000000'
-        }
-      };
+    beforeEach(() => {
+      player1 = { ...defaultPlayer, id: 'player1', position: 0, seatNumber: 0 };
+      player2 = { ...defaultPlayer, id: 'player2', position: 1, seatNumber: 1 };
       gameService.addPlayer(player1);
       gameService.addPlayer(player2);
-      gameService.placeBet(player1.id, 100);
-      expect(() => gameService.placeBet(player2.id, 50)).toThrow('Bet amount is too small');
-    });
-  });
-
-  describe('fold', () => {
-    it('should mark player as inactive when folding', () => {
-      const player: Player = {
-        id: 'player1',
-        name: 'Player 1',
-        chips: 1000,
-        isActive: true,
-        isDealer: false,
-        currentBet: 0,
-        position: 0,
-        seatNumber: 0,
-        isAway: false,
-        cards: [],
-        avatar: {
-          type: 'default' as 'default' | 'image' | 'initials',
-          color: '#000000'
-        }
-      };
-      gameService.addPlayer(player);
-      gameService.fold(player.id);
-      const updatedPlayer = gameService.getPlayer(player.id);
-      expect(updatedPlayer?.isActive).toBe(false);
+      gameService.startGame();
     });
 
-    it('should throw error when player not found', () => {
-      expect(() => gameService.fold('non-existent')).toThrow('Player not found');
-    });
-  });
+    describe('placeBet', () => {
+      it('should place a bet correctly when it is player\'s turn', () => {
+        const currentPlayerId = gameService.getGameState().currentPlayerId;
+        const player = gameService.getPlayer(currentPlayerId!);
+        const initialChips = player!.chips;
+        const initialBet = player!.currentBet;
+        const betAmount = 100;
+        
+        gameService.placeBet(currentPlayerId!, betAmount);
+        
+        const updatedPlayer = gameService.getPlayer(currentPlayerId!);
+        expect(updatedPlayer?.chips).toBe(initialChips - betAmount);
+        expect(updatedPlayer?.currentBet).toBe(initialBet + betAmount);
+        expect(gameService.getGameState().pot).toBe(
+          gameService.getGameState().smallBlind + 
+          gameService.getGameState().bigBlind + 
+          betAmount
+        );
+        expect(gameService.getGameState().currentBet).toBe(initialBet + betAmount);
+      });
 
-  describe('check', () => {
-    it('should allow check when no current bet', () => {
-      const player: Player = {
-        id: 'player1',
-        name: 'Player 1',
-        chips: 1000,
-        isActive: true,
-        isDealer: false,
-        currentBet: 0,
-        position: 0,
-        seatNumber: 0,
-        isAway: false,
-        cards: [],
-        avatar: {
-          type: 'default' as 'default' | 'image' | 'initials',
-          color: '#000000'
-        }
-      };
-      gameService.addPlayer(player);
-      expect(() => gameService.check(player.id)).not.toThrow();
+      it('should throw error when player is not active', () => {
+        const currentPlayerId = gameService.getGameState().currentPlayerId;
+        const player = gameService.getPlayer(currentPlayerId!);
+        player!.isActive = false;
+        
+        expect(() => gameService.placeBet(currentPlayerId!, 100))
+          .toThrow('Player is not active in the game');
+      });
+
+      it('should throw error when it is not player\'s turn', () => {
+        const currentPlayerId = gameService.getGameState().currentPlayerId;
+        const otherPlayerId = currentPlayerId === player1.id ? player2.id : player1.id;
+        
+        expect(() => gameService.placeBet(otherPlayerId, 100))
+          .toThrow('Not player\'s turn');
+      });
+
+      it('should throw error when bet amount exceeds player chips', () => {
+        const currentPlayerId = gameService.getGameState().currentPlayerId;
+        
+        expect(() => gameService.placeBet(currentPlayerId!, 2000))
+          .toThrow('Insufficient chips');
+      });
+
+      it('should throw error when bet amount is less than minimum call', () => {
+        const currentPlayerId = gameService.getGameState().currentPlayerId;
+        gameService.placeBet(currentPlayerId!, 100);
+        
+        const nextPlayerId = gameService.getGameState().currentPlayerId;
+        expect(() => gameService.placeBet(nextPlayerId!, 50))
+          .toThrow('Must call or raise');
+      });
+
+      it('should throw error when raise amount is less than minimum raise', () => {
+        const currentPlayerId = gameService.getGameState().currentPlayerId;
+        const currentBet = gameService.getGameState().currentBet;
+        const minRaise = gameService.getGameState().minBet;
+        const currentPlayerBet = gameService.getPlayer(currentPlayerId!)!.currentBet;
+        const minCallAmount = currentBet - currentPlayerBet;
+        const invalidRaise = minCallAmount + (minRaise - 1); // Just under minimum raise
+        
+        expect(() => gameService.placeBet(currentPlayerId!, invalidRaise))
+          .toThrow('Minimum raise amount');
+      });
     });
 
-    it('should throw error when there is a current bet', () => {
-      const player1: Player = {
-        id: 'player1',
-        name: 'Player 1',
-        chips: 1000,
-        isActive: true,
-        isDealer: false,
-        currentBet: 0,
-        position: 0,
-        seatNumber: 0,
-        isAway: false,
-        cards: [],
-        avatar: {
-          type: 'default' as 'default' | 'image' | 'initials',
-          color: '#000000'
-        }
-      };
-      const player2: Player = {
-        id: 'player2',
-        name: 'Player 2',
-        chips: 1000,
-        isActive: true,
-        isDealer: false,
-        currentBet: 0,
-        position: 1,
-        seatNumber: 1,
-        isAway: false,
-        cards: [],
-        avatar: {
-          type: 'default' as 'default' | 'image' | 'initials',
-          color: '#000000'
-        }
-      };
-      gameService.addPlayer(player1);
-      gameService.addPlayer(player2);
-      gameService.placeBet(player1.id, 100);
-      expect(() => gameService.check(player2.id)).toThrow('Cannot check, must call or raise');
+    describe('fold', () => {
+      it('should mark player as inactive when folding on their turn', () => {
+        const currentPlayerId = gameService.getGameState().currentPlayerId;
+        
+        gameService.fold(currentPlayerId!);
+        
+        const updatedPlayer = gameService.getPlayer(currentPlayerId!);
+        expect(updatedPlayer?.isActive).toBe(false);
+      });
+
+      it('should throw error when player not found', () => {
+        expect(() => gameService.fold('non-existent'))
+          .toThrow('Player not found');
+      });
+
+      it('should throw error when it is not player\'s turn', () => {
+        const currentPlayerId = gameService.getGameState().currentPlayerId;
+        const otherPlayerId = currentPlayerId === player1.id ? player2.id : player1.id;
+        
+        expect(() => gameService.fold(otherPlayerId))
+          .toThrow('Not player\'s turn');
+      });
+    });
+
+    describe('check', () => {
+      beforeEach(() => {
+        // Reset current bet to allow checking
+        const gameState = gameService.getGameState();
+        gameState.currentBet = 0;
+        gameState.players.forEach(p => p.currentBet = 0);
+      });
+
+      it('should allow check when no current bet and it is player\'s turn', () => {
+        const currentPlayerId = gameService.getGameState().currentPlayerId;
+        expect(() => gameService.check(currentPlayerId!))
+          .not.toThrow();
+      });
+
+      it('should throw error when there is a current bet', () => {
+        const firstPlayerId = gameService.getGameState().currentPlayerId;
+        gameService.placeBet(firstPlayerId!, 50);
+        
+        const secondPlayerId = gameService.getGameState().currentPlayerId;
+        expect(() => gameService.check(secondPlayerId!))
+          .toThrow('Cannot check, must call or raise');
+      });
+
+      it('should throw error when it is not player\'s turn', () => {
+        const currentPlayerId = gameService.getGameState().currentPlayerId;
+        const otherPlayerId = currentPlayerId === player1.id ? player2.id : player1.id;
+        
+        expect(() => gameService.check(otherPlayerId))
+          .toThrow('Not player\'s turn');
+      });
     });
   });
 
