@@ -53,4 +53,11 @@ Thumbs.db
 cypress/fixtures/
 cypress/plugins/
 cypress/support/
-cypress/tsconfig.json 
+cypress/tsconfig.json
+
+# Development database
+backend/prisma/dev.db
+
+# Cypress
+frontend/cypress/videos/
+frontend/cypress/screenshots/ 
