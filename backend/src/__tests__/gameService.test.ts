@@ -16,7 +16,7 @@ describe('GameService', () => {
       isDealer: false,
       currentBet: 0,
       position: 0,
-      seatNumber: 0,
+      seatNumber: 1,
       isAway: false,
       cards: [],
       avatar: {
@@ -37,14 +37,14 @@ describe('GameService', () => {
       expect(addedPlayer?.isDealer).toBe(false);
       expect(addedPlayer?.currentBet).toBe(0);
       expect(addedPlayer?.position).toBe(0);
-      expect(addedPlayer?.seatNumber).toBe(0);
+      expect(addedPlayer?.seatNumber).toBe(1);
       expect(addedPlayer?.isAway).toBe(false);
       expect(addedPlayer?.cards).toEqual([]);
       expect(addedPlayer?.avatar.type).toBe('default');
     });
 
     it('should throw error when adding more than 9 players', () => {
-      const players = Array.from({ length: 9 }, (_, i) => ({
+      const players = Array.from({ length: 8 }, (_, i) => ({
         id: `player${i + 1}`,
         name: `Player ${i + 1}`,
         chips: 1000,
@@ -52,7 +52,7 @@ describe('GameService', () => {
         isDealer: false,
         currentBet: 0,
         position: i,
-        seatNumber: i,
+        seatNumber: i + 1,
         isAway: false,
         cards: [],
         avatar: {
@@ -61,15 +61,15 @@ describe('GameService', () => {
         }
       }));
       players.forEach(player => gameService.addPlayer(player));
-      const player10: Player = {
-        id: 'player10',
-        name: 'Player 10',
+      const player9: Player = {
+        id: 'player9',
+        name: 'Player 9',
         chips: 1000,
         isActive: true,
         isDealer: false,
         currentBet: 0,
-        position: 9,
-        seatNumber: 9,
+        position: 8,
+        seatNumber: 1,
         isAway: false,
         cards: [],
         avatar: {
@@ -77,7 +77,7 @@ describe('GameService', () => {
           color: '#000000'
         }
       };
-      expect(() => gameService.addPlayer(player10)).toThrow('Table is full');
+      expect(() => gameService.addPlayer(player9)).toThrow('Seat is already occupied');
     });
   });
 
@@ -86,8 +86,8 @@ describe('GameService', () => {
     let player2: Player;
 
     beforeEach(() => {
-      player1 = { ...defaultPlayer, id: 'player1', position: 0, seatNumber: 0 };
-      player2 = { ...defaultPlayer, id: 'player2', position: 1, seatNumber: 1 };
+      player1 = { ...defaultPlayer, id: 'player1', position: 0, seatNumber: 1 };
+      player2 = { ...defaultPlayer, id: 'player2', position: 1, seatNumber: 2 };
       gameService.addPlayer(player1);
       gameService.addPlayer(player2);
       gameService.startGame();
@@ -204,7 +204,7 @@ describe('GameService', () => {
         
         const secondPlayerId = gameService.getGameState().currentPlayerId;
         expect(() => gameService.check(secondPlayerId!))
-          .toThrow('Cannot check, must call or raise');
+          .toThrow('Cannot check, must call 50 or raise');
       });
 
       it('should throw error when it is not player\'s turn', () => {
@@ -227,7 +227,7 @@ describe('GameService', () => {
         isDealer: false,
         currentBet: 0,
         position: 0,
-        seatNumber: 0,
+        seatNumber: 1,
         isAway: false,
         cards: [],
         avatar: {
@@ -243,7 +243,7 @@ describe('GameService', () => {
         isDealer: false,
         currentBet: 0,
         position: 1,
-        seatNumber: 1,
+        seatNumber: 2,
         isAway: false,
         cards: [],
         avatar: {
@@ -275,7 +275,7 @@ describe('GameService', () => {
         isDealer: false,
         currentBet: 0,
         position: 0,
-        seatNumber: 0,
+        seatNumber: 1,
         isAway: false,
         cards: [],
         avatar: {

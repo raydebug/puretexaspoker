@@ -80,6 +80,82 @@ export function registerGameHandlers(io: Server) {
       }
     });
 
+    // Get seat information
+    socket.on('game:getSeats', ({ gameId }) => {
+      try {
+        if (!gameId) {
+          throw new Error('Game ID is required');
+        }
+
+        const game = gameManager.getGame(gameId);
+        if (!game) {
+          throw new Error('Game not found');
+        }
+
+        const seats = game.getAllSeats();
+        socket.emit('game:seatInfo', { gameId, seats });
+      } catch (error) {
+        handleGameError(socket, error as Error, 'getSeats');
+      }
+    });
+
+    // Reserve a seat
+    socket.on('game:reserveSeat', ({ gameId, seatNumber, playerId, durationMinutes }) => {
+      try {
+        if (!gameId || !seatNumber || !playerId) {
+          throw new Error('Game ID, seat number, and player ID are required');
+        }
+
+        const game = gameManager.getGame(gameId);
+        if (!game) {
+          throw new Error('Game not found');
+        }
+
+        const result = game.getSeatManager().reserveSeat(
+          seatNumber,
+          playerId,
+          durationMinutes || 5
+        );
+
+        if (result.success) {
+          socket.emit('game:seatReserved', { gameId, seatNumber, playerId });
+          // Broadcast updated seat info to all clients in the game room
+          const seats = game.getAllSeats();
+          io.to(`game:${gameId}`).emit('game:seatInfo', { gameId, seats });
+        } else {
+          socket.emit('gameError', { message: result.error, context: 'game:reserveSeat' });
+        }
+      } catch (error) {
+        handleGameError(socket, error as Error, 'reserveSeat');
+      }
+    });
+
+    // Get turn order
+    socket.on('game:getTurnOrder', ({ gameId }) => {
+      try {
+        if (!gameId) {
+          throw new Error('Game ID is required');
+        }
+
+        const game = gameManager.getGame(gameId);
+        if (!game) {
+          throw new Error('Game not found');
+        }
+
+        const gameState = game.getGameState();
+        const turnOrder = game.getSeatManager().calculateTurnOrder(gameState.players);
+        
+        socket.emit('game:turnOrder', {
+          gameId,
+          turnOrder,
+          currentPlayerId: gameState.currentPlayerId,
+          dealerPosition: gameState.dealerPosition
+        });
+      } catch (error) {
+        handleGameError(socket, error as Error, 'getTurnOrder');
+      }
+    });
+
     // Place a bet
     socket.on('game:bet', async ({ gameId, playerId, amount }) => {
       try {
@@ -171,6 +247,23 @@ export function registerGameHandlers(io: Server) {
         }
       } catch (error) {
         handleGameError(socket, error as Error, 'getState');
+      }
+    });
+
+    // Raise
+    socket.on('game:raise', async ({ gameId, playerId, totalAmount }) => {
+      try {
+        if (!gameId || !playerId) {
+          throw new Error('Game ID and Player ID are required');
+        }
+        if (typeof totalAmount !== 'number' || totalAmount <= 0) {
+          throw new Error('Invalid raise amount');
+        }
+
+        const gameState = await gameManager.raise(gameId, playerId, totalAmount);
+        socket.emit('game:actionSuccess', { action: 'raise', gameId, totalAmount });
+      } catch (error) {
+        handleGameError(socket, error as Error, 'raise');
       }
     });
 

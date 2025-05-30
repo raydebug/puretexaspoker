@@ -120,7 +120,7 @@ describe('Real-time Game Integration', () => {
     const gameState = await gameManager.createGame(tableId);
     const gameId = gameState.id;
     gameManager.setSocketServer(io);
-    await gameManager.startGame(gameId);
+    const startedGameState = await gameManager.startGame(gameId);
 
     return new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => {
@@ -141,9 +141,14 @@ describe('Real-time Game Integration', () => {
         }
       });
 
-      // Make a call action via GameManager
+      // Make a call action via GameManager using the current player
       setTimeout(() => {
-        gameManager.call(gameId, playerId1);
+        const currentPlayerId = startedGameState.currentPlayerId;
+        if (currentPlayerId) {
+          gameManager.call(gameId, currentPlayerId);
+        } else {
+          reject(new Error('No current player found'));
+        }
       }, 100);
     });
   });

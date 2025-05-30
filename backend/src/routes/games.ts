@@ -51,6 +51,80 @@ router.get('/:gameId', async (req, res) => {
   }
 });
 
+// Get seat information for a game
+router.get('/:gameId/seats', async (req, res) => {
+  try {
+    const { gameId } = req.params;
+
+    const game = gameManager.getGame(gameId);
+    if (!game) {
+      return res.status(404).json({ error: 'Game not found' });
+    }
+
+    const seats = game.getAllSeats();
+    res.status(200).json({ seats });
+  } catch (error) {
+    console.error('Error getting seat info:', error);
+    res.status(500).json({ error: 'Failed to get seat information' });
+  }
+});
+
+// Reserve a seat in a game
+router.post('/:gameId/seats/:seatNumber/reserve', async (req, res) => {
+  try {
+    const { gameId, seatNumber } = req.params;
+    const { playerId, durationMinutes } = req.body;
+
+    if (!playerId) {
+      return res.status(400).json({ error: 'Player ID is required' });
+    }
+
+    const game = gameManager.getGame(gameId);
+    if (!game) {
+      return res.status(404).json({ error: 'Game not found' });
+    }
+
+    const result = game.getSeatManager().reserveSeat(
+      parseInt(seatNumber),
+      playerId,
+      durationMinutes || 5
+    );
+
+    if (result.success) {
+      res.status(200).json({ message: 'Seat reserved successfully' });
+    } else {
+      res.status(400).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Error reserving seat:', error);
+    res.status(500).json({ error: 'Failed to reserve seat' });
+  }
+});
+
+// Get turn order for a game
+router.get('/:gameId/turn-order', async (req, res) => {
+  try {
+    const { gameId } = req.params;
+
+    const game = gameManager.getGame(gameId);
+    if (!game) {
+      return res.status(404).json({ error: 'Game not found' });
+    }
+
+    const gameState = game.getGameState();
+    const turnOrder = game.getSeatManager().calculateTurnOrder(gameState.players);
+    
+    res.status(200).json({
+      turnOrder,
+      currentPlayerId: gameState.currentPlayerId,
+      dealerPosition: gameState.dealerPosition
+    });
+  } catch (error) {
+    console.error('Error getting turn order:', error);
+    res.status(500).json({ error: 'Failed to get turn order' });
+  }
+});
+
 // Place a bet
 router.post('/:gameId/bet', async (req, res) => {
   try {
@@ -133,6 +207,28 @@ router.post('/:gameId/deal', async (req, res) => {
   } catch (error) {
     console.error('Error dealing community cards:', error);
     res.status(500).json({ error: (error as Error).message || 'Failed to deal cards' });
+  }
+});
+
+// Raise (specific total amount)
+router.post('/:gameId/raise', async (req, res) => {
+  try {
+    const { gameId } = req.params;
+    const { playerId, totalAmount } = req.body;
+
+    if (!playerId || typeof totalAmount !== 'number') {
+      return res.status(400).json({ error: 'Player ID and total amount are required' });
+    }
+
+    if (totalAmount <= 0) {
+      return res.status(400).json({ error: 'Raise amount must be positive' });
+    }
+
+    const gameState = await gameManager.raise(gameId, playerId, totalAmount);
+    res.json(gameState);
+  } catch (error) {
+    console.error('Error raising:', error);
+    res.status(400).json({ error: (error as Error).message || 'Failed to raise' });
   }
 });
 

@@ -1,17 +1,20 @@
 import { GameState, Player, Card, Hand } from '../types/shared';
 import { DeckService } from './deckService';
 import { HandEvaluator } from './handEvaluator';
+import { SeatManager } from './seatManager';
 
 export class GameService {
   private gameState: GameState;
   private deckService: DeckService;
   private handEvaluator: HandEvaluator;
+  private seatManager: SeatManager;
   private deck: Card[];
   private readonly MAX_PLAYERS = 9;
 
   constructor() {
     this.deckService = new DeckService();
     this.handEvaluator = new HandEvaluator();
+    this.seatManager = new SeatManager(this.MAX_PLAYERS);
     this.deck = [];
     this.gameState = this.initializeGameState();
   }
@@ -55,53 +58,85 @@ export class GameService {
     this.gameState.currentBet = 0;
     this.gameState.communityCards = [];
     
-    // Reset player states
+    // Reset player states and ensure all seated players are active
     this.gameState.players.forEach(player => {
       player.cards = [];
       player.currentBet = 0;
-      player.isActive = true;
+      // Only activate players who are actually seated
+      player.isActive = this.seatManager.isPlayerSeated(player.id);
     });
 
-    // Shuffle and deal
+    // Verify we have enough active players
+    const activePlayers = this.gameState.players.filter(p => p.isActive);
+    if (activePlayers.length < 2) {
+      throw new Error('Not enough active players to start the game');
+    }
+
+    // Update positions using seat manager
+    this.updatePositionsWithSeatManager();
+
+    // Shuffle and deal cards only to active players
     this.deckService.shuffle(this.deck);
-    this.gameState.players.forEach(player => {
+    activePlayers.forEach(player => {
       player.cards = this.deckService.dealCards(2, this.deck);
     });
-
-    // Update positions
-    this.updatePositions();
 
     // Post blinds
     this.postBlinds();
   }
 
-  private updatePositions(): void {
-    const numPlayers = this.gameState.players.length;
-    // Move dealer button
-    this.gameState.dealerPosition = (this.gameState.dealerPosition + 1) % numPlayers;
-    // Set blind positions
-    this.gameState.smallBlindPosition = (this.gameState.dealerPosition + 1) % numPlayers;
-    this.gameState.bigBlindPosition = (this.gameState.dealerPosition + 2) % numPlayers;
-    // Set first player (after big blind)
-    this.gameState.currentPlayerPosition = (this.gameState.bigBlindPosition + 1) % numPlayers;
-    this.gameState.currentPlayerId = this.gameState.players[this.gameState.currentPlayerPosition].id;
+  private updatePositionsWithSeatManager(): void {
+    const activePlayers = this.gameState.players.filter(p => p.isActive);
+    
+    if (activePlayers.length === 0) {
+      throw new Error('No active players');
+    }
+
+    // Move dealer using seat manager
+    const dealerMove = this.seatManager.moveDealer(activePlayers);
+    this.gameState.dealerPosition = dealerMove.newDealerPosition;
+
+    // Get blind positions
+    const blindPositions = this.seatManager.getBlindPositions(activePlayers);
+    this.gameState.smallBlindPosition = blindPositions.smallBlind;
+    this.gameState.bigBlindPosition = blindPositions.bigBlind;
+
+    // Set first player to act (left of big blind in preflop)
+    const firstToAct = this.seatManager.getFirstToAct(activePlayers, true);
+    if (firstToAct) {
+      this.gameState.currentPlayerId = firstToAct;
+      const currentPlayerIndex = activePlayers.findIndex(p => p.id === firstToAct);
+      this.gameState.currentPlayerPosition = currentPlayerIndex;
+    }
   }
 
   private postBlinds(): void {
-    const smallBlindPlayer = this.gameState.players[this.gameState.smallBlindPosition];
-    const bigBlindPlayer = this.gameState.players[this.gameState.bigBlindPosition];
+    const activePlayers = this.gameState.players.filter(p => p.isActive);
+    
+    if (activePlayers.length < 2) {
+      throw new Error('Not enough players for blinds');
+    }
+
+    const smallBlindPlayer = activePlayers[this.gameState.smallBlindPosition];
+    const bigBlindPlayer = activePlayers[this.gameState.bigBlindPosition];
+
+    if (!smallBlindPlayer || !bigBlindPlayer) {
+      throw new Error('Could not identify blind players');
+    }
 
     // Post small blind
-    smallBlindPlayer.chips -= this.gameState.smallBlind;
-    smallBlindPlayer.currentBet = this.gameState.smallBlind;
-    this.gameState.pot += this.gameState.smallBlind;
+    const smallBlindAmount = Math.min(this.gameState.smallBlind, smallBlindPlayer.chips);
+    smallBlindPlayer.chips -= smallBlindAmount;
+    smallBlindPlayer.currentBet = smallBlindAmount;
+    this.gameState.pot += smallBlindAmount;
 
     // Post big blind
-    bigBlindPlayer.chips -= this.gameState.bigBlind;
-    bigBlindPlayer.currentBet = this.gameState.bigBlind;
-    this.gameState.pot += this.gameState.bigBlind;
+    const bigBlindAmount = Math.min(this.gameState.bigBlind, bigBlindPlayer.chips);
+    bigBlindPlayer.chips -= bigBlindAmount;
+    bigBlindPlayer.currentBet = bigBlindAmount;
+    this.gameState.pot += bigBlindAmount;
 
-    this.gameState.currentBet = this.gameState.bigBlind;
+    this.gameState.currentBet = bigBlindAmount;
     this.gameState.minBet = this.gameState.bigBlind;
   }
 
@@ -137,9 +172,16 @@ export class GameService {
         player.currentBet = 0;
       }
     });
-    // First to act is after dealer in post-flop
-    this.gameState.currentPlayerPosition = (this.gameState.dealerPosition + 1) % this.gameState.players.length;
-    this.gameState.currentPlayerId = this.gameState.players[this.gameState.currentPlayerPosition].id;
+    
+    // First to act in post-flop is left of dealer
+    const activePlayers = this.gameState.players.filter(p => p.isActive);
+    const firstToAct = this.seatManager.getFirstToAct(activePlayers, false);
+    
+    if (firstToAct) {
+      this.gameState.currentPlayerId = firstToAct;
+      const currentPlayerIndex = activePlayers.findIndex(p => p.id === firstToAct);
+      this.gameState.currentPlayerPosition = currentPlayerIndex;
+    }
   }
 
   private determineWinner(): void {
@@ -176,11 +218,17 @@ export class GameService {
       throw new Error('Not player\'s turn');
     }
 
+    if (amount <= 0) {
+      throw new Error('Bet amount must be positive');
+    }
+
     if (amount > player.chips) {
       throw new Error('Insufficient chips');
     }
 
-    const minCallAmount = this.gameState.currentBet - player.currentBet;
+    const currentPlayerBet = player.currentBet;
+    const minCallAmount = this.gameState.currentBet - currentPlayerBet;
+    
     if (amount < minCallAmount) {
       throw new Error(`Must call or raise. Minimum call amount: ${minCallAmount}`);
     }
@@ -189,14 +237,57 @@ export class GameService {
     if (amount > minCallAmount) {
       const raiseAmount = amount - minCallAmount;
       if (raiseAmount < this.gameState.minBet) {
-        throw new Error(`Minimum raise amount is ${this.gameState.minBet}`);
+        throw new Error(`Minimum raise amount is ${this.gameState.minBet}. Total bet must be at least ${minCallAmount + this.gameState.minBet}`);
       }
     }
 
+    // Apply the bet
     player.chips -= amount;
     player.currentBet += amount;
     this.gameState.pot += amount;
     this.gameState.currentBet = Math.max(this.gameState.currentBet, player.currentBet);
+    
+    this.moveToNextPlayer();
+  }
+
+  public raise(playerId: string, totalAmount: number): void {
+    const player = this.getPlayer(playerId);
+    if (!player) {
+      throw new Error('Player not found');
+    }
+
+    if (!player.isActive) {
+      throw new Error('Player is not active in the game');
+    }
+
+    if (player.id !== this.gameState.currentPlayerId) {
+      throw new Error('Not player\'s turn');
+    }
+
+    const currentPlayerBet = player.currentBet;
+    const minCallAmount = this.gameState.currentBet - currentPlayerBet;
+    const totalBetAmount = totalAmount;
+    
+    if (totalBetAmount <= this.gameState.currentBet) {
+      throw new Error(`Must raise above current bet of ${this.gameState.currentBet}`);
+    }
+
+    const actualRaiseAmount = totalBetAmount - this.gameState.currentBet;
+    if (actualRaiseAmount < this.gameState.minBet) {
+      throw new Error(`Minimum raise is ${this.gameState.minBet}. Total bet must be at least ${this.gameState.currentBet + this.gameState.minBet}`);
+    }
+
+    const betAmount = totalBetAmount - currentPlayerBet;
+    if (betAmount > player.chips) {
+      throw new Error('Insufficient chips for this raise');
+    }
+
+    // Apply the raise
+    player.chips -= betAmount;
+    player.currentBet = totalBetAmount;
+    this.gameState.pot += betAmount;
+    this.gameState.currentBet = totalBetAmount;
+    
     this.moveToNextPlayer();
   }
 
@@ -219,14 +310,6 @@ export class GameService {
   }
 
   private moveToNextPlayer(): void {
-    let nextPosition = (this.gameState.currentPlayerPosition + 1) % this.gameState.players.length;
-    while (!this.gameState.players[nextPosition].isActive) {
-      nextPosition = (nextPosition + 1) % this.gameState.players.length;
-    }
-
-    this.gameState.currentPlayerPosition = nextPosition;
-    this.gameState.currentPlayerId = this.gameState.players[nextPosition].id;
-
     const activePlayers = this.gameState.players.filter(p => p.isActive);
     
     // Check if only one player remains
@@ -236,6 +319,17 @@ export class GameService {
       this.gameState.isHandComplete = true;
       return;
     }
+
+    // Get next player using seat manager
+    const nextPlayerId = this.seatManager.getNextPlayer(this.gameState.currentPlayerId!, activePlayers);
+    
+    if (!nextPlayerId) {
+      throw new Error('Could not determine next player');
+    }
+
+    this.gameState.currentPlayerId = nextPlayerId;
+    const nextPlayerIndex = activePlayers.findIndex(p => p.id === nextPlayerId);
+    this.gameState.currentPlayerPosition = nextPlayerIndex;
 
     // Check if betting round is complete
     const allPlayersActed = activePlayers.every(p => p.currentBet === this.gameState.currentBet);
@@ -254,12 +348,33 @@ export class GameService {
 
   public addPlayer(player: Player): void {
     if (this.gameState.players.length >= this.MAX_PLAYERS) {
-      throw new Error('Table is full');
+      throw new Error('Maximum number of players reached');
     }
+
+    // If player has a seat number, try to assign that specific seat
+    if (player.seatNumber) {
+      const result = this.seatManager.assignSeat(player.id, player.seatNumber);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to assign seat');
+      }
+    } else {
+      // Assign first available seat
+      const result = this.seatManager.assignSeat(player.id);
+      if (!result.success) {
+        throw new Error(result.error || 'No available seats');
+      }
+      // Update player's seat number
+      player.seatNumber = result.seatNumber!;
+    }
+
     this.gameState.players.push(player);
   }
 
   public removePlayer(playerId: string): void {
+    // Remove from seat manager
+    this.seatManager.leaveSeat(playerId);
+    
+    // Remove from players array
     this.gameState.players = this.gameState.players.filter(p => p.id !== playerId);
   }
 
@@ -267,6 +382,10 @@ export class GameService {
     const player = this.getPlayer(playerId);
     if (player) {
       player.isAway = isAway;
+      // If player comes back, reactivate them if game is not in progress
+      if (!isAway && this.gameState.phase === 'waiting') {
+        player.isActive = true;
+      }
     }
   }
 
@@ -292,8 +411,9 @@ export class GameService {
       throw new Error('Not player\'s turn');
     }
 
-    if (this.gameState.currentBet > player.currentBet) {
-      throw new Error('Cannot check, must call or raise');
+    const amountToCall = this.gameState.currentBet - player.currentBet;
+    if (amountToCall > 0) {
+      throw new Error(`Cannot check, must call ${amountToCall} or raise`);
     }
 
     this.moveToNextPlayer();
@@ -314,21 +434,42 @@ export class GameService {
     }
 
     const callAmount = this.gameState.currentBet - player.currentBet;
-    if (callAmount > player.chips) {
-      throw new Error('Insufficient chips to call');
-    }
-
-    if (callAmount === 0) {
+    
+    if (callAmount <= 0) {
       throw new Error('No amount to call, use check instead');
     }
 
-    player.chips -= callAmount;
-    player.currentBet += callAmount;
-    this.gameState.pot += callAmount;
+    if (callAmount > player.chips) {
+      // All-in scenario
+      const allInAmount = player.chips;
+      player.currentBet += allInAmount;
+      this.gameState.pot += allInAmount;
+      player.chips = 0;
+      // Note: In a full implementation, we'd handle side pots here
+    } else {
+      // Normal call
+      player.chips -= callAmount;
+      player.currentBet += callAmount;
+      this.gameState.pot += callAmount;
+    }
+
     this.moveToNextPlayer();
   }
 
   public setGameId(gameId: string): void {
     this.gameState.id = gameId;
+  }
+
+  // Seat management access methods
+  public getSeatManager(): SeatManager {
+    return this.seatManager;
+  }
+
+  public getSeatInfo(seatNumber: number) {
+    return this.seatManager.getSeatInfo(seatNumber);
+  }
+
+  public getAllSeats() {
+    return this.seatManager.getAllSeats();
   }
 } 

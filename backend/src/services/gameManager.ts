@@ -302,8 +302,8 @@ export class GameManager {
     return gameState;
   }
 
-  public getGame(gameId: string): GameService | undefined {
-    return this.games.get(gameId);
+  public getGame(gameId: string): GameService | null {
+    return this.games.get(gameId) || null;
   }
 
   public getGameState(gameId: string): GameState | null {
@@ -338,6 +338,43 @@ export class GameManager {
         socket.leave(`game:${gameId}`);
       }
     }
+  }
+
+  public async raise(gameId: string, playerId: string, totalAmount: number): Promise<GameState> {
+    const gameService = this.games.get(gameId);
+    if (!gameService) {
+      throw new Error('Game not found');
+    }
+
+    gameService.raise(playerId, totalAmount);
+
+    // Record the action in database
+    await prisma.gameAction.create({
+      data: {
+        gameId,
+        playerId,
+        type: 'raise' as any, // Cast to avoid TypeScript enum issues
+        amount: totalAmount
+      }
+    });
+
+    const gameState = gameService.getGameState();
+    await prisma.game.update({
+      where: { id: gameId },
+      data: {
+        pot: gameState.pot
+      }
+    });
+
+    // Emit real-time update
+    this.emitGameUpdate(gameId, 'playerAction', {
+      playerId,
+      action: 'raise',
+      amount: totalAmount,
+      pot: gameState.pot
+    });
+
+    return gameState;
   }
 }
 
