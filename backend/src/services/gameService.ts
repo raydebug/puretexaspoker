@@ -1,13 +1,15 @@
-import { GameState, Player, Card, Hand } from '../types/shared';
+import { GameState, Player, Card, Hand, ShowdownResult, SidePot } from '../types/shared';
 import { DeckService } from './deckService';
-import { HandEvaluator } from './handEvaluator';
+import { HandEvaluator, DetailedHand } from './handEvaluator';
 import { SeatManager } from './seatManager';
+import { SidePotManager, PotDistribution } from './sidePotManager';
 
 export class GameService {
   private gameState: GameState;
   private deckService: DeckService;
   private handEvaluator: HandEvaluator;
   private seatManager: SeatManager;
+  private sidePotManager: SidePotManager;
   private deck: Card[];
   private readonly MAX_PLAYERS = 9;
   private playersActedThisRound: Set<string> = new Set();
@@ -16,6 +18,7 @@ export class GameService {
     this.deckService = new DeckService();
     this.handEvaluator = new HandEvaluator();
     this.seatManager = new SeatManager(this.MAX_PLAYERS);
+    this.sidePotManager = new SidePotManager();
     this.deck = [];
     this.gameState = this.initializeGameState();
   }
@@ -428,44 +431,150 @@ export class GameService {
       // Only one player left, they win automatically
       if (activePlayers.length === 1) {
         this.gameState.winner = activePlayers[0].id;
+        this.gameState.winners = [activePlayers[0].id];
         activePlayers[0].chips += this.gameState.pot;
+        
+        // Simple showdown result for single winner
+        this.gameState.showdownResults = [{
+          playerId: activePlayers[0].id,
+          playerName: activePlayers[0].name,
+          hand: { name: 'Winner by Default', rank: 0, cards: [] },
+          cards: activePlayers[0].cards,
+          winAmount: this.gameState.pot,
+          potType: 'main'
+        }];
       }
       this.gameState.isHandComplete = true;
       this.gameState.phase = 'finished';
       return;
     }
 
-    // Evaluate all hands and determine winner
+    // Evaluate all hands with enhanced evaluation
     const handResults = this.evaluateHands();
-    const bestResult = this.findBestHand(handResults);
     
-    if (bestResult) {
-      this.gameState.winner = bestResult.playerId;
-      this.gameState.handEvaluation = bestResult.hand.name;
-      
-      // Award pot to winner
-      const winner = this.getPlayer(bestResult.playerId);
-      if (winner) {
-        winner.chips += this.gameState.pot;
-      }
+    // Handle side pots if there are all-in players
+    const hasSidePots = this.sidePotManager.hasAllInPlayers(this.gameState.players);
+    
+    if (hasSidePots) {
+      this.handleSidePotShowdown(handResults);
+    } else {
+      this.handleMainPotShowdown(handResults);
     }
     
     this.gameState.isHandComplete = true;
-    
-    // Auto-start next hand after brief delay (in a real game)
-    // For testing, we'll just mark as finished
     this.gameState.phase = 'finished';
   }
 
-  private findBestHand(handResults: { playerId: string; hand: Hand }[]): { playerId: string; hand: Hand } | null {
-    if (handResults.length === 0) return null;
+  private handleMainPotShowdown(handResults: { playerId: string; hand: DetailedHand }[]): void {
+    // Find all players with the best hand
+    const winners = this.findWinners(handResults);
     
-    return handResults.reduce((best, current) => {
-      if (!best || current.hand.rank > best.hand.rank) {
-        return current;
+    // Split pot among winners
+    const winAmount = Math.floor(this.gameState.pot / winners.length);
+    const remainder = this.gameState.pot % winners.length;
+    
+    const showdownResults: ShowdownResult[] = [];
+    const winnerIds: string[] = [];
+    
+    handResults.forEach(result => {
+      const player = this.getPlayer(result.playerId)!;
+      const isWinner = winners.some(w => w.playerId === result.playerId);
+      
+      if (isWinner) {
+        const winnerIndex = winnerIds.length;
+        const playerWinAmount = winAmount + (winnerIndex < remainder ? 1 : 0);
+        player.chips += playerWinAmount;
+        winnerIds.push(result.playerId);
+        
+        showdownResults.push({
+          playerId: result.playerId,
+          playerName: player.name,
+          hand: result.hand,
+          cards: player.cards,
+          winAmount: playerWinAmount,
+          potType: 'main'
+        });
+      } else {
+        showdownResults.push({
+          playerId: result.playerId,
+          playerName: player.name,
+          hand: result.hand,
+          cards: player.cards,
+          winAmount: 0,
+          potType: 'main'
+        });
       }
-      return best;
     });
+    
+    // Set game state
+    this.gameState.winners = winnerIds;
+    this.gameState.winner = winnerIds[0]; // Backward compatibility
+    this.gameState.handEvaluation = winners[0].hand.name;
+    this.gameState.showdownResults = showdownResults;
+  }
+
+  private handleSidePotShowdown(handResults: { playerId: string; hand: DetailedHand }[]): void {
+    // Create side pots based on betting amounts
+    const sidePots = this.sidePotManager.createSidePots(this.gameState.players, this.gameState.pot);
+    this.gameState.sidePots = sidePots;
+    
+    // Distribute each side pot
+    const distributions = this.sidePotManager.distributePots(sidePots, handResults);
+    
+    // Apply winnings to players
+    const showdownResults: ShowdownResult[] = [];
+    const allWinners: string[] = [];
+    
+    handResults.forEach(result => {
+      const player = this.getPlayer(result.playerId)!;
+      const playerDistributions = distributions.filter(d => d.playerId === result.playerId);
+      const totalWinnings = playerDistributions.reduce((sum, d) => sum + d.amount, 0);
+      
+      if (totalWinnings > 0) {
+        player.chips += totalWinnings;
+        allWinners.push(result.playerId);
+      }
+      
+      showdownResults.push({
+        playerId: result.playerId,
+        playerName: player.name,
+        hand: result.hand,
+        cards: player.cards,
+        winAmount: totalWinnings,
+        potType: playerDistributions.length > 0 ? playerDistributions[0].potType : 'main',
+        potId: playerDistributions.length > 0 ? playerDistributions[0].potId : undefined
+      });
+    });
+    
+    // Set game state
+    this.gameState.winners = allWinners;
+    this.gameState.winner = allWinners[0]; // Backward compatibility
+    this.gameState.handEvaluation = this.getBestHandName(handResults);
+    this.gameState.showdownResults = showdownResults;
+  }
+
+  private findWinners(handResults: { playerId: string; hand: DetailedHand }[]): { playerId: string; hand: DetailedHand }[] {
+    if (handResults.length === 0) return [];
+    
+    // Sort hands by strength using the enhanced comparison
+    const sortedResults = [...handResults].sort((a, b) => 
+      this.handEvaluator.compareHands(b.hand, a.hand)
+    );
+    
+    // Find all players with the best hand (ties)
+    const bestHand = sortedResults[0].hand;
+    const winners = sortedResults.filter(result => 
+      this.handEvaluator.compareHands(result.hand, bestHand) === 0
+    );
+    
+    return winners;
+  }
+
+  private getBestHandName(handResults: { playerId: string; hand: DetailedHand }[]): string {
+    if (handResults.length === 0) return 'No hands';
+    
+    const winners = this.findWinners(handResults);
+    return winners[0]?.hand.name || 'Unknown';
   }
 
   public getGameState(): GameState {
@@ -519,7 +628,7 @@ export class GameService {
     }
   }
 
-  public evaluateHands(): { playerId: string; hand: Hand }[] {
+  public evaluateHands(): { playerId: string; hand: DetailedHand }[] {
     const activePlayers = this.gameState.players.filter(p => p.isActive);
     return activePlayers.map(player => ({
       playerId: player.id,
@@ -623,14 +732,18 @@ export class GameService {
     // Reset for new hand
     this.gameState.isHandComplete = false;
     this.gameState.winner = undefined;
+    this.gameState.winners = undefined;
     this.gameState.handEvaluation = undefined;
+    this.gameState.showdownResults = undefined;
+    this.gameState.sidePots = undefined;
     this.gameState.pot = 0;
     this.gameState.currentBet = 0;
     this.gameState.communityCards = [];
     this.gameState.phase = 'preflop';
     
-    // Clear action tracking for new hand
+    // Clear action tracking and side pot manager for new hand
     this.playersActedThisRound.clear();
+    this.sidePotManager.reset();
     
     // Reset player states
     this.gameState.players.forEach(player => {

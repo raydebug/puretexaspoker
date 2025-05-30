@@ -18,11 +18,30 @@ export interface Player {
   avatar: Avatar;
 }
 
+export interface SidePot {
+  id: string;
+  amount: number;
+  eligiblePlayerIds: string[];
+  winners?: string[];
+  isResolved: boolean;
+}
+
+export interface ShowdownResult {
+  playerId: string;
+  playerName: string;
+  hand: Hand;
+  cards: Card[];
+  winAmount: number;
+  potType: 'main' | 'side';
+  potId?: string;
+}
+
 export interface GameState {
   id: string;
   players: Player[];
   communityCards: Card[];
   pot: number;
+  sidePots?: SidePot[];
   currentPlayerId: string | null;
   currentPlayerPosition: number;
   dealerPosition: number;
@@ -36,6 +55,8 @@ export interface GameState {
   bigBlind: number;
   handEvaluation?: string;
   winner?: string;
+  winners?: string[]; // For split pots
+  showdownResults?: ShowdownResult[];
   isHandComplete?: boolean;
 }
 
@@ -43,6 +64,8 @@ export interface Hand {
   name: string;
   rank: number;
   cards: Card[];
+  highCards?: number[];  // Kickers for tie-breaking
+  detailedRank?: number; // More precise ranking
 }
 
 export interface Avatar {
