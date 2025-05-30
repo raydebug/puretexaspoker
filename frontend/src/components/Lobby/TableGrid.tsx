@@ -231,7 +231,7 @@ export const TableGrid: React.FC<TableGridProps> = ({ filters }) => {
       localStorage.setItem('nickname', nickname);
       
       // Navigate to the Join Game page with table data
-      navigate('/join', { state: { table: selectedTable } });
+      navigate('/join-table', { state: { table: selectedTable } });
     }
   };
 
@@ -300,6 +300,7 @@ export const TableGrid: React.FC<TableGridProps> = ({ filters }) => {
       key={table.id}
       onClick={() => handleTableClick(table)}
       data-testid={`table-${table.id}`}
+      data-table-id={table.id}
     >
       <TableName>
         {table.name}
@@ -310,6 +311,9 @@ export const TableGrid: React.FC<TableGridProps> = ({ filters }) => {
       <InfoRow data-testid={`table-info-${table.id}`}>
         <span>Players: {table.players}/{table.maxPlayers}</span>
         <span>Stakes: {table.stakes}</span>
+      </InfoRow>
+      <InfoRow>
+        <span>Game Type: {table.gameType}</span>
       </InfoRow>
       <JoinButton data-testid={`join-table-${table.id}`}>
         Join Table

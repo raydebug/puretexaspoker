@@ -228,7 +228,11 @@ describe('TableGrid', () => {
     const table1Name = screen.queryByRole('heading', { level: 3, name: /Table 1/i });
     expect(table1Name).not.toBeInTheDocument();
 
-    const gameTypeText = await screen.findByText('Pot Limit');
+    const gameTypeElements = await screen.findAllByText((content, element) => {
+      return element?.textContent?.includes('Pot Limit') || false;
+    });
+    // Find the most specific element (should be the span with just the game type)
+    const gameTypeText = gameTypeElements.find(el => el.textContent?.trim() === 'Game Type: Pot Limit');
     expect(gameTypeText).toBeInTheDocument();
   });
 
@@ -354,7 +358,11 @@ describe('TableGrid', () => {
     const tableName = await screen.findByRole('heading', { level: 3, name: /Table 1/i });
     expect(tableName).toBeInTheDocument();
 
-    const gameTypeText = await screen.findByText('No Limit');
+    const gameTypeElements = await screen.findAllByText((content, element) => {
+      return element?.textContent?.includes('No Limit') || false;
+    });
+    // Find the most specific element (should be the span with just the game type)
+    const gameTypeText = gameTypeElements.find(el => el.textContent?.trim() === 'Game Type: No Limit');
     expect(gameTypeText).toBeInTheDocument();
   });
 
