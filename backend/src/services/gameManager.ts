@@ -1,9 +1,26 @@
 import { GameService } from './gameService';
 import { GameState, Player } from '../types/shared';
 import { prisma } from '../db';
+import { Server } from 'socket.io';
 
 export class GameManager {
   private games: Map<string, GameService> = new Map();
+  private io: Server | null = null;
+
+  public setSocketServer(io: Server): void {
+    this.io = io;
+  }
+
+  private emitGameUpdate(gameId: string, event: string, data?: any): void {
+    if (this.io) {
+      const gameState = this.getGameState(gameId);
+      // Emit to all clients in the game room
+      this.io.to(`game:${gameId}`).emit('gameState', gameState);
+      if (event !== 'gameState') {
+        this.io.to(`game:${gameId}`).emit(event, data);
+      }
+    }
+  }
 
   public async createGame(tableId: string): Promise<GameState> {
     // Check if table exists
@@ -75,6 +92,9 @@ export class GameManager {
     // Store the game service
     this.games.set(dbGame.id, gameService);
 
+    // Emit real-time update
+    this.emitGameUpdate(dbGame.id, 'gameCreated', { gameId: dbGame.id });
+
     return gameService.getGameState();
   }
 
@@ -93,6 +113,13 @@ export class GameManager {
       data: {
         status: 'active'
       }
+    });
+
+    // Emit real-time updates
+    this.emitGameUpdate(gameId, 'gameStarted', { gameId });
+    this.emitGameUpdate(gameId, 'cardsDealt', { 
+      phase: 'preflop',
+      message: 'Hole cards dealt to all players'
     });
 
     return gameService.getGameState();
@@ -125,6 +152,14 @@ export class GameManager {
       }
     });
 
+    // Emit real-time update
+    this.emitGameUpdate(gameId, 'playerAction', {
+      playerId,
+      action: 'bet',
+      amount,
+      pot: gameState.pot
+    });
+
     return gameState;
   }
 
@@ -151,6 +186,12 @@ export class GameManager {
       data: {
         status: gameState.isHandComplete ? 'finished' : 'active'
       }
+    });
+
+    // Emit real-time update
+    this.emitGameUpdate(gameId, 'playerAction', {
+      playerId,
+      action: 'fold'
     });
 
     return gameState;
@@ -181,6 +222,13 @@ export class GameManager {
       }
     });
 
+    // Emit real-time update
+    this.emitGameUpdate(gameId, 'playerAction', {
+      playerId,
+      action: 'call',
+      pot: gameState.pot
+    });
+
     return gameState;
   }
 
@@ -201,6 +249,12 @@ export class GameManager {
       }
     });
 
+    // Emit real-time update
+    this.emitGameUpdate(gameId, 'playerAction', {
+      playerId,
+      action: 'check'
+    });
+
     return gameService.getGameState();
   }
 
@@ -210,6 +264,7 @@ export class GameManager {
       throw new Error('Game not found');
     }
 
+    const prevPhase = gameService.getGameState().phase;
     gameService.dealCommunityCards();
     const gameState = gameService.getGameState();
 
@@ -218,6 +273,30 @@ export class GameManager {
       data: {
         status: gameState.isHandComplete ? 'finished' : 'active'
       }
+    });
+
+    // Emit real-time update with phase transition
+    let message = '';
+    switch (gameState.phase) {
+      case 'flop':
+        message = 'Flop dealt: 3 community cards revealed';
+        break;
+      case 'turn':
+        message = 'Turn dealt: 4th community card revealed';
+        break;
+      case 'river':
+        message = 'River dealt: 5th community card revealed';
+        break;
+      case 'showdown':
+        message = 'Showdown: All community cards revealed';
+        break;
+    }
+
+    this.emitGameUpdate(gameId, 'communityCardsDealt', {
+      phase: gameState.phase,
+      prevPhase,
+      communityCards: gameState.communityCards,
+      message
     });
 
     return gameState;
@@ -234,6 +313,31 @@ export class GameManager {
 
   public removeGame(gameId: string): void {
     this.games.delete(gameId);
+  }
+
+  // Method for clients to join game room
+  public joinGameRoom(gameId: string, socketId: string): void {
+    if (this.io) {
+      const socket = this.io.sockets.sockets.get(socketId);
+      if (socket) {
+        socket.join(`game:${gameId}`);
+        // Send current game state to the joining client
+        const gameState = this.getGameState(gameId);
+        if (gameState) {
+          socket.emit('gameState', gameState);
+        }
+      }
+    }
+  }
+
+  // Method for clients to leave game room
+  public leaveGameRoom(gameId: string, socketId: string): void {
+    if (this.io) {
+      const socket = this.io.sockets.sockets.get(socketId);
+      if (socket) {
+        socket.leave(`game:${gameId}`);
+      }
+    }
   }
 }
 
