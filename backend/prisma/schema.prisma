@@ -10,12 +10,32 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id          String    @id @default(uuid())
+  username    String    @unique
+  email       String    @unique
+  password    String
+  displayName String
+  avatar      String?
+  chips       Int       @default(10000)
+  gamesPlayed Int       @default(0)
+  gamesWon    Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
+  
+  // Relation to Player for backwards compatibility
+  player      Player?
+}
+
 model Player {
   id          String        @id @default(uuid())
   nickname    String        @unique
   chips       Int
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+  userId      String?       @unique // Optional link to User
+  user        User?         @relation(fields: [userId], references: [id])
   playerTables PlayerTable[]
   messages    Message[]
   gameActions GameAction[]
