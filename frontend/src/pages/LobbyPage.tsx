@@ -216,7 +216,7 @@ const LobbyPage: React.FC = () => {
   };
 
   return (
-    <LobbyContainer data-testid="game-container">
+    <LobbyContainer>
       <Header>
         <Title>Texas Hold'em Poker Lobby</Title>
         <Subtitle>Choose a table to join or observe</Subtitle>
@@ -224,7 +224,7 @@ const LobbyPage: React.FC = () => {
 
       {userName && (
         <UserInfo data-testid="user-info">
-          <UserName data-testid="user-name">{userName}</UserName>
+          <UserName data-testid="user-name">Welcome, {userName}</UserName>
           <LogoutButton data-testid="logout-button" onClick={handleLogout}>
             Logout
           </LogoutButton>
@@ -270,7 +270,7 @@ const LobbyPage: React.FC = () => {
                 data-testid="nickname-input"
               />
               {modalError && <ModalError data-testid="modal-error">{modalError}</ModalError>}
-              <ModalButton type="submit" data-testid="submit-nickname">
+              <ModalButton type="submit" data-testid="join-button">
                 Start Playing
               </ModalButton>
             </form>
