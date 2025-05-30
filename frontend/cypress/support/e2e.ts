@@ -71,10 +71,43 @@ Cypress.Commands.add('login', (email: string, password: string) => {
 });
 
 Cypress.Commands.add('joinGame', (nickname: string) => {
-  cy.get('[data-testid="nickname-input"]').should('be.visible').clear().type(nickname);
-  cy.get('[data-testid="join-button"]').should('be.enabled').click();
-  // Wait for join confirmation
-  cy.get(`[data-testid="player-${nickname}"]`).should('exist');
+  // Set nickname if modal is present
+  cy.get('body').then(($body) => {
+    if ($body.find('[data-testid="nickname-modal"]').length > 0) {
+      cy.get('[data-testid="nickname-input"]').should('be.visible').clear().type(nickname);
+      cy.get('[data-testid="join-button"]').should('be.enabled').click();
+      // Wait for modal to disappear
+      cy.get('[data-testid="nickname-modal"]').should('not.exist');
+    }
+  });
+  
+  // Wait for lobby to load and tables to appear
+  cy.get('[data-testid="game-container"]').should('exist');
+  
+  // Look for any available table and click it
+  cy.get('[data-table-id]').first().should('be.visible').click();
+  
+  // The dialog will appear - enter nickname if needed and submit
+  cy.get('input[type="text"]').should('be.visible').then(($input) => {
+    if ($input.val() !== nickname) {
+      cy.wrap($input).clear().type(nickname);
+    }
+  });
+  
+  // Click the "Join Table" button in the dialog
+  cy.contains('button', 'Join Table').should('be.visible').click();
+  
+  // Wait for navigation to /join-table page
+  cy.url({ timeout: 10000 }).should('include', '/join-table');
+  
+  // Click the "Join Table" button on the join-table page
+  cy.contains('button', 'Join Table').should('be.visible').click();
+  
+  // Wait for navigation to game page
+  cy.url({ timeout: 10000 }).should('include', '/game/');
+  
+  // Wait for player to appear in the game (check for user name or online list)
+  cy.get('[data-testid="user-name"]', { timeout: 10000 }).should('contain', nickname);
 });
 
 Cypress.Commands.add('setPlayerStatus', (status: 'away' | 'back') => {
