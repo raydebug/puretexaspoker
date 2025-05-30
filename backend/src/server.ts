@@ -3,6 +3,7 @@ import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import testRoutes from './routes/test';
+import authRoutes from './routes/auth';
 import playerRoutes from './routes/players';
 import tableRoutes from './routes/tables';
 import chatRoutes from './routes/chat';
@@ -25,6 +26,7 @@ app.use(express.json());
 
 // API routes
 app.use('/api/test', testRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/players', playerRoutes);
 app.use('/api/tables', tableRoutes);
 app.use('/api/chat', chatRoutes);

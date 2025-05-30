@@ -8,4 +8,5 @@ export const clearDatabase = async () => {
   await prisma.playerTable.deleteMany();
   await prisma.table.deleteMany();
   await prisma.player.deleteMany();
+  await prisma.user.deleteMany();
 }; 
