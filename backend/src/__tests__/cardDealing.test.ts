@@ -110,23 +110,36 @@ describe('Card Dealing Integration', () => {
     expect(startedGameState.phase).toBe('preflop');
     expect(startedGameState.communityCards).toHaveLength(0);
 
-    // Deal flop
-    const flopState = await gameManager.dealCommunityCards(gameState.id);
-    expect(flopState.phase).toBe('flop');
-    expect(flopState.communityCards).toHaveLength(3);
+    // Complete preflop betting first
+    const currentPlayerId = startedGameState.currentPlayerId;
+    const callState = await gameManager.call(gameState.id, currentPlayerId!);
     
-    // Deal turn
-    const turnState = await gameManager.dealCommunityCards(gameState.id);
-    expect(turnState.phase).toBe('turn');
-    expect(turnState.communityCards).toHaveLength(4);
+    // Deal flop (should happen automatically after betting round completes)
+    expect(callState.phase).toBe('flop');
+    expect(callState.communityCards).toHaveLength(3);
     
-    // Deal river
-    const riverState = await gameManager.dealCommunityCards(gameState.id);
-    expect(riverState.phase).toBe('river');
-    expect(riverState.communityCards).toHaveLength(5);
+    // Complete flop betting
+    let nextPlayerId = callState.currentPlayerId;
+    const checkState1 = await gameManager.check(gameState.id, nextPlayerId!);
+    nextPlayerId = checkState1.currentPlayerId;
+    const checkState2 = await gameManager.check(gameState.id, nextPlayerId!);
+    
+    // Deal turn (should happen automatically)
+    expect(checkState2.phase).toBe('turn');
+    expect(checkState2.communityCards).toHaveLength(4);
+    
+    // Complete turn betting
+    nextPlayerId = checkState2.currentPlayerId;
+    const checkState3 = await gameManager.check(gameState.id, nextPlayerId!);
+    nextPlayerId = checkState3.currentPlayerId;
+    const checkState4 = await gameManager.check(gameState.id, nextPlayerId!);
+    
+    // Deal river (should happen automatically)
+    expect(checkState4.phase).toBe('river');
+    expect(checkState4.communityCards).toHaveLength(5);
     
     // All community cards should have rank and suit
-    riverState.communityCards.forEach(card => {
+    checkState4.communityCards.forEach(card => {
       expect(card).toHaveProperty('rank');
       expect(card).toHaveProperty('suit');
       expect(['hearts', 'diamonds', 'clubs', 'spades']).toContain(card.suit);
@@ -165,13 +178,23 @@ describe('Card Dealing Integration', () => {
     const gameState = await gameManager.createGame(tableId);
     const startedGameState = await gameManager.startGame(gameState.id);
     
-    // Deal all community cards
-    let currentState = startedGameState;
-    for (let i = 0; i < 3; i++) {
-      currentState = await gameManager.dealCommunityCards(gameState.id);
-    }
+    // Complete preflop betting
+    let currentPlayerId = startedGameState.currentPlayerId;
+    let currentState = await gameManager.call(gameState.id, currentPlayerId!);
     
-    // Collect all dealt cards
+    // Complete flop betting
+    currentPlayerId = currentState.currentPlayerId;
+    currentState = await gameManager.check(gameState.id, currentPlayerId!);
+    currentPlayerId = currentState.currentPlayerId;
+    currentState = await gameManager.check(gameState.id, currentPlayerId!);
+    
+    // Complete turn betting  
+    currentPlayerId = currentState.currentPlayerId;
+    currentState = await gameManager.check(gameState.id, currentPlayerId!);
+    currentPlayerId = currentState.currentPlayerId;
+    currentState = await gameManager.check(gameState.id, currentPlayerId!);
+    
+    // Collect all dealt cards (now we should have all 5 community cards)
     const allCards = [
       ...currentState.players[0].cards,
       ...currentState.players[1].cards,

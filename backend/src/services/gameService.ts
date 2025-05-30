@@ -10,6 +10,7 @@ export class GameService {
   private seatManager: SeatManager;
   private deck: Card[];
   private readonly MAX_PLAYERS = 9;
+  private playersActedThisRound: Set<string> = new Set();
 
   constructor() {
     this.deckService = new DeckService();
@@ -57,6 +58,9 @@ export class GameService {
     this.gameState.pot = 0;
     this.gameState.currentBet = 0;
     this.gameState.communityCards = [];
+    
+    // Clear action tracking for new hand
+    this.playersActedThisRound.clear();
     
     // Reset player states and ensure all seated players are active
     this.gameState.players.forEach(player => {
@@ -141,28 +145,24 @@ export class GameService {
   }
 
   public dealCommunityCards(): void {
-    switch (this.gameState.phase) {
-      case 'preflop':
-        this.gameState.communityCards = this.deckService.dealCards(3, this.deck);
-        this.gameState.phase = 'flop';
-        this.resetBettingRound();
-        break;
-      case 'flop':
-        this.gameState.communityCards.push(...this.deckService.dealCards(1, this.deck));
-        this.gameState.phase = 'turn';
-        this.resetBettingRound();
-        break;
-      case 'turn':
-        this.gameState.communityCards.push(...this.deckService.dealCards(1, this.deck));
-        this.gameState.phase = 'river';
-        this.resetBettingRound();
-        break;
-      case 'river':
-        this.determineWinner();
-        this.gameState.phase = 'showdown';
-        this.gameState.isHandComplete = true;
-        break;
+    if (this.gameState.isHandComplete) {
+      throw new Error('Cannot deal community cards: hand is complete');
     }
+
+    if (this.gameState.phase === 'waiting') {
+      throw new Error('Cannot deal community cards: game not started');
+    }
+
+    if (this.gameState.phase === 'showdown' || this.gameState.phase === 'finished') {
+      throw new Error('Cannot deal community cards: game is in showdown or finished');
+    }
+
+    // Validate that betting round is actually complete
+    if (!this.isBettingRoundComplete()) {
+      throw new Error('Cannot advance phase: betting round is not complete');
+    }
+
+    this.completePhase();
   }
 
   private resetBettingRound(): void {
@@ -172,6 +172,9 @@ export class GameService {
         player.currentBet = 0;
       }
     });
+    
+    // Clear action tracking for new betting round
+    this.playersActedThisRound.clear();
     
     // First to act in post-flop is left of dealer
     const activePlayers = this.gameState.players.filter(p => p.isActive);
@@ -247,6 +250,9 @@ export class GameService {
     this.gameState.pot += amount;
     this.gameState.currentBet = Math.max(this.gameState.currentBet, player.currentBet);
     
+    // Track that this player has acted
+    this.playersActedThisRound.add(playerId);
+    
     this.moveToNextPlayer();
   }
 
@@ -288,6 +294,9 @@ export class GameService {
     this.gameState.pot += betAmount;
     this.gameState.currentBet = totalBetAmount;
     
+    // Track that this player has acted
+    this.playersActedThisRound.add(playerId);
+    
     this.moveToNextPlayer();
   }
 
@@ -306,6 +315,10 @@ export class GameService {
     }
 
     player.isActive = false;
+    
+    // Track that this player has acted
+    this.playersActedThisRound.add(playerId);
+    
     this.moveToNextPlayer();
   }
 
@@ -317,6 +330,12 @@ export class GameService {
       this.gameState.winner = activePlayers[0].id;
       activePlayers[0].chips += this.gameState.pot;
       this.gameState.isHandComplete = true;
+      this.gameState.phase = 'finished';
+      return;
+    }
+
+    // Check if game is already finished or in showdown
+    if (this.gameState.isHandComplete || this.gameState.phase === 'finished' || this.gameState.phase === 'showdown') {
       return;
     }
 
@@ -332,10 +351,121 @@ export class GameService {
     this.gameState.currentPlayerPosition = nextPlayerIndex;
 
     // Check if betting round is complete
-    const allPlayersActed = activePlayers.every(p => p.currentBet === this.gameState.currentBet);
-    if (allPlayersActed) {
-      this.dealCommunityCards();
+    if (this.isBettingRoundComplete()) {
+      this.completePhase();
     }
+  }
+
+  private isBettingRoundComplete(): boolean {
+    const activePlayers = this.gameState.players.filter(p => p.isActive);
+    
+    if (activePlayers.length <= 1) {
+      return true; // Game over
+    }
+
+    // All active players must have acted and have equal bets
+    const playersWhoCanAct = activePlayers.filter(p => p.chips > 0); // Players not all-in
+    
+    // If all remaining players are all-in, betting round is complete
+    if (playersWhoCanAct.length <= 1) {
+      return true;
+    }
+
+    // Check if all players who can act have matching bets
+    const currentBet = this.gameState.currentBet;
+    const allPlayersMatched = playersWhoCanAct.every(p => p.currentBet === currentBet);
+    
+    // Special handling for preflop in heads-up play
+    if (this.gameState.phase === 'preflop' && activePlayers.length === 2) {
+      // In heads-up preflop, if someone has acted and all bets are equal, round is complete
+      const someoneActed = this.playersActedThisRound.size > 0;
+      return allPlayersMatched && someoneActed;
+    }
+    
+    // For all other cases, ALL active players must have acted in this betting round
+    const allPlayersActed = activePlayers.every(p => this.playersActedThisRound.has(p.id));
+
+    return allPlayersMatched && allPlayersActed;
+  }
+
+  private hasEveryPlayerActed(): boolean {
+    const activePlayers = this.gameState.players.filter(p => p.isActive);
+    
+    // Check if all active players have acted in this betting round
+    return activePlayers.every(p => this.playersActedThisRound.has(p.id));
+  }
+
+  private completePhase(): void {
+    switch (this.gameState.phase) {
+      case 'preflop':
+        this.gameState.communityCards = this.deckService.dealCards(3, this.deck);
+        this.gameState.phase = 'flop';
+        this.resetBettingRound();
+        break;
+      case 'flop':
+        this.gameState.communityCards.push(...this.deckService.dealCards(1, this.deck));
+        this.gameState.phase = 'turn';
+        this.resetBettingRound();
+        break;
+      case 'turn':
+        this.gameState.communityCards.push(...this.deckService.dealCards(1, this.deck));
+        this.gameState.phase = 'river';
+        this.resetBettingRound();
+        break;
+      case 'river':
+        this.gameState.phase = 'showdown';
+        this.handleShowdown();
+        break;
+      default:
+        throw new Error(`Invalid phase for completion: ${this.gameState.phase}`);
+    }
+  }
+
+  private handleShowdown(): void {
+    const activePlayers = this.gameState.players.filter(p => p.isActive);
+    
+    if (activePlayers.length <= 1) {
+      // Only one player left, they win automatically
+      if (activePlayers.length === 1) {
+        this.gameState.winner = activePlayers[0].id;
+        activePlayers[0].chips += this.gameState.pot;
+      }
+      this.gameState.isHandComplete = true;
+      this.gameState.phase = 'finished';
+      return;
+    }
+
+    // Evaluate all hands and determine winner
+    const handResults = this.evaluateHands();
+    const bestResult = this.findBestHand(handResults);
+    
+    if (bestResult) {
+      this.gameState.winner = bestResult.playerId;
+      this.gameState.handEvaluation = bestResult.hand.name;
+      
+      // Award pot to winner
+      const winner = this.getPlayer(bestResult.playerId);
+      if (winner) {
+        winner.chips += this.gameState.pot;
+      }
+    }
+    
+    this.gameState.isHandComplete = true;
+    
+    // Auto-start next hand after brief delay (in a real game)
+    // For testing, we'll just mark as finished
+    this.gameState.phase = 'finished';
+  }
+
+  private findBestHand(handResults: { playerId: string; hand: Hand }[]): { playerId: string; hand: Hand } | null {
+    if (handResults.length === 0) return null;
+    
+    return handResults.reduce((best, current) => {
+      if (!best || current.hand.rank > best.hand.rank) {
+        return current;
+      }
+      return best;
+    });
   }
 
   public getGameState(): GameState {
@@ -416,6 +546,9 @@ export class GameService {
       throw new Error(`Cannot check, must call ${amountToCall} or raise`);
     }
 
+    // Track that this player has acted
+    this.playersActedThisRound.add(playerId);
+
     this.moveToNextPlayer();
   }
 
@@ -453,6 +586,9 @@ export class GameService {
       this.gameState.pot += callAmount;
     }
 
+    // Track that this player has acted
+    this.playersActedThisRound.add(playerId);
+
     this.moveToNextPlayer();
   }
 
@@ -471,5 +607,127 @@ export class GameService {
 
   public getAllSeats() {
     return this.seatManager.getAllSeats();
+  }
+
+  // Enhanced method to start a new hand
+  public startNewHand(): void {
+    if (!this.gameState.isHandComplete) {
+      throw new Error('Cannot start new hand: current hand is not complete');
+    }
+
+    const activePlayers = this.gameState.players.filter(p => p.chips > 0);
+    if (activePlayers.length < 2) {
+      throw new Error('Not enough players with chips to start new hand');
+    }
+
+    // Reset for new hand
+    this.gameState.isHandComplete = false;
+    this.gameState.winner = undefined;
+    this.gameState.handEvaluation = undefined;
+    this.gameState.pot = 0;
+    this.gameState.currentBet = 0;
+    this.gameState.communityCards = [];
+    this.gameState.phase = 'preflop';
+    
+    // Clear action tracking for new hand
+    this.playersActedThisRound.clear();
+    
+    // Reset player states
+    this.gameState.players.forEach(player => {
+      player.cards = [];
+      player.currentBet = 0;
+      player.isActive = player.chips > 0; // Only players with chips are active
+    });
+
+    // Move dealer button
+    this.updatePositionsWithSeatManager();
+
+    // Shuffle and deal new cards
+    this.deckService.reset(this.deck);
+    this.deckService.shuffle(this.deck);
+    activePlayers.forEach(player => {
+      player.cards = this.deckService.dealCards(2, this.deck);
+    });
+
+    // Post blinds for new hand
+    this.postBlinds();
+  }
+
+  // Method to get detailed phase information
+  public getPhaseInfo(): {
+    phase: string;
+    description: string;
+    communityCardCount: number;
+    canBet: boolean;
+    canDeal: boolean;
+  } {
+    const phase = this.gameState.phase;
+    
+    switch (phase) {
+      case 'waiting':
+        return {
+          phase,
+          description: 'Waiting for players to join',
+          communityCardCount: 0,
+          canBet: false,
+          canDeal: false
+        };
+      case 'preflop':
+        return {
+          phase,
+          description: 'Pre-flop betting round',
+          communityCardCount: 0,
+          canBet: true,
+          canDeal: this.isBettingRoundComplete()
+        };
+      case 'flop':
+        return {
+          phase,
+          description: 'Flop betting round (3 community cards)',
+          communityCardCount: 3,
+          canBet: true,
+          canDeal: this.isBettingRoundComplete()
+        };
+      case 'turn':
+        return {
+          phase,
+          description: 'Turn betting round (4 community cards)',
+          communityCardCount: 4,
+          canBet: true,
+          canDeal: this.isBettingRoundComplete()
+        };
+      case 'river':
+        return {
+          phase,
+          description: 'River betting round (5 community cards)',
+          communityCardCount: 5,
+          canBet: true,
+          canDeal: this.isBettingRoundComplete()
+        };
+      case 'showdown':
+        return {
+          phase,
+          description: 'Showdown - revealing cards',
+          communityCardCount: 5,
+          canBet: false,
+          canDeal: false
+        };
+      case 'finished':
+        return {
+          phase,
+          description: 'Hand complete',
+          communityCardCount: 5,
+          canBet: false,
+          canDeal: false
+        };
+      default:
+        return {
+          phase,
+          description: 'Unknown phase',
+          communityCardCount: 0,
+          canBet: false,
+          canDeal: false
+        };
+    }
   }
 } 

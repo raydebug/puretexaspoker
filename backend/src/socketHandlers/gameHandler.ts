@@ -267,6 +267,48 @@ export function registerGameHandlers(io: Server) {
       }
     });
 
+    // Get phase information
+    socket.on('game:getPhaseInfo', async ({ gameId }) => {
+      try {
+        if (!gameId) {
+          throw new Error('Game ID is required');
+        }
+
+        const phaseInfo = await gameManager.getPhaseInfo(gameId);
+        socket.emit('game:phaseInfo', { gameId, phaseInfo });
+      } catch (error) {
+        handleGameError(socket, error as Error, 'getPhaseInfo');
+      }
+    });
+
+    // Start new hand
+    socket.on('game:startNewHand', async ({ gameId }) => {
+      try {
+        if (!gameId) {
+          throw new Error('Game ID is required');
+        }
+
+        const gameState = await gameManager.startNewHand(gameId);
+        socket.emit('game:actionSuccess', { action: 'startNewHand', gameId });
+      } catch (error) {
+        handleGameError(socket, error as Error, 'startNewHand');
+      }
+    });
+
+    // Force complete phase (testing/admin feature)
+    socket.on('game:forceCompletePhase', async ({ gameId }) => {
+      try {
+        if (!gameId) {
+          throw new Error('Game ID is required');
+        }
+
+        const gameState = await gameManager.forceCompletePhase(gameId);
+        socket.emit('game:actionSuccess', { action: 'forceCompletePhase', gameId });
+      } catch (error) {
+        handleGameError(socket, error as Error, 'forceCompletePhase');
+      }
+    });
+
     socket.on('disconnect', () => {
       console.log(`Game client disconnected: ${socket.id}`);
       // Socket rooms are automatically cleaned up on disconnect

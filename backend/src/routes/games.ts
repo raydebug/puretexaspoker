@@ -206,7 +206,7 @@ router.post('/:gameId/deal', async (req, res) => {
     res.status(200).json(gameState);
   } catch (error) {
     console.error('Error dealing community cards:', error);
-    res.status(500).json({ error: (error as Error).message || 'Failed to deal cards' });
+    res.status(400).json({ error: (error as Error).message || 'Failed to deal cards' });
   }
 });
 
@@ -229,6 +229,45 @@ router.post('/:gameId/raise', async (req, res) => {
   } catch (error) {
     console.error('Error raising:', error);
     res.status(400).json({ error: (error as Error).message || 'Failed to raise' });
+  }
+});
+
+// Get phase information
+router.get('/:gameId/phase', async (req, res) => {
+  try {
+    const { gameId } = req.params;
+
+    const phaseInfo = await gameManager.getPhaseInfo(gameId);
+    res.status(200).json(phaseInfo);
+  } catch (error) {
+    console.error('Error getting phase info:', error);
+    res.status(500).json({ error: (error as Error).message || 'Failed to get phase info' });
+  }
+});
+
+// Start a new hand (after current hand is complete)
+router.post('/:gameId/new-hand', async (req, res) => {
+  try {
+    const { gameId } = req.params;
+
+    const gameState = await gameManager.startNewHand(gameId);
+    res.status(200).json(gameState);
+  } catch (error) {
+    console.error('Error starting new hand:', error);
+    res.status(400).json({ error: (error as Error).message || 'Failed to start new hand' });
+  }
+});
+
+// Force complete current phase (admin/testing feature)
+router.post('/:gameId/force-complete-phase', async (req, res) => {
+  try {
+    const { gameId } = req.params;
+
+    const gameState = await gameManager.forceCompletePhase(gameId);
+    res.status(200).json(gameState);
+  } catch (error) {
+    console.error('Error force completing phase:', error);
+    res.status(400).json({ error: (error as Error).message || 'Failed to complete phase' });
   }
 });
 
