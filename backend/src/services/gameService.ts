@@ -298,4 +298,37 @@ export class GameService {
 
     this.moveToNextPlayer();
   }
+
+  public call(playerId: string): void {
+    const player = this.getPlayer(playerId);
+    if (!player) {
+      throw new Error('Player not found');
+    }
+
+    if (!player.isActive) {
+      throw new Error('Player is not active in the game');
+    }
+
+    if (player.id !== this.gameState.currentPlayerId) {
+      throw new Error('Not player\'s turn');
+    }
+
+    const callAmount = this.gameState.currentBet - player.currentBet;
+    if (callAmount > player.chips) {
+      throw new Error('Insufficient chips to call');
+    }
+
+    if (callAmount === 0) {
+      throw new Error('No amount to call, use check instead');
+    }
+
+    player.chips -= callAmount;
+    player.currentBet += callAmount;
+    this.gameState.pot += callAmount;
+    this.moveToNextPlayer();
+  }
+
+  public setGameId(gameId: string): void {
+    this.gameState.id = gameId;
+  }
 } 

@@ -1,38 +1,53 @@
 import express from 'express';
 import { prisma } from '../db';
+import { gameManager } from '../services/gameManager';
 
 const router = express.Router();
 
-// Start a new game
+// Create a new game for a table
 router.post('/', async (req, res) => {
   try {
     const { tableId } = req.body;
 
-    // Check if there's already an active game
-    const activeGame = await prisma.game.findFirst({
-      where: {
-        tableId,
-        status: 'active'
-      }
-    });
-
-    if (activeGame) {
-      return res.status(400).json({ error: 'Table already has an active game' });
+    if (!tableId) {
+      return res.status(400).json({ error: 'Table ID is required' });
     }
 
-    // Create new game
-    const game = await prisma.game.create({
-      data: {
-        tableId,
-        status: 'active',
-        pot: 0
-      }
-    });
+    const gameState = await gameManager.createGame(tableId);
+    res.status(201).json(gameState);
+  } catch (error) {
+    console.error('Error creating game:', error);
+    res.status(500).json({ error: (error as Error).message || 'Failed to create game' });
+  }
+});
 
-    res.status(200).json(game);
+// Start an existing game (deals cards, posts blinds)
+router.post('/:gameId/start', async (req, res) => {
+  try {
+    const { gameId } = req.params;
+
+    const gameState = await gameManager.startGame(gameId);
+    res.status(200).json(gameState);
   } catch (error) {
     console.error('Error starting game:', error);
-    res.status(500).json({ error: 'Failed to start game' });
+    res.status(500).json({ error: (error as Error).message || 'Failed to start game' });
+  }
+});
+
+// Get current game state
+router.get('/:gameId', async (req, res) => {
+  try {
+    const { gameId } = req.params;
+
+    const gameState = gameManager.getGameState(gameId);
+    if (!gameState) {
+      return res.status(404).json({ error: 'Game not found' });
+    }
+
+    res.status(200).json(gameState);
+  } catch (error) {
+    console.error('Error getting game state:', error);
+    res.status(500).json({ error: 'Failed to get game state' });
   }
 });
 
@@ -42,37 +57,51 @@ router.post('/:gameId/bet', async (req, res) => {
     const { gameId } = req.params;
     const { playerId, amount } = req.body;
 
-    // Check if game exists and is active
-    const game = await prisma.game.findUnique({
-      where: { id: gameId }
-    });
-
-    if (!game || game.status !== 'active') {
-      return res.status(404).json({ error: 'Game not found or not active' });
+    if (!playerId || amount === undefined) {
+      return res.status(400).json({ error: 'Player ID and amount are required' });
     }
 
-    // Record the bet action
-    const action = await prisma.gameAction.create({
-      data: {
-        gameId,
-        playerId,
-        type: 'bet',
-        amount
-      }
-    });
-
-    // Update game pot
-    await prisma.game.update({
-      where: { id: gameId },
-      data: {
-        pot: game.pot + amount
-      }
-    });
-
-    res.status(200).json(action);
+    const gameState = await gameManager.placeBet(gameId, playerId, amount);
+    res.status(200).json(gameState);
   } catch (error) {
     console.error('Error placing bet:', error);
-    res.status(500).json({ error: 'Failed to place bet' });
+    res.status(500).json({ error: (error as Error).message || 'Failed to place bet' });
+  }
+});
+
+// Call
+router.post('/:gameId/call', async (req, res) => {
+  try {
+    const { gameId } = req.params;
+    const { playerId } = req.body;
+
+    if (!playerId) {
+      return res.status(400).json({ error: 'Player ID is required' });
+    }
+
+    const gameState = await gameManager.call(gameId, playerId);
+    res.status(200).json(gameState);
+  } catch (error) {
+    console.error('Error calling:', error);
+    res.status(500).json({ error: (error as Error).message || 'Failed to call' });
+  }
+});
+
+// Check
+router.post('/:gameId/check', async (req, res) => {
+  try {
+    const { gameId } = req.params;
+    const { playerId } = req.body;
+
+    if (!playerId) {
+      return res.status(400).json({ error: 'Player ID is required' });
+    }
+
+    const gameState = await gameManager.check(gameId, playerId);
+    res.status(200).json(gameState);
+  } catch (error) {
+    console.error('Error checking:', error);
+    res.status(500).json({ error: (error as Error).message || 'Failed to check' });
   }
 });
 
@@ -82,61 +111,28 @@ router.post('/:gameId/fold', async (req, res) => {
     const { gameId } = req.params;
     const { playerId } = req.body;
 
-    // Check if game exists and is active
-    const game = await prisma.game.findUnique({
-      where: { id: gameId }
-    });
-
-    if (!game || game.status !== 'active') {
-      return res.status(404).json({ error: 'Game not found or not active' });
+    if (!playerId) {
+      return res.status(400).json({ error: 'Player ID is required' });
     }
 
-    // Record the fold action
-    const action = await prisma.gameAction.create({
-      data: {
-        gameId,
-        playerId,
-        type: 'fold'
-      }
-    });
-
-    res.status(200).json(action);
+    const gameState = await gameManager.fold(gameId, playerId);
+    res.status(200).json(gameState);
   } catch (error) {
     console.error('Error folding:', error);
-    res.status(500).json({ error: 'Failed to fold' });
+    res.status(500).json({ error: (error as Error).message || 'Failed to fold' });
   }
 });
 
-// Deal cards
+// Deal community cards (progress to next phase)
 router.post('/:gameId/deal', async (req, res) => {
   try {
     const { gameId } = req.params;
 
-    // Check if game exists and is active
-    const game = await prisma.game.findUnique({
-      where: { id: gameId }
-    });
-
-    if (!game || game.status !== 'active') {
-      return res.status(404).json({ error: 'Game not found or not active' });
-    }
-
-    // Generate a deck of cards (simplified for example)
-    const deck = Array.from({ length: 52 }, (_, i) => i);
-    const shuffledDeck = deck.sort(() => Math.random() - 0.5);
-
-    // Update game with deck
-    const updatedGame = await prisma.game.update({
-      where: { id: gameId },
-      data: {
-        deck: JSON.stringify(shuffledDeck)
-      }
-    });
-
-    res.status(200).json(updatedGame);
+    const gameState = await gameManager.dealCommunityCards(gameId);
+    res.status(200).json(gameState);
   } catch (error) {
-    console.error('Error dealing cards:', error);
-    res.status(500).json({ error: 'Failed to deal cards' });
+    console.error('Error dealing community cards:', error);
+    res.status(500).json({ error: (error as Error).message || 'Failed to deal cards' });
   }
 });
 
