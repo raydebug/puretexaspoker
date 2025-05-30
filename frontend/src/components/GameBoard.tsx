@@ -96,6 +96,7 @@ const Pot = styled.div`
   color: white;
   font-weight: bold;
   font-size: 1.2rem;
+  margin-bottom: 10px;
   
   ${media.md`
     font-size: 1rem;
@@ -106,6 +107,73 @@ const Pot = styled.div`
     font-size: 0.9rem;
     padding: 3px 10px;
   `}
+`;
+
+const SidePots = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: center;
+`;
+
+const SidePot = styled.div`
+  background-color: rgba(255, 215, 0, 0.2);
+  padding: 3px 10px;
+  border-radius: 15px;
+  color: #ffd700;
+  font-weight: bold;
+  font-size: 0.9rem;
+  border: 1px solid #ffd700;
+`;
+
+const PhaseIndicator = styled.div`
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.9), rgba(255, 179, 0, 0.9));
+  color: black;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+`;
+
+const ShowdownResults = styled.div`
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.9);
+  padding: 20px;
+  border-radius: 15px;
+  border: 2px solid #ffd700;
+  color: white;
+  max-width: 500px;
+  z-index: 100;
+`;
+
+const WinnerCard = styled.div`
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.9), rgba(56, 142, 60, 0.9));
+  padding: 10px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  
+  .player-name {
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: #ffd700;
+  }
+  
+  .hand-info {
+    font-size: 0.9rem;
+    margin: 5px 0;
+  }
+  
+  .win-amount {
+    font-weight: bold;
+    color: #4caf50;
+  }
 `;
 
 const PlayerSeat = styled.div<{ position: number }>`
@@ -382,15 +450,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       </div>
       
       <TableCenter>
-        <div data-testid="dealer-button" data-position={gameState.dealerPosition} className="dealer-button">
-          D
-        </div>
-        <div data-testid="small-blind" data-position={gameState.smallBlindPosition} className="small-blind">
-          SB
-        </div>
-        <div data-testid="big-blind" data-position={gameState.bigBlindPosition} className="big-blind">
-          BB
-        </div>
+        <PhaseIndicator data-testid="phase-indicator">
+          {gameState.phase.charAt(0).toUpperCase() + gameState.phase.slice(1)}
+        </PhaseIndicator>
         
         <CommunityCards data-testid="community-cards">
           {gameState.communityCards.map((card, index) => (
@@ -398,30 +460,99 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           ))}
         </CommunityCards>
         
-        <Pot data-testid="pot-amount">Pot: {gameState.pot}</Pot>
+        <Pot data-testid="pot-amount">Main Pot: ${gameState.pot}</Pot>
         
-        <div data-testid="current-bet">
-          Current Bet: {gameState.currentBet}
-        </div>
+        {gameState.sidePots && gameState.sidePots.length > 0 && (
+          <SidePots data-testid="side-pots">
+            {gameState.sidePots.map((sidePot, index) => (
+              <SidePot key={sidePot.id} data-testid={`side-pot-${index}`}>
+                Side Pot {index + 1}: ${sidePot.amount}
+                {sidePot.isResolved && sidePot.winners && (
+                  <div style={{ fontSize: '0.8rem', marginTop: '2px' }}>
+                    Won by: {sidePot.winners.join(', ')}
+                  </div>
+                )}
+              </SidePot>
+            ))}
+          </SidePots>
+        )}
         
-        {gameState.phase === 'showdown' && (
-          <div data-testid="hand-evaluation">
+        {gameState.currentBet > 0 && (
+          <div data-testid="current-bet" style={{ 
+            color: '#ff6b6b', 
+            fontWeight: 'bold', 
+            fontSize: '0.9rem',
+            marginTop: '5px'
+          }}>
+            To Call: ${gameState.currentBet}
+          </div>
+        )}
+        
+        {gameState.phase === 'showdown' && gameState.handEvaluation && (
+          <div data-testid="hand-evaluation" style={{
+            background: 'rgba(0, 0, 0, 0.8)',
+            padding: '10px',
+            borderRadius: '10px',
+            marginTop: '10px',
+            color: '#ffd700',
+            fontSize: '0.9rem'
+          }}>
             {gameState.handEvaluation}
           </div>
         )}
         
         {gameState.winner && (
-          <div data-testid="winner-announcement">
-            Winner: {gameState.winner}
+          <div data-testid="winner-announcement" style={{
+            background: 'linear-gradient(135deg, #4caf50, #2e7d32)',
+            color: 'white',
+            padding: '10px',
+            borderRadius: '10px',
+            fontWeight: 'bold',
+            marginTop: '10px'
+          }}>
+            🏆 Winner: {gameState.winner} 🏆
           </div>
         )}
         
         {gameState.isHandComplete && (
-          <div data-testid="hand-complete">
-            Hand Complete
+          <div data-testid="hand-complete" style={{
+            background: 'rgba(255, 152, 0, 0.8)',
+            color: 'white',
+            padding: '8px 15px',
+            borderRadius: '20px',
+            fontWeight: 'bold',
+            marginTop: '10px'
+          }}>
+            Hand Complete - Starting New Hand...
           </div>
         )}
       </TableCenter>
+      
+      {/* Showdown Results Overlay */}
+      {gameState.phase === 'showdown' && gameState.showdownResults && gameState.showdownResults.length > 0 && (
+        <ShowdownResults data-testid="showdown-results">
+          <h3 style={{ textAlign: 'center', marginBottom: '15px', color: '#ffd700' }}>
+            🎰 Showdown Results 🎰
+          </h3>
+          {gameState.showdownResults.map((result, index) => (
+            <WinnerCard key={index} data-testid={`showdown-result-${index}`}>
+              <div className="player-name">{result.playerName}</div>
+              <div className="hand-info">
+                <strong>{result.hand.name}</strong>
+                {result.hand.cards && result.hand.cards.length > 0 && (
+                  <div style={{ fontSize: '0.8rem', marginTop: '3px' }}>
+                    Cards: {result.hand.cards.map(card => `${card.rank}${card.suit}`).join(', ')}
+                  </div>
+                )}
+              </div>
+              <div className="win-amount">
+                Won ${result.winAmount} from {result.potType} pot
+                {result.potId && ` (${result.potId})`}
+              </div>
+            </WinnerCard>
+          ))}
+        </ShowdownResults>
+      )}
       
       {gameState.players.map((player, index) => {
         const isCurrentPlayer = player.id === currentPlayer?.id;

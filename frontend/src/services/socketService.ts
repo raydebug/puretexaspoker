@@ -595,6 +595,30 @@ class SocketService {
     }
   }
 
+  call(gameId: string, playerId: string, amount: number) {
+    if (this.socket?.connected) {
+      this.socket.emit('call', { gameId, playerId, amount });
+    } else {
+      console.warn('Cannot call: socket not connected');
+    }
+  }
+
+  raise(gameId: string, playerId: string, amount: number) {
+    if (this.socket?.connected) {
+      this.socket.emit('raise', { gameId, playerId, amount });
+    } else {
+      console.warn('Cannot raise: socket not connected');
+    }
+  }
+
+  allIn(gameId: string, playerId: string) {
+    if (this.socket?.connected) {
+      this.socket.emit('allIn', { gameId, playerId });
+    } else {
+      console.warn('Cannot go all-in: socket not connected');
+    }
+  }
+
   check(gameId: string, playerId: string) {
     if (this.socket?.connected) {
       this.socket.emit('check', { gameId, playerId });
@@ -608,6 +632,39 @@ class SocketService {
       this.socket.emit('fold', { gameId, playerId });
     } else {
       console.warn('Cannot fold: socket not connected');
+    }
+  }
+
+  // New hand management methods
+  startNewHand(gameId: string) {
+    if (this.socket?.connected) {
+      this.socket.emit('game:startNewHand', { gameId });
+    } else {
+      console.warn('Cannot start new hand: socket not connected');
+    }
+  }
+
+  getPhaseInfo(gameId: string) {
+    if (this.socket?.connected) {
+      this.socket.emit('game:getPhaseInfo', { gameId });
+    } else {
+      console.warn('Cannot get phase info: socket not connected');
+    }
+  }
+
+  dealCommunityCards(gameId: string) {
+    if (this.socket?.connected) {
+      this.socket.emit('game:dealCommunityCards', { gameId });
+    } else {
+      console.warn('Cannot deal community cards: socket not connected');
+    }
+  }
+
+  forceCompletePhase(gameId: string) {
+    if (this.socket?.connected) {
+      this.socket.emit('game:forceCompletePhase', { gameId });
+    } else {
+      console.warn('Cannot force complete phase: socket not connected');
     }
   }
 

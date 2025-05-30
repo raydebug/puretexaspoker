@@ -1,6 +1,6 @@
-import { Card, Player, GameState, Hand, Avatar } from '../../../backend/src/types/shared';
+import { Card, Player, GameState, Hand, Avatar, SidePot, ShowdownResult } from './shared';
 
-export type { Card, Player, GameState, Hand, Avatar };
+export type { Card, Player, GameState, Hand, Avatar, SidePot, ShowdownResult };
 
 export interface GameAction {
   type: 'bet' | 'call' | 'raise' | 'fold' | 'check';
@@ -24,4 +24,28 @@ export interface GameStats {
   biggestPot: number;
   playersJoined: number;
   playersLeft: number;
+}
+
+export interface PhaseInfo {
+  phase: string;
+  description: string;
+  communityCardCount: number;
+  canBet: boolean;
+  canDeal: boolean;
+}
+
+export interface PlayerActionData {
+  playerId: string;
+  action: string;
+  amount?: number;
+  pot?: number;
+}
+
+export interface CommunityCardsDealtData {
+  phase: string;
+  prevPhase?: string;
+  communityCards: Card[];
+  message: string;
+  winner?: string;
+  handEvaluation?: string;
 } 

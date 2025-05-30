@@ -20,6 +20,46 @@ const GameContainer = styled.div`
   position: relative;
 `;
 
+const AdminControls = styled.div`
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 15px;
+  border-radius: 10px;
+  border: 1px solid #ffd700;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1000;
+
+  h3 {
+    margin: 0 0 10px 0;
+    color: #ffd700;
+    font-size: 1rem;
+  }
+
+  button {
+    padding: 8px 12px;
+    border: 1px solid #ffd700;
+    border-radius: 5px;
+    background: rgba(255, 215, 0, 0.1);
+    color: #ffd700;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+
+    &:hover {
+      background: rgba(255, 215, 0, 0.2);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+`;
+
 export const Game: React.FC = () => {
   const [gameState, setGameState] = useState<GameState | null>(() => {
     const initialState = socketService.getGameState();
@@ -76,11 +116,36 @@ export const Game: React.FC = () => {
           socketService.placeBet(gameState.id, currentPlayer.id, amount);
         }
         break;
+      case 'call':
+        if (amount) {
+          socketService.call(gameState.id, currentPlayer.id, amount);
+        }
+        break;
+      case 'raise':
+        if (amount) {
+          socketService.raise(gameState.id, currentPlayer.id, amount);
+        }
+        break;
+      case 'allIn':
+        socketService.allIn(gameState.id, currentPlayer.id);
+        break;
       case 'check':
         socketService.check(gameState.id, currentPlayer.id);
         break;
       case 'fold':
         socketService.fold(gameState.id, currentPlayer.id);
+        break;
+      case 'startNewHand':
+        socketService.startNewHand(gameState.id);
+        break;
+      case 'dealCommunityCards':
+        socketService.dealCommunityCards(gameState.id);
+        break;
+      case 'getPhaseInfo':
+        socketService.getPhaseInfo(gameState.id);
+        break;
+      case 'forceCompletePhase':
+        socketService.forceCompletePhase(gameState.id);
         break;
       default:
         console.warn('Unknown action:', action);
@@ -89,6 +154,42 @@ export const Game: React.FC = () => {
 
   return (
     <GameContainer data-testid="game-container">
+      {/* Admin Controls for Testing */}
+      {gameState && (
+        <AdminControls>
+          <h3>Admin Controls</h3>
+          <button 
+            onClick={() => handlePlayerAction('dealCommunityCards')}
+            disabled={!gameState}
+          >
+            Deal Cards
+          </button>
+          <button 
+            onClick={() => handlePlayerAction('forceCompletePhase')}
+            disabled={!gameState}
+          >
+            Force Phase
+          </button>
+          <button 
+            onClick={() => handlePlayerAction('startNewHand')}
+            disabled={!gameState}
+          >
+            New Hand
+          </button>
+          <button 
+            onClick={() => handlePlayerAction('getPhaseInfo')}
+            disabled={!gameState}
+          >
+            Phase Info
+          </button>
+          <div style={{ fontSize: '0.8rem', marginTop: '5px' }}>
+            Phase: {gameState.phase}<br/>
+            Players: {gameState.players.length}<br/>
+            Turn: {gameState.currentPlayerId ? gameState.players.find(p => p.id === gameState.currentPlayerId)?.name : 'None'}
+          </div>
+        </AdminControls>
+      )}
+
       {error ? (
         <div data-testid="error-message">Error: {error}</div>
       ) : !gameState || !currentPlayer ? (

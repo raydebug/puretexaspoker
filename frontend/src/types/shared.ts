@@ -1,5 +1,7 @@
 import { Card } from './card';
 
+export type { Card };
+
 export interface Player {
   id: string;
   name: string;
