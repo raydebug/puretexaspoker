@@ -10,12 +10,12 @@ router.post('/', async (req, res) => {
 
     const table = await prisma.table.create({
       data: {
-        name,
-        maxPlayers,
-        smallBlind,
-        bigBlind,
-        minBuyIn,
-        maxBuyIn
+        name: name || 'Default Table',
+        maxPlayers: maxPlayers || 9,
+        smallBlind: smallBlind || 10,
+        bigBlind: bigBlind || 20,
+        minBuyIn: minBuyIn || 100,
+        maxBuyIn: maxBuyIn || 1000
       }
     });
 
@@ -74,8 +74,11 @@ router.post('/:tableId/join', async (req, res) => {
       return res.status(400).json({ error: 'Table is full' });
     }
 
+    // Use default buyIn if not provided
+    const actualBuyIn = buyIn || table.minBuyIn;
+
     // Check if buy-in amount is valid
-    if (buyIn < table.minBuyIn || buyIn > table.maxBuyIn) {
+    if (actualBuyIn < table.minBuyIn || actualBuyIn > table.maxBuyIn) {
       return res.status(400).json({ error: 'Invalid buy-in amount' });
     }
 
@@ -92,7 +95,7 @@ router.post('/:tableId/join', async (req, res) => {
         playerId,
         tableId,
         seatNumber,
-        buyIn
+        buyIn: actualBuyIn
       }
     });
 
