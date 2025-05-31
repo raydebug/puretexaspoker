@@ -55,7 +55,7 @@ describe('API Tests', () => {
       url: `${API_BASE_URL}/api/players`,
       failOnStatusCode: false
     }).then(({ status, body }) => {
-      expect(status).to.equal(500); // Actually returns 500 when no body provided
+      expect(status).to.equal(400); // Backend returns 400 for validation errors
       expect(body.error).to.exist;
     });
   });
@@ -86,7 +86,7 @@ describe('API Tests', () => {
       body: invalidPlayer,
       failOnStatusCode: false
     }).then(({ status, body }) => {
-      expect(status).to.equal(500); // Actually returns 500 for this type of invalid data
+      expect(status).to.equal(400); // Backend returns 400 for validation errors
       expect(body.error).to.exist;
     });
   });

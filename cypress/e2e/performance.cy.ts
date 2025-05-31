@@ -1,5 +1,7 @@
 /// <reference types="cypress" />
 
+const API_BASE_URL = Cypress.env('apiBaseUrl') || 'http://localhost:3001';
+
 interface Player {
   nickname: string;
   chips: number;
@@ -46,7 +48,7 @@ describe('Performance and Concurrency Tests', () => {
 
       // Create all players simultaneously
       const playerPromises = players.map(player =>
-        cy.request<Player>('POST', '/api/players', player)
+        cy.request<Player>('POST', `${API_BASE_URL}/api/players`, player)
       );
 
       // Wait for all players to be created
@@ -54,13 +56,13 @@ describe('Performance and Concurrency Tests', () => {
         const playerIds = responses.map(response => response.body.id);
 
         // Create a table
-        cy.request('POST', '/api/tables', {
+        cy.request('POST', `${API_BASE_URL}/api/tables`, {
           name: 'Concurrent Table',
           maxPlayers: 9
         }).then(({ body: table }) => {
           // Have all players join simultaneously
           const joinPromises = playerIds.map(playerId =>
-            cy.request('POST', `/api/tables/${table.id}/join`, { playerId })
+            cy.request('POST', `${API_BASE_URL}/api/tables/${table.id}/join`, { playerId, buyIn: 500 })
           );
 
           // Verify all players joined successfully
@@ -89,11 +91,11 @@ describe('Performance and Concurrency Tests', () => {
 
       // Setup: Create players and table
       cy.wrap(players).each((player) => {
-        cy.request<Player>('POST', '/api/players', player).then(({ body }) => {
+        cy.request<Player>('POST', `${API_BASE_URL}/api/players`, player).then(({ body }) => {
           playerIds.push(body.id as string);
         });
       }).then(() => {
-        cy.request('POST', '/api/tables', {
+        cy.request('POST', `${API_BASE_URL}/api/tables`, {
           name: 'Betting Table',
           maxPlayers: 9
         }).then(({ body: table }) => {
@@ -101,16 +103,16 @@ describe('Performance and Concurrency Tests', () => {
           
           // Join all players
           return cy.wrap(playerIds).each((playerId) => {
-            cy.request('POST', `/api/tables/${tableId}/join`, { playerId });
+            cy.request('POST', `${API_BASE_URL}/api/tables/${tableId}/join`, { playerId, buyIn: 500 });
           });
         }).then(() => {
           // Get game ID
-          cy.request<GameState>(`/api/tables/${tableId}`).then(({ body }) => {
+          cy.request<GameState>(`${API_BASE_URL}/api/tables/${tableId}`).then(({ body }) => {
             gameId = body.currentGameId;
 
             // Simulate concurrent betting
             const betPromises = playerIds.map(playerId =>
-              cy.request<GameAction>('POST', `/api/games/${gameId}/actions`, {
+              cy.request<GameAction>('POST', `${API_BASE_URL}/api/games/${gameId}/actions`, {
                 type: 'bet',
                 amount: 20,
                 playerId
@@ -125,7 +127,7 @@ describe('Performance and Concurrency Tests', () => {
               });
 
               // Verify game state after concurrent bets
-              cy.request<GameState>(`/api/games/${gameId}`).then(({ body: gameState }) => {
+              cy.request<GameState>(`${API_BASE_URL}/api/games/${gameId}`).then(({ body: gameState }) => {
                 expect(gameState.pot).to.be.greaterThan(59); // 3 players * 20 chips
               });
             });
@@ -150,15 +152,15 @@ describe('Performance and Concurrency Tests', () => {
       let gameId: string;
       const startTime = Date.now();
 
-      cy.request<Player>('POST', '/api/players', player).then(({ body }) => {
+      cy.request<Player>('POST', `${API_BASE_URL}/api/players`, player).then(({ body }) => {
         playerId = body.id as string;
-        return cy.request('POST', '/api/tables', {
+        return cy.request('POST', `${API_BASE_URL}/api/tables`, {
           name: 'Speed Table',
           maxPlayers: 9
         });
       }).then(({ body: table }) => {
         tableId = table.id;
-        return cy.request('POST', `/api/tables/${tableId}/join`, { playerId });
+        return cy.request('POST', `${API_BASE_URL}/api/tables/${tableId}/join`, { playerId, buyIn: 500 });
       }).then(({ body }) => {
         gameId = body.gameId;
 
@@ -170,7 +172,7 @@ describe('Performance and Concurrency Tests', () => {
         }));
 
         return cy.wrap(actions).each((action) => {
-          cy.request('POST', `/api/games/${gameId}/actions`, action);
+          cy.request('POST', `${API_BASE_URL}/api/games/${gameId}/actions`, action);
         });
       }).then(() => {
         const endTime = Date.now();
@@ -192,7 +194,7 @@ describe('Performance and Concurrency Tests', () => {
         chips: 1000
       };
 
-      cy.request<Player>('POST', '/api/players', player).then(({ body }) => {
+      cy.request<Player>('POST', `${API_BASE_URL}/api/players`, player).then(({ body }) => {
         const playerId = body.id as string;
         const startTime = Date.now();
 
@@ -203,7 +205,7 @@ describe('Performance and Concurrency Tests', () => {
         }));
 
         const messagePromises = messages.map(message =>
-          cy.request('POST', '/api/chat', message)
+          cy.request('POST', `${API_BASE_URL}/api/chat/messages`, message)
         );
 
         // Verify all messages were processed
@@ -218,7 +220,7 @@ describe('Performance and Concurrency Tests', () => {
           expect(duration).to.be.lessThan(10000); // 10 seconds max
 
           // Verify messages can be retrieved
-          cy.request('GET', '/api/chat').then(({ body: chatHistory }) => {
+          cy.request('GET', `${API_BASE_URL}/api/chat/messages`).then(({ body: chatHistory }) => {
             expect(chatHistory).to.have.length.of.at.least(numMessages);
           });
         });
@@ -236,17 +238,17 @@ describe('Performance and Concurrency Tests', () => {
         maxPlayers: 9
       };
 
-      cy.request('POST', '/api/tables', table).then(({ body: table }) => {
+      cy.request('POST', `${API_BASE_URL}/api/tables`, table).then(({ body: table }) => {
         const tableId = table.id;
         const startTime = Date.now();
 
         // Create multiple spectators and have them watch the table
         const spectatorPromises = Array.from({ length: numSpectators }, (_, i) =>
-          cy.request<Player>('POST', '/api/players', {
+          cy.request<Player>('POST', `${API_BASE_URL}/api/players`, {
             nickname: `Spectator${i + 1}`,
             chips: 0
           }).then(({ body: spectator }) =>
-            cy.request('POST', `/api/tables/${tableId}/spectate`, {
+            cy.request('POST', `${API_BASE_URL}/api/tables/${tableId}/spectate`, {
               playerId: spectator.id
             })
           )
