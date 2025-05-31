@@ -43,6 +43,7 @@ class SocketService {
   private currentPlayer: Player | null = null;
   private observers: string[] = [];
   private lobbyTables: TableData[] = [];
+  private currentGameId: string | null = null;
 
   // Event listeners
   private errorListeners: ((error: { message: string; context: string }) => void)[] = [];
@@ -228,133 +229,156 @@ class SocketService {
   private setupListeners() {
     if (!this.socket) return;
 
-    console.log('Setting up socket event listeners');
+    const socket = this.socket;
 
     // Handle successful connection
-    this.socket.on('connect', () => {
+    socket.on('connect', () => {
       this.onSuccessfulConnection();
     });
 
-    // Handle disconnect
-    this.socket.on('disconnect', (reason: string) => {
-      this.handleDisconnect(reason);
-    });
-
-    // Handle connection error
-    this.socket.on('connect_error', (error) => {
-      console.error('Connection error:', error.message);
-      this.isConnecting = false;
-      this.connectionLock = false;
-      
-      // Track connection attempts
-      this.connectionAttempts++;
-      console.log(`Connection attempt ${this.connectionAttempts} of ${this.maxConnectionAttempts}`);
-      
-      // If we've reached max attempts, don't try to reconnect
-      if (this.connectionAttempts >= this.maxConnectionAttempts) {
-        console.error(`Maximum connection attempts (${this.maxConnectionAttempts}) reached, stopping reconnection`);
-        const maxError = { 
-          message: `Failed to connect after ${this.maxConnectionAttempts} attempts`, 
-          context: 'socket:max_attempts' 
-        };
-        
-        // First emit through the socket
-        this.socket?.emit('error', maxError);
-        
-        // Then emit through our error emitter
-        this.emitError(maxError);
-        
-        // Finally, clean up the socket to prevent further connection attempts
-        this.removeAllSocketListeners();
-        this.socket?.disconnect();
-        this.socket = null;
-        
-        // Prevent any further connection attempts
-        this.isConnecting = true;
-        this.connectionLock = true;
-        return;
+    socket.on('observer:joined', (data: { observer: string }) => {
+      if (!this.observers.includes(data.observer)) {
+        this.observers.push(data.observer);
+        this.emitOnlineUsersUpdate();
       }
-      
-      // Only emit connect error if we haven't reached max attempts
-      const errorObj = { 
-        message: `Failed to connect: ${error.message}`, 
-        context: 'socket:connect_error' 
-      };
-      this.emitError(errorObj);
-      
-      // Attempt reconnection if we haven't reached max attempts
-      const backoffTime = this.isTestMode ? 0 : this.reconnectionBackoff * Math.pow(2, this.connectionAttempts - 1);
-      console.log(`Will retry connection in ${backoffTime/1000} seconds`);
-      
-      setTimeout(() => {
-        // Double check we haven't reached max attempts
-        if (this.connectionAttempts < this.maxConnectionAttempts && !this.socket?.connected) {
-          this.connect();
-        }
-      }, backoffTime);
     });
 
-    // Handle socket errors
-    this.socket.on('error', (error: { message: string; context?: string }) => {
-      console.error('Socket error:', error.message);
-      this.emitError({
-        message: error.message,
-        context: error.context || 'socket:error'
-      });
+    socket.on('observer:left', (data: { observer: string }) => {
+      this.observers = this.observers.filter(observer => observer !== data.observer);
+      this.emitOnlineUsersUpdate();
     });
 
-    // Handle chat messages
-    this.socket.on('chat:message', (message: ChatMessage) => {
-      this.emitChatMessage(message);
-    });
-
-    this.socket.on('chat:system', (message: string) => {
-      this.emitSystemMessage(message);
-    });
-
-    // Handle game state updates
-    this.socket.on('gameState', (state: GameState) => {
-      this.gameState = state;
-      this.emitGameStateUpdate(state);
-    });
-
-    // Handle seat updates
-    this.socket.on('seat:update', (seats: SeatState) => {
+    socket.on('seat:update', (seats: SeatState) => {
       this.emitSeatUpdate(seats);
     });
 
-    // Handle seat errors
-    this.socket.on('seat:error', (error: { message: string } | string) => {
-      const errorMessage = typeof error === 'string' ? error : error.message;
-      this.emitSeatError(errorMessage);
-    });
-
-    // Handle table updates
-    this.socket.on('tablesUpdate', (tables: TableData[]) => {
-      this.emitTablesUpdate(tables);
-    });
-
-    // Handle player status updates
-    this.socket.on('player:statusUpdated', (player: Player) => {
+    socket.on('seat:accepted', (data: { seatNumber: number; playerId: string; player: Player }) => {
+      // Update the game state with the new player
       if (this.gameState) {
-        // Update player in game state
-        const playerIndex = this.gameState.players.findIndex(p => p.id === player.id);
-        if (playerIndex !== -1) {
-          this.gameState.players[playerIndex] = { ...this.gameState.players[playerIndex], ...player };
-          // Emit game state update
-          this.emitGameStateUpdate(this.gameState);
-          // Emit online users update
-          this.emitOnlineUsersUpdate();
+        // Find if player already exists or add new player
+        const existingPlayerIndex = this.gameState.players.findIndex(p => p.id === data.player.id);
+        if (existingPlayerIndex !== -1) {
+          this.gameState.players[existingPlayerIndex] = data.player;
+        } else {
+          this.gameState.players.push(data.player);
         }
-        
-        // Update current player if it's the same player
-        if (this.currentPlayer?.id === player.id) {
-          this.currentPlayer = { ...this.currentPlayer, ...player };
+        this.emitGameStateUpdate(this.gameState);
+      }
+      this.emitSeatUpdate({ [data.seatNumber]: data.playerId });
+    });
+
+    socket.on('seat:error', (error: string) => {
+      this.emitSeatError(error);
+    });
+
+    socket.on('gameState', (gameState: GameState) => {
+      this.gameState = gameState;
+      this.emitGameStateUpdate(gameState);
+    });
+
+    socket.on('playerJoined', (data: { player: Player }) => {
+      if (this.gameState) {
+        // Check if player already exists in the game state
+        const existingPlayerIndex = this.gameState.players.findIndex(p => p.id === data.player.id);
+        if (existingPlayerIndex === -1) {
+          this.gameState.players.push(data.player);
+          this.emitGameStateUpdate(this.gameState);
         }
       }
     });
 
-    // ... rest of the listeners ...
+    socket.on('playerLeft', (data: { playerId: string }) => {
+      if (this.gameState) {
+        this.gameState.players = this.gameState.players.filter(p => p.id !== data.playerId);
+        this.emitGameStateUpdate(this.gameState);
+      }
+    });
+
+    socket.on('player:statusUpdated', (data: { playerId: string; isAway: boolean }) => {
+      if (this.gameState) {
+        const player = this.gameState.players.find(p => p.id === data.playerId);
+        if (player) {
+          player.isAway = data.isAway;
+          this.emitGameStateUpdate(this.gameState);
+        }
+      }
+    });
+
+    socket.on('player:stoodUp', (data: { playerId: string }) => {
+      if (this.gameState) {
+        this.gameState.players = this.gameState.players.filter(p => p.id !== data.playerId);
+        this.emitGameStateUpdate(this.gameState);
+      }
+    });
+
+    socket.on('chat:message', (message: ChatMessage) => {
+      this.emitChatMessage(message);
+    });
+
+    socket.on('chat:system', (message: string) => {
+      this.emitSystemMessage(message);
+    });
+
+    socket.on('tablesUpdate', (tables: TableData[]) => {
+      this.emitTablesUpdate(tables);
+    });
+
+    // Handle table joining results
+    socket.on('tableJoined', (data: { tableId: number; role: 'player' | 'observer'; buyIn: number; gameId?: string }) => {
+      console.log('Table joined successfully:', data);
+      if (data.gameId) {
+        // Store the game ID for this session
+        this.currentGameId = data.gameId;
+      }
+    });
+
+    socket.on('tableError', (error: string) => {
+      console.error('Table join error:', error);
+      this.emitError({ message: error, context: 'table:join_error' });
+    });
+
+    // Handle game creation and joining
+    socket.on('gameCreated', (data: { gameId: string; tableId: number }) => {
+      console.log('Game created:', data);
+      this.currentGameId = data.gameId;
+    });
+
+    socket.on('gameJoined', (data: { gameId: string; playerId: string; gameState: GameState }) => {
+      console.log('Game joined:', data);
+      this.currentGameId = data.gameId;
+      this.gameState = data.gameState;
+      
+      // Set the current player
+      const currentPlayer = data.gameState.players.find(p => p.id === data.playerId);
+      if (currentPlayer) {
+        this.currentPlayer = currentPlayer;
+      }
+      
+      // Emit the updated game state
+      this.emitGameStateUpdate(data.gameState);
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('Socket connection error:', error);
+      this.isConnecting = false;
+      this.connectionLock = false;
+      this.emitError({ 
+        message: 'Failed to connect to server', 
+        context: 'connection:connect_error' 
+      });
+    });
+
+    socket.on('error', (error) => {
+      console.error('Socket error:', error);
+      this.emitError({ 
+        message: typeof error === 'string' ? error : error.message || 'Unknown socket error', 
+        context: 'socket:error' 
+      });
+    });
+
+    socket.on('disconnect', (reason) => {
+      this.handleDisconnect(reason);
+    });
   }
 
   private onSuccessfulConnection() {
