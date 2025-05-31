@@ -574,9 +574,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               isAway={player.isAway}
             />
             <PlayerName data-testid={`player-${player.name}`}>{player.name}</PlayerName>
-            <PlayerChips>{player.chips}</PlayerChips>
+            <PlayerChips data-testid={`player-${player.name}-chips`}>{player.chips}</PlayerChips>
             {player.currentBet > 0 && (
-              <PlayerBet>{player.currentBet}</PlayerBet>
+              <PlayerBet data-testid={`player-${player.name}-bet`}>{player.currentBet}</PlayerBet>
             )}
           </PlayerSeat>
         );
