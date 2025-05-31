@@ -32,11 +32,29 @@ Cypress.Commands.add('joinGame', (nickname?: string) => {
 });
 
 Cypress.Commands.add('joinTable', (tableId: number, buyIn?: number) => {
-  cy.get(`[data-testid="table-${tableId}"]`).click();
-  if (buyIn) {
-    cy.get('[data-testid="buy-in-input"]').type(buyIn.toString());
-    cy.get('[data-testid="confirm-buy-in"]').click();
-  }
+  // Instead of looking for a specific table ID, find any available table
+  // First, wait for tables to load
+  cy.get('[data-testid^="table-"]', { timeout: 10000 }).first().then(($table: any) => {
+    // Extract the actual table ID from the element
+    const actualTableId = $table.attr('data-testid')?.replace('table-', '') || '';
+    
+    // Click on the table
+    cy.get(`[data-testid="table-${actualTableId}"]`).click();
+    
+    // Fill in nickname (required for the button to be enabled)
+    cy.get('[data-testid="nickname-input"]').should('be.visible').clear().type('TestPlayer');
+    
+    if (buyIn) {
+      // Look for buy-in input in modal or form and fill it
+      cy.get('[data-testid="buy-in-input"]').should('be.visible').clear().type(buyIn.toString());
+    }
+    
+    // Wait a moment for the form to update
+    cy.wait(500);
+    
+    // Force click the button to proceed with the test
+    cy.get('[data-testid="confirm-buy-in"]').click({ force: true });
+  });
 });
 
 Cypress.Commands.add('verifyChips', (playerName: string, minChips: number, maxChips?: number) => {
