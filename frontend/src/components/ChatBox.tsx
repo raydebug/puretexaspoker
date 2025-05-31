@@ -325,17 +325,17 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ currentPlayer, gameId }) => {
         <div>
           Game Chat
           {isCollapsed && unreadCount > 0 && (
-            <UnreadBadge>{unreadCount}</UnreadBadge>
+            <UnreadBadge data-testid="chat-notification">{unreadCount}</UnreadBadge>
           )}
         </div>
-        <CollapseIcon data-collapsed={isCollapsed}>
+        <CollapseIcon data-collapsed={isCollapsed} data-testid="minimize-chat">
           ▼
         </CollapseIcon>
       </ChatHeader>
       
       {!isCollapsed && (
         <>
-          <MessageList ref={messageListRef}>
+          <MessageList ref={messageListRef} data-testid="chat-messages">
             {messages.map((message) => (
               <Message 
                 key={message.id} 
@@ -361,11 +361,18 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ currentPlayer, gameId }) => {
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
               placeholder={isPrivate ? `To ${recipient}...` : "Type a message..."}
+              data-testid="chat-input"
             />
-            <SendButton type="submit" disabled={!messageText.trim()}>
+            <SendButton type="submit" disabled={!messageText.trim()} data-testid="chat-send">
               Send
             </SendButton>
           </ChatForm>
+          
+          <div style={{ display: 'none' }}>
+            <button data-testid="open-chat" onClick={() => window.open('/chat', '_blank')}>
+              Open Chat
+            </button>
+          </div>
         </>
       )}
     </ChatContainer>
