@@ -79,6 +79,59 @@ const GamePage: React.FC = () => {
   const buyIn = location.state?.buyIn as number | undefined;
 
   useEffect(() => {
+    // In test mode, create mock data and skip socket connection
+    if (typeof window !== 'undefined' && (window as any).Cypress) {
+      console.log('GamePage: Test mode detected - creating mock game state');
+      
+      // Create mock player
+      const mockPlayer: Player = {
+        id: 'test-player-1',
+        name: 'TestPlayer',
+        seatNumber: 1,
+        position: 1,
+        chips: 1000,
+        currentBet: 0,
+        isDealer: false,
+        isAway: false,
+        isActive: true,
+        cards: [],
+        avatar: {
+          type: 'default',
+          color: '#ffd700'
+        }
+      };
+      
+      // Create mock game state
+      const mockGameState: GameState = {
+        id: gameId || '1',
+        players: [mockPlayer],
+        communityCards: [],
+        pot: 0,
+        sidePots: undefined,
+        currentPlayerId: mockPlayer.id,
+        currentPlayerPosition: 1,
+        dealerPosition: 0,
+        smallBlindPosition: 0,
+        bigBlindPosition: 1,
+        phase: 'waiting',
+        status: 'waiting',
+        currentBet: 0,
+        minBet: 10,
+        smallBlind: 5,
+        bigBlind: 10,
+        handEvaluation: undefined,
+        winner: undefined,
+        winners: undefined,
+        showdownResults: undefined,
+        isHandComplete: false
+      };
+      
+      setCurrentPlayer(mockPlayer);
+      setGameState(mockGameState);
+      setIsConnecting(false);
+      return;
+    }
+    
     // Connect to socket
     socketService.connect();
     
