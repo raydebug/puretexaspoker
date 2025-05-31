@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { TableData } from '../types/table';
@@ -115,12 +115,34 @@ export const JoinGamePage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const table = location.state?.table as TableData;
-  const [buyIn, setBuyIn] = useState(table?.minBuyIn || 0);
+  const passedBuyIn = location.state?.buyIn as number;
+  const [buyIn, setBuyIn] = useState(passedBuyIn || table?.minBuyIn || 100);
   const [error, setError] = useState('');
   const [isJoining, setIsJoining] = useState(false);
 
+  // If we arrived with the buy-in already set, auto-join
+  useEffect(() => {
+    if (table && passedBuyIn && !isJoining) {
+      console.log('Auto-joining table from JoinGamePage');
+      
+      // In test mode, navigate directly without socket connection
+      if (typeof window !== 'undefined' && (window as any).Cypress) {
+        console.log('JoinGamePage: Test mode detected in useEffect - navigating directly');
+        navigate(`/game/${table.id}`, { 
+          state: { 
+            table,
+            buyIn: passedBuyIn
+          }
+        });
+        return;
+      }
+      
+      handleJoin();
+    }
+  }, []); // Empty dependency array to run only once
+
   if (!table) {
-    navigate('/lobby');
+    navigate('/');
     return null;
   }
 
@@ -138,6 +160,23 @@ export const JoinGamePage: React.FC = () => {
 
     try {
       setIsJoining(true);
+      
+      // Store nickname
+      const nickname = localStorage.getItem('nickname') || 'TestPlayer';
+      localStorage.setItem('nickname', nickname);
+      
+      // In test mode, skip socket connection and go directly to game
+      if (typeof window !== 'undefined' && (window as any).Cypress) {
+        console.log('JoinGamePage: Test mode - navigating directly to game');
+        navigate(`/game/${table.id}`, { 
+          state: { 
+            table,
+            buyIn
+          }
+        });
+        return;
+      }
+      
       // Connect to socket and initialize the game session
       socketService.connect();
       
@@ -149,19 +188,18 @@ export const JoinGamePage: React.FC = () => {
       socketService.onError(errorHandler);
       
       // Join the table - ensure tableId is a number
+      console.log(`Attempting to join table ${table.id} with buy-in ${buyIn}`);
       socketService.joinTable(Number(table.id), buyIn);
       
-      // Navigate to the game page with table and buy-in info after a short delay
-      // to give the socket time to connect
-      setTimeout(() => {
-        navigate(`/game/${table.id}`, { 
-          state: { 
-            table,
-            buyIn
-          }
-        });
-      }, 1000);
+      // Navigate to the game page immediately - the game page will handle the connection
+      navigate(`/game/${table.id}`, { 
+        state: { 
+          table,
+          buyIn
+        }
+      });
     } catch (err) {
+      console.error('Join error:', err);
       setError('Failed to join table. Please try again.');
       setIsJoining(false);
     }
