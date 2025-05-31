@@ -55,6 +55,14 @@ class SocketService {
   private tablesUpdateListeners: ((tables: TableData[]) => void)[] = [];
   private onlineUsersListeners: ((players: Player[], observers: string[]) => void)[] = [];
 
+  constructor() {
+    // Auto-detect test environment
+    if (typeof window !== 'undefined' && (window as any).Cypress) {
+      this.setTestMode(true);
+      console.log('DEBUG: Cypress detected, enabling test mode');
+    }
+  }
+
   // Add test mode setter
   setTestMode(enabled: boolean) {
     this.isTestMode = enabled;
@@ -63,6 +71,7 @@ class SocketService {
       this.connectionLock = false;
       this.connectionAttempts = 0;
       this.reconnectionBackoff = 0; // Set to 0 in test mode
+      this.maxConnectionAttempts = 10; // Allow more attempts in test mode
     }
   }
 
@@ -93,6 +102,7 @@ class SocketService {
 
   connect() {
     try {
+      console.log('DEBUG: connect() method called');
       const now = Date.now();
       
       // If we've already reached max attempts, don't try to connect
@@ -320,6 +330,8 @@ class SocketService {
     });
 
     socket.on('tablesUpdate', (tables: TableData[]) => {
+      console.log('DEBUG: Received tablesUpdate event with', tables.length, 'tables');
+      console.log('DEBUG: Tables data:', tables);
       this.emitTablesUpdate(tables);
     });
 
@@ -382,7 +394,7 @@ class SocketService {
   }
 
   private onSuccessfulConnection() {
-    console.log('Connected to server successfully with ID:', this.socket?.id);
+    console.log('DEBUG: Connected to server successfully with ID:', this.socket?.id);
     this.isConnecting = false;
     this.connectionLock = false;
     
@@ -759,18 +771,37 @@ class SocketService {
 
   // --- Lobby methods ---
   requestLobbyTables() {
+    console.log('DEBUG: requestLobbyTables called, socket connected:', this.socket?.connected);
     if (!this.socket || !this.socket.connected) {
       console.log('Socket not connected, connecting before requesting tables');
       this.connect();
       
-      // Request tables once connected
+      // Request tables once connected with a timeout
       this.socket?.once('connect', () => {
+        console.log('DEBUG: Socket connected, emitting getLobbyTables');
         this.socket?.emit('getLobbyTables');
+        
+        // Add a backup request after a delay in case the first one fails
+        setTimeout(() => {
+          if (this.socket?.connected && this.lobbyTables.length === 0) {
+            console.log('DEBUG: Backup getLobbyTables request');
+            this.socket?.emit('getLobbyTables');
+          }
+        }, 2000);
       });
       return;
     }
     
+    console.log('DEBUG: Emitting getLobbyTables immediately');
     this.socket.emit('getLobbyTables');
+    
+    // Add a backup request after a delay in case the first one fails
+    setTimeout(() => {
+      if (this.socket?.connected && this.lobbyTables.length === 0) {
+        console.log('DEBUG: Backup getLobbyTables request (immediate case)');
+        this.socket?.emit('getLobbyTables');
+      }
+    }, 2000);
   }
 
   onTablesUpdate(callback: TablesUpdateCallback) {
@@ -785,6 +816,8 @@ class SocketService {
   }
 
   private emitTablesUpdate(tables: TableData[]) {
+    console.log('DEBUG: emitTablesUpdate called with', tables.length, 'tables');
+    console.log('DEBUG: Current tablesUpdateListeners count:', this.tablesUpdateListeners.length);
     this.lobbyTables = tables;
     this.tablesUpdateListeners.forEach(callback => callback(tables));
   }
