@@ -191,6 +191,8 @@ export const TableGrid: React.FC<TableGridProps> = ({ filters }) => {
 
     // Listen for table updates
     const handleTablesUpdate = (updatedTables: TableData[]) => {
+      console.log('DEBUG: TableGrid received tables update with', updatedTables.length, 'tables');
+      console.log('DEBUG: Updated tables:', updatedTables);
       setTables(updatedTables);
       setIsLoading(false);
     };
@@ -206,9 +208,41 @@ export const TableGrid: React.FC<TableGridProps> = ({ filters }) => {
     socketService.onError(handleError);
 
     // Request tables data - only if we have a valid socket connection
+    console.log('DEBUG: TableGrid requesting lobby tables');
     socketService.requestLobbyTables();
 
+    // Add a timeout fallback in case socket doesn't work
+    const timeoutId = setTimeout(() => {
+      if (tables.length === 0 && isLoading) {
+        console.log('DEBUG: Timeout reached, retrying table request');
+        socketService.requestLobbyTables();
+        
+        // If still no tables after another delay, try HTTP fallback
+        setTimeout(async () => {
+          if (tables.length === 0 && isLoading) {
+            console.log('DEBUG: Trying HTTP fallback for tables');
+            try {
+              const response = await fetch('http://localhost:3001/api/lobby-tables');
+              if (response.ok) {
+                const tablesData = await response.json();
+                console.log('DEBUG: HTTP fallback successful, got', tablesData.length, 'tables');
+                setTables(tablesData);
+                setIsLoading(false);
+              } else {
+                throw new Error('HTTP request failed');
+              }
+            } catch (error) {
+              console.log('DEBUG: HTTP fallback failed, stopping loading');
+              setIsLoading(false);
+              setError('Unable to load tables. Please refresh the page.');
+            }
+          }
+        }, 2000);
+      }
+    }, 3000);
+
     return () => {
+      clearTimeout(timeoutId);
       socketService.offTablesUpdate();
       // Don't disconnect here - connection will be managed by the socket service
     };
