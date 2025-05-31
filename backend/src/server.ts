@@ -10,6 +10,7 @@ import chatRoutes from './routes/chat';
 import gameRoutes from './routes/games';
 import { registerSeatHandlers } from './socketHandlers/seatHandler';
 import { registerGameHandlers } from './socketHandlers/gameHandler';
+import { setupLobbyHandlers } from './events/lobbyHandlers';
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -35,6 +36,16 @@ app.use('/api/games', gameRoutes);
 // Socket handlers
 registerSeatHandlers(io);
 registerGameHandlers(io);
+
+// Register lobby handlers for each connection
+io.on('connection', (socket) => {
+  console.log('Client connected to game handler:', socket.id);
+  setupLobbyHandlers(io, socket);
+  
+  socket.on('disconnect', () => {
+    console.log('Game client disconnected:', socket.id);
+  });
+});
 
 httpServer.listen(port, () => {
   console.log(`Server is running on port ${port}`);
