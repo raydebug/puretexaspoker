@@ -216,7 +216,7 @@ const LobbyPage: React.FC = () => {
   };
 
   return (
-    <LobbyContainer>
+    <LobbyContainer data-testid="lobby-container">
       <Header>
         <Title>Texas Hold'em Poker Lobby</Title>
         <Subtitle>Choose a table to join or observe</Subtitle>
