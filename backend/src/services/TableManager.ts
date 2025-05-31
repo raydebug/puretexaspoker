@@ -34,14 +34,18 @@ class TableManager {
 
   private initializeTables(): void {
     const initialTables = generateInitialTables();
+    console.log(`TableManager: Creating ${initialTables.length} initial tables`);
     initialTables.forEach((table) => {
       this.tables.set(table.id, table);
       this.tablePlayers.set(table.id, new Map());
     });
+    console.log(`TableManager: Initialized with ${this.tables.size} tables`);
   }
 
   public getAllTables(): TableData[] {
-    return Array.from(this.tables.values());
+    const tables = Array.from(this.tables.values());
+    console.log(`TableManager: getAllTables() returning ${tables.length} tables`);
+    return tables;
   }
 
   public getTable(tableId: number): TableData | undefined {

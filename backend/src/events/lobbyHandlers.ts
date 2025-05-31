@@ -31,7 +31,10 @@ export const setupLobbyHandlers = (
 
   // Handle initial table list request
   socket.on('getLobbyTables', () => {
-    socket.emit('tablesUpdate', tableManager.getAllTables());
+    console.log('Lobby: getLobbyTables request received');
+    const tables = tableManager.getAllTables();
+    console.log(`Lobby: Sending ${tables.length} tables to client`);
+    socket.emit('tablesUpdate', tables);
   });
 
   // Handle table join request - this immediately creates a game and adds the player
