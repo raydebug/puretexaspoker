@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Avatar as AvatarType } from '../types/shared';
 
@@ -7,6 +7,8 @@ interface AvatarProps {
   size?: 'small' | 'medium' | 'large';
   isActive?: boolean;
   isAway?: boolean;
+  allowUpload?: boolean;
+  onUpload?: (file: File) => void;
 }
 
 const getSizeInPx = (size: 'small' | 'medium' | 'large'): number => {
@@ -63,7 +65,52 @@ const InitialsAvatar = styled(DefaultAvatar)`
   color: white;
 `;
 
-export const Avatar: React.FC<AvatarProps> = ({ avatar, size = 'medium', isActive, isAway }) => {
+const UploadButton = styled.input`
+  display: none;
+`;
+
+const UploadLabel = styled.label`
+  position: absolute;
+  bottom: -5px;
+  right: -5px;
+  background-color: #4caf50;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 2px solid white;
+  
+  &:hover {
+    background-color: #45a049;
+  }
+`;
+
+const UploadIcon = styled.span`
+  color: white;
+  font-size: 10px;
+  line-height: 1;
+`;
+
+export const Avatar: React.FC<AvatarProps> = ({ 
+  avatar, 
+  size = 'medium', 
+  isActive, 
+  isAway, 
+  allowUpload = false,
+  onUpload 
+}) => {
+  const [uploadId] = useState(() => `avatar-upload-${Math.random()}`);
+
+  const handleUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && onUpload) {
+      onUpload(file);
+    }
+  };
+
   const renderAvatarContent = () => {
     switch (avatar.type) {
       case 'image':
@@ -102,8 +149,22 @@ export const Avatar: React.FC<AvatarProps> = ({ avatar, size = 'medium', isActiv
   };
 
   return (
-    <AvatarContainer $size={size} $isActive={isActive} $isAway={isAway}>
+    <AvatarContainer $size={size} $isActive={isActive} $isAway={isAway} style={{ position: 'relative' }}>
       {renderAvatarContent()}
+      {allowUpload && (
+        <>
+          <UploadButton
+            type="file"
+            id={uploadId}
+            accept="image/*"
+            onChange={handleUpload}
+            data-testid="avatar-upload"
+          />
+          <UploadLabel htmlFor={uploadId}>
+            <UploadIcon>📷</UploadIcon>
+          </UploadLabel>
+        </>
+      )}
     </AvatarContainer>
   );
 }; 
