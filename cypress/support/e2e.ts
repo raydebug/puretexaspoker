@@ -32,33 +32,49 @@ Cypress.Commands.add('joinGame', (nickname?: string) => {
 });
 
 Cypress.Commands.add('joinTable', (tableId: number, buyIn?: number) => {
-  // Instead of looking for a specific table ID, find any available table
-  // First, wait for tables to load
-  cy.get('[data-testid^="table-"]', { timeout: 10000 }).first().then(($table: any) => {
-    // Extract the actual table ID from the element
-    const actualTableId = $table.attr('data-testid')?.replace('table-', '') || '';
-    
-    // Click on the table
-    cy.get(`[data-testid="table-${actualTableId}"]`).click();
-    
-    // Fill in nickname (required for the button to be enabled)
-    cy.get('[data-testid="nickname-input"]').should('be.visible').clear().type('TestPlayer');
-    
-    if (buyIn) {
-      // Look for buy-in input in modal or form and fill it
-      cy.get('[data-testid="buy-in-input"]').should('be.visible').clear().type(buyIn.toString());
-    }
-    
-    // Wait a moment for the form to update
-    cy.wait(500);
-    
-    // Force click the button to proceed with the test
-    cy.get('[data-testid="confirm-buy-in"]').click({ force: true });
-  });
+  // Start from the lobby page to ensure we're in the right place
+  cy.visit('/');
+  
+  // Wait for lobby to load and show tables
+  cy.get('[data-testid^="table-"]', { timeout: 10000 }).should('exist');
+  
+  // Find any available table and click it
+  cy.get('[data-testid^="table-"]').first().click();
+  
+  // Wait for join dialog to appear
+  cy.get('[data-testid="nickname-input"]').should('be.visible');
+  
+  // Fill in nickname (required for the button to be enabled)
+  cy.get('[data-testid="nickname-input"]').should('be.visible').clear().type('TestPlayer');
+  
+  if (buyIn) {
+    // Look for buy-in input in modal or form and fill it
+    cy.get('[data-testid="buy-in-input"]').should('be.visible').clear().type(buyIn.toString());
+  }
+  
+  // Wait a moment for the form to update
+  cy.wait(500);
+  
+  // Click the confirm button to join the table
+  cy.get('[data-testid="confirm-buy-in"]').should('not.be.disabled').click();
+  
+  // Wait for navigation through join-table page to game page
+  // The flow is: lobby -> join dialog -> join-table page -> game page
+  cy.url({ timeout: 15000 }).should('include', '/game/');
+  
+  // Wait for the game to load properly
+  cy.get('[data-testid="game-table"]', { timeout: 15000 }).should('be.visible');
+  
+  // Also wait for the game status to be visible (indicating the game is loaded)
+  cy.get('[data-testid="game-status"]', { timeout: 10000 }).should('be.visible');
+  
+  // Wait a bit more for the socket connection and game state to stabilize
+  cy.wait(2000);
 });
 
 Cypress.Commands.add('verifyChips', (playerName: string, minChips: number, maxChips?: number) => {
-  cy.get(`[data-testid="player-${playerName}-chips"]`).then(($chips: any) => {
+  // Wait longer and provide better error messages
+  cy.get(`[data-testid="player-${playerName}-chips"]`, { timeout: 15000 }).should('be.visible').then(($chips: any) => {
     const chips = parseInt($chips.text().replace(/[^0-9]/g, ''));
     expect(chips).to.be.at.least(minChips);
     if (maxChips) {

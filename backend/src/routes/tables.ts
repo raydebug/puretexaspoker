@@ -99,10 +99,80 @@ router.post('/:tableId/join', async (req, res) => {
       }
     });
 
-    res.status(200).json(playerTable);
+    res.status(200).json({ ...playerTable, gameId: `game-${tableId}` });
   } catch (error) {
     console.error('Error joining table:', error);
     res.status(500).json({ error: 'Failed to join table' });
+  }
+});
+
+// Get specific table
+router.get('/:tableId', async (req, res) => {
+  try {
+    const { tableId } = req.params;
+
+    const table = await prisma.table.findUnique({
+      where: { id: tableId },
+      include: {
+        playerTables: {
+          include: {
+            player: true
+          }
+        },
+        games: {
+          where: {
+            status: 'active'
+          },
+          take: 1,
+          orderBy: {
+            createdAt: 'desc'
+          }
+        }
+      }
+    });
+
+    if (!table) {
+      return res.status(404).json({ error: 'Table not found' });
+    }
+
+    // Add currentGameId to response
+    const currentGameId = table.games.length > 0 ? table.games[0].id : `game-${tableId}`;
+    
+    res.status(200).json({
+      ...table,
+      currentGameId,
+      players: table.playerTables.length,
+      status: table.games.length > 0 ? 'active' : 'waiting'
+    });
+  } catch (error) {
+    console.error('Error getting table:', error);
+    res.status(500).json({ error: 'Failed to get table' });
+  }
+});
+
+// Spectate a table
+router.post('/:tableId/spectate', async (req, res) => {
+  try {
+    const { tableId } = req.params;
+    const { playerId } = req.body;
+
+    // Check if table exists
+    const table = await prisma.table.findUnique({
+      where: { id: tableId }
+    });
+
+    if (!table) {
+      return res.status(404).json({ error: 'Table not found' });
+    }
+
+    // For now, just return success - in a real implementation you'd track spectators
+    res.status(200).json({ 
+      success: true, 
+      message: `Player ${playerId} is now spectating table ${tableId}` 
+    });
+  } catch (error) {
+    console.error('Error spectating table:', error);
+    res.status(500).json({ error: 'Failed to spectate table' });
   }
 });
 

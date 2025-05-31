@@ -38,20 +38,19 @@ router.post('/:gameId/start', async (req, res) => {
 router.get('/:gameId', async (req, res) => {
   try {
     const { gameId } = req.params;
-
+    
+    // Get game from gameManager
     const game = gameManager.getGame(gameId);
+    
     if (!game) {
       return res.status(404).json({ error: 'Game not found' });
     }
 
     const gameState = game.getGameState();
-    res.status(200).json({
-      ...gameState,
-      pot: gameState.pot || 0
-    });
+    return res.json(gameState);
   } catch (error) {
     console.error('Error getting game state:', error);
-    res.status(500).json({ error: 'Failed to get game state' });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -275,55 +274,57 @@ router.post('/:gameId/force-complete-phase', async (req, res) => {
   }
 });
 
-// General game actions endpoint (for performance tests)
+// Handle game actions
 router.post('/:gameId/actions', async (req, res) => {
   try {
     const { gameId } = req.params;
     const { type, amount, playerId } = req.body;
 
-    // Check if game exists first
+    if (!type || !playerId) {
+      return res.status(400).json({ error: 'Missing required fields: type, playerId' });
+    }
+
+    // Check if game exists
     const game = gameManager.getGame(gameId);
     if (!game) {
       return res.status(404).json({ error: 'Game not found' });
     }
 
-    // Then validate required parameters
-    if (!playerId || !type) {
-      return res.status(400).json({ error: 'Player ID and action type are required' });
-    }
-
-    let gameState;
-    
+    // Process the action
+    let result;
     switch (type) {
       case 'bet':
         if (amount === undefined) {
-          return res.status(400).json({ error: 'Amount is required for bet action' });
+          return res.status(400).json({ error: 'Amount required for bet action' });
         }
-        gameState = await gameManager.placeBet(gameId, playerId, amount);
-        break;
-      case 'call':
-        gameState = await gameManager.call(gameId, playerId);
+        result = await gameManager.placeBet(gameId, playerId, amount);
         break;
       case 'check':
-        gameState = await gameManager.check(gameId, playerId);
+        result = await gameManager.check(gameId, playerId);
         break;
       case 'fold':
-        gameState = await gameManager.fold(gameId, playerId);
+        result = await gameManager.fold(gameId, playerId);
         break;
       case 'raise':
         if (amount === undefined) {
-          return res.status(400).json({ error: 'Amount is required for raise action' });
+          return res.status(400).json({ error: 'Amount required for raise action' });
         }
-        gameState = await gameManager.raise(gameId, playerId, amount);
+        result = await gameManager.raise(gameId, playerId, amount);
         break;
       default:
         return res.status(400).json({ error: 'Invalid action type' });
     }
 
-    res.status(200).json({ type, amount, playerId, gameState });
+    res.json({
+      type,
+      amount,
+      playerId,
+      success: true,
+      gameState: game.getGameState()
+    });
   } catch (error) {
     console.error('Error processing game action:', error);
-    res.status(500).json({ error: (error as Error).message || 'Failed to process action' });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
