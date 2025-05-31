@@ -225,13 +225,18 @@ export const TableGrid: React.FC<TableGridProps> = ({ filters }) => {
     setSelectedTable(null);
   };
 
-  const handleJoinTable = (nickname: string) => {
+  const handleJoinTable = (nickname: string, buyIn: number) => {
     if (selectedTable) {
       // Save nickname for future use
       localStorage.setItem('nickname', nickname);
       
-      // Navigate to the Join Game page with table data
-      navigate('/join-table', { state: { table: selectedTable } });
+      // Navigate to the Join Game page with table data and buyIn
+      navigate('/join-table', { 
+        state: { 
+          table: selectedTable,
+          buyIn: buyIn
+        } 
+      });
     }
   };
 

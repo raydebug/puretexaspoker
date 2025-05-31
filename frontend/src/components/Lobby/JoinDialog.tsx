@@ -6,7 +6,7 @@ import { formatMoney } from '../../utils/formatUtils';
 export interface JoinDialogProps {
   table: TableData;
   onClose: () => void;
-  onJoin: (nickname: string) => void;
+  onJoin: (nickname: string, buyIn: number) => void;
 }
 
 const DialogOverlay = styled.div`
@@ -173,6 +173,7 @@ const StatusBadge = styled.span<{ $status: TableData['status'] }>`
 
 export const JoinDialog: React.FC<JoinDialogProps> = ({ table, onClose, onJoin }) => {
   const [nickname, setNickname] = useState('');
+  const [buyIn, setBuyIn] = useState(table.minBuyIn);
 
   useEffect(() => {
     // Load nickname from localStorage if available
@@ -196,8 +197,8 @@ export const JoinDialog: React.FC<JoinDialogProps> = ({ table, onClose, onJoin }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (nickname.trim()) {
-      onJoin(nickname.trim());
+    if (nickname.trim() && buyIn >= table.minBuyIn && buyIn <= table.maxBuyIn) {
+      onJoin(nickname.trim(), buyIn);
     }
   };
 
@@ -253,6 +254,22 @@ export const JoinDialog: React.FC<JoinDialogProps> = ({ table, onClose, onJoin }
               autoFocus
               required
               maxLength={20}
+              data-testid="nickname-input"
+            />
+          </InputGroup>
+
+          <InputGroup>
+            <Label htmlFor="buyIn">Buy-in Amount</Label>
+            <TextInput
+              id="buyIn"
+              type="number"
+              placeholder={`${table.minBuyIn} - ${table.maxBuyIn}`}
+              value={buyIn}
+              onChange={(e) => setBuyIn(Number(e.target.value))}
+              min={table.minBuyIn}
+              max={table.maxBuyIn}
+              required
+              data-testid="buy-in-input"
             />
           </InputGroup>
 
@@ -263,7 +280,8 @@ export const JoinDialog: React.FC<JoinDialogProps> = ({ table, onClose, onJoin }
             <Button
               type="submit"
               $variant="primary"
-              disabled={!nickname.trim() || table.status === 'full'}
+              disabled={!nickname.trim() || table.status === 'full' || buyIn < table.minBuyIn || buyIn > table.maxBuyIn}
+              data-testid="confirm-buy-in"
             >
               {table.status === 'full' ? 'Table is Full' : 'Join Table'}
             </Button>
