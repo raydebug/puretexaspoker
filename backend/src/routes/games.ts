@@ -39,12 +39,16 @@ router.get('/:gameId', async (req, res) => {
   try {
     const { gameId } = req.params;
 
-    const gameState = gameManager.getGameState(gameId);
-    if (!gameState) {
+    const game = gameManager.getGame(gameId);
+    if (!game) {
       return res.status(404).json({ error: 'Game not found' });
     }
 
-    res.status(200).json(gameState);
+    const gameState = game.getGameState();
+    res.status(200).json({
+      ...gameState,
+      pot: gameState.pot || 0
+    });
   } catch (error) {
     console.error('Error getting game state:', error);
     res.status(500).json({ error: 'Failed to get game state' });
@@ -268,6 +272,58 @@ router.post('/:gameId/force-complete-phase', async (req, res) => {
   } catch (error) {
     console.error('Error force completing phase:', error);
     res.status(400).json({ error: (error as Error).message || 'Failed to complete phase' });
+  }
+});
+
+// General game actions endpoint (for performance tests)
+router.post('/:gameId/actions', async (req, res) => {
+  try {
+    const { gameId } = req.params;
+    const { type, amount, playerId } = req.body;
+
+    // Check if game exists first
+    const game = gameManager.getGame(gameId);
+    if (!game) {
+      return res.status(404).json({ error: 'Game not found' });
+    }
+
+    // Then validate required parameters
+    if (!playerId || !type) {
+      return res.status(400).json({ error: 'Player ID and action type are required' });
+    }
+
+    let gameState;
+    
+    switch (type) {
+      case 'bet':
+        if (amount === undefined) {
+          return res.status(400).json({ error: 'Amount is required for bet action' });
+        }
+        gameState = await gameManager.placeBet(gameId, playerId, amount);
+        break;
+      case 'call':
+        gameState = await gameManager.call(gameId, playerId);
+        break;
+      case 'check':
+        gameState = await gameManager.check(gameId, playerId);
+        break;
+      case 'fold':
+        gameState = await gameManager.fold(gameId, playerId);
+        break;
+      case 'raise':
+        if (amount === undefined) {
+          return res.status(400).json({ error: 'Amount is required for raise action' });
+        }
+        gameState = await gameManager.raise(gameId, playerId, amount);
+        break;
+      default:
+        return res.status(400).json({ error: 'Invalid action type' });
+    }
+
+    res.status(200).json({ type, amount, playerId, gameState });
+  } catch (error) {
+    console.error('Error processing game action:', error);
+    res.status(500).json({ error: (error as Error).message || 'Failed to process action' });
   }
 });
 
