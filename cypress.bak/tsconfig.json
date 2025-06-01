@@ -1,0 +1,53 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "lib": ["es5", "dom"],
+    "types": ["cypress", "node", "chai", "jest", "jquery", "mocha", "chai-jquery", "sinon", "sinon-chai"],
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "forceConsistentCasingInFileNames": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": false,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "*": ["../node_modules/*", "support/*", "../node_modules/@types/*"]
+    },
+    "typeRoots": [
+      "../node_modules/@types",
+      "./support",
+      "../node_modules/cypress"
+    ],
+    "allowJs": true,
+    "checkJs": false,
+    "noImplicitAny": false,
+    "allowSyntheticDefaultImports": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "support/*.d.ts",
+    "../node_modules/cypress/**/*.ts",
+    "../node_modules/@types/chai/**/*.d.ts",
+    "../node_modules/@types/jest/**/*.d.ts",
+    "../node_modules/@types/mocha/**/*.d.ts",
+    "../node_modules/@types/jquery/**/*.d.ts",
+    "../node_modules/@types/chai-jquery/**/*.d.ts",
+    "../node_modules/@types/sinon/**/*.d.ts",
+    "../node_modules/@types/sinon-chai/**/*.d.ts"
+  ],
+  "files": [
+    "./support/index.d.ts",
+    "./support/cypress.d.ts",
+    "./support/chai.d.ts",
+    "./support/chai-jquery.d.ts",
+    "./support/jest.d.ts",
+    "./support/commands.ts"
+  ]
+} 

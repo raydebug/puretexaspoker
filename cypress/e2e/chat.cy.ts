@@ -1,76 +1,128 @@
-/// <reference types="cypress" />
-/// <reference types="mocha" />
-
-describe('Chat System', () => {
+describe('Chat Functionality', () => {
   beforeEach(() => {
     cy.visit('/');
+    cy.fixture('game-data').as('gameData');
   });
 
-  it('should handle chat messages', () => {
-    const player = {
-      nickname: 'TestPlayer',
-      chips: 1000,
-      buyIn: 1000,
-      name: 'TestPlayer'
-    };
-
-    cy.joinGame(player.nickname);
-    cy.joinTable(1, player.buyIn);
-
-    // Send chat message
-    cy.get('[data-testid="chat-input"]').type('Hello, everyone!');
-    cy.get('[data-testid="chat-send"]').click();
-
-    // Verify message appears in chat
-    cy.get('[data-testid="chat-messages"]').should('contain', 'Hello, everyone!');
-  });
-
-  it('should handle chat in new window', () => {
-    const player = {
-      nickname: 'TestPlayer',
-      chips: 1000,
-      buyIn: 1000,
-      name: 'TestPlayer'
-    };
-
-    cy.joinGame(player.nickname);
-    cy.joinTable(1, player.buyIn);
-
-    // Open chat in new window
-    cy.window().then(win => {
-      cy.stub(win, 'open' as keyof Window).returns(win).as('openWindow');
-      cy.get('[data-testid="open-chat"]').click();
-      cy.get('@openWindow').should('be.called');
+  it('should allow players to send and receive messages', () => {
+    // Login first player
+    cy.get('@gameData').then((data: any) => {
+      const player1 = data.players[0];
+      cy.loginPlayer(player1.nickname, player1.chips);
     });
 
-    // Send message in new window
-    cy.get('[data-testid="chat-input"]').type('Hello from new window!');
-    cy.get('[data-testid="chat-send"]').click();
+    // Join table
+    cy.joinTable('table1');
 
-    // Verify message appears in both windows
-    cy.get('[data-testid="chat-messages"]').should('contain', 'Hello from new window!');
-  });
-
-  it('should handle chat notifications', () => {
-    const player = {
-      nickname: 'TestPlayer',
-      chips: 1000,
-      buyIn: 1000,
-      name: 'TestPlayer'
-    };
-
-    cy.joinGame(player.nickname);
-    cy.joinTable(1, player.buyIn);
-
-    // Minimize chat
-    cy.get('[data-testid="minimize-chat"]').click();
-
-    // Send message from another player
-    cy.window().then(win => {
-      win.postMessage({ type: 'CHAT_MESSAGE', content: 'New message!' }, '*');
+    // Login second player in a new window
+    cy.window().then((win) => {
+      cy.get('@gameData').then((data: any) => {
+        const player2 = data.players[1];
+        const newWindow = win.open('/');
+        cy.wrap(newWindow).then((win) => {
+          cy.stub(win, 'open').as('openWindow');
+          cy.loginPlayer(player2.nickname, player2.chips);
+        });
+      });
     });
 
-    // Verify notification appears
-    cy.get('[data-testid="chat-notification"]').should('be.visible');
+    // Open chat
+    cy.get('[data-testid="chat-toggle"]').click();
+    cy.get('[data-testid="chat-container"]').should('be.visible');
+
+    // Send message from first player
+    cy.get('[data-testid="chat-input"]').type('Hello from Player 1{enter}');
+    cy.get('[data-testid="chat-messages"]').should('contain', 'Hello from Player 1');
+
+    // Send message from second player
+    cy.window().then((win) => {
+      cy.get('@gameData').then((data: any) => {
+        const player2 = data.players[1];
+        cy.get('[data-testid="chat-input"]').type(`Hello from ${player2.nickname}{enter}`);
+        cy.get('[data-testid="chat-messages"]').should('contain', `Hello from ${player2.nickname}`);
+      });
+    });
+
+    // Verify message formatting
+    cy.get('[data-testid="chat-messages"]').within(() => {
+      cy.get('.message').should('have.length', 2);
+      cy.get('.message').first().should('contain', 'Player 1');
+      cy.get('.message').last().should('contain', 'Player 2');
+    });
+  });
+
+  it('should handle emoji and special characters', () => {
+    // Login player
+    cy.get('@gameData').then((data: any) => {
+      const player = data.players[0];
+      cy.loginPlayer(player.nickname, player.chips);
+    });
+
+    // Join table
+    cy.joinTable('table1');
+
+    // Open chat
+    cy.get('[data-testid="chat-toggle"]').click();
+
+    // Send message with emoji
+    cy.get('[data-testid="chat-input"]').type('Hello 👋{enter}');
+    cy.get('[data-testid="chat-messages"]').should('contain', 'Hello 👋');
+
+    // Send message with special characters
+    cy.get('[data-testid="chat-input"]').type('Special chars: !@#$%^&*(){enter}');
+    cy.get('[data-testid="chat-messages"]').should('contain', 'Special chars: !@#$%^&*()');
+  });
+
+  it('should handle chat moderation', () => {
+    // Login player
+    cy.get('@gameData').then((data: any) => {
+      const player = data.players[0];
+      cy.loginPlayer(player.nickname, player.chips);
+    });
+
+    // Join table
+    cy.joinTable('table1');
+
+    // Open chat
+    cy.get('[data-testid="chat-toggle"]').click();
+
+    // Try to send empty message
+    cy.get('[data-testid="chat-input"]').type('{enter}');
+    cy.get('[data-testid="chat-messages"]').should('not.contain', '');
+
+    // Try to send very long message
+    const longMessage = 'a'.repeat(500);
+    cy.get('[data-testid="chat-input"]').type(longMessage);
+    cy.get('[data-testid="chat-input"]').should('have.value', longMessage.slice(0, 200));
+
+    // Try to send message with profanity
+    cy.get('[data-testid="chat-input"]').type('bad word{enter}');
+    cy.get('[data-testid="chat-messages"]').should('not.contain', 'bad word');
+    cy.get('[data-testid="chat-error"]').should('be.visible');
+  });
+
+  it('should handle chat persistence', () => {
+    // Login player
+    cy.get('@gameData').then((data: any) => {
+      const player = data.players[0];
+      cy.loginPlayer(player.nickname, player.chips);
+    });
+
+    // Join table
+    cy.joinTable('table1');
+
+    // Open chat
+    cy.get('[data-testid="chat-toggle"]').click();
+
+    // Send message
+    cy.get('[data-testid="chat-input"]').type('Persistent message{enter}');
+    cy.get('[data-testid="chat-messages"]').should('contain', 'Persistent message');
+
+    // Reload page
+    cy.reload();
+
+    // Verify message is still there
+    cy.get('[data-testid="chat-toggle"]').click();
+    cy.get('[data-testid="chat-messages"]').should('contain', 'Persistent message');
   });
 }); 

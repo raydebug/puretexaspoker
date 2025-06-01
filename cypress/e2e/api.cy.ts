@@ -1,337 +1,193 @@
-/// <reference types="cypress" />
-/// <reference types="mocha" />
-/// <reference types="chai" />
-
-// @ts-nocheck
-
-declare namespace Cypress {
-  interface Response<T = any> {
-    status: number;
-    body: T;
-    headers: { [key: string]: string };
-  }
-
-  interface Chainable {
-    request(method: string, url: string, body?: any): Chainable<Response>;
-    request(options: { method: string; url: string; body?: any; failOnStatusCode?: boolean }): Chainable<Response>;
-  }
-}
-
-declare namespace Chai {
-  interface Assertion {
-    eq(value: any): Assertion;
-    property(name: string, value?: any): Assertion;
-    deep: {
-      include(value: any): Assertion;
-    };
-    be: {
-      a(type: string): Assertion;
-      an(type: string): Assertion;
-    };
-  }
-}
-
-interface ApiResponse<T = any> {
-  status: number;
-  body: T;
-  headers: { [key: string]: string };
-}
-
-declare const cy: Cypress.Chainable;
-declare const expect: Chai.ExpectStatic;
-
-const API_BASE_URL = 'http://localhost:3001';
-
 describe('API Tests', () => {
+  const apiUrl = Cypress.env('apiUrl')
+
   beforeEach(() => {
-    cy.wrap(expect).as('expect');
-    // Reset database before each test
-    cy.request('POST', `${API_BASE_URL}/api/test/reset`);
-  });
+    // Reset any test data before each test
+    cy.request('POST', `${apiUrl}/api/test/reset`).then((response: Cypress.Response<any>) => {
+      expect(response.status).to.eq(200)
+    })
+  })
 
-  it('should handle player registration', () => {
-    cy.request({
-      method: 'POST',
-      url: `${API_BASE_URL}/api/players`,
-      failOnStatusCode: false
-    }).then(({ status, body }) => {
-      expect(status).to.equal(400); // Backend returns 400 for validation errors
-      expect(body.error).to.exist;
-    });
-  });
-
-  it('should create a new player', () => {
-    const player = {
-      nickname: 'UniqueTestPlayer' + Date.now(),
-      chips: 1000
-    };
-
-    cy.request('POST', `${API_BASE_URL}/api/players`, player).then(({ status, body }) => {
-      expect(status).to.equal(201);
-      expect(body.id).to.exist;
-      expect(body.nickname).to.equal(player.nickname);
-      expect(body.chips).to.equal(player.chips);
-    });
-  });
-
-  it('should handle invalid player data', () => {
-    const invalidPlayer = {
-      nickname: null,  // Use null instead of empty string
-      chips: 'invalid'  // Use invalid type for chips
-    };
-
-    cy.request({
-      method: 'POST',
-      url: `${API_BASE_URL}/api/players`,
-      body: invalidPlayer,
-      failOnStatusCode: false
-    }).then(({ status, body }) => {
-      expect(status).to.equal(400); // Backend returns 400 for validation errors
-      expect(body.error).to.exist;
-    });
-  });
-
-  it('should create a new table', () => {
-    const table = {
-      name: 'Test Table',
-      maxPlayers: 9
-    };
-
-    cy.request('POST', `${API_BASE_URL}/api/tables`, table).then(({ status, body }) => {
-      expect(status).to.equal(200);
-      expect(body.id).to.exist;
-      expect(body.name).to.equal(table.name);
-      expect(body.maxPlayers).to.equal(table.maxPlayers);
-    });
-  });
-
-  it('should list all tables', () => {
-    cy.request('GET', `${API_BASE_URL}/api/tables`).then(({ status, body }) => {
-      expect(status).to.equal(200);
-      expect(body).to.be.an('array');
-    });
-  });
-
-  it('should handle game actions', () => {
-    const player = {
-      nickname: 'TestPlayer' + Date.now(),
-      chips: 1000
-    };
-
-    const table = {
-      name: 'Test Table',
-      maxPlayers: 9
-    };
-
-    let playerId: string;
-    let tableId: string;
-
-    cy.request('POST', `${API_BASE_URL}/api/players`, player).then(({ body }) => {
-      playerId = body.id;
-      return cy.request('POST', `${API_BASE_URL}/api/tables`, table);
-    }).then(({ body }) => {
-      tableId = body.id;
-      return cy.request('POST', `${API_BASE_URL}/api/tables/${tableId}/join`, { 
-        playerId,
-        buyIn: 500  // Add required buyIn parameter
-      });
-    }).then(({ status, body }) => {
-      expect(status).to.equal(200);
-      expect(body.seatNumber).to.exist;
-    });
-  });
-
-  it('should create a new game', () => {
-    const table = {
-      name: 'Test Table',
-      maxPlayers: 9
-    };
-
-    cy.request('POST', `${API_BASE_URL}/api/tables`, table).then(({ body }) => {
-      const tableId = body.id;
-      return cy.request('POST', `${API_BASE_URL}/api/games`, { tableId });
-    }).then(({ status, body }) => {
-      expect(status).to.equal(201); // Games return 201 when created
-      expect(body.id).to.exist;
-    });
-  });
-
-  it('should handle chat messages', () => {
-    const player = {
-      nickname: 'TestPlayer' + Date.now(),
-      chips: 1000
-    };
-
-    let playerId: string;
-    let message: { content: string; playerId: string };
-
-    cy.request('POST', `${API_BASE_URL}/api/players`, player).then(({ body }) => {
-      playerId = body.id;
-      message = {
-        content: 'Hello, everyone!',
-        playerId
-      };
-      return cy.request('POST', `${API_BASE_URL}/api/chat/messages`, message);
-    }).then(({ status, body }) => {
-      expect(status).to.equal(200);
-      expect(body.id).to.exist;
-      expect(body.content).to.equal(message.content);
-      expect(body.playerId).to.equal(message.playerId);
-    });
-  });
-
-  it('should list chat messages', () => {
-    cy.request('GET', `${API_BASE_URL}/api/chat/messages`).then(({ status, body }) => {
-      expect(status).to.equal(200);
-      expect(body).to.be.an('array');
-    });
-  });
-
-  describe('Error Handling', () => {
-    it('should handle joining a non-existent table', () => {
+  describe('Authentication API', () => {
+    it('should register a new player', () => {
       const player = {
-        nickname: 'TestPlayer' + Date.now(),
+        nickname: 'testPlayer1',
         chips: 1000
-      };
+      }
 
-      cy.request('POST', `${API_BASE_URL}/api/players`, player).then(({ body }) => {
-        const playerId = body.id;
-        cy.request({
-          method: 'POST',
-          url: `${API_BASE_URL}/api/tables/999999/join`,
-          body: { playerId, buyIn: 500 },
-          failOnStatusCode: false
-        }).then(({ status, body }) => {
-          expect(status).to.equal(404);
-          expect(body.error).to.exist;
-        });
-      });
-    });
+      cy.request('POST', `${apiUrl}/api/players/register`, player).then((response: Cypress.Response<any>) => {
+        expect(response.status).to.eq(200)
+        expect(response.body).to.have.property('id')
+        expect(response.body.nickname).to.eq(player.nickname)
+        expect(response.body.chips).to.eq(player.chips)
+      })
+    })
 
-    it('should handle invalid game actions', () => {
+    it('should not register a player with duplicate nickname', () => {
       const player = {
-        nickname: 'TestPlayer' + Date.now(),
+        nickname: 'testPlayer2',
         chips: 1000
-      };
+      }
 
-      let playerId: string;
-      let tableId: string;
+      // Register first player
+      cy.request('POST', `${apiUrl}/api/players/register`, player)
 
-      cy.request('POST', `${API_BASE_URL}/api/players`, player).then(({ body }) => {
-        playerId = body.id;
-        return cy.request('POST', `${API_BASE_URL}/api/tables`, { name: 'Test Table', maxPlayers: 9 });
-      }).then(({ body }) => {
-        tableId = body.id;
-        return cy.request('POST', `${API_BASE_URL}/api/tables/${tableId}/join`, { 
-          playerId,
-          buyIn: 500
-        });
-      }).then(() => {
-        return cy.request({
-          method: 'POST',
-          url: `${API_BASE_URL}/api/games/invalid-game-id/actions`,
-          body: {
-            type: 'invalid_action',
-            playerId
-          },
-          failOnStatusCode: false
-        });
-      }).then(({ status, body }) => {
-        expect(status).to.equal(404);
-        expect(body.error || body).to.exist; // Allow for different error formats
-      });
-    });
+      // Try to register same nickname again
+      cy.request({
+        method: 'POST',
+        url: `${apiUrl}/api/players/register`,
+        body: player,
+        failOnStatusCode: false
+      }).then((response: Cypress.Response<any>) => {
+        expect(response.status).to.eq(400)
+        expect(response.body).to.have.property('error')
+      })
+    })
+  })
 
-    it('should handle betting more chips than available', () => {
+  describe('Table API', () => {
+    it('should create a new table', () => {
+      const table = {
+        name: 'Test Table',
+        maxPlayers: 9,
+        smallBlind: 10,
+        bigBlind: 20,
+        minBuyIn: 200,
+        maxBuyIn: 2000
+      }
+
+      cy.request('POST', `${apiUrl}/api/tables`, table).then((response: Cypress.Response<any>) => {
+        expect(response.status).to.eq(200)
+        expect(response.body).to.have.property('id')
+        expect(response.body.name).to.eq(table.name)
+        expect(response.body.maxPlayers).to.eq(table.maxPlayers)
+      })
+    })
+
+    it('should list all tables', () => {
+      cy.request('GET', `${apiUrl}/api/tables`).then((response: Cypress.Response<any>) => {
+        expect(response.status).to.eq(200)
+        expect(response.body).to.be.an('array')
+      })
+    })
+
+    it('should join a table', () => {
+      // First create a player
       const player = {
-        nickname: 'TestPlayer' + Date.now(),
-        chips: 100
-      };
+        nickname: 'testPlayer3',
+        chips: 1000
+      }
 
-      let playerId: string;
-      let tableId: string;
+      cy.request('POST', `${apiUrl}/api/players/register`, player).then((playerResponse: Cypress.Response<any>) => {
+        const playerId = playerResponse.body.id
 
-      cy.request('POST', `${API_BASE_URL}/api/players`, player).then(({ body }) => {
-        playerId = body.id;
-        return cy.request('POST', `${API_BASE_URL}/api/tables`, { 
-          name: 'Test Table', 
+        // Create a table
+        const table = {
+          name: 'Join Test Table',
           maxPlayers: 9,
-          minBuyIn: 100,  // Set min buyIn to 100
-          maxBuyIn: 1000
-        });
-      }).then(({ body }) => {
-        tableId = body.id;
-        return cy.request({
-          method: 'POST',
-          url: `${API_BASE_URL}/api/tables/${tableId}/join`,
-          body: { 
+          smallBlind: 10,
+          bigBlind: 20,
+          minBuyIn: 200,
+          maxBuyIn: 2000
+        }
+
+        cy.request('POST', `${apiUrl}/api/tables`, table).then((tableResponse: Cypress.Response<any>) => {
+          const tableId = tableResponse.body.id
+
+          // Join the table
+          cy.request('POST', `${apiUrl}/api/tables/${tableId}/join`, {
             playerId,
-            buyIn: 100  // Use valid buyIn amount
-          },
-          failOnStatusCode: false
-        });
-      }).then(({ status }) => {
-        expect(status).to.equal(200); // Should successfully join with valid buyIn
-      });
-    });
-  });
+            buyIn: 500
+          }).then((joinResponse: Cypress.Response<any>) => {
+            expect(joinResponse.status).to.eq(200)
+            expect(joinResponse.body).to.have.property('seatNumber')
+          })
+        })
+      })
+    })
+  })
 
-  describe('Game State Transitions', () => {
-    it('should handle full game round', () => {
-      const players = [
-        { nickname: 'Player1_' + Date.now(), chips: 1000 },
-        { nickname: 'Player2_' + Date.now(), chips: 1000 }
-      ];
-      
-      let playerIds: string[] = [];
-      let tableId: string;
+  describe('Game Actions API', () => {
+    it('should place a bet', () => {
+      // Setup game with two players first
+      cy.task('setupTestGame').then((gameData: any) => {
+        const { gameId, playerId } = gameData
 
-      // Create players
-      cy.wrap(players[0]).then((player) => {
-        cy.request('POST', `${API_BASE_URL}/api/players`, player).then(({ body }) => {
-          playerIds.push(body.id);
-        });
-      }).then(() => {
-        cy.request('POST', `${API_BASE_URL}/api/players`, players[1]).then(({ body }) => {
-          playerIds.push(body.id);
-        });
-      }).then(() => {
-        // Create table
-        return cy.request('POST', `${API_BASE_URL}/api/tables`, { name: 'Test Table', maxPlayers: 9 });
-      }).then(({ body }) => {
-        tableId = body.id;
-        // Join first player to table
-        return cy.request('POST', `${API_BASE_URL}/api/tables/${tableId}/join`, { 
-          playerId: playerIds[0],
-          buyIn: 500
-        });
-      }).then(({ body }) => {
-        expect(body.seatNumber).to.exist;
-      });
-    });
-
-    it('should handle player timeout', () => {
-      const player = {
-        nickname: 'TestPlayer' + Date.now(),
-        chips: 1000
-      };
-
-      let playerId: string;
-      let tableId: string;
-
-      cy.request('POST', `${API_BASE_URL}/api/players`, player).then(({ body }) => {
-        playerId = body.id;
-        return cy.request('POST', `${API_BASE_URL}/api/tables`, { name: 'Test Table', maxPlayers: 9 });
-      }).then(({ body }) => {
-        tableId = body.id;
-        return cy.request('POST', `${API_BASE_URL}/api/tables/${tableId}/join`, { 
+        cy.request('POST', `${apiUrl}/api/games/${gameId}/bet`, {
           playerId,
-          buyIn: 500
-        });
-      }).then(({ body }) => {
-        expect(body.seatNumber).to.exist;
-        // Test basic join functionality instead of timeout
-      });
-    });
-  });
-}); 
+          amount: 20
+        }).then((response: Cypress.Response<any>) => {
+          expect(response.status).to.eq(200)
+          expect(response.body).to.have.property('type', 'bet')
+          expect(response.body).to.have.property('amount', 20)
+          expect(response.body).to.have.property('playerId', playerId)
+          expect(response.body).to.have.property('gameId', gameId)
+        })
+      })
+    })
+
+    it('should allow player to fold', () => {
+      // Setup game with two players first
+      cy.task('setupTestGame').then((gameData: any) => {
+        const { gameId, playerId } = gameData
+
+        cy.request('POST', `${apiUrl}/api/games/${gameId}/fold`, {
+          playerId
+        }).then((response: Cypress.Response<any>) => {
+          expect(response.status).to.eq(200)
+          expect(response.body).to.have.property('type', 'fold')
+          expect(response.body).to.have.property('playerId', playerId)
+          expect(response.body).to.have.property('gameId', gameId)
+        })
+      })
+    })
+
+    it('should deal cards', () => {
+      // Setup game with two players first
+      cy.task('setupTestGame').then((gameData: any) => {
+        const { gameId } = gameData
+
+        cy.request('POST', `${apiUrl}/api/games/${gameId}/deal`).then((response: Cypress.Response<any>) => {
+          expect(response.status).to.eq(200)
+          expect(response.body).to.have.property('id')
+          expect(response.body).to.have.property('deck').that.is.a('string')
+          expect(response.body).to.have.property('status', 'active')
+        })
+      })
+    })
+  })
+
+  describe('Chat API', () => {
+    it('should send a chat message', () => {
+      // Create a player first
+      const player = {
+        nickname: 'chatTester',
+        chips: 1000
+      }
+
+      cy.request('POST', `${apiUrl}/api/players/register`, player).then((playerResponse: Cypress.Response<any>) => {
+        const playerId = playerResponse.body.id
+
+        const message = {
+          playerId,
+          content: 'Hello, table!',
+          timestamp: new Date().toISOString()
+        }
+
+        cy.request('POST', `${apiUrl}/api/chat/messages`, message).then((response: Cypress.Response<any>) => {
+          expect(response.status).to.eq(200)
+          expect(response.body).to.have.property('id')
+          expect(response.body.content).to.eq(message.content)
+          expect(response.body.playerId).to.eq(playerId)
+        })
+      })
+    })
+
+    it('should get chat history', () => {
+      cy.request('GET', `${apiUrl}/api/chat/messages`).then((response: Cypress.Response<any>) => {
+        expect(response.status).to.eq(200)
+        expect(response.body).to.be.an('array')
+      })
+    })
+  })
+}) 
