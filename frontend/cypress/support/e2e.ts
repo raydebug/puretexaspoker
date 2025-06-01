@@ -1,9 +1,6 @@
-// Import commands.js using ES2015 syntax:
 import './commands'
-import '@testing-library/cypress/add-commands'
+import 'cypress-file-upload'
 
-// Alternatively you can use CommonJS syntax:
-// require('./commands')
 
 declare global {
   namespace Cypress {
@@ -24,7 +21,7 @@ declare global {
       waitForGameStart(): void
       verifyGamePhase(phase: string): void
       loginPlayer(nickname: string, chips: number): void
-      joinTable(tableName: string): void
+      joinTable(tableId: number, buyIn?: number): void
       checkHand(): void
       foldHand(): void
       openNewWindow(): Chainable<Window>
@@ -166,10 +163,6 @@ Cypress.Commands.add('loginPlayer', (nickname: string, chips: number) => {
   cy.verifyPlayerState(nickname, chips);
 });
 
-Cypress.Commands.add('joinTable', (tableName: string) => {
-  cy.get(`[data-testid="table-${tableName}"]`).should('be.visible').click();
-  cy.get('[data-testid="join-table-button"]').should('be.enabled').click();
-});
 
 Cypress.Commands.add('checkHand', () => {
   cy.get('[data-testid="check-button"]').should('be.enabled').click();

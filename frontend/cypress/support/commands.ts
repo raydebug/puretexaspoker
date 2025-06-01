@@ -113,13 +113,6 @@ Cypress.Commands.add('loginPlayer', (nickname: string, chips: number) => {
   cy.contains(`Welcome, ${nickname}`, { timeout: 10000 }).should('be.visible')
 })
 
-// Join table command
-Cypress.Commands.add('joinTable', (tableName: string) => {
-  cy.log(`Joining table: ${tableName}`)
-  cy.get(`[data-table-id="${tableName}"]`, { timeout: 10000 }).should('be.visible').click()
-  cy.get('[data-testid="join-table-button"]', { timeout: 10000 }).should('be.visible').click()
-  cy.get('[data-testid="game-table"]', { timeout: 10000 }).should('be.visible')
-})
 
 // Check hand command
 Cypress.Commands.add('checkHand', () => {
