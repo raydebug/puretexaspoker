@@ -9,7 +9,7 @@ declare global {
     interface Chainable {
       // Game-related commands
       joinGame(nickname?: string): Chainable<void>;
-      joinTable(tableId: number, buyIn?: number): Chainable<void>;
+      joinTable(tableId: string | number, buyIn?: number): Chainable<void>;
       verifyChips(playerName: string, minChips: number, maxChips?: number): Chainable<void>;
       waitForGameAction(action?: string): Chainable<void>;
       openNewWindow(): Chainable<Window>;
@@ -25,15 +25,38 @@ declare global {
 
 // Add custom commands
 Cypress.Commands.add('joinGame', (nickname?: string) => {
-  if (nickname) {
-    cy.get('[data-testid="nickname-input"]').type(nickname);
-    cy.get('[data-testid="join-button"]').click();
-  }
+  const playerName = nickname || 'TestPlayer';
+  
+  // Visit the lobby page
+  cy.visit('/');
+  
+  // Handle the nickname modal if it appears
+  cy.get('body').then(($body: JQuery<HTMLElement>) => {
+    if ($body.find('[data-testid="nickname-modal"]').length > 0) {
+      cy.get('[data-testid="nickname-input"]').type(playerName);
+      cy.get('[data-testid="join-button"]').click();
+      // Wait for modal to disappear
+      cy.get('[data-testid="nickname-modal"]').should('not.exist');
+    }
+  });
+  
+  // Wait for lobby container to be visible
+  cy.get('[data-testid="lobby-container"]', { timeout: 10000 }).should('be.visible');
 });
 
-Cypress.Commands.add('joinTable', (tableId: number, buyIn?: number) => {
+Cypress.Commands.add('joinTable', (tableId: string | number, buyIn?: number) => {
   // Start from the lobby page to ensure we're in the right place
   cy.visit('/');
+  
+  // First, handle the nickname modal if it appears
+  cy.get('body').then(($body: JQuery<HTMLElement>) => {
+    if ($body.find('[data-testid="nickname-modal"]').length > 0) {
+      cy.get('[data-testid="nickname-input"]').type('TestPlayer');
+      cy.get('[data-testid="join-button"]').click();
+      // Wait for modal to disappear
+      cy.get('[data-testid="nickname-modal"]').should('not.exist');
+    }
+  });
   
   // Wait for lobby to load and show tables
   cy.get('[data-testid^="table-"]', { timeout: 10000 }).should('exist');
@@ -41,11 +64,23 @@ Cypress.Commands.add('joinTable', (tableId: number, buyIn?: number) => {
   // Find any available table and click it
   cy.get('[data-testid^="table-"]').first().click();
   
-  // Wait for join dialog to appear
-  cy.get('[data-testid="nickname-input"]').should('be.visible');
+  // Wait for join dialog to appear (this is different from the nickname modal)
+  cy.get('[data-testid="buy-in-input"]').should('be.visible');
   
-  // In test mode, the button should work regardless of input values
-  // Just click the button directly - our test mode bypass will handle the rest
+  // The nickname should already be filled from the modal, but let's make sure
+  cy.get('[data-testid="nickname-input"]').should('be.visible').then(($input: JQuery<HTMLElement>) => {
+    const inputValue = ($input[0] as HTMLInputElement).value;
+    if (!inputValue) {
+      cy.wrap($input).type('TestPlayer');
+    }
+  });
+  
+  // Set buy-in if provided
+  if (buyIn) {
+    cy.get('[data-testid="buy-in-input"]').clear().type(buyIn.toString());
+  }
+  
+  // Click the confirm button
   cy.get('[data-testid="confirm-buy-in"]').should('be.visible').click({ force: true });
   
   // Wait for navigation to game page (the flow is: lobby -> join dialog -> auto-join -> game)
@@ -93,4 +128,10 @@ Cypress.Commands.add('openNewWindow', () => {
     const newWindow = win.open('about:blank');
     return cy.wrap(newWindow);
   });
-}); 
+});
+
+Cypress.Commands.add('foldHand', () => {
+  cy.get('[data-testid="fold-button"]').should('be.enabled').click();
+});
+
+export {}; 
