@@ -3,8 +3,9 @@ export type Value = '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | 'J' |
 export type Avatar = 'default' | 'player1' | 'player2' | 'player3' | 'player4' | 'player5' | 'player6' | 'player7' | 'player8' | 'player9';
 
 export interface Card {
-  suit: Suit;
-  value: Value;
+  rank: string;
+  suit: string;
+  isVisible?: boolean;
 }
 
 export interface Hand {
