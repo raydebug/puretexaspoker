@@ -1,6 +1,6 @@
 import { Server, Socket } from 'socket.io';
 import { GameService } from './gameService';
-import { Player } from '../types/card';
+import { Player } from '../types/shared';
 
 export class WebSocketService {
   private io: Server;
