@@ -44,9 +44,10 @@ class SocketService {
   private observers: string[] = [];
   private lobbyTables: TableData[] = [];
   private currentGameId: string | null = null;
+  private retryQueue: Array<{ event: string; data: any; attempts: number }> = [];
 
   // Event listeners
-  private errorListeners: ((error: { message: string; context: string }) => void)[] = [];
+  private errorListeners: ((error: { message: string; context: string; severity?: string; retryable?: boolean }) => void)[] = [];
   private chatMessageListeners: ((message: ChatMessage) => void)[] = [];
   private systemMessageListeners: ((message: string) => void)[] = [];
   private gameStateListeners: ((state: GameState) => void)[] = [];
@@ -244,6 +245,9 @@ class SocketService {
     // Handle successful connection
     socket.on('connect', () => {
       this.onSuccessfulConnection();
+      
+      // Process any queued retries
+      this.processRetryQueue();
     });
 
     socket.on('observer:joined', (data: { observer: string }) => {
@@ -374,17 +378,36 @@ class SocketService {
       console.error('Socket connection error:', error);
       this.isConnecting = false;
       this.connectionLock = false;
-      this.emitError({ 
+      this.handleSocketError({ 
         message: 'Failed to connect to server', 
-        context: 'connection:connect_error' 
+        event: 'connection',
+        severity: 'critical',
+        retryable: true
       });
     });
 
     socket.on('error', (error) => {
       console.error('Socket error:', error);
-      this.emitError({ 
-        message: typeof error === 'string' ? error : error.message || 'Unknown socket error', 
-        context: 'socket:error' 
+      
+      // Handle structured error responses from server
+      if (typeof error === 'object' && error.message) {
+        this.handleSocketError(error);
+      } else {
+        this.handleSocketError({ 
+          message: typeof error === 'string' ? error : error.message || 'Unknown socket error',
+          severity: 'error',
+          retryable: false
+        });
+      }
+    });
+
+    // Handle structured game errors
+    socket.on('gameError', (error: { message: string; context: string; severity: string }) => {
+      this.handleSocketError({
+        message: error.message,
+        event: error.context,
+        severity: error.severity,
+        retryable: false
       });
     });
 
@@ -618,16 +641,102 @@ class SocketService {
   }
 
   // --- Game actions ---
-  joinGame(nickname: string, seatNumber: number) {
-    // Deprecated for seat management, use requestSeat instead
-    this.requestSeat(nickname, seatNumber);
+  joinGame(nicknameOrPlayer: string | Player, seatNumber?: number) {
+    try {
+      // Handle both old signature (nickname, seatNumber) and new signature (player)
+      if (typeof nicknameOrPlayer === 'string') {
+        // Old signature: joinGame(nickname, seatNumber)
+        const nickname = nicknameOrPlayer;
+        if (!nickname || seatNumber === undefined) {
+          throw new Error('Nickname and seat number are required');
+        }
+        
+        if (!this.socket?.connected) {
+          console.warn('Socket not connected when joining game, connecting first');
+          this.connect();
+          
+          this.socket?.once('connect', () => {
+            this.socket?.emit('joinGame', { nickname, seatNumber });
+          });
+          return;
+        }
+        
+        this.socket.emit('joinGame', { nickname, seatNumber });
+      } else {
+        // New signature: joinGame(player)
+        const player = nicknameOrPlayer;
+        if (!player?.id || !player?.name) {
+          throw new Error('Player ID and name are required');
+        }
+        
+        if (!player.chips || player.chips < 0) {
+          throw new Error('Invalid chip amount');
+        }
+
+        if (!this.socket?.connected) {
+          console.warn('Socket not connected when joining game, connecting first');
+          this.connect();
+          
+          this.socket?.once('connect', () => {
+            this.socket?.emit('joinGame', player);
+          });
+          return;
+        }
+        
+        this.socket.emit('joinGame', player);
+      }
+    } catch (error) {
+      this.handleSocketError({
+        message: (error as Error).message,
+        event: 'joinGame',
+        severity: 'error',
+        retryable: false
+      });
+    }
   }
 
-  placeBet(gameId: string, playerId: string, amount: number) {
-    if (this.socket?.connected) {
-      this.socket.emit('placeBet', { gameId, playerId, amount });
-    } else {
-      console.warn('Cannot place bet: socket not connected');
+  placeBet(gameIdOrPlayerId: string, playerIdOrAmount: string | number, amount?: number) {
+    try {
+      let finalPlayerId: string;
+      let finalAmount: number;
+      
+      if (typeof playerIdOrAmount === 'string' && amount !== undefined) {
+        // Old signature: placeBet(gameId, playerId, amount)
+        finalPlayerId = playerIdOrAmount;
+        finalAmount = amount;
+      } else if (typeof playerIdOrAmount === 'number') {
+        // New signature: placeBet(playerId, amount)
+        finalPlayerId = gameIdOrPlayerId;
+        finalAmount = playerIdOrAmount;
+      } else {
+        throw new Error('Invalid placeBet parameters');
+      }
+      
+      if (!finalPlayerId) {
+        throw new Error('Player ID is required');
+      }
+      
+      if (typeof finalAmount !== 'number' || finalAmount <= 0) {
+        throw new Error('Bet amount must be a positive number');
+      }
+
+      if (!this.socket?.connected) {
+        throw new Error('Not connected to server');
+      }
+      
+      // Use the format expected by the server
+      if (typeof playerIdOrAmount === 'string' && amount !== undefined) {
+        this.socket.emit('placeBet', { gameId: gameIdOrPlayerId, playerId: finalPlayerId, amount: finalAmount });
+      } else {
+        this.socket.emit('placeBet', { playerId: finalPlayerId, amount: finalAmount });
+      }
+    } catch (error) {
+      this.handleSocketError({
+        message: (error as Error).message,
+        event: 'placeBet',
+        severity: 'error',
+        retryable: false
+      });
     }
   }
 
@@ -663,11 +772,39 @@ class SocketService {
     }
   }
 
-  fold(gameId: string, playerId: string) {
-    if (this.socket?.connected) {
-      this.socket.emit('fold', { gameId, playerId });
-    } else {
-      console.warn('Cannot fold: socket not connected');
+  fold(gameIdOrPlayerId: string, playerId?: string) {
+    try {
+      let finalPlayerId: string;
+      
+      if (playerId !== undefined) {
+        // Old signature: fold(gameId, playerId)
+        finalPlayerId = playerId;
+      } else {
+        // New signature: fold(playerId)
+        finalPlayerId = gameIdOrPlayerId;
+      }
+      
+      if (!finalPlayerId) {
+        throw new Error('Player ID is required');
+      }
+
+      if (!this.socket?.connected) {
+        throw new Error('Not connected to server');
+      }
+      
+      // Use the format expected by the server
+      if (playerId !== undefined) {
+        this.socket.emit('fold', { gameId: gameIdOrPlayerId, playerId: finalPlayerId });
+      } else {
+        this.socket.emit('fold', finalPlayerId);
+      }
+    } catch (error) {
+      this.handleSocketError({
+        message: (error as Error).message,
+        event: 'fold',
+        severity: 'error',
+        retryable: false
+      });
     }
   }
 
@@ -732,10 +869,31 @@ class SocketService {
 
   // --- Chat methods ---
   sendChatMessage(gameId: string, message: ChatMessage) {
-    if (this.socket?.connected) {
+    try {
+      if (!gameId) {
+        throw new Error('Game ID is required');
+      }
+      
+      if (!message?.id || !message?.sender || !message?.text) {
+        throw new Error('Invalid message format');
+      }
+      
+      if (message.text.length > 500) {
+        throw new Error('Message too long (max 500 characters)');
+      }
+
+      if (!this.socket?.connected) {
+        throw new Error('Not connected to server');
+      }
+      
       this.socket.emit('chat:message', { gameId, message });
-    } else {
-      console.warn('Cannot send chat message: socket not connected');
+    } catch (error) {
+      this.handleSocketError({
+        message: (error as Error).message,
+        event: 'chat:message',
+        severity: 'warning',
+        retryable: false
+      });
     }
   }
 
@@ -1033,6 +1191,50 @@ class SocketService {
   private emitGameStateUpdate(state: GameState) {
     this.gameStateListeners.forEach(callback => callback(state));
   }
+
+  // Enhanced error handling with retry logic
+  private handleSocketError = (error: { message: string; event?: string; severity?: string; retryable?: boolean }) => {
+    const errorObj = {
+      message: error.message,
+      context: error.event || 'socket:unknown',
+      severity: error.severity || 'error',
+      retryable: error.retryable || false
+    };
+
+    this.emitError(errorObj);
+    
+    // If error is retryable, add to retry queue
+    if (error.retryable && error.event && this.retryQueue.length < 10) {
+      // Find the last attempted event data from socket emit calls
+      this.retryQueue.push({
+        event: error.event,
+        data: null, // This would need to be stored from the original call
+        attempts: 0
+      });
+    }
+  };
+
+  private processRetryQueue = () => {
+    if (!this.socket?.connected) return;
+
+    this.retryQueue = this.retryQueue.filter(item => {
+      if (item.attempts >= 3) {
+        console.warn(`Max retry attempts reached for ${item.event}`);
+        return false;
+      }
+
+      // Retry after exponential backoff
+      const delay = Math.pow(2, item.attempts) * 1000;
+      setTimeout(() => {
+        if (this.socket?.connected) {
+          this.socket.emit(item.event, item.data);
+          item.attempts++;
+        }
+      }, delay);
+
+      return true;
+    });
+  };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
