@@ -1,7 +1,7 @@
 import { Card, Hand, Value } from '../types/card';
 
 export class HandEvaluatorService {
-  private readonly valueOrder: { [key in Value]: number } = {
+  private readonly valueOrder: { [key: string]: number } = {
     '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10,
     'J': 11, 'Q': 12, 'K': 13, 'A': 14
   };
@@ -66,15 +66,13 @@ export class HandEvaluatorService {
     // Check for two pair
     const twoPair = this.findTwoPair(byValue);
     if (twoPair) {
-      const [pair1, pair2, kicker] = twoPair;
-      return { cards: [...pair1, ...pair2, kicker], rank: 3, name: 'Two Pair' };
+      return { cards: twoPair, rank: 3, name: 'Two Pair' };
     }
 
     // Check for one pair
     const onePair = this.findOnePair(byValue);
     if (onePair) {
-      const [pair, kickers] = onePair;
-      return { cards: [...pair, ...kickers], rank: 2, name: 'One Pair' };
+      return { cards: onePair, rank: 2, name: 'One Pair' };
     }
 
     // High card
@@ -82,15 +80,15 @@ export class HandEvaluatorService {
   }
 
   private sortCards(cards: Card[]): Card[] {
-    return [...cards].sort((a, b) => this.valueOrder[b.value] - this.valueOrder[a.value]);
+    return [...cards].sort((a, b) => this.valueOrder[b.rank] - this.valueOrder[a.rank]);
   }
 
-  private groupByValue(cards: Card[]): { [key in Value]?: Card[] } {
+  private groupByValue(cards: Card[]): { [key: string]: Card[] } {
     return cards.reduce((acc, card) => {
-      acc[card.value] = acc[card.value] || [];
-      acc[card.value]!.push(card);
+      acc[card.rank] = acc[card.rank] || [];
+      acc[card.rank]!.push(card);
       return acc;
-    }, {} as { [key in Value]?: Card[] });
+    }, {} as { [key: string]: Card[] });
   }
 
   private groupBySuit(cards: Card[]): { [key: string]: Card[] } {
@@ -102,18 +100,15 @@ export class HandEvaluatorService {
   }
 
   private findRoyalFlush(bySuit: { [key: string]: Card[] }): Card[] | null {
-    for (const suit in bySuit) {
-      const cards = bySuit[suit];
-      if (cards.length >= 5) {
-        const royalFlush = cards.filter(card => 
-          ['A', 'K', 'Q', 'J', '10'].includes(card.value)
-        );
-        if (royalFlush.length === 5) {
-          return royalFlush;
-        }
-      }
-    }
-    return null;
+    const flushCards = this.findFlush(bySuit);
+    if (!flushCards) return null;
+    
+    // Check if it contains A, K, Q, J, 10
+    const isRoyal = flushCards.every(card => 
+      ['A', 'K', 'Q', 'J', '10'].includes(card.rank)
+    );
+    
+    return isRoyal ? flushCards : null;
   }
 
   private findStraightFlush(bySuit: { [key: string]: Card[] }): Card[] | null {
@@ -129,39 +124,38 @@ export class HandEvaluatorService {
     return null;
   }
 
-  private findFourOfAKind(byValue: { [key in Value]?: Card[] }): [Value, Card] | null {
+  private findFourOfAKind(byValue: { [key: string]: Card[] }): [string, Card] | null {
     for (const value in byValue) {
-      const cards = byValue[value as Value];
-      if (cards && cards.length === 4) {
+      const cards = byValue[value];
+      if (cards.length === 4) {
+        // Find the kicker (remaining card)
         const kicker = Object.values(byValue)
           .flat()
-          .find(card => card.value !== value);
-        if (kicker) {
-          return [value as Value, kicker];
-        }
+          .find(card => card.rank !== value);
+        
+        return [value, kicker as Card];
       }
     }
+    
     return null;
   }
 
-  private findFullHouse(byValue: { [key in Value]?: Card[] }): [Card[], Card[]] | null {
-    let three: Card[] | null = null;
-    let two: Card[] | null = null;
-
+  private findFullHouse(byValue: { [key: string]: Card[] }): [Card[], Card[]] | null {
     for (const value in byValue) {
-      const cards = byValue[value as Value];
-      if (cards) {
-        if (cards.length === 3) {
-          three = cards;
-        } else if (cards.length === 2) {
-          two = cards;
+      const groupCards = byValue[value];
+      if (groupCards.length === 3) {
+        // Find a pair from remaining cards
+        const kickers = Object.values(byValue)
+          .flat()
+          .filter(card => card.rank !== value)
+          .slice(0, 2);
+        
+        if (kickers.length >= 2) {
+          return [groupCards, kickers as Card[]];
         }
       }
     }
-
-    if (three && two) {
-      return [three, two];
-    }
+    
     return null;
   }
 
@@ -176,81 +170,71 @@ export class HandEvaluatorService {
   }
 
   private findStraight(cards: Card[]): Card[] | null {
-    const values = [...new Set(cards.map(card => card.value))];
+    const values = [...new Set(cards.map(card => card.rank))];
     const sortedValues = values.sort((a, b) => this.valueOrder[b] - this.valueOrder[a]);
 
     // Check for regular straight
     for (let i = 0; i <= sortedValues.length - 5; i++) {
       const straight = sortedValues.slice(i, i + 5);
-      if (this.isConsecutive(straight)) {
-        return cards.filter(card => straight.includes(card.value)).slice(0, 5);
-      }
+      return cards.filter(card => straight.includes(card.rank)).slice(0, 5);
     }
 
-    // Check for wheel (A-5)
-    if (this.isWheel(sortedValues)) {
-      const wheel = ['A', '5', '4', '3', '2'] as Value[];
-      return cards.filter(card => wheel.includes(card.value)).slice(0, 5);
+    // Check for wheel (A-2-3-4-5)
+    const wheel = ['A', '5', '4', '3', '2'];
+    if (wheel.every(value => values.includes(value))) {
+      return cards.filter(card => wheel.includes(card.rank)).slice(0, 5);
     }
 
     return null;
   }
 
-  private findThreeOfAKind(byValue: { [key in Value]?: Card[] }): [Value, Card[]] | null {
+  private findThreeOfAKind(byValue: { [key: string]: Card[] }): [string, Card[]] | null {
     for (const value in byValue) {
-      const cards = byValue[value as Value];
-      if (cards && cards.length === 3) {
+      const cards = byValue[value];
+      if (cards.length === 3) {
         const kickers = Object.values(byValue)
           .flat()
-          .filter(card => card.value !== value)
+          .filter(card => card.rank !== value)
           .slice(0, 2);
-        return [value as Value, kickers];
+        return [value, kickers as Card[]];
       }
     }
     return null;
   }
 
-  private findTwoPair(byValue: { [key in Value]?: Card[] }): [Card[], Card[], Card] | null {
+  private findTwoPair(byValue: { [key: string]: Card[] }): Card[] | null {
     const pairs = Object.entries(byValue)
-      .filter(([_, cards]) => cards && cards.length === 2)
-      .sort(([a], [b]) => this.valueOrder[b as Value] - this.valueOrder[a as Value]);
+      .filter(([, groupCards]) => groupCards.length >= 2)
+      .sort(([a], [b]) => this.valueOrder[b] - this.valueOrder[a]);
 
     if (pairs.length >= 2) {
       const kicker = Object.values(byValue)
         .flat()
-        .find(card => card.value !== pairs[0][0] && card.value !== pairs[1][0]);
-      if (kicker) {
-        return [pairs[0][1]!, pairs[1][1]!, kicker];
-      }
+        .find(card => card.rank !== pairs[0][0] && card.rank !== pairs[1][0]);
+      
+      const result = [
+        ...pairs[0][1].slice(0, 2),
+        ...pairs[1][1].slice(0, 2)
+      ];
+      
+      return kicker ? [...result, kicker] : result;
     }
+    
     return null;
   }
 
-  private findOnePair(byValue: { [key in Value]?: Card[] }): [Card[], Card[]] | null {
-    for (const value in byValue) {
-      const cards = byValue[value as Value];
-      if (cards && cards.length === 2) {
+  private findOnePair(byValue: { [key: string]: Card[] }): Card[] | null {
+    for (const [value, groupCards] of Object.entries(byValue)) {
+      if (groupCards.length >= 2) {
         const kickers = Object.values(byValue)
           .flat()
-          .filter(card => card.value !== value)
+          .filter(card => card.rank !== value)
           .slice(0, 3);
-        return [cards, kickers];
+        
+        return [...groupCards.slice(0, 2), ...kickers];
       }
     }
+    
     return null;
-  }
-
-  private isConsecutive(values: Value[]): boolean {
-    for (let i = 1; i < values.length; i++) {
-      if (this.valueOrder[values[i - 1]] - this.valueOrder[values[i]] !== 1) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  private isWheel(values: Value[]): boolean {
-    const wheel = ['A', '5', '4', '3', '2'] as Value[];
-    return wheel.every(value => values.includes(value));
   }
 } 
