@@ -1,5 +1,5 @@
 import { HandEvaluatorService } from '../services/handEvaluatorService';
-import { Card, Suit, Value } from '../types/card';
+import { Card } from '../types/card';
 import { describe, expect, it, beforeEach } from '@jest/globals';
 
 describe('HandEvaluatorService', () => {
@@ -12,13 +12,13 @@ describe('HandEvaluatorService', () => {
   describe('evaluateHand', () => {
     it('should evaluate a royal flush correctly', () => {
       const holeCards: Card[] = [
-        { suit: 'hearts', value: 'A' },
-        { suit: 'hearts', value: 'K' }
+        { suit: 'hearts', rank: 'A' },
+        { suit: 'hearts', rank: 'K' }
       ];
       const communityCards: Card[] = [
-        { suit: 'hearts', value: 'Q' },
-        { suit: 'hearts', value: 'J' },
-        { suit: 'hearts', value: '10' }
+        { suit: 'hearts', rank: 'Q' },
+        { suit: 'hearts', rank: 'J' },
+        { suit: 'hearts', rank: '10' }
       ];
 
       const hand = handEvaluator.evaluateHand(holeCards, communityCards);
@@ -29,13 +29,13 @@ describe('HandEvaluatorService', () => {
 
     it('should evaluate a straight flush correctly', () => {
       const holeCards: Card[] = [
-        { suit: 'hearts', value: '9' },
-        { suit: 'hearts', value: '8' }
+        { suit: 'hearts', rank: '9' },
+        { suit: 'hearts', rank: '8' }
       ];
       const communityCards: Card[] = [
-        { suit: 'hearts', value: '7' },
-        { suit: 'hearts', value: '6' },
-        { suit: 'hearts', value: '5' }
+        { suit: 'hearts', rank: '7' },
+        { suit: 'hearts', rank: '6' },
+        { suit: 'hearts', rank: '5' }
       ];
 
       const hand = handEvaluator.evaluateHand(holeCards, communityCards);
@@ -46,13 +46,13 @@ describe('HandEvaluatorService', () => {
 
     it('should evaluate a four of a kind correctly', () => {
       const holeCards: Card[] = [
-        { suit: 'hearts', value: 'A' },
-        { suit: 'diamonds', value: 'A' }
+        { suit: 'hearts', rank: 'A' },
+        { suit: 'diamonds', rank: 'A' }
       ];
       const communityCards: Card[] = [
-        { suit: 'clubs', value: 'A' },
-        { suit: 'spades', value: 'A' },
-        { suit: 'hearts', value: 'K' }
+        { suit: 'clubs', rank: 'A' },
+        { suit: 'spades', rank: 'A' },
+        { suit: 'hearts', rank: 'K' }
       ];
 
       const hand = handEvaluator.evaluateHand(holeCards, communityCards);
@@ -63,13 +63,13 @@ describe('HandEvaluatorService', () => {
 
     it('should evaluate a full house correctly', () => {
       const holeCards: Card[] = [
-        { suit: 'hearts', value: 'A' },
-        { suit: 'diamonds', value: 'A' }
+        { suit: 'hearts', rank: 'A' },
+        { suit: 'diamonds', rank: 'A' }
       ];
       const communityCards: Card[] = [
-        { suit: 'clubs', value: 'K' },
-        { suit: 'spades', value: 'K' },
-        { suit: 'hearts', value: 'K' }
+        { suit: 'clubs', rank: 'K' },
+        { suit: 'spades', rank: 'K' },
+        { suit: 'hearts', rank: 'K' }
       ];
 
       const hand = handEvaluator.evaluateHand(holeCards, communityCards);
@@ -80,13 +80,13 @@ describe('HandEvaluatorService', () => {
 
     it('should evaluate a flush correctly', () => {
       const holeCards: Card[] = [
-        { suit: 'hearts', value: 'A' },
-        { suit: 'hearts', value: 'K' }
+        { suit: 'hearts', rank: 'A' },
+        { suit: 'hearts', rank: 'K' }
       ];
       const communityCards: Card[] = [
-        { suit: 'hearts', value: 'Q' },
-        { suit: 'hearts', value: 'J' },
-        { suit: 'hearts', value: '9' }
+        { suit: 'hearts', rank: 'Q' },
+        { suit: 'hearts', rank: 'J' },
+        { suit: 'hearts', rank: '9' }
       ];
 
       const hand = handEvaluator.evaluateHand(holeCards, communityCards);
@@ -97,13 +97,13 @@ describe('HandEvaluatorService', () => {
 
     it('should evaluate a straight correctly', () => {
       const holeCards: Card[] = [
-        { suit: 'hearts', value: '9' },
-        { suit: 'diamonds', value: '8' }
+        { suit: 'hearts', rank: '9' },
+        { suit: 'diamonds', rank: '8' }
       ];
       const communityCards: Card[] = [
-        { suit: 'clubs', value: '7' },
-        { suit: 'spades', value: '6' },
-        { suit: 'hearts', value: '5' }
+        { suit: 'clubs', rank: '7' },
+        { suit: 'spades', rank: '6' },
+        { suit: 'hearts', rank: '5' }
       ];
 
       const hand = handEvaluator.evaluateHand(holeCards, communityCards);
@@ -114,13 +114,13 @@ describe('HandEvaluatorService', () => {
 
     it('should evaluate a three of a kind correctly', () => {
       const holeCards: Card[] = [
-        { suit: 'hearts', value: 'A' },
-        { suit: 'diamonds', value: 'A' }
+        { suit: 'hearts', rank: 'A' },
+        { suit: 'diamonds', rank: 'A' }
       ];
       const communityCards: Card[] = [
-        { suit: 'clubs', value: 'A' },
-        { suit: 'spades', value: 'K' },
-        { suit: 'hearts', value: 'Q' }
+        { suit: 'clubs', rank: 'A' },
+        { suit: 'spades', rank: 'K' },
+        { suit: 'hearts', rank: 'Q' }
       ];
 
       const hand = handEvaluator.evaluateHand(holeCards, communityCards);
@@ -131,13 +131,13 @@ describe('HandEvaluatorService', () => {
 
     it('should evaluate a two pair correctly', () => {
       const holeCards: Card[] = [
-        { suit: 'hearts', value: 'A' },
-        { suit: 'diamonds', value: 'A' }
+        { suit: 'hearts', rank: 'A' },
+        { suit: 'diamonds', rank: 'A' }
       ];
       const communityCards: Card[] = [
-        { suit: 'clubs', value: 'K' },
-        { suit: 'spades', value: 'K' },
-        { suit: 'hearts', value: 'Q' }
+        { suit: 'clubs', rank: 'K' },
+        { suit: 'spades', rank: 'K' },
+        { suit: 'hearts', rank: 'Q' }
       ];
 
       const hand = handEvaluator.evaluateHand(holeCards, communityCards);
@@ -148,13 +148,13 @@ describe('HandEvaluatorService', () => {
 
     it('should evaluate a one pair correctly', () => {
       const holeCards: Card[] = [
-        { suit: 'hearts', value: 'A' },
-        { suit: 'diamonds', value: 'A' }
+        { suit: 'hearts', rank: 'A' },
+        { suit: 'diamonds', rank: 'A' }
       ];
       const communityCards: Card[] = [
-        { suit: 'clubs', value: 'K' },
-        { suit: 'spades', value: 'Q' },
-        { suit: 'hearts', value: 'J' }
+        { suit: 'clubs', rank: 'K' },
+        { suit: 'spades', rank: 'Q' },
+        { suit: 'hearts', rank: 'J' }
       ];
 
       const hand = handEvaluator.evaluateHand(holeCards, communityCards);
@@ -165,13 +165,13 @@ describe('HandEvaluatorService', () => {
 
     it('should evaluate a high card correctly', () => {
       const holeCards: Card[] = [
-        { suit: 'hearts', value: 'A' },
-        { suit: 'diamonds', value: 'K' }
+        { suit: 'hearts', rank: 'A' },
+        { suit: 'diamonds', rank: 'K' }
       ];
       const communityCards: Card[] = [
-        { suit: 'clubs', value: 'Q' },
-        { suit: 'spades', value: 'J' },
-        { suit: 'hearts', value: '9' }
+        { suit: 'clubs', rank: 'Q' },
+        { suit: 'spades', rank: 'J' },
+        { suit: 'hearts', rank: '9' }
       ];
 
       const hand = handEvaluator.evaluateHand(holeCards, communityCards);
@@ -184,15 +184,15 @@ describe('HandEvaluatorService', () => {
   describe('edge cases', () => {
     it('should handle wheel straight (A-5)', () => {
       const holeCards: Card[] = [
-        { suit: 'hearts', value: 'A' },
-        { suit: 'diamonds', value: '2' }
+        { suit: 'hearts', rank: 'A' },
+        { suit: 'diamonds', rank: '2' }
       ];
       const communityCards: Card[] = [
-        { suit: 'clubs', value: '3' },
-        { suit: 'spades', value: '4' },
-        { suit: 'hearts', value: '5' },
-        { suit: 'diamonds', value: '7' },
-        { suit: 'clubs', value: '8' }
+        { suit: 'clubs', rank: '3' },
+        { suit: 'spades', rank: '4' },
+        { suit: 'hearts', rank: '5' },
+        { suit: 'diamonds', rank: '7' },
+        { suit: 'clubs', rank: '8' }
       ];
 
       const hand = handEvaluator.evaluateHand(holeCards, communityCards);
@@ -202,21 +202,21 @@ describe('HandEvaluatorService', () => {
 
     it('should handle flush with ace high', () => {
       const holeCards: Card[] = [
-        { suit: 'hearts', value: 'A' },
-        { suit: 'hearts', value: 'J' }
+        { suit: 'hearts', rank: 'A' },
+        { suit: 'hearts', rank: 'J' }
       ];
       const communityCards: Card[] = [
-        { suit: 'hearts', value: '9' },
-        { suit: 'hearts', value: '7' },
-        { suit: 'hearts', value: '5' },
-        { suit: 'diamonds', value: '2' },
-        { suit: 'clubs', value: '3' }
+        { suit: 'hearts', rank: '9' },
+        { suit: 'hearts', rank: '7' },
+        { suit: 'hearts', rank: '5' },
+        { suit: 'diamonds', rank: '2' },
+        { suit: 'clubs', rank: '3' }
       ];
 
       const hand = handEvaluator.evaluateHand(holeCards, communityCards);
       expect(hand.name).toBe('Flush');
       expect(hand.rank).toBe(6);
-      expect(hand.cards[0].value).toBe('A');
+      expect(hand.cards[0].rank).toBe('A');
     });
   });
 
@@ -224,69 +224,69 @@ describe('HandEvaluatorService', () => {
     it('should compare hands with same rank but different kickers', () => {
       const hand1 = handEvaluator.evaluateHand(
         [
-          { suit: 'hearts', value: 'A' },
-          { suit: 'diamonds', value: 'K' }
+          { suit: 'hearts', rank: 'A' },
+          { suit: 'diamonds', rank: 'K' }
         ],
         [
-          { suit: 'clubs', value: 'Q' },
-          { suit: 'spades', value: 'J' },
-          { suit: 'hearts', value: '10' },
-          { suit: 'diamonds', value: '2' },
-          { suit: 'clubs', value: '3' }
+          { suit: 'clubs', rank: 'Q' },
+          { suit: 'spades', rank: 'J' },
+          { suit: 'hearts', rank: '10' },
+          { suit: 'diamonds', rank: '2' },
+          { suit: 'clubs', rank: '3' }
         ]
       );
 
       const hand2 = handEvaluator.evaluateHand(
         [
-          { suit: 'hearts', value: 'A' },
-          { suit: 'diamonds', value: 'Q' }
+          { suit: 'hearts', rank: 'A' },
+          { suit: 'diamonds', rank: 'Q' }
         ],
         [
-          { suit: 'clubs', value: 'K' },
-          { suit: 'spades', value: 'J' },
-          { suit: 'hearts', value: '10' },
-          { suit: 'diamonds', value: '2' },
-          { suit: 'clubs', value: '3' }
+          { suit: 'clubs', rank: 'K' },
+          { suit: 'spades', rank: 'J' },
+          { suit: 'hearts', rank: '10' },
+          { suit: 'diamonds', rank: '2' },
+          { suit: 'clubs', rank: '3' }
         ]
       );
 
       expect(hand1.rank).toBe(hand2.rank);
-      expect(hand1.cards[0].value).toBe(hand2.cards[0].value);
-      expect(handEvaluator['valueOrder'][hand1.cards[1].value]).toBeGreaterThanOrEqual(handEvaluator['valueOrder'][hand2.cards[1].value]);
+      expect(hand1.cards[0].rank).toBe(hand2.cards[0].rank);
+      expect(handEvaluator['valueOrder'][hand1.cards[1].rank]).toBeGreaterThanOrEqual(handEvaluator['valueOrder'][hand2.cards[1].rank]);
     });
 
     it('should compare full houses correctly', () => {
       const hand1 = handEvaluator.evaluateHand(
         [
-          { suit: 'hearts', value: 'A' },
-          { suit: 'diamonds', value: 'A' }
+          { suit: 'hearts', rank: 'A' },
+          { suit: 'diamonds', rank: 'A' }
         ],
         [
-          { suit: 'clubs', value: 'A' },
-          { suit: 'spades', value: 'K' },
-          { suit: 'hearts', value: 'K' },
-          { suit: 'diamonds', value: 'Q' },
-          { suit: 'clubs', value: 'J' }
+          { suit: 'clubs', rank: 'A' },
+          { suit: 'spades', rank: 'K' },
+          { suit: 'hearts', rank: 'K' },
+          { suit: 'diamonds', rank: 'Q' },
+          { suit: 'clubs', rank: 'J' }
         ]
       );
 
       const hand2 = handEvaluator.evaluateHand(
         [
-          { suit: 'hearts', value: 'K' },
-          { suit: 'diamonds', value: 'K' }
+          { suit: 'hearts', rank: 'K' },
+          { suit: 'diamonds', rank: 'K' }
         ],
         [
-          { suit: 'clubs', value: 'K' },
-          { suit: 'spades', value: 'Q' },
-          { suit: 'hearts', value: 'Q' },
-          { suit: 'diamonds', value: 'J' },
-          { suit: 'clubs', value: '10' }
+          { suit: 'clubs', rank: 'K' },
+          { suit: 'spades', rank: 'Q' },
+          { suit: 'hearts', rank: 'Q' },
+          { suit: 'diamonds', rank: 'J' },
+          { suit: 'clubs', rank: '10' }
         ]
       );
 
       expect(hand1.rank).toBe(7); // Full House
       expect(hand2.rank).toBe(7); // Full House
-      expect(handEvaluator['valueOrder'][hand1.cards[0].value]).toBeGreaterThan(handEvaluator['valueOrder'][hand2.cards[0].value]);
+      expect(handEvaluator['valueOrder'][hand1.cards[0].rank]).toBeGreaterThan(handEvaluator['valueOrder'][hand2.cards[0].rank]);
     });
   });
 }); 
