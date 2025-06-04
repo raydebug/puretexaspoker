@@ -63,7 +63,9 @@ const DealerPosition = styled.div`
   z-index: 10;
 `;
 
-const PlayerSeat = styled.div<{ position: number; isEmpty: boolean; isButton: boolean }>`
+const PlayerSeat = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['position', 'isEmpty', 'isButton'].includes(prop),
+})<{ position: number; isEmpty: boolean; isButton: boolean }>`
   position: absolute;
   width: 80px;
   height: 80px;
@@ -115,7 +117,9 @@ const PlayerSeat = styled.div<{ position: number; isEmpty: boolean; isButton: bo
   }
 `;
 
-const PositionLabel = styled.div<{ isButton: boolean }>`
+const PositionLabel = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isButton',
+})<{ isButton: boolean }>`
   position: absolute;
   top: -25px;
   left: 50%;

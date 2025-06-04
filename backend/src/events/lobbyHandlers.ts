@@ -2,8 +2,6 @@ import { Server, Socket } from 'socket.io';
 import { tableManager, TableData } from '../services/TableManager';
 import { gameManager } from '../services/gameManager';
 import { prisma } from '../db';
-import { GameService } from '../services/GameService';
-import { GameManager } from '../services/GameManager';
 
 interface ClientToServerEvents {
   getLobbyTables: () => void;
