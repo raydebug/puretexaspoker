@@ -195,23 +195,35 @@ export const setupLobbyHandlers = (
         // Check if GameService exists in memory for this game
         let gameService = gameManager.getGame(gameId);
         
-        if (!gameService) {
-          console.log(`DEBUG: Backend GameService not in memory, recreating for existing game...`);
-          
-          // First clear any existing player-table relationships for this table
-          await prisma.playerTable.deleteMany({
-            where: { tableId: dbTable.id }
-          });
-          console.log(`DEBUG: Backend cleared existing player-table relationships`);
-          
-          // Delete stale database record and recreate
-          await prisma.game.delete({ where: { id: gameId } });
-          const gameState = await gameManager.createGame(dbTable.id);
-          gameId = gameState.id!;
-          gameService = gameManager.getGame(gameId);
-          console.log(`DEBUG: Backend recreated GameService with new ID: ${gameId}`);
-        } else {
+        if (gameService) {
           console.log(`DEBUG: Backend GameService found in memory for game: ${gameId}`);
+        } else {
+          console.error(`DEBUG: Backend gameService is null for gameId: ${gameId}`);
+          
+          // Check if it's an existing game without GameService (server restart)
+          if (existingGame) {
+            console.log('DEBUG: Backend GameService not in memory, recreating for existing game...');
+            
+            // First clear any existing player-table relationships for this table
+            await prisma.playerTable.deleteMany({
+              where: { tableId: dbTable.id }
+            });
+            console.log('DEBUG: Backend cleared existing player-table relationships');
+            
+            // Delete the stale database record first
+            await prisma.game.delete({
+              where: { id: existingGame.id }
+            });
+            console.log('DEBUG: Backend deleted stale database game record');
+            
+            // Create a fresh game using gameManager
+            const gameState = await gameManager.createGame(dbTable.id);
+            gameId = gameState.id!;
+            console.log(`DEBUG: Backend recreated game with new ID: ${gameId}`);
+          }
+          
+          socket.emit('tableError', 'Failed to create or find game service');
+          return;
         }
       }
 

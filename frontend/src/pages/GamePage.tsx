@@ -153,7 +153,7 @@ const GamePage: React.FC = () => {
         dealerPosition: 0,
         smallBlindPosition: 1,
         bigBlindPosition: 2,
-        status: 'active',
+        status: 'playing',
         phase: 'flop',
         minBet: 10,
         currentBet: 0,
