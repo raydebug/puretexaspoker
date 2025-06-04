@@ -45,6 +45,7 @@ class SocketService {
   private lobbyTables: TableData[] = [];
   private currentGameId: string | null = null;
   private retryQueue: Array<{ event: string; data: any; attempts: number }> = [];
+  private isJoiningTable = false; // Add flag to prevent multiple join attempts
 
   // Event listeners
   private errorListeners: ((error: { message: string; context: string; severity?: string; retryable?: boolean }) => void)[] = [];
@@ -108,6 +109,12 @@ class SocketService {
     try {
       console.log('DEBUG: connect() method called');
       const now = Date.now();
+      
+      // Reset connection attempts if enough time has passed (5 minutes)
+      if (now - this.lastConnectionAttempt > 300000) {
+        console.log('DEBUG: Resetting connection attempts due to time elapsed');
+        this.connectionAttempts = 0;
+      }
       
       // If we've already reached max attempts, don't try to connect
       if (this.connectionAttempts >= this.maxConnectionAttempts) {
@@ -289,11 +296,13 @@ class SocketService {
     });
 
     socket.on('gameState', (gameState: GameState) => {
+      console.log('DEBUG: Frontend received gameState event:', gameState);
       this.gameState = gameState;
       this.emitGameStateUpdate(gameState);
     });
 
     socket.on('playerJoined', (data: { player: Player }) => {
+      console.log('DEBUG: Frontend received playerJoined event:', data);
       if (this.gameState) {
         // Check if player already exists in the game state
         const existingPlayerIndex = this.gameState.players.findIndex(p => p.id === data.player.id);
@@ -305,6 +314,7 @@ class SocketService {
     });
 
     socket.on('playerLeft', (data: { playerId: string }) => {
+      console.log('DEBUG: Frontend received playerLeft event:', data);
       if (this.gameState) {
         this.gameState.players = this.gameState.players.filter(p => p.id !== data.playerId);
         this.emitGameStateUpdate(this.gameState);
@@ -345,21 +355,19 @@ class SocketService {
     // Handle table joining results
     socket.on('tableJoined', (data: { tableId: number; role: 'player' | 'observer'; buyIn: number; gameId?: string }) => {
       console.log('DEBUG: Frontend received tableJoined event:', data);
+      console.log('DEBUG: Frontend socket still connected:', socket.connected);
+      console.log('DEBUG: Frontend socket ID:', socket.id);
       if (data.gameId) {
         // Store the game ID for this session
         this.currentGameId = data.gameId;
-        console.log('DEBUG: Frontend stored gameId:', data.gameId);
+        console.log('DEBUG: Frontend stored gameId:', this.currentGameId);
       }
-    });
-
-    socket.on('tableError', (error: string) => {
-      console.error('DEBUG: Frontend received tableError event:', error);
-      this.emitError({ message: error, context: 'table:join_error' });
     });
 
     // Handle game creation and joining
     socket.on('gameCreated', (data: { gameId: string; tableId: number }) => {
       console.log('DEBUG: Frontend received gameCreated event:', data);
+      console.log('DEBUG: Frontend socket still connected:', socket.connected);
       this.currentGameId = data.gameId;
     });
 
@@ -367,6 +375,8 @@ class SocketService {
       console.log('DEBUG: Frontend received gameJoined event:', data);
       console.log('DEBUG: Frontend gameState received:', data.gameState);
       console.log('DEBUG: Frontend playerId received:', data.playerId);
+      console.log('DEBUG: Frontend socket still connected:', socket.connected);
+      console.log('DEBUG: Frontend socket ID:', socket.id);
       
       this.currentGameId = data.gameId;
       this.gameState = data.gameState;
@@ -378,11 +388,18 @@ class SocketService {
         this.currentPlayer = currentPlayer;
       } else {
         console.error('DEBUG: Frontend could not find player in gameState.players:', data.gameState.players);
+        console.error('DEBUG: Frontend looking for playerId:', data.playerId);
       }
       
       // Emit the updated game state
       this.emitGameStateUpdate(data.gameState);
       console.log('DEBUG: Frontend emitted gameStateUpdate');
+    });
+
+    socket.on('tableError', (error: string) => {
+      console.log('DEBUG: Frontend received tableError event:', error);
+      console.log('DEBUG: Frontend socket still connected:', socket.connected);
+      this.emitError({ message: error, context: 'table:error' });
     });
 
     socket.on('connect_error', (error) => {
@@ -423,6 +440,10 @@ class SocketService {
     });
 
     socket.on('disconnect', (reason) => {
+      console.log('DEBUG: Frontend socket disconnect event:', reason);
+      console.log('DEBUG: Frontend socket ID at disconnect:', socket.id);
+      console.log('DEBUG: Frontend currentPlayer at disconnect:', this.currentPlayer);
+      console.log('DEBUG: Frontend gameState at disconnect:', this.gameState);
       this.handleDisconnect(reason);
     });
   }
@@ -1008,6 +1029,17 @@ class SocketService {
     console.log(`DEBUG: joinTable called with tableId=${tableId}, buyIn=${buyIn}`);
     console.log(`DEBUG: Socket connected: ${this.socket?.connected}`);
     console.log(`DEBUG: Connection attempts: ${this.connectionAttempts}/${this.maxConnectionAttempts}`);
+    console.log(`DEBUG: Socket ID: ${this.socket?.id}`);
+    console.log(`DEBUG: isJoiningTable flag: ${this.isJoiningTable}`);
+    
+    // Prevent multiple simultaneous join attempts
+    if (this.isJoiningTable) {
+      console.log('DEBUG: Already joining table, ignoring duplicate request');
+      return;
+    }
+    
+    this.isJoiningTable = true;
+    console.log('DEBUG: Set isJoiningTable = true');
     
     // First, try to leave any existing table
     this.leaveCurrentTable();
@@ -1019,24 +1051,59 @@ class SocketService {
       const nickname = localStorage.getItem('nickname') || `Player${Math.floor(Math.random() * 1000)}`;
       console.log(`DEBUG: Using nickname: ${nickname}`);
       
+      // Add disconnect listener to track if socket disconnects during this process
+      const disconnectHandler = (reason: string) => {
+        console.error(`DEBUG: Socket disconnected during joinTable process! Reason: ${reason}`);
+        console.error(`DEBUG: Socket ID at disconnect: ${this.socket?.id}`);
+        console.error(`DEBUG: currentPlayer at disconnect: ${this.currentPlayer}`);
+        console.error(`DEBUG: gameState at disconnect: ${this.gameState}`);
+        this.isJoiningTable = false; // Reset flag on disconnect
+      };
+      this.socket.once('disconnect', disconnectHandler);
+      
+      // Emit join table event
+      console.log(`DEBUG: About to emit joinTable event for table ${tableId}`);
       this.socket.emit('joinTable', { tableId, buyIn, nickname });
+      console.log(`DEBUG: joinTable event emitted successfully`);
       
       // Set up listeners for table join responses
       this.socket.once('tableJoined', (data) => {
         console.log('DEBUG: tableJoined event received:', data);
+        // Don't reset flag yet, wait for gameJoined
+        this.socket?.off('disconnect', disconnectHandler);
       });
       
       this.socket.once('gameJoined', (data) => {
-        console.log('DEBUG: gameJoined event received:', data);
+        console.log('DEBUG: gameJoined event received in joinTable listener:', data);
+        // Reset flag since we successfully joined
+        this.isJoiningTable = false;
+        console.log('DEBUG: Set isJoiningTable = false after successful gameJoined');
+        this.socket?.off('disconnect', disconnectHandler);
       });
       
       this.socket.once('tableError', (error) => {
         console.error('DEBUG: tableError event received:', error);
         this.emitError({ message: error, context: 'table:join_error' });
+        // Reset flag on error
+        this.isJoiningTable = false;
+        console.log('DEBUG: Set isJoiningTable = false after tableError');
+        this.socket?.off('disconnect', disconnectHandler);
       });
+      
+      // Add timeout to reset flag if no response
+      setTimeout(() => {
+        if (this.isJoiningTable) {
+          console.log('DEBUG: joinTable timeout - resetting isJoiningTable flag');
+          this.isJoiningTable = false;
+          this.socket?.off('disconnect', disconnectHandler);
+        }
+      }, 30000); // 30 second timeout
       
     } else {
       console.warn('Socket not connected when trying to join table, connecting first');
+      
+      // Reset flag if connection fails
+      this.isJoiningTable = false;
       
       // If we've reached max connection attempts, don't try to connect again
       if (this.connectionAttempts >= this.maxConnectionAttempts) {
@@ -1077,24 +1144,37 @@ class SocketService {
               const nickname = localStorage.getItem('nickname') || `Player${Math.floor(Math.random() * 1000)}`;
               console.log(`DEBUG: Using nickname: ${nickname}`);
               
+              // Add disconnect listener
+              const disconnectHandler = (reason: string) => {
+                console.error(`DEBUG: Socket disconnected during delayed joinTable! Reason: ${reason}`);
+                this.isJoiningTable = false;
+              };
+              socket.once('disconnect', disconnectHandler);
+              
               socket.emit('joinTable', { tableId, buyIn, nickname });
               
               // Set up listeners for table join responses
               socket.once('tableJoined', (data) => {
                 console.log('DEBUG: tableJoined event received:', data);
+                socket.off('disconnect', disconnectHandler);
               });
               
               socket.once('gameJoined', (data) => {
                 console.log('DEBUG: gameJoined event received:', data);
+                this.isJoiningTable = false;
+                socket.off('disconnect', disconnectHandler);
               });
               
               socket.once('tableError', (error) => {
                 console.error('DEBUG: tableError event received:', error);
                 this.emitError({ message: error, context: 'table:join_error' });
+                this.isJoiningTable = false;
+                socket.off('disconnect', disconnectHandler);
               });
               
             } else {
               console.error('Connection was lost after initial connect');
+              this.isJoiningTable = false;
               this.emitError({ 
                 message: 'Failed to join table: connection was lost', 
                 context: 'table:join_failed' 
@@ -1106,6 +1186,7 @@ class SocketService {
         // Add error handler for connection failures
         socket.once('connect_error', (error) => {
           console.error('Connection failed during table join:', error);
+          this.isJoiningTable = false;
           this.emitError({ 
             message: 'Failed to connect to server for table join', 
             context: 'table:connection_error' 
@@ -1113,6 +1194,7 @@ class SocketService {
         });
         
       } else {
+        this.isJoiningTable = false;
         this.emitError({ 
           message: 'Failed to create socket connection for joining table', 
           context: 'table:connection_failed' 
@@ -1183,7 +1265,10 @@ class SocketService {
 
   // Create a function to get initial game state
   private getInitialGameState(id: string = '1', players: Player[] = []): GameState {
-    return {
+    console.log(`DEBUG: getInitialGameState called with id=${id}, players=${players.length}`);
+    console.log(`DEBUG: getInitialGameState call stack:`, new Error().stack);
+    
+    const initialState: GameState = {
       id,
       players,
       communityCards: [],
@@ -1203,6 +1288,9 @@ class SocketService {
       winner: undefined,
       isHandComplete: false
     };
+    
+    console.log(`DEBUG: getInitialGameState returning:`, initialState);
+    return initialState;
   }
 
   // For testing purposes only
@@ -1213,6 +1301,15 @@ class SocketService {
   // For testing purposes only
   isLocked(): boolean {
     return this.connectionLock;
+  }
+
+  // Add method to reset connection state
+  resetConnectionState() {
+    console.log('DEBUG: Manually resetting connection state');
+    this.connectionAttempts = 0;
+    this.connectionLock = false;
+    this.isConnecting = false;
+    this.lastConnectionAttempt = 0;
   }
 
   private handleDisconnect(reason: string) {

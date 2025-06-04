@@ -372,7 +372,12 @@ export class GameManager {
   }
 
   public getGame(gameId: string): GameService | null {
-    return this.games.get(gameId) || null;
+    console.log(`DEBUG: GameManager.getGame called with gameId: ${gameId}`);
+    console.log(`DEBUG: GameManager games map size: ${this.games.size}`);
+    console.log(`DEBUG: GameManager games map keys: [${Array.from(this.games.keys()).join(', ')}]`);
+    const game = this.games.get(gameId) || null;
+    console.log(`DEBUG: GameManager.getGame returning: ${game ? 'GAME_SERVICE' : 'NULL'}`);
+    return game;
   }
 
   public getGameState(gameId: string): GameState | null {

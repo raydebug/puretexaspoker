@@ -96,28 +96,34 @@ export const setupLobbyHandlers = (
 
       // Join the table in the table manager
       console.log(`DEBUG: Backend joining table in TableManager...`);
-      let tableResult = tableManager.joinTable(tableId, socket.id, nicknameToUse);
+      const tableResult = tableManager.joinTable(tableId, socket.id, nicknameToUse);
       console.log(`DEBUG: Backend TableManager join result:`, tableResult);
 
-      // If already joined another table, leave it first and retry
-      if (!tableResult.success && tableResult.error?.includes('Already joined another table')) {
-        console.log(`DEBUG: Backend leaving current tables and retrying...`);
-        
-        // Leave all tables first
-        const allTables = tableManager.getAllTables();
-        for (const table of allTables) {
-          tableManager.leaveTable(table.id, socket.id);
-        }
-        
-        // Retry the join
-        tableResult = tableManager.joinTable(tableId, socket.id, nicknameToUse);
-        console.log(`DEBUG: Backend retry join result:`, tableResult);
-      }
-
       if (!tableResult.success) {
-        console.error(`DEBUG: Backend table join failed: ${tableResult.error}`);
-        socket.emit('tableError', tableResult.error || 'Failed to join table');
-        return;
+        // If already joined another table, try to leave first and retry
+        if (tableResult.error?.includes('Already joined another table')) {
+          console.log(`DEBUG: Backend leaving current tables and retrying join...`);
+          
+          // Leave all tables first
+          const allTables = tableManager.getAllTables();
+          for (const table of allTables) {
+            tableManager.leaveTable(table.id, socket.id);
+          }
+          
+          // Retry the join
+          const retryResult = tableManager.joinTable(tableId, socket.id, nicknameToUse);
+          console.log(`DEBUG: Backend retry join result:`, retryResult);
+          
+          if (!retryResult.success) {
+            console.error(`DEBUG: Backend table join failed on retry: ${retryResult.error}`);
+            socket.emit('tableError', retryResult.error || 'Failed to join table after leaving previous table');
+            return;
+          }
+        } else {
+          console.error(`DEBUG: Backend table join failed: ${tableResult.error}`);
+          socket.emit('tableError', tableResult.error || 'Failed to join table');
+          return;
+        }
       }
 
       // Get the table info from TableManager to create a corresponding database table
@@ -284,18 +290,12 @@ export const setupLobbyHandlers = (
     }
   });
 
-  // Clean up when socket disconnects
+  // Handle client disconnect
   socket.on('disconnect', () => {
-    // Find and leave all tables
-    for (const table of tableManager.getAllTables()) {
-      if (tableManager.leaveTable(table.id, socket.id)) {
-        broadcastTables();
-      }
+    const allTables = tableManager.getAllTables();
+    for (const table of allTables) {
+      tableManager.leaveTable(table.id, socket.id);
     }
-    
-    // Leave any game rooms
-    if (socket.data.gameId) {
-      gameManager.leaveGameRoom(socket.data.gameId, socket.id);
-    }
+    broadcastTables();
   });
 }; 

@@ -132,6 +132,10 @@ const GamePage: React.FC = () => {
       return;
     }
     
+    // Reset connection state to ensure we can connect
+    console.log('DEBUG: GamePage resetting socket connection state');
+    socketService.resetConnectionState();
+    
     // Connect to socket
     socketService.connect();
     
@@ -296,7 +300,8 @@ const GamePage: React.FC = () => {
       clearInterval(intervalId);
       clearInterval(gameStateIntervalId);
       clearTimeout(joinTimeoutId);
-      socketService.disconnect();
+      // DO NOT disconnect socket here - it prevents receiving gameJoined events
+      // socketService.disconnect();
     };
   }, [navigate, table, buyIn, gameId, gameState, joinAttempted]);
 
