@@ -62,8 +62,23 @@ export const setupLobbyHandlers = (
 
       // Join the table in the table manager
       console.log(`DEBUG: Backend joining table in TableManager...`);
-      const tableResult = tableManager.joinTable(tableId, socket.id, nicknameToUse);
+      let tableResult = tableManager.joinTable(tableId, socket.id, nicknameToUse);
       console.log(`DEBUG: Backend TableManager join result:`, tableResult);
+
+      // If already joined another table, leave it first and retry
+      if (!tableResult.success && tableResult.error?.includes('Already joined another table')) {
+        console.log(`DEBUG: Backend leaving current tables and retrying...`);
+        
+        // Leave all tables first
+        const allTables = tableManager.getAllTables();
+        for (const table of allTables) {
+          tableManager.leaveTable(table.id, socket.id);
+        }
+        
+        // Retry the join
+        tableResult = tableManager.joinTable(tableId, socket.id, nicknameToUse);
+        console.log(`DEBUG: Backend retry join result:`, tableResult);
+      }
 
       if (!tableResult.success) {
         console.error(`DEBUG: Backend table join failed: ${tableResult.error}`);

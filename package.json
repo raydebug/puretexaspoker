@@ -41,5 +41,8 @@
     "jquery": "^3.7.1",
     "rimraf": "^5.0.5",
     "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.8.1"
   }
 }
