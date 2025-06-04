@@ -2,6 +2,8 @@ import { Server, Socket } from 'socket.io';
 import { tableManager, TableData } from '../services/TableManager';
 import { gameManager } from '../services/gameManager';
 import { prisma } from '../db';
+import { GameService } from '../services/GameService';
+import { GameManager } from '../services/GameManager';
 
 interface ClientToServerEvents {
   getLobbyTables: () => void;
@@ -188,26 +190,33 @@ export const setupLobbyHandlers = (
         socket.emit('gameCreated', { gameId, tableId });
       } else {
         gameId = existingGame.id;
-        console.log(`DEBUG: Backend found existing game with ID: ${gameId}`);
+        console.log(`DEBUG: Backend found existing database game with ID: ${gameId}`);
         
         // Check if GameService exists in memory for this game
         let gameService = gameManager.getGame(gameId);
         
         if (!gameService) {
           console.log(`DEBUG: Backend GameService not in memory, recreating for existing game...`);
-          // GameService doesn't exist in memory (server restart), recreate it
-          // First delete the stale database record to avoid conflicts
-          await prisma.game.delete({ where: { id: gameId } });
           
-          // Create a fresh game
+          // First clear any existing player-table relationships for this table
+          await prisma.playerTable.deleteMany({
+            where: { tableId: dbTable.id }
+          });
+          console.log(`DEBUG: Backend cleared existing player-table relationships`);
+          
+          // Delete stale database record and recreate
+          await prisma.game.delete({ where: { id: gameId } });
           const gameState = await gameManager.createGame(dbTable.id);
           gameId = gameState.id!;
-          console.log(`DEBUG: Backend recreated game with new ID: ${gameId}`);
+          gameService = gameManager.getGame(gameId);
+          console.log(`DEBUG: Backend recreated GameService with new ID: ${gameId}`);
+        } else {
+          console.log(`DEBUG: Backend GameService found in memory for game: ${gameId}`);
         }
       }
 
       // Add the player to the game
-      const gameService = gameManager.getGame(gameId);
+      let gameService = gameManager.getGame(gameId);
       console.log(`DEBUG: Backend gameService found:`, !!gameService);
       
       if (gameService) {

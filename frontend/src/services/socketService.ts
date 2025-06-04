@@ -1312,6 +1312,36 @@ class SocketService {
     this.lastConnectionAttempt = 0;
   }
 
+  // Add method to emit game actions
+  emitGameAction(action: string, amount?: number) {
+    if (!this.socket?.connected) {
+      console.error('Cannot emit game action: socket not connected');
+      return;
+    }
+
+    console.log(`DEBUG: Emitting game action: ${action}`, amount ? `with amount: ${amount}` : '');
+    
+    switch (action) {
+      case 'fold':
+        this.socket.emit('gameAction', { action: 'fold' });
+        break;
+      case 'call':
+        this.socket.emit('gameAction', { action: 'call' });
+        break;
+      case 'raise':
+        this.socket.emit('gameAction', { action: 'raise', amount });
+        break;
+      case 'check':
+        this.socket.emit('gameAction', { action: 'check' });
+        break;
+      case 'bet':
+        this.socket.emit('gameAction', { action: 'bet', amount });
+        break;
+      default:
+        console.error('Unknown game action:', action);
+    }
+  }
+
   private handleDisconnect(reason: string) {
     this.isConnecting = false;
     this.connectionLock = false;

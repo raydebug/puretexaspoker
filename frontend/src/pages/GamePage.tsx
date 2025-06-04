@@ -12,54 +12,87 @@ import { SeatAction } from '../components/SeatMenu';
 import { TableData } from '../types/table';
 import SoundControls from '../components/SoundControls';
 import { soundService } from '../services/soundService';
+import { PokerTable } from '../components/Game/PokerTable';
 
 const GameContainer = styled.div`
-  min-height: 100vh;
-  background-color: #1b4d3e;
-  padding: 2rem;
-  color: white;
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  background: linear-gradient(135deg, #0f4c36 0%, #1a5d42 50%, #0f4c36 100%);
+  overflow: hidden;
 `;
 
 const LoadingContainer = styled.div`
-  min-height: 100vh;
-  background-color: #1b4d3e;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  color: white;
-  padding: 2rem;
-`;
-
-const LoadingMessage = styled.div`
-  font-size: 1.5rem;
-  margin-bottom: 2rem;
-`;
-
-const ErrorMessage = styled.div`
-  color: #ff4444;
-  background-color: rgba(0, 0, 0, 0.7);
-  padding: 1rem;
-  border-radius: 8px;
-  margin-top: 1rem;
-  max-width: 80%;
+  justify-content: center;
+  height: 100vh;
+  color: #ffd700;
   text-align: center;
 `;
 
-const BackButton = styled.button`
-  background-color: #8b0000;
+const LoadingSpinner = styled.div`
+  width: 60px;
+  height: 60px;
+  border: 6px solid rgba(255, 215, 0, 0.2);
+  border-top: 6px solid #ffd700;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+
+const LoadingText = styled.h2`
+  margin: 0;
+  font-size: 24px;
+  margin-bottom: 10px;
+`;
+
+const LoadingSubtext = styled.p`
+  margin: 0;
+  opacity: 0.8;
+  font-size: 16px;
+`;
+
+const ErrorContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  color: #ff6b6b;
+  text-align: center;
+  padding: 20px;
+`;
+
+const ErrorMessage = styled.h2`
+  margin-bottom: 20px;
+  font-size: 24px;
+`;
+
+const ReturnButton = styled.button`
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
   color: white;
-  border: 1px solid #ffd700;
-  padding: 0.75rem 1.5rem;
-  border-radius: 4px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
   cursor: pointer;
-  font-size: 1rem;
-  margin-top: 1.5rem;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
   
   &:hover {
-    background-color: #a00;
+    background: linear-gradient(135deg, #2980b9 0%, #21618c 100%);
     transform: translateY(-2px);
+  }
+  
+  &:active {
+    transform: translateY(0);
   }
 `;
 
@@ -71,7 +104,7 @@ const GamePage: React.FC = () => {
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [observers, setObservers] = useState<string[]>([]);
-  const [isConnecting, setIsConnecting] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [joinAttempted, setJoinAttempted] = useState(false);
   
   // Get table info from state if coming from JoinGamePage
@@ -79,6 +112,11 @@ const GamePage: React.FC = () => {
   const buyIn = location.state?.buyIn as number | undefined;
 
   useEffect(() => {
+    console.log('DEBUG: GamePage mounting with gameId:', gameId);
+    
+    // Reset socket connection state
+    socketService.resetConnectionState();
+    
     // In test mode, create mock data and skip socket connection
     if (typeof window !== 'undefined' && (window as any).Cypress) {
       console.log('GamePage: Test mode detected - creating mock game state');
@@ -105,225 +143,109 @@ const GamePage: React.FC = () => {
       const mockGameState: GameState = {
         id: gameId || '1',
         players: [mockPlayer],
-        communityCards: [],
-        pot: 0,
-        sidePots: undefined,
+        communityCards: [
+          { rank: 'A', suit: '♠' },
+          { rank: 'A', suit: '♥' }
+        ],
+        pot: 150,
         currentPlayerId: mockPlayer.id,
         currentPlayerPosition: 1,
         dealerPosition: 0,
-        smallBlindPosition: 0,
-        bigBlindPosition: 1,
-        phase: 'waiting',
-        status: 'waiting',
-        currentBet: 0,
+        smallBlindPosition: 1,
+        bigBlindPosition: 2,
+        status: 'active',
+        phase: 'flop',
         minBet: 10,
+        currentBet: 0,
         smallBlind: 5,
         bigBlind: 10,
         handEvaluation: undefined,
         winner: undefined,
-        winners: undefined,
-        showdownResults: undefined,
         isHandComplete: false
       };
       
-      setCurrentPlayer(mockPlayer);
       setGameState(mockGameState);
-      setIsConnecting(false);
+      setCurrentPlayer(mockPlayer);
+      setIsLoading(false);
       return;
     }
     
-    // Reset connection state to ensure we can connect
-    console.log('DEBUG: GamePage resetting socket connection state');
-    socketService.resetConnectionState();
-    
-    // Connect to socket
-    socketService.connect();
-    
-    let joinTimeoutId: NodeJS.Timeout;
-    
-    // If we came from JoinGamePage with table data, join the table
-    if (table && buyIn && gameId && !joinAttempted) {
-      setJoinAttempted(true);
-      // Join the table if we haven't already
-      const tableId = Number(gameId);
-      const nickname = localStorage.getItem('nickname') || `Player${Math.floor(Math.random() * 1000)}`;
-      
-      // Store nickname
-      if (nickname) {
-        localStorage.setItem('nickname', nickname);
-      }
-      
-      // Listen for errors
-      const errorHandler = (err: { message: string }) => {
-        console.error('DEBUG: GamePage errorHandler called with:', err);
-        
-        // Check if it's the "already joined" error and provide helpful message
-        if (err.message.includes('Already joined another table')) {
-          setError('You are already connected to another table. Please refresh the page and try again, or leave your current table first.');
-        } else {
-          setError(err.message);
-        }
-        setIsConnecting(false);
-        clearTimeout(joinTimeoutId); // Clear the timeout since we have an error
-      };
-      socketService.onError(errorHandler);
-      
-      console.log(`DEBUG: GamePage about to join table ${tableId} with buy-in ${buyIn}, nickname: ${nickname}`);
-      
-      // Try to join the table with socket first
+    const connectAndJoin = async () => {
       try {
-        console.log(`DEBUG: GamePage calling socketService.joinTable(${tableId}, ${buyIn})`);
-        socketService.joinTable(tableId, buyIn);
-        console.log(`DEBUG: GamePage socketService.joinTable call completed`);
-      } catch (error) {
-        console.error('DEBUG: GamePage failed to join table via socket:', error);
-        setError('Failed to connect to game. Please try again.');
-        setIsConnecting(false);
-        return;
-      }
-      
-      // Set a timeout to check if we've connected, with fallback to mock data
-      joinTimeoutId = setTimeout(() => {
-        console.log('DEBUG: GamePage timeout reached, checking connection status...');
-        const currentPlayer = socketService.getCurrentPlayer();
-        const currentGameState = socketService.getGameState();
+        console.log('DEBUG: GamePage attempting to connect to socket...');
+        await socketService.connect();
         
-        console.log('DEBUG: GamePage timeout - currentPlayer:', currentPlayer);
-        console.log('DEBUG: GamePage timeout - currentGameState:', currentGameState);
-        console.log('DEBUG: GamePage timeout - socket connected:', socketService.getSocket()?.connected);
-        console.log('DEBUG: GamePage timeout - connection attempts:', socketService.getConnectionAttempts());
+        // Set up error handler
+        const errorHandler = (error: { message: string; context?: string }) => {
+          console.log('DEBUG: GamePage errorHandler called with:', error);
+          setError(error.message);
+          setIsLoading(false);
+        };
         
-        if (!currentPlayer || !currentGameState) {
-          console.log('DEBUG: GamePage creating fallback game state for testing');
+        socketService.onError(errorHandler);
+        
+        // Check for existing player and game state periodically
+        const checkGameState = () => {
+          const player = socketService.getCurrentPlayer();
+          const state = socketService.getGameState();
           
-          // Create a mock player based on the table and buy-in data
-          const mockPlayer: Player = {
-            id: `player-${nickname}`,
-            name: nickname,
-            chips: buyIn,
-            currentBet: 0,
-            cards: [],
-            position: 0,
-            seatNumber: 1,
-            isActive: true,
-            isDealer: false,
-            isAway: false,
-            avatar: {
-              type: 'initials',
-              initials: nickname.substring(0, 2).toUpperCase(),
-              color: '#007bff'
-            }
-          };
+          console.log('DEBUG: GamePage checkPlayer - player:', !!player);
+          if (player) {
+            console.log('DEBUG: GamePage checkPlayer found player:', player);
+            setCurrentPlayer(player);
+          }
           
-          // Create a mock game state
-          const mockGameState: GameState = {
-            id: gameId,
-            players: [mockPlayer],
-            communityCards: [],
-            pot: 0,
-            currentPlayerId: mockPlayer.id,
-            currentPlayerPosition: 0,
-            dealerPosition: 0,
-            smallBlindPosition: 1,
-            bigBlindPosition: 2,
-            status: 'waiting',
-            phase: 'preflop',
-            minBet: table.bigBlind || 10,
-            currentBet: 0,
-            smallBlind: table.smallBlind || 5,
-            bigBlind: table.bigBlind || 10,
-            handEvaluation: undefined,
-            winner: undefined,
-            isHandComplete: false
-          };
-          
-          console.log('DEBUG: GamePage setting mock data - player:', mockPlayer);
-          console.log('DEBUG: GamePage setting mock data - gameState:', mockGameState);
-          
-          // Set the mock data
-          socketService.setCurrentPlayer(mockPlayer);
-          setCurrentPlayer(mockPlayer);
-          setGameState(mockGameState);
-          setIsConnecting(false);
-          
-          console.log('DEBUG: GamePage created fallback game state successfully');
-        } else {
-          console.log('DEBUG: GamePage timeout but we have valid player and game state, staying connected');
-        }
-      }, 15000); // Increased timeout to 15 seconds
-    }
-    
-    // Check if we have a current player
-    const checkPlayer = () => {
-      const player = socketService.getCurrentPlayer();
-      if (player) {
-        console.log('DEBUG: GamePage checkPlayer found player:', player);
-        setCurrentPlayer(player);
-        setIsConnecting(false);
-        clearTimeout(joinTimeoutId);
-      } else {
-        console.log('DEBUG: GamePage checkPlayer - no player found yet');
+          console.log('DEBUG: GamePage checkGameState - state:', !!state);
+          if (state) {
+            console.log('DEBUG: GamePage checkGameState found state:', state);
+            setGameState(state);
+            setIsLoading(false);
+          }
+        };
+        
+        // Check immediately and then periodically
+        checkGameState();
+        const gameStateInterval = setInterval(checkGameState, 500);
+        
+        // Set a timeout to show error if no game state is received
+        const timeoutId = setTimeout(() => {
+          if (!socketService.getCurrentPlayer() || !socketService.getGameState()) {
+            console.log('DEBUG: GamePage timeout - creating fallback game state');
+            setError('Unable to load game. The table may be full or unavailable.');
+            setIsLoading(false);
+          }
+        }, 15000);
+        
+        return () => {
+          clearInterval(gameStateInterval);
+          clearTimeout(timeoutId);
+        };
+        
+      } catch (err) {
+        console.error('Failed to connect:', err);
+        setError('Failed to connect to game server');
+        setIsLoading(false);
       }
     };
     
-    // Check player initially and then every second
-    console.log('DEBUG: GamePage setting up player checking interval');
-    checkPlayer();
-    const intervalId = setInterval(checkPlayer, 1000);
-
-    // Set up socket listeners
-    const checkGameState = () => {
-      const state = socketService.getGameState();
-      if (state) {
-        console.log('DEBUG: GamePage checkGameState found state:', state);
-        setGameState(state);
-      } else {
-        console.log('DEBUG: GamePage checkGameState - no game state found yet');
-      }
-    };
-
-    // Listen for online users updates
-    socketService.onOnlineUsersUpdate((players, observers) => {
-      if (gameState) {
-        setGameState(prev => ({
-          ...prev!,
-          players
-        }));
-      }
-      setObservers(observers);
-    });
-
-    // Check game state every second
-    const gameStateIntervalId = setInterval(checkGameState, 1000);
-
+    connectAndJoin();
+    
     return () => {
-      clearInterval(intervalId);
-      clearInterval(gameStateIntervalId);
-      clearTimeout(joinTimeoutId);
       // DO NOT disconnect socket here - it prevents receiving gameJoined events
       // socketService.disconnect();
     };
-  }, [navigate, table, buyIn, gameId, gameState, joinAttempted]);
+  }, [gameId]);
 
   const handleAction = (action: string, amount?: number) => {
-    if (!currentPlayer || !gameState) return;
-
-    switch (action) {
-      case 'bet':
-        if (amount) {
-          socketService.placeBet(gameState.id, currentPlayer.id, amount);
-          soundService.play('chipBet');
-        }
-        break;
-      case 'check':
-        socketService.check(gameState.id, currentPlayer.id);
-        soundService.play('check');
-        break;
-      case 'fold':
-        socketService.fold(gameState.id, currentPlayer.id);
-        soundService.play('fold');
-        break;
+    console.log('DEBUG: GamePage handleAction called:', { action, amount });
+    
+    if (!gameState || !currentPlayer) {
+      console.error('Cannot perform action: missing game state or player');
+      return;
     }
+    
+    // Emit the action to the backend
+    socketService.emitGameAction(action, amount);
   };
 
   const handleSeatAction = (action: SeatAction, playerId: string) => {
@@ -349,95 +271,42 @@ const GamePage: React.FC = () => {
   };
 
   const handleReturnToLobby = () => {
-    navigate('/lobby');
+    navigate('/');
   };
 
-  if (isConnecting) {
-    return (
-      <LoadingContainer>
-        <LoadingMessage>Connecting to table...</LoadingMessage>
-        <div className="spinner" style={{ 
-          border: '4px solid rgba(0, 0, 0, 0.1)', 
-          borderTop: '4px solid #ffd700',
-          borderRadius: '50%',
-          width: '50px',
-          height: '50px',
-          animation: 'spin 1s linear infinite'
-        }} />
-        <style>
-          {`
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-          `}
-        </style>
-      </LoadingContainer>
-    );
-  }
-  
   if (error) {
     return (
-      <LoadingContainer>
-        <LoadingMessage>Error connecting to table</LoadingMessage>
-        <ErrorMessage>{error}</ErrorMessage>
-        <BackButton onClick={handleReturnToLobby} data-testid="back-button">Return to Lobby</BackButton>
-      </LoadingContainer>
+      <GameContainer>
+        <ErrorContainer>
+          <ErrorMessage>Game Error</ErrorMessage>
+          <p>{error}</p>
+          <ReturnButton onClick={handleReturnToLobby}>
+            Return to Lobby
+          </ReturnButton>
+        </ErrorContainer>
+      </GameContainer>
     );
   }
 
-  if (!gameState || !currentPlayer) {
+  if (isLoading || !gameState) {
     return (
-      <LoadingContainer>
-        <LoadingMessage>Waiting for game data...</LoadingMessage>
-        <div className="spinner" style={{ 
-          border: '4px solid rgba(0, 0, 0, 0.1)', 
-          borderTop: '4px solid #ffd700',
-          borderRadius: '50%',
-          width: '50px',
-          height: '50px',
-          animation: 'spin 1s linear infinite'
-        }} />
-        <ErrorMessage>
-          Game state is not available. This might happen if:
-          <ul style={{ textAlign: 'left', marginTop: '1rem' }}>
-            <li>You're not properly connected to the game</li>
-            <li>The backend server is not responding</li>
-            <li>There was an error joining the table</li>
-          </ul>
-        </ErrorMessage>
-        <BackButton onClick={handleReturnToLobby} data-testid="back-button">Return to Lobby</BackButton>
-      </LoadingContainer>
+      <GameContainer>
+        <LoadingContainer>
+          <LoadingSpinner />
+          <LoadingText>Connecting to table...</LoadingText>
+          <LoadingSubtext>Please wait while we set up your game</LoadingSubtext>
+        </LoadingContainer>
+      </GameContainer>
     );
   }
 
   return (
     <GameContainer>
-      <GameStatus gameState={gameState} currentPlayerId={currentPlayer.id} />
-      <OnlineList
-        players={gameState.players}
-        observers={observers}
-        currentPlayerId={currentPlayer.id}
-      />
-      <ChatBox
-        currentPlayer={{
-          id: currentPlayer.id,
-          name: currentPlayer.name
-        }}
-        gameId={gameState.id}
-      />
-      <GameBoard
-        gameState={gameState}
-        currentPlayer={currentPlayer}
-        onPlayerAction={handleSeatAction}
-      />
-      <PlayerActions
+      <PokerTable
         gameState={gameState}
         currentPlayer={currentPlayer}
         onAction={handleAction}
       />
-      {error && <ErrorMessage>{error}</ErrorMessage>}
-      <SoundControls />
     </GameContainer>
   );
 };
