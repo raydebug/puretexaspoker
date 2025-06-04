@@ -1,267 +1,46 @@
-import { Server, Socket } from 'socket.io';
-import { tableManager, TableData } from '../services/TableManager';
-import { gameManager } from '../services/gameManager';
-import { prisma } from '../db';
-
-interface ClientToServerEvents {
-  getLobbyTables: () => void;
-  joinTable: (data: { tableId: number; buyIn: number; nickname?: string }) => void;
-  leaveTable: (data: { tableId: number }) => void;
-  sitDown: (data: { tableId: number; buyIn: number }) => void;
-  standUp: (data: { tableId: number }) => void;
-}
-
-interface ServerToClientEvents {
-  tablesUpdate: (tables: TableData[]) => void;
-  tableJoined: (data: { tableId: number; role: 'player' | 'observer'; buyIn: number; gameId?: string }) => void;
-  tableError: (error: string) => void;
-  gameCreated: (data: { gameId: string; tableId: number }) => void;
-  gameJoined: (data: { gameId: string; playerId: string; gameState: any }) => void;
-  gameState: (gameState: any) => void;
-}
-
-export const setupLobbyHandlers = (
-  io: Server<ClientToServerEvents, ServerToClientEvents>,
-  socket: Socket<ClientToServerEvents, ServerToClientEvents>
-) => {
-  // Broadcast table updates to all connected clients
-  const broadcastTables = () => {
-    io.emit('tablesUpdate', tableManager.getAllTables());
-  };
-
-  // Handle initial table list request
-  socket.on('getLobbyTables', () => {
-    console.log('Lobby: getLobbyTables request received');
-    const tables = tableManager.getAllTables();
-    console.log(`Lobby: Sending ${tables.length} tables to client`);
-    socket.emit('tablesUpdate', tables);
+// First, try to create a player in the database if they don't exist
+console.log(`DEBUG: Backend creating/updating player in database...`);
+let player;
+try {
+  player = await prisma.player.upsert({
+    where: { id: socket.id },
+    update: { 
+      nickname: nicknameToUse,
+      chips: buyIn 
+    },
+    create: {
+      id: socket.id,
+      nickname: nicknameToUse,
+      chips: buyIn
+    }
   });
-
-  // Handle table join request - this immediately creates a game and adds the player
-  socket.on('joinTable', async ({ tableId, buyIn, nickname }) => {
-    console.log(`DEBUG: Backend received joinTable event - tableId: ${tableId}, buyIn: ${buyIn}, nickname: ${nickname}`);
-    console.log(`DEBUG: Backend socket.id: ${socket.id}`);
-    
+} catch (dbError: any) {
+  // Handle unique constraint errors for nickname
+  if (dbError.code === 'P2002' && dbError.meta?.target?.includes('nickname')) {
+    console.log(`DEBUG: Backend nickname conflict for "${nicknameToUse}", using socket-based nickname`);
+    const fallbackNickname = `Player${socket.id.slice(0, 6)}`;
     try {
-      // Get or create a player for this socket
-      const nicknameToUse = nickname || `Player${socket.id.slice(0, 4)}`;
-      console.log(`DEBUG: Backend using nickname: ${nicknameToUse}`);
-      
-      // First, try to create a player in the database if they don't exist
-      console.log(`DEBUG: Backend creating/updating player in database...`);
-      const player = await prisma.player.upsert({
+      player = await prisma.player.upsert({
         where: { id: socket.id },
-        update: { nickname: nicknameToUse },
+        update: { 
+          nickname: fallbackNickname,
+          chips: buyIn 
+        },
         create: {
           id: socket.id,
-          nickname: nicknameToUse,
+          nickname: fallbackNickname,
           chips: buyIn
         }
       });
-      console.log(`DEBUG: Backend player upserted:`, player);
-
-      // Join the table in the table manager
-      console.log(`DEBUG: Backend joining table in TableManager...`);
-      let tableResult = tableManager.joinTable(tableId, socket.id, nicknameToUse);
-      console.log(`DEBUG: Backend TableManager join result:`, tableResult);
-
-      // If already joined another table, leave it first and retry
-      if (!tableResult.success && tableResult.error?.includes('Already joined another table')) {
-        console.log(`DEBUG: Backend leaving current tables and retrying...`);
-        
-        // Leave all tables first
-        const allTables = tableManager.getAllTables();
-        for (const table of allTables) {
-          tableManager.leaveTable(table.id, socket.id);
-        }
-        
-        // Retry the join
-        tableResult = tableManager.joinTable(tableId, socket.id, nicknameToUse);
-        console.log(`DEBUG: Backend retry join result:`, tableResult);
-      }
-
-      if (!tableResult.success) {
-        console.error(`DEBUG: Backend table join failed: ${tableResult.error}`);
-        socket.emit('tableError', tableResult.error || 'Failed to join table');
-        return;
-      }
-
-      // Get the table info from TableManager to create a corresponding database table
-      const lobbyTable = tableManager.getTable(tableId);
-      if (!lobbyTable) {
-        console.error(`DEBUG: Backend table not found in TableManager: ${tableId}`);
-        socket.emit('tableError', 'Table not found');
-        return;
-      }
-      console.log(`DEBUG: Backend found lobby table:`, lobbyTable);
-
-      // Create or find a database table that corresponds to this lobby table
-      // Use a naming convention to map lobby table ID to database table
-      const dbTableName = `${lobbyTable.name} (ID: ${tableId})`;
-      console.log(`DEBUG: Backend looking for database table: ${dbTableName}`);
-      
-      let dbTable = await prisma.table.findFirst({
-        where: { name: dbTableName }
-      });
-
-      if (!dbTable) {
-        console.log(`DEBUG: Backend creating new database table...`);
-        // Create a new database table based on the lobby table
-        dbTable = await prisma.table.create({
-          data: {
-            name: dbTableName,
-            maxPlayers: lobbyTable.maxPlayers,
-            smallBlind: lobbyTable.smallBlind,
-            bigBlind: lobbyTable.bigBlind,
-            minBuyIn: lobbyTable.minBuyIn,
-            maxBuyIn: lobbyTable.maxBuyIn
-          }
-        });
-      }
-      console.log(`DEBUG: Backend database table:`, dbTable);
-
-      // Join the socket room for this table
-      socket.join(`table:${tableId}`);
-      socket.data.buyIn = buyIn;
-      socket.data.tableId = tableId;
-      socket.data.playerId = player.id;
-      socket.data.dbTableId = dbTable.id;
-
-      // Check if there's already a game for this database table
-      let existingGame = await prisma.game.findFirst({
-        where: {
-          tableId: dbTable.id,
-          status: { in: ['waiting', 'active'] }
-        }
-      });
-
-      let gameId: string;
-
-      if (!existingGame) {
-        // Create a new game for this database table
-        const gameState = await gameManager.createGame(dbTable.id);
-        gameId = gameState.id!;
-        
-        // Emit game created event
-        socket.emit('gameCreated', { gameId, tableId });
-      } else {
-        gameId = existingGame.id;
-      }
-
-      // Add the player to the game
-      const gameService = gameManager.getGame(gameId);
-      console.log(`DEBUG: Backend gameService found:`, !!gameService);
-      
-      if (gameService) {
-        const playerData = {
-          id: player.id,
-          name: nicknameToUse,
-          chips: buyIn,
-          isActive: true,
-          isDealer: false,
-          currentBet: 0,
-          position: 0, // Will be updated based on seat
-          seatNumber: 1, // Will be updated based on actual seat
-          isAway: false,
-          cards: [],
-          avatar: {
-            type: 'default' as const,
-            color: '#007bff'
-          }
-        };
-
-        console.log(`DEBUG: Backend adding player to game:`, playerData);
-        gameService.addPlayer(playerData);
-        
-        // Create player-table relationship in database
-        await prisma.playerTable.upsert({
-          where: {
-            tableId_seatNumber: {
-              tableId: dbTable.id,
-              seatNumber: 1 // TODO: Find next available seat
-            }
-          },
-          update: {
-            playerId: player.id,
-            buyIn: buyIn
-          },
-          create: {
-            playerId: player.id,
-            tableId: dbTable.id,
-            seatNumber: 1, // TODO: Find next available seat
-            buyIn: buyIn
-          }
-        });
-        
-        // Join the game room
-        socket.join(`game:${gameId}`);
-        gameManager.joinGameRoom(gameId, socket.id);
-
-        // Get updated game state
-        const gameState = gameService.getGameState();
-        
-        // Emit success events
-        console.log(`DEBUG: Backend about to emit tableJoined - tableId: ${tableId}, gameId: ${gameId}`);
-        socket.emit('tableJoined', { tableId, role: 'player', buyIn, gameId });
-        
-        console.log(`DEBUG: Backend about to emit gameJoined - gameId: ${gameId}, playerId: ${player.id}`);
-        console.log(`DEBUG: Backend gameState being sent:`, gameState);
-        socket.emit('gameJoined', { gameId, playerId: player.id, gameState });
-        
-        console.log(`DEBUG: Backend events emitted successfully`);
-        // Broadcast to other players in the game
-        socket.to(`game:${gameId}`).emit('gameState', gameState);
-      }
-
-      broadcastTables();
-    } catch (error) {
-      console.error('Error joining table:', error);
-      socket.emit('tableError', (error as Error).message || 'Failed to join table');
+    } catch (fallbackError) {
+      console.error(`DEBUG: Backend database error even with fallback nickname:`, fallbackError);
+      socket.emit('tableError', 'Database error: Failed to create player');
+      return;
     }
-  });
-
-  // Handle table leave request
-  socket.on('leaveTable', ({ tableId }) => {
-    if (tableManager.leaveTable(tableId, socket.id)) {
-      socket.leave(`table:${tableId}`);
-      
-      // Also leave any associated game
-      if (socket.data.gameId) {
-        socket.leave(`game:${socket.data.gameId}`);
-        gameManager.leaveGameRoom(socket.data.gameId, socket.id);
-      }
-      
-      broadcastTables();
-    }
-  });
-
-  // Handle sit down request (legacy - now handled by joinTable)
-  socket.on('sitDown', async ({ tableId, buyIn }) => {
-    // For compatibility, call the same logic as joinTable
-    // This is deprecated, clients should use joinTable instead
-    socket.emit('tableError', 'sitDown is deprecated, please use joinTable instead');
-  });
-
-  // Handle stand up request
-  socket.on('standUp', ({ tableId }) => {
-    if (tableManager.standUp(tableId, socket.id)) {
-      socket.emit('tableJoined', { tableId, role: 'observer', buyIn: 0 });
-      broadcastTables();
-    }
-  });
-
-  // Clean up when socket disconnects
-  socket.on('disconnect', () => {
-    // Find and leave all tables
-    for (const table of tableManager.getAllTables()) {
-      if (tableManager.leaveTable(table.id, socket.id)) {
-        broadcastTables();
-      }
-    }
-    
-    // Leave any game rooms
-    if (socket.data.gameId) {
-      gameManager.leaveGameRoom(socket.data.gameId, socket.id);
-    }
-  });
-}; 
+  } else {
+    console.error(`DEBUG: Backend database error creating player:`, dbError);
+    socket.emit('tableError', 'Database error: Failed to create player');
+    return;
+  }
+}
+console.log(`DEBUG: Backend player upserted:`, player); 
