@@ -178,14 +178,32 @@ export const setupLobbyHandlers = (
       let gameId: string;
 
       if (!existingGame) {
+        console.log(`DEBUG: Backend creating new game for table ${dbTable.id}...`);
         // Create a new game for this database table
         const gameState = await gameManager.createGame(dbTable.id);
         gameId = gameState.id!;
+        console.log(`DEBUG: Backend created game with ID: ${gameId}`);
         
         // Emit game created event
         socket.emit('gameCreated', { gameId, tableId });
       } else {
         gameId = existingGame.id;
+        console.log(`DEBUG: Backend found existing game with ID: ${gameId}`);
+        
+        // Check if GameService exists in memory for this game
+        let gameService = gameManager.getGame(gameId);
+        
+        if (!gameService) {
+          console.log(`DEBUG: Backend GameService not in memory, recreating for existing game...`);
+          // GameService doesn't exist in memory (server restart), recreate it
+          // First delete the stale database record to avoid conflicts
+          await prisma.game.delete({ where: { id: gameId } });
+          
+          // Create a fresh game
+          const gameState = await gameManager.createGame(dbTable.id);
+          gameId = gameState.id!;
+          console.log(`DEBUG: Backend recreated game with new ID: ${gameId}`);
+        }
       }
 
       // Add the player to the game
