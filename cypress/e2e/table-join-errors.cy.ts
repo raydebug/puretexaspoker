@@ -18,7 +18,7 @@ describe('Table Join Error Handling', () => {
 
   it('should handle the table join flow and error states', () => {
     // Wait for lobby to load
-    cy.contains('Pure Texas Poker', { timeout: 10000 }).should('be.visible');
+    cy.contains('Texas Hold\'em Poker Lobby', { timeout: 10000 }).should('be.visible');
     
     // Wait for tables to load (either via socket or HTTP fallback)
     cy.get('[data-testid="table-row"]', { timeout: 15000 }).should('exist');
@@ -93,7 +93,7 @@ describe('Table Join Error Handling', () => {
 
   it('should simulate error with mock socketService', () => {
     // Ensure we're in lobby
-    cy.contains('Pure Texas Poker', { timeout: 10000 }).should('be.visible');
+    cy.contains('Texas Hold\'em Poker Lobby', { timeout: 10000 }).should('be.visible');
     cy.get('[data-testid="table-row"]', { timeout: 15000 }).should('exist');
 
     // Mock the socket service before joining
