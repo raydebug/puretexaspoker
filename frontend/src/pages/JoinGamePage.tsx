@@ -238,6 +238,7 @@ export const JoinGamePage: React.FC = () => {
             max={table.maxBuyIn}
             step={table.bigBlind}
             disabled={isJoining}
+            data-testid="buy-in-input"
           />
         </BuyInSection>
 
@@ -249,6 +250,7 @@ export const JoinGamePage: React.FC = () => {
             $primary 
             onClick={handleJoin} 
             disabled={isJoining}
+            data-testid="join-table-btn"
           >
             {isJoining ? 'Joining...' : 'Join Table'}
           </Button>

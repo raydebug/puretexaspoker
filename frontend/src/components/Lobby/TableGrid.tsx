@@ -342,7 +342,7 @@ export const TableGrid: React.FC<TableGridProps> = ({ filters }) => {
     <Card
       key={table.id}
       onClick={() => handleTableClick(table)}
-      data-testid={`table-${table.id}`}
+      data-testid="table-row"
       data-table-id={table.id}
     >
       <TableName>

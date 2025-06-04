@@ -376,7 +376,7 @@ const GamePage: React.FC = () => {
       <LoadingContainer>
         <LoadingMessage>Error connecting to table</LoadingMessage>
         <ErrorMessage>{error}</ErrorMessage>
-        <BackButton onClick={handleReturnToLobby}>Return to Lobby</BackButton>
+        <BackButton onClick={handleReturnToLobby} data-testid="back-button">Return to Lobby</BackButton>
       </LoadingContainer>
     );
   }
@@ -401,7 +401,7 @@ const GamePage: React.FC = () => {
             <li>There was an error joining the table</li>
           </ul>
         </ErrorMessage>
-        <BackButton onClick={handleReturnToLobby}>Return to Lobby</BackButton>
+        <BackButton onClick={handleReturnToLobby} data-testid="back-button">Return to Lobby</BackButton>
       </LoadingContainer>
     );
   }
