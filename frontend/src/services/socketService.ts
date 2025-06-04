@@ -997,11 +997,40 @@ class SocketService {
 
   // Updated to match the expected signature for lobby
   joinTable(tableId: number, buyIn: number) {
+    console.log(`DEBUG: joinTable called with tableId=${tableId}, buyIn=${buyIn}`);
+    console.log(`DEBUG: Socket connected: ${this.socket?.connected}`);
+    console.log(`DEBUG: Connection attempts: ${this.connectionAttempts}/${this.maxConnectionAttempts}`);
+    
     if (this.socket?.connected) {
       console.log(`Joining table ${tableId} with buy-in ${buyIn}`);
       this.socket.emit('joinTable', { tableId, buyIn });
+      
+      // Set up listeners for table join responses
+      this.socket.once('tableJoined', (data) => {
+        console.log('DEBUG: tableJoined event received:', data);
+      });
+      
+      this.socket.once('gameJoined', (data) => {
+        console.log('DEBUG: gameJoined event received:', data);
+      });
+      
+      this.socket.once('tableError', (error) => {
+        console.error('DEBUG: tableError event received:', error);
+        this.emitError({ message: error, context: 'table:join_error' });
+      });
+      
     } else {
       console.warn('Socket not connected when trying to join table, connecting first');
+      
+      // If we've reached max connection attempts, don't try to connect again
+      if (this.connectionAttempts >= this.maxConnectionAttempts) {
+        console.error('Max connection attempts reached, cannot join table');
+        this.emitError({ 
+          message: 'Unable to connect to server. Please refresh the page and try again.', 
+          context: 'table:max_attempts_reached' 
+        });
+        return;
+      }
       
       // Clear any existing connection attempts and reset state
       if (this.socket) {
@@ -1028,6 +1057,21 @@ class SocketService {
             if (socket.connected) {
               console.log(`Now joining table ${tableId} with buy-in ${buyIn}`);
               socket.emit('joinTable', { tableId, buyIn });
+              
+              // Set up listeners for table join responses
+              socket.once('tableJoined', (data) => {
+                console.log('DEBUG: tableJoined event received:', data);
+              });
+              
+              socket.once('gameJoined', (data) => {
+                console.log('DEBUG: gameJoined event received:', data);
+              });
+              
+              socket.once('tableError', (error) => {
+                console.error('DEBUG: tableError event received:', error);
+                this.emitError({ message: error, context: 'table:join_error' });
+              });
+              
             } else {
               console.error('Connection was lost after initial connect');
               this.emitError({ 
@@ -1037,6 +1081,16 @@ class SocketService {
             }
           }, 2000); // Wait 2 seconds for connection to stabilize
         });
+        
+        // Add error handler for connection failures
+        socket.once('connect_error', (error) => {
+          console.error('Connection failed during table join:', error);
+          this.emitError({ 
+            message: 'Failed to connect to server for table join', 
+            context: 'table:connection_error' 
+          });
+        });
+        
       } else {
         this.emitError({ 
           message: 'Failed to create socket connection for joining table', 
