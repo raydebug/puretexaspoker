@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { GameState, Player } from '../../types/game';
+import { GameState, Player } from '../../types/shared';
 
 interface PokerTableProps {
   gameState: GameState;
@@ -24,12 +24,11 @@ const PokerTableSurface = styled.div`
   width: 800px;
   height: 400px;
   background: radial-gradient(ellipse at center, #2d5a3d 0%, #1a4429 70%, #0d2818 100%);
-  border-radius: 50%;
-  border: 12px solid #8B4513;
+  border: 8px solid #8B4513;
+  border-radius: 200px;
   box-shadow: 
-    inset 0 0 50px rgba(0,0,0,0.4),
-    0 0 30px rgba(0,0,0,0.6),
-    0 0 0 3px #654321;
+    inset 0 0 30px rgba(0,0,0,0.5),
+    0 10px 30px rgba(0,0,0,0.7);
   
   &::before {
     content: '';
@@ -38,307 +37,259 @@ const PokerTableSurface = styled.div`
     left: 20px;
     right: 20px;
     bottom: 20px;
-    border-radius: 50%;
-    border: 2px solid rgba(255,215,0,0.3);
+    border: 2px solid #4a6741;
+    border-radius: 180px;
   }
 `;
 
-const PlayerSeat = styled.div<{ position: number; isActive: boolean; isDealer: boolean }>`
+const PlayerSeat = styled.div<{ position: number; isEmpty: boolean }>`
   position: absolute;
-  width: 120px;
-  height: 100px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  z-index: 10;
-  
-  ${({ position }) => {
-    const angle = (position * 360) / 9 - 90; // Start from top
-    const radius = 280;
-    const x = Math.cos((angle * Math.PI) / 180) * radius;
-    const y = Math.sin((angle * Math.PI) / 180) * radius;
-    
-    return `
-      transform: translate(${x}px, ${y}px);
-      left: 50%;
-      top: 50%;
-      margin-left: -60px;
-      margin-top: -50px;
-    `;
-  }}
-  
-  ${({ isActive }) => isActive && `
-    filter: drop-shadow(0 0 15px #ffd700);
-  `}
-`;
-
-const PlayerAvatar = styled.div<{ isActive: boolean; isEmpty: boolean }>`
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: ${({ isEmpty }) => isEmpty ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #4a90e2 0%, #357abd 100%)'};
-  border: 3px solid ${({ isActive }) => isActive ? '#ffd700' : '#2c3e50'};
+  background: ${props => props.isEmpty ? 
+    'linear-gradient(145deg, #2a3f35, #1a2f25)' : 
+    'linear-gradient(145deg, #ffd700, #ffed4e)'};
+  border: 3px solid ${props => props.isEmpty ? '#4a6741' : '#ffb347'};
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-weight: bold;
-  font-size: 14px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
   cursor: pointer;
   transition: all 0.3s ease;
-  
-  ${({ isEmpty }) => isEmpty && `
-    border-style: dashed;
-    border-color: rgba(255,255,255,0.3);
-  `}
-  
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+
+  // Position seats around the oval table with dealer at top middle
+  ${props => {
+    const positions = [
+      { top: '10px', left: '50%', transform: 'translateX(-50%)' }, // 1. Button (BU) - Top middle
+      { top: '20px', right: '80px', transform: 'none' },           // 2. Small Blind (SB) - Top right  
+      { top: '50%', right: '10px', transform: 'translateY(-50%)' }, // 3. Big Blind (BB) - Right
+      { bottom: '80px', right: '80px', transform: 'none' },        // 4. Under the Gun (UTG) - Bottom right
+      { bottom: '20px', right: '200px', transform: 'none' },       // 5. UTG+1 - Bottom middle right
+      { bottom: '10px', left: '50%', transform: 'translateX(-50%)' }, // 6. Middle Position (MP) - Bottom middle
+      { bottom: '20px', left: '200px', transform: 'none' },        // 7. Lojack (LJ) - Bottom middle left
+      { top: '50%', left: '10px', transform: 'translateY(-50%)' },  // 8. Hijack (HJ) - Left
+      { top: '20px', left: '80px', transform: 'none' },            // 9. Cutoff (CO) - Top left
+    ];
+    
+    const pos = positions[props.position - 1];
+    return `
+      top: ${pos.top};
+      ${pos.right ? `right: ${pos.right};` : ''}
+      ${pos.bottom ? `bottom: ${pos.bottom};` : ''}
+      ${pos.left ? `left: ${pos.left};` : ''}
+      transform: ${pos.transform};
+    `;
+  }}
+
   &:hover {
-    transform: scale(1.05);
+    ${props => props.isEmpty && `
+      background: linear-gradient(145deg, #3a4f45, #2a3f35);
+      border-color: #6a8761;
+    `}
   }
 `;
 
-const PlayerInfo = styled.div`
-  margin-top: 8px;
-  text-align: center;
-  color: white;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+const PositionLabel = styled.div`
+  position: absolute;
+  top: -25px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.8);
+  color: #ffd700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: bold;
+  white-space: nowrap;
 `;
 
 const PlayerName = styled.div`
-  font-size: 12px;
+  font-size: 10px;
   font-weight: bold;
+  color: #333;
+  text-align: center;
   margin-bottom: 2px;
 `;
 
 const PlayerChips = styled.div`
-  font-size: 11px;
-  color: #ffd700;
-  font-weight: bold;
+  font-size: 8px;
+  color: #666;
+  text-align: center;
 `;
 
-const DealerButton = styled.div`
-  position: absolute;
-  top: -15px;
-  right: -15px;
-  width: 30px;
-  height: 30px;
-  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #000;
-  font-weight: bold;
-  font-size: 12px;
-  border: 2px solid #e6c200;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+const EmptySeatText = styled.div`
+  font-size: 8px;
+  color: #888;
+  text-align: center;
 `;
 
-const CommunityCards = styled.div`
+const CommunityCardsArea = styled.div`
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   display: flex;
   gap: 8px;
-  z-index: 5;
-`;
-
-const Card = styled.div<{ isVisible: boolean }>`
-  width: 50px;
-  height: 72px;
-  background: ${({ isVisible }) => isVisible ? 'white' : 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)'};
-  border-radius: 8px;
-  border: 2px solid #333;
-  display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
+`;
+
+const CommunityCard = styled.div`
+  width: 40px;
+  height: 56px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
   font-weight: bold;
-  font-size: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-  position: relative;
-  
-  ${({ isVisible }) => !isVisible && `
-    &::before {
-      content: '';
-      position: absolute;
-      top: 8px;
-      left: 8px;
-      right: 8px;
-      bottom: 8px;
-      background: linear-gradient(45deg, #ff6b6b 0%, #ee5a52 100%);
-      border-radius: 4px;
-    }
-  `}
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 `;
 
 const PotDisplay = styled.div`
   position: absolute;
   top: 30%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   background: rgba(0,0,0,0.8);
   color: #ffd700;
-  padding: 12px 24px;
-  border-radius: 25px;
+  padding: 8px 16px;
+  border-radius: 20px;
   font-weight: bold;
-  font-size: 18px;
+  font-size: 14px;
   border: 2px solid #ffd700;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-  z-index: 10;
 `;
 
-const ActionPanel = styled.div`
+const ActionButtons = styled.div`
   position: absolute;
-  bottom: 30px;
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 20px;
-  z-index: 20;
+  gap: 12px;
 `;
 
 const ActionButton = styled.button<{ variant: 'fold' | 'call' | 'raise' }>`
   padding: 12px 24px;
   border: none;
-  border-radius: 8px;
+  border-radius: 25px;
   font-weight: bold;
-  font-size: 16px;
+  font-size: 14px;
   cursor: pointer;
   transition: all 0.3s ease;
-  text-transform: uppercase;
-  min-width: 100px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
   
-  ${({ variant }) => {
-    switch(variant) {
+  ${props => {
+    switch(props.variant) {
       case 'fold':
         return `
-          background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+          background: linear-gradient(145deg, #dc3545, #c82333);
           color: white;
-          &:hover { background: linear-gradient(135deg, #c0392b 0%, #a93226 100%); }
+          &:hover { background: linear-gradient(145deg, #c82333, #bd2130); }
         `;
       case 'call':
         return `
-          background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+          background: linear-gradient(145deg, #28a745, #218838);
           color: white;
-          &:hover { background: linear-gradient(135deg, #2980b9 0%, #21618c 100%); }
+          &:hover { background: linear-gradient(145deg, #218838, #1e7e34); }
         `;
       case 'raise':
         return `
-          background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
-          color: white;
-          &:hover { background: linear-gradient(135deg, #229954 0%, #1e8449 100%); }
+          background: linear-gradient(145deg, #ffd700, #ffed4e);
+          color: #333;
+          &:hover { background: linear-gradient(145deg, #ffed4e, #fff176); }
         `;
     }
   }}
-  
-  &:active {
-    transform: translateY(2px);
-  }
-  
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 `;
 
-const GameInfo = styled.div`
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  background: rgba(0,0,0,0.8);
-  color: white;
-  padding: 12px;
-  border-radius: 8px;
-  font-size: 14px;
-  z-index: 20;
-`;
+// Texas Hold'em position names
+const POSITION_NAMES = [
+  'BU',    // 1. Button (Dealer) - Top middle
+  'SB',    // 2. Small Blind - Top right
+  'BB',    // 3. Big Blind - Right
+  'UTG',   // 4. Under the Gun - Bottom right  
+  'UTG+1', // 5. Under the Gun + 1 - Bottom middle right
+  'MP',    // 6. Middle Position - Bottom middle
+  'LJ',    // 7. Lojack - Bottom middle left
+  'HJ',    // 8. Hijack - Left
+  'CO',    // 9. Cutoff - Top left
+];
 
 export const PokerTable: React.FC<PokerTableProps> = ({ gameState, currentPlayer, onAction }) => {
-  const renderPlayerSeat = (position: number) => {
-    const player = gameState.players.find(p => p.position === position);
+  const handleSeatClick = (seatNumber: number) => {
+    // Handle joining an empty seat
+    console.log(`Clicked seat ${seatNumber}`);
+  };
+
+  const renderSeat = (seatNumber: number) => {
+    const player = gameState.players.find(p => p.seatNumber === seatNumber);
     const isEmpty = !player;
-    const isActive = player?.id === gameState.currentPlayerId;
-    const isDealer = player?.isDealer || false;
-    
+    const positionName = POSITION_NAMES[seatNumber - 1];
+
     return (
-      <PlayerSeat key={position} position={position} isActive={isActive} isDealer={isDealer}>
-        <PlayerAvatar isActive={isActive} isEmpty={isEmpty}>
-          {isEmpty ? '+' : (player?.name?.charAt(0) || 'P')}
-          {isDealer && <DealerButton>D</DealerButton>}
-        </PlayerAvatar>
-        {!isEmpty && (
-          <PlayerInfo>
-            <PlayerName>{player?.name || 'Player'}</PlayerName>
-            <PlayerChips>${player?.chips || 0}</PlayerChips>
-          </PlayerInfo>
+      <PlayerSeat
+        key={seatNumber}
+        position={seatNumber}
+        isEmpty={isEmpty}
+        onClick={() => handleSeatClick(seatNumber)}
+      >
+        <PositionLabel>{positionName}</PositionLabel>
+        {isEmpty ? (
+          <EmptySeatText>Empty Seat</EmptySeatText>
+        ) : (
+          <>
+            <PlayerName>{player.name}</PlayerName>
+            <PlayerChips>${player.chips}</PlayerChips>
+          </>
         )}
       </PlayerSeat>
     );
   };
 
-  const renderCommunityCards = () => {
-    return (
-      <CommunityCards>
-        {[0, 1, 2, 3, 4].map(index => {
-          const card = gameState.communityCards[index];
-          return (
-            <Card key={index} isVisible={!!card}>
-              {card && (
-                <>
-                  <div style={{ color: card.suit === '♥' || card.suit === '♦' ? 'red' : 'black' }}>
-                    {card.rank}
-                  </div>
-                  <div style={{ color: card.suit === '♥' || card.suit === '♦' ? 'red' : 'black', fontSize: '16px' }}>
-                    {card.suit}
-                  </div>
-                </>
-              )}
-            </Card>
-          );
-        })}
-      </CommunityCards>
-    );
-  };
-
-  const isMyTurn = currentPlayer?.id === gameState.currentPlayerId;
-
   return (
     <TableContainer>
       <PokerTableSurface>
-        {/* Render 9 player seats */}
-        {[0, 1, 2, 3, 4, 5, 6, 7, 8].map(renderPlayerSeat)}
-        
-        {/* Community cards */}
-        {renderCommunityCards()}
-        
-        {/* Pot display */}
+        {/* Render all 9 seats */}
+        {Array.from({ length: 9 }, (_, i) => renderSeat(i + 1))}
+
+        {/* Pot Display */}
         <PotDisplay>
           Pot: ${gameState.pot}
         </PotDisplay>
+
+        {/* Community Cards */}
+        <CommunityCardsArea>
+          {gameState.communityCards.length === 0 ? (
+            <div style={{ color: '#888', fontSize: '12px' }}>Community Cards</div>
+          ) : (
+            gameState.communityCards.map((card, index) => (
+              <CommunityCard key={index}>
+                {card.rank}{card.suit}
+              </CommunityCard>
+            ))
+          )}
+        </CommunityCardsArea>
+
+        {/* Action Buttons */}
+        {currentPlayer && gameState.status === 'playing' && (
+          <ActionButtons>
+            <ActionButton variant="fold" onClick={() => onAction('fold')}>
+              FOLD
+            </ActionButton>
+            <ActionButton variant="call" onClick={() => onAction('call')}>
+              CALL
+            </ActionButton>
+            <ActionButton variant="raise" onClick={() => onAction('raise', 20)}>
+              RAISE
+            </ActionButton>
+          </ActionButtons>
+        )}
       </PokerTableSurface>
-      
-      {/* Game info */}
-      <GameInfo>
-        <div>Phase: {gameState.phase}</div>
-        <div>Players: {gameState.players.length}</div>
-        <div>Blinds: ${gameState.smallBlind}/${gameState.bigBlind}</div>
-      </GameInfo>
-      
-      {/* Action buttons - only show when it's player's turn */}
-      {isMyTurn && (
-        <ActionPanel>
-          <ActionButton variant="fold" onClick={() => onAction('fold')}>
-            Fold
-          </ActionButton>
-          <ActionButton variant="call" onClick={() => onAction('call')}>
-            Call
-          </ActionButton>
-          <ActionButton variant="raise" onClick={() => onAction('raise', gameState.minBet)}>
-            Raise
-          </ActionButton>
-        </ActionPanel>
-      )}
     </TableContainer>
   );
 }; 

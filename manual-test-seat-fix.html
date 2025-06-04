@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Test - Seat Occupation Fix</title>
+    <script src="http://localhost:3001/socket.io/socket.io.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .log { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        .info { background: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; }
+        #logs { max-height: 600px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>Manual Test - Seat Occupation Fix</h1>
+    <p><strong>Test Goal:</strong> Verify that the "Seat is already occupied" error has been fixed.</p>
+    
+    <div>
+        <button onclick="testJoinTable()">Join Table (Test Fix)</button>
+        <button onclick="clearLogs()">Clear Logs</button>
+    </div>
+    
+    <div id="logs"></div>
+
+    <script>
+        const socket = io('http://localhost:3001');
+        let testResults = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logDiv = document.createElement('div');
+            logDiv.className = `log ${type}`;
+            logDiv.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            document.getElementById('logs').appendChild(logDiv);
+            document.getElementById('logs').scrollTop = document.getElementById('logs').scrollHeight;
+            
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+            testResults = [];
+        }
+
+        // Socket event listeners
+        socket.on('connect', () => {
+            log(`✅ Connected to server with socket ID: ${socket.id}`, 'success');
+        });
+
+        socket.on('disconnect', () => {
+            log('❌ Disconnected from server', 'error');
+        });
+
+        socket.on('tableJoined', (data) => {
+            log(`✅ Successfully joined table! Data: ${JSON.stringify(data)}`, 'success');
+            testResults.push('tableJoined');
+        });
+
+        socket.on('gameJoined', (data) => {
+            log(`✅ Successfully joined game! GameID: ${data.gameId}, PlayerID: ${data.playerId}`, 'success');
+            testResults.push('gameJoined');
+            
+            // Test completed successfully
+            if (testResults.includes('tableJoined') && testResults.includes('gameJoined')) {
+                log('🎉 SUCCESS: Seat occupation error has been FIXED!', 'success');
+                log('✅ Player successfully joined table and game without errors', 'success');
+            }
+        });
+
+        socket.on('tableError', (error) => {
+            log(`❌ Table error: ${error}`, 'error');
+            
+            if (error.includes('Seat is already occupied')) {
+                log('💔 FAILED: Seat occupation error still exists', 'error');
+            } else {
+                log(`ℹ️ Different error (not seat occupation): ${error}`, 'info');
+            }
+        });
+
+        socket.on('gameCreated', (data) => {
+            log(`ℹ️ Game created: ${JSON.stringify(data)}`, 'info');
+        });
+
+        socket.on('gameState', (gameState) => {
+            log(`ℹ️ Game state received: ${gameState.players?.length || 0} players`, 'info');
+        });
+
+        socket.on('tablesUpdate', (tables) => {
+            log(`ℹ️ Tables update received: ${tables.length} tables available`, 'info');
+        });
+
+        function testJoinTable() {
+            log('🧪 Starting test: Attempting to join table...', 'info');
+            testResults = [];
+            
+            const tableId = 2; // Same table from logs
+            const buyIn = 40;
+            const nickname = `TestPlayer_${Date.now()}`;
+            
+            log(`📋 Test parameters: tableId=${tableId}, buyIn=${buyIn}, nickname=${nickname}`, 'info');
+            
+            // Emit join table event
+            socket.emit('joinTable', { tableId, buyIn, nickname });
+            log('📤 Sent joinTable event to server', 'info');
+            
+            // Set timeout to check results
+            setTimeout(() => {
+                if (testResults.length === 0) {
+                    log('⏰ No response received after 10 seconds - possible timeout', 'error');
+                }
+            }, 10000);
+        }
+
+        // Request initial tables list
+        socket.emit('getLobbyTables');
+        log('📤 Requesting lobby tables...', 'info');
+    </script>
+</body>
+</html> 
