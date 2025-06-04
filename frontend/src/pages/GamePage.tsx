@@ -151,18 +151,21 @@ const GamePage: React.FC = () => {
       
       // Listen for errors
       const errorHandler = (err: { message: string }) => {
+        console.error('DEBUG: GamePage errorHandler called with:', err);
         setError(err.message);
         setIsConnecting(false);
       };
       socketService.onError(errorHandler);
       
-      console.log(`Joining table ${tableId} with buy-in ${buyIn}`);
+      console.log(`DEBUG: GamePage about to join table ${tableId} with buy-in ${buyIn}, nickname: ${nickname}`);
       
       // Try to join the table with socket first
       try {
+        console.log(`DEBUG: GamePage calling socketService.joinTable(${tableId}, ${buyIn})`);
         socketService.joinTable(tableId, buyIn);
+        console.log(`DEBUG: GamePage socketService.joinTable call completed`);
       } catch (error) {
-        console.error('Failed to join table via socket:', error);
+        console.error('DEBUG: GamePage failed to join table via socket:', error);
         setError('Failed to connect to game. Please try again.');
         setIsConnecting(false);
         return;
@@ -170,11 +173,17 @@ const GamePage: React.FC = () => {
       
       // Set a timeout to check if we've connected, with fallback to mock data
       joinTimeoutId = setTimeout(() => {
+        console.log('DEBUG: GamePage timeout reached, checking connection status...');
         const currentPlayer = socketService.getCurrentPlayer();
         const currentGameState = socketService.getGameState();
         
+        console.log('DEBUG: GamePage timeout - currentPlayer:', currentPlayer);
+        console.log('DEBUG: GamePage timeout - currentGameState:', currentGameState);
+        console.log('DEBUG: GamePage timeout - socket connected:', socketService.getSocket()?.connected);
+        console.log('DEBUG: GamePage timeout - connection attempts:', socketService.getConnectionAttempts());
+        
         if (!currentPlayer || !currentGameState) {
-          console.log('Connection timeout, creating fallback game state for testing');
+          console.log('DEBUG: GamePage creating fallback game state for testing');
           
           // Create a mock player based on the table and buy-in data
           const mockPlayer: Player = {
@@ -217,13 +226,18 @@ const GamePage: React.FC = () => {
             isHandComplete: false
           };
           
+          console.log('DEBUG: GamePage setting mock data - player:', mockPlayer);
+          console.log('DEBUG: GamePage setting mock data - gameState:', mockGameState);
+          
           // Set the mock data
           socketService.setCurrentPlayer(mockPlayer);
           setCurrentPlayer(mockPlayer);
           setGameState(mockGameState);
           setIsConnecting(false);
           
-          console.log('Created fallback game state:', mockGameState);
+          console.log('DEBUG: GamePage created fallback game state successfully');
+        } else {
+          console.log('DEBUG: GamePage timeout but we have valid player and game state, staying connected');
         }
       }, 15000); // Increased timeout to 15 seconds
     }
@@ -232,13 +246,17 @@ const GamePage: React.FC = () => {
     const checkPlayer = () => {
       const player = socketService.getCurrentPlayer();
       if (player) {
+        console.log('DEBUG: GamePage checkPlayer found player:', player);
         setCurrentPlayer(player);
         setIsConnecting(false);
         clearTimeout(joinTimeoutId);
+      } else {
+        console.log('DEBUG: GamePage checkPlayer - no player found yet');
       }
     };
     
     // Check player initially and then every second
+    console.log('DEBUG: GamePage setting up player checking interval');
     checkPlayer();
     const intervalId = setInterval(checkPlayer, 1000);
 
@@ -246,7 +264,10 @@ const GamePage: React.FC = () => {
     const checkGameState = () => {
       const state = socketService.getGameState();
       if (state) {
+        console.log('DEBUG: GamePage checkGameState found state:', state);
         setGameState(state);
+      } else {
+        console.log('DEBUG: GamePage checkGameState - no game state found yet');
       }
     };
 

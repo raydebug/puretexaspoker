@@ -344,37 +344,45 @@ class SocketService {
 
     // Handle table joining results
     socket.on('tableJoined', (data: { tableId: number; role: 'player' | 'observer'; buyIn: number; gameId?: string }) => {
-      console.log('Table joined successfully:', data);
+      console.log('DEBUG: Frontend received tableJoined event:', data);
       if (data.gameId) {
         // Store the game ID for this session
         this.currentGameId = data.gameId;
+        console.log('DEBUG: Frontend stored gameId:', data.gameId);
       }
     });
 
     socket.on('tableError', (error: string) => {
-      console.error('Table join error:', error);
+      console.error('DEBUG: Frontend received tableError event:', error);
       this.emitError({ message: error, context: 'table:join_error' });
     });
 
     // Handle game creation and joining
     socket.on('gameCreated', (data: { gameId: string; tableId: number }) => {
-      console.log('Game created:', data);
+      console.log('DEBUG: Frontend received gameCreated event:', data);
       this.currentGameId = data.gameId;
     });
 
     socket.on('gameJoined', (data: { gameId: string; playerId: string; gameState: GameState }) => {
-      console.log('Game joined:', data);
+      console.log('DEBUG: Frontend received gameJoined event:', data);
+      console.log('DEBUG: Frontend gameState received:', data.gameState);
+      console.log('DEBUG: Frontend playerId received:', data.playerId);
+      
       this.currentGameId = data.gameId;
       this.gameState = data.gameState;
       
       // Set the current player
       const currentPlayer = data.gameState.players.find(p => p.id === data.playerId);
       if (currentPlayer) {
+        console.log('DEBUG: Frontend found and setting currentPlayer:', currentPlayer);
         this.currentPlayer = currentPlayer;
+      } else {
+        console.error('DEBUG: Frontend could not find player in gameState.players:', data.gameState.players);
       }
       
       // Emit the updated game state
       this.emitGameStateUpdate(data.gameState);
+      console.log('DEBUG: Frontend emitted gameStateUpdate');
     });
 
     socket.on('connect_error', (error) => {

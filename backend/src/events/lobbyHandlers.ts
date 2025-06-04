@@ -39,11 +39,16 @@ export const setupLobbyHandlers = (
 
   // Handle table join request - this immediately creates a game and adds the player
   socket.on('joinTable', async ({ tableId, buyIn, nickname }) => {
+    console.log(`DEBUG: Backend received joinTable event - tableId: ${tableId}, buyIn: ${buyIn}, nickname: ${nickname}`);
+    console.log(`DEBUG: Backend socket.id: ${socket.id}`);
+    
     try {
       // Get or create a player for this socket
       const nicknameToUse = nickname || `Player${socket.id.slice(0, 4)}`;
+      console.log(`DEBUG: Backend using nickname: ${nicknameToUse}`);
       
       // First, try to create a player in the database if they don't exist
+      console.log(`DEBUG: Backend creating/updating player in database...`);
       const player = await prisma.player.upsert({
         where: { id: socket.id },
         update: { nickname: nicknameToUse },
@@ -53,11 +58,15 @@ export const setupLobbyHandlers = (
           chips: buyIn
         }
       });
+      console.log(`DEBUG: Backend player upserted:`, player);
 
       // Join the table in the table manager
+      console.log(`DEBUG: Backend joining table in TableManager...`);
       const tableResult = tableManager.joinTable(tableId, socket.id, nicknameToUse);
+      console.log(`DEBUG: Backend TableManager join result:`, tableResult);
 
       if (!tableResult.success) {
+        console.error(`DEBUG: Backend table join failed: ${tableResult.error}`);
         socket.emit('tableError', tableResult.error || 'Failed to join table');
         return;
       }
@@ -65,19 +74,23 @@ export const setupLobbyHandlers = (
       // Get the table info from TableManager to create a corresponding database table
       const lobbyTable = tableManager.getTable(tableId);
       if (!lobbyTable) {
+        console.error(`DEBUG: Backend table not found in TableManager: ${tableId}`);
         socket.emit('tableError', 'Table not found');
         return;
       }
+      console.log(`DEBUG: Backend found lobby table:`, lobbyTable);
 
       // Create or find a database table that corresponds to this lobby table
       // Use a naming convention to map lobby table ID to database table
       const dbTableName = `${lobbyTable.name} (ID: ${tableId})`;
+      console.log(`DEBUG: Backend looking for database table: ${dbTableName}`);
       
       let dbTable = await prisma.table.findFirst({
         where: { name: dbTableName }
       });
 
       if (!dbTable) {
+        console.log(`DEBUG: Backend creating new database table...`);
         // Create a new database table based on the lobby table
         dbTable = await prisma.table.create({
           data: {
@@ -90,6 +103,7 @@ export const setupLobbyHandlers = (
           }
         });
       }
+      console.log(`DEBUG: Backend database table:`, dbTable);
 
       // Join the socket room for this table
       socket.join(`table:${tableId}`);
@@ -169,9 +183,13 @@ export const setupLobbyHandlers = (
         const gameState = gameService.getGameState();
         
         // Emit success events
+        console.log(`DEBUG: Backend emitting tableJoined event - tableId: ${tableId}, gameId: ${gameId}`);
         socket.emit('tableJoined', { tableId, role: 'player', buyIn, gameId });
+        
+        console.log(`DEBUG: Backend emitting gameJoined event - gameId: ${gameId}, playerId: ${player.id}`);
         socket.emit('gameJoined', { gameId, playerId: player.id, gameState });
         
+        console.log(`DEBUG: Backend broadcasting gameState to other players`);
         // Broadcast to other players in the game
         socket.to(`game:${gameId}`).emit('gameState', gameState);
       }
