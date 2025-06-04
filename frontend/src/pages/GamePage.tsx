@@ -152,8 +152,15 @@ const GamePage: React.FC = () => {
       // Listen for errors
       const errorHandler = (err: { message: string }) => {
         console.error('DEBUG: GamePage errorHandler called with:', err);
-        setError(err.message);
+        
+        // Check if it's the "already joined" error and provide helpful message
+        if (err.message.includes('Already joined another table')) {
+          setError('You are already connected to another table. Please refresh the page and try again, or leave your current table first.');
+        } else {
+          setError(err.message);
+        }
         setIsConnecting(false);
+        clearTimeout(joinTimeoutId); // Clear the timeout since we have an error
       };
       socketService.onError(errorHandler);
       

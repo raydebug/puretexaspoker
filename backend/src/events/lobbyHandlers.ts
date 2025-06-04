@@ -135,6 +135,8 @@ export const setupLobbyHandlers = (
 
       // Add the player to the game
       const gameService = gameManager.getGame(gameId);
+      console.log(`DEBUG: Backend gameService found:`, !!gameService);
+      
       if (gameService) {
         const playerData = {
           id: player.id,
@@ -153,6 +155,7 @@ export const setupLobbyHandlers = (
           }
         };
 
+        console.log(`DEBUG: Backend adding player to game:`, playerData);
         gameService.addPlayer(playerData);
         
         // Create player-table relationship in database
@@ -183,13 +186,14 @@ export const setupLobbyHandlers = (
         const gameState = gameService.getGameState();
         
         // Emit success events
-        console.log(`DEBUG: Backend emitting tableJoined event - tableId: ${tableId}, gameId: ${gameId}`);
+        console.log(`DEBUG: Backend about to emit tableJoined - tableId: ${tableId}, gameId: ${gameId}`);
         socket.emit('tableJoined', { tableId, role: 'player', buyIn, gameId });
         
-        console.log(`DEBUG: Backend emitting gameJoined event - gameId: ${gameId}, playerId: ${player.id}`);
+        console.log(`DEBUG: Backend about to emit gameJoined - gameId: ${gameId}, playerId: ${player.id}`);
+        console.log(`DEBUG: Backend gameState being sent:`, gameState);
         socket.emit('gameJoined', { gameId, playerId: player.id, gameState });
         
-        console.log(`DEBUG: Backend broadcasting gameState to other players`);
+        console.log(`DEBUG: Backend events emitted successfully`);
         // Broadcast to other players in the game
         socket.to(`game:${gameId}`).emit('gameState', gameState);
       }

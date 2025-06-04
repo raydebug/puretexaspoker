@@ -1009,6 +1009,9 @@ class SocketService {
     console.log(`DEBUG: Socket connected: ${this.socket?.connected}`);
     console.log(`DEBUG: Connection attempts: ${this.connectionAttempts}/${this.maxConnectionAttempts}`);
     
+    // First, try to leave any existing table
+    this.leaveCurrentTable();
+    
     if (this.socket?.connected) {
       console.log(`Joining table ${tableId} with buy-in ${buyIn}`);
       
@@ -1318,6 +1321,19 @@ class SocketService {
       return true;
     });
   };
+
+  // Add method to leave current table
+  leaveCurrentTable() {
+    if (this.socket?.connected && this.currentGameId) {
+      console.log(`DEBUG: Leaving current table/game: ${this.currentGameId}`);
+      this.socket.emit('leaveTable', { tableId: this.currentGameId });
+      
+      // Clear current state
+      this.currentGameId = null;
+      this.gameState = null;
+      this.currentPlayer = null;
+    }
+  }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
