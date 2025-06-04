@@ -5,7 +5,7 @@ import { prisma } from '../db';
 
 interface ClientToServerEvents {
   getLobbyTables: () => void;
-  joinTable: (data: { tableId: number; buyIn: number }) => void;
+  joinTable: (data: { tableId: number; buyIn: number; nickname?: string }) => void;
   leaveTable: (data: { tableId: number }) => void;
   sitDown: (data: { tableId: number; buyIn: number }) => void;
   standUp: (data: { tableId: number }) => void;
@@ -38,24 +38,24 @@ export const setupLobbyHandlers = (
   });
 
   // Handle table join request - this immediately creates a game and adds the player
-  socket.on('joinTable', async ({ tableId, buyIn }) => {
+  socket.on('joinTable', async ({ tableId, buyIn, nickname }) => {
     try {
       // Get or create a player for this socket
-      const nickname = socket.data.nickname || `Player${socket.id.slice(0, 4)}`;
+      const nicknameToUse = nickname || `Player${socket.id.slice(0, 4)}`;
       
       // First, try to create a player in the database if they don't exist
       const player = await prisma.player.upsert({
         where: { id: socket.id },
-        update: { nickname },
+        update: { nickname: nicknameToUse },
         create: {
           id: socket.id,
-          nickname,
+          nickname: nicknameToUse,
           chips: buyIn
         }
       });
 
       // Join the table in the table manager
-      const tableResult = tableManager.joinTable(tableId, socket.id, nickname);
+      const tableResult = tableManager.joinTable(tableId, socket.id, nicknameToUse);
 
       if (!tableResult.success) {
         socket.emit('tableError', tableResult.error || 'Failed to join table');
@@ -124,7 +124,7 @@ export const setupLobbyHandlers = (
       if (gameService) {
         const playerData = {
           id: player.id,
-          name: nickname,
+          name: nicknameToUse,
           chips: buyIn,
           isActive: true,
           isDealer: false,

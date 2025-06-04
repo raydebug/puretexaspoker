@@ -1003,7 +1003,12 @@ class SocketService {
     
     if (this.socket?.connected) {
       console.log(`Joining table ${tableId} with buy-in ${buyIn}`);
-      this.socket.emit('joinTable', { tableId, buyIn });
+      
+      // Get nickname from localStorage
+      const nickname = localStorage.getItem('nickname') || `Player${Math.floor(Math.random() * 1000)}`;
+      console.log(`DEBUG: Using nickname: ${nickname}`);
+      
+      this.socket.emit('joinTable', { tableId, buyIn, nickname });
       
       // Set up listeners for table join responses
       this.socket.once('tableJoined', (data) => {
@@ -1056,7 +1061,12 @@ class SocketService {
             // Check again if the socket is still connected
             if (socket.connected) {
               console.log(`Now joining table ${tableId} with buy-in ${buyIn}`);
-              socket.emit('joinTable', { tableId, buyIn });
+              
+              // Get nickname from localStorage
+              const nickname = localStorage.getItem('nickname') || `Player${Math.floor(Math.random() * 1000)}`;
+              console.log(`DEBUG: Using nickname: ${nickname}`);
+              
+              socket.emit('joinTable', { tableId, buyIn, nickname });
               
               // Set up listeners for table join responses
               socket.once('tableJoined', (data) => {
