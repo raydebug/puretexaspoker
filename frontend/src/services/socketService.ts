@@ -33,7 +33,7 @@ class SocketService {
   private isConnecting = false;
   private connectionLock = false;
   private connectionAttempts = 0;
-  private maxConnectionAttempts = 3;
+  private maxConnectionAttempts = 10;
   private reconnectionBackoff = 2000;
   private lastConnectionAttempt = 0;
   private isTestMode = false;
@@ -73,6 +73,9 @@ class SocketService {
       this.connectionAttempts = 0;
       this.reconnectionBackoff = 0; // Set to 0 in test mode
       this.maxConnectionAttempts = 10; // Allow more attempts in test mode
+    } else {
+      // In normal mode, allow more attempts to be user-friendly
+      this.maxConnectionAttempts = 10;
     }
   }
 
@@ -930,36 +933,44 @@ class SocketService {
   // --- Lobby methods ---
   requestLobbyTables() {
     console.log('DEBUG: requestLobbyTables called, socket connected:', this.socket?.connected);
-    if (!this.socket || !this.socket.connected) {
-      console.log('Socket not connected, connecting before requesting tables');
-      this.connect();
-      
-      // Request tables once connected with a timeout
-      this.socket?.once('connect', () => {
-        console.log('DEBUG: Socket connected, emitting getLobbyTables');
-        this.socket?.emit('getLobbyTables');
-        
-        // Add a backup request after a delay in case the first one fails
-        setTimeout(() => {
-          if (this.socket?.connected && this.lobbyTables.length === 0) {
-            console.log('DEBUG: Backup getLobbyTables request');
-            this.socket?.emit('getLobbyTables');
-          }
-        }, 2000);
-      });
+    
+    // First, try HTTP fallback immediately if socket is not connected or has failed
+    if (!this.socket || !this.socket.connected || this.connectionAttempts >= this.maxConnectionAttempts) {
+      console.log('DEBUG: Socket not available, trying HTTP fallback for tables');
+      this.tryHttpFallbackForTables();
       return;
     }
     
     console.log('DEBUG: Emitting getLobbyTables immediately');
     this.socket.emit('getLobbyTables');
     
-    // Add a backup request after a delay in case the first one fails
-    setTimeout(() => {
-      if (this.socket?.connected && this.lobbyTables.length === 0) {
-        console.log('DEBUG: Backup getLobbyTables request (immediate case)');
-        this.socket?.emit('getLobbyTables');
+    // Add HTTP fallback after a delay in case socket request fails
+    setTimeout(async () => {
+      if (this.lobbyTables.length === 0) {
+        console.log('DEBUG: Socket getLobbyTables failed, trying HTTP fallback');
+        this.tryHttpFallbackForTables();
       }
-    }, 2000);
+    }, 5000); // Wait 5 seconds for socket response before falling back
+  }
+
+  private async tryHttpFallbackForTables() {
+    try {
+      console.log('DEBUG: Attempting HTTP fallback for lobby tables');
+      const response = await fetch('http://localhost:3001/api/lobby-tables');
+      if (response.ok) {
+        const tablesData = await response.json();
+        console.log('DEBUG: HTTP fallback successful, got', tablesData.length, 'tables');
+        this.emitTablesUpdate(tablesData);
+      } else {
+        throw new Error(`HTTP request failed with status ${response.status}`);
+      }
+    } catch (error) {
+      console.error('DEBUG: HTTP fallback failed:', error);
+      this.emitError({ 
+        message: 'Unable to load tables. Please refresh the page.', 
+        context: 'tables:http_fallback_failed' 
+      });
+    }
   }
 
   onTablesUpdate(callback: TablesUpdateCallback) {
