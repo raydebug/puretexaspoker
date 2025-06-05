@@ -15,6 +15,7 @@ export interface GameState {
   players: Player[];
   pot: number;
   communityCards: string[];
+  burnedCards?: string[];
   phase: 'preflop' | 'flop' | 'turn' | 'river' | 'showdown' | 'waiting';
   minBet: number;
   currentBet: number;

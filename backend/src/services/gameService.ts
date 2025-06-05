@@ -29,6 +29,7 @@ export class GameService {
       id: Math.random().toString(36).substring(7),
       players: [],
       communityCards: [],
+      burnedCards: [],
       pot: 0,
       currentPlayerId: null,
       currentPlayerPosition: 0,
@@ -61,6 +62,7 @@ export class GameService {
     this.gameState.pot = 0;
     this.gameState.currentBet = 0;
     this.gameState.communityCards = [];
+    this.gameState.burnedCards = [];
     
     // Clear action tracking for new hand
     this.playersActedThisRound.clear();
@@ -401,16 +403,22 @@ export class GameService {
   private completePhase(): void {
     switch (this.gameState.phase) {
       case 'preflop':
+        // Burn one card before dealing the flop
+        this.gameState.burnedCards.push(...this.deckService.dealCards(1, this.deck));
         this.gameState.communityCards = this.deckService.dealCards(3, this.deck);
         this.gameState.phase = 'flop';
         this.resetBettingRound();
         break;
       case 'flop':
+        // Burn one card before dealing the turn
+        this.gameState.burnedCards.push(...this.deckService.dealCards(1, this.deck));
         this.gameState.communityCards.push(...this.deckService.dealCards(1, this.deck));
         this.gameState.phase = 'turn';
         this.resetBettingRound();
         break;
       case 'turn':
+        // Burn one card before dealing the river
+        this.gameState.burnedCards.push(...this.deckService.dealCards(1, this.deck));
         this.gameState.communityCards.push(...this.deckService.dealCards(1, this.deck));
         this.gameState.phase = 'river';
         this.resetBettingRound();

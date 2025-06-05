@@ -44,6 +44,7 @@
 - [x] Add dealer button movement tests
 - [x] Add game phase transition tests
 - [x] Add blind posting tests
+- [x] Add E2E test for burn card rule
 - [x] Fix jest-dom matchers not available in all test files (e.g., .toBeInTheDocument is not a function)
 - [x] Fix text matching issues for split elements (e.g., 'Players (2)' not found)
 - [x] Fix style/highlight tests failing due to undefined elements (e.g., .toHaveStyle() on undefined)
@@ -59,6 +60,7 @@
 - [ ] Update socket handlers for game actions
 - [ ] Implement game phase transitions
 - [ ] Add error handling for socket events
+- [x] Implement burn card rule before dealing community cards
 - [x] Fix TypeScript compilation errors (e.g., missing properties in GameState type, type mismatches for Card[] vs string[], missing method implementations in GameService) - COMPLETED: All compilation errors resolved
 
 ### Frontend
