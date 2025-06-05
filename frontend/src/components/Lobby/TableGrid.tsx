@@ -259,18 +259,17 @@ export const TableGrid: React.FC<TableGridProps> = ({ filters }) => {
     setSelectedTable(null);
   };
 
-  const handleJoinTable = (nickname: string, buyIn: number) => {
-    console.log('TableGrid: handleJoinTable called with', { nickname, buyIn, selectedTable: selectedTable?.id });
+  const handleJoinTable = (nickname: string) => {
+    console.log('TableGrid: handleJoinTable called with', { nickname, selectedTable: selectedTable?.id });
     if (selectedTable) {
       // Save nickname for future use
       localStorage.setItem('nickname', nickname);
       
-      console.log('TableGrid: Navigating to /join-table with state', { table: selectedTable, buyIn });
-      // Navigate to the Join Game page with table data and buyIn
+      console.log('TableGrid: Navigating to /join-table with state', { table: selectedTable });
+      // Navigate to the Join Game page with table data (no buyIn needed for observer)
       navigate('/join-table', { 
         state: { 
-          table: selectedTable,
-          buyIn: buyIn
+          table: selectedTable
         } 
       });
     } else {

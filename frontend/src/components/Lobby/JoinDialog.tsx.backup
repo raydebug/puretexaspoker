@@ -173,6 +173,14 @@ const StatusBadge = styled.span<{ $status: TableData['status'] }>`
 
 export const JoinDialog: React.FC<JoinDialogProps> = ({ table, onClose, onJoin }) => {
   const [nickname, setNickname] = useState('');
+  const [buyIn, setBuyIn] = useState(table.minBuyIn || 100);
+
+  useEffect(() => {
+    // Ensure buyIn is always valid - use table's actual minBuyIn
+    const validMinBuyIn = table.minBuyIn || 100;
+    setBuyIn(validMinBuyIn);
+    console.log('JoinDialog: Setting initial buyIn to', validMinBuyIn, 'from table minBuyIn:', table.minBuyIn);
+  }, [table.minBuyIn]);
 
   useEffect(() => {
     // Load nickname from localStorage if available
@@ -211,27 +219,36 @@ export const JoinDialog: React.FC<JoinDialogProps> = ({ table, onClose, onJoin }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('JoinDialog: Form submitted', { nickname: nickname.trim() });
-    if (nickname.trim()) {
-      console.log('JoinDialog: Calling onJoin with', nickname.trim());
-      onJoin(nickname.trim());
+    const minBuyIn = table.minBuyIn || 100;
+    const maxBuyIn = table.maxBuyIn || 10000;
+    console.log('JoinDialog: Form submitted', { nickname: nickname.trim(), buyIn, minBuyIn, maxBuyIn });
+    if (nickname.trim() && buyIn >= minBuyIn && buyIn <= maxBuyIn) {
+      console.log('JoinDialog: Calling onJoin with', nickname.trim(), buyIn);
+      onJoin(nickname.trim(), buyIn);
       onClose(); // Close dialog when successfully submitting
     } else {
       console.log('JoinDialog: Form validation failed', {
-        hasNickname: !!nickname.trim()
+        hasNickname: !!nickname.trim(),
+        buyInValid: buyIn >= minBuyIn && buyIn <= maxBuyIn,
+        buyIn,
+        minBuyIn,
+        maxBuyIn
       });
     }
   };
 
   // Calculate if button should be disabled
   const isNicknameValid = nickname.trim().length > 0;
+  const minBuyIn = table.minBuyIn || 100;
+  const maxBuyIn = table.maxBuyIn || 10000;
+  const isBuyInValid = buyIn >= minBuyIn && buyIn <= maxBuyIn;
   const isTableAvailable = table.status !== 'full';
-  let isButtonDisabled = !isNicknameValid || !isTableAvailable;
+  let isButtonDisabled = !isNicknameValid || !isBuyInValid || !isTableAvailable;
 
   // In test mode, be more permissive
   if (typeof window !== 'undefined' && (window as any).Cypress) {
-    // Force enable button if we have any nickname
-    if (nickname.trim().length > 0) {
+    // Force enable button if we have any nickname and a reasonable buy-in
+    if (nickname.trim().length > 0 && buyIn > 0) {
       isButtonDisabled = false;
     }
   }
@@ -240,8 +257,12 @@ export const JoinDialog: React.FC<JoinDialogProps> = ({ table, onClose, onJoin }
   if (typeof window !== 'undefined' && (window as any).Cypress) {
     console.log('JoinDialog Debug:', {
       nickname: nickname,
+      buyIn: buyIn,
+      minBuyIn: minBuyIn,
+      maxBuyIn: maxBuyIn,
       tableStatus: table.status,
       isNicknameValid,
+      isBuyInValid,
       isTableAvailable,
       isButtonDisabled
     });
@@ -281,7 +302,7 @@ export const JoinDialog: React.FC<JoinDialogProps> = ({ table, onClose, onJoin }
         </TableInfo>
 
         <div>
-          <InfoLabel>Buy-in Range (when taking a seat)</InfoLabel>
+          <InfoLabel>Buy-in Range</InfoLabel>
           <InfoValue style={{ fontSize: '1.2rem' }}>
             {formatMoney(table.minBuyIn)} - {formatMoney(table.maxBuyIn)}
           </InfoValue>
@@ -303,6 +324,40 @@ export const JoinDialog: React.FC<JoinDialogProps> = ({ table, onClose, onJoin }
             />
           </InputGroup>
 
+          <InputGroup>
+            <Label htmlFor="buyIn">Buy-in Amount</Label>
+            <TextInput
+              id="buyIn"
+              type="number"
+              placeholder={`${table.minBuyIn} - ${table.maxBuyIn}`}
+              value={buyIn}
+              onChange={(e) => {
+                const inputValue = e.target.value;
+                console.log('JoinDialog: Input changed to:', inputValue);
+                
+                if (inputValue === '' || inputValue === null || inputValue === undefined) {
+                  // Set to minimum buy-in if empty
+                  setBuyIn(table.minBuyIn || 100);
+                  return;
+                }
+                
+                const value = parseFloat(inputValue);
+                if (!isNaN(value) && value >= 0) {
+                  setBuyIn(value);
+                  console.log('JoinDialog: Setting buyIn to', value);
+                }
+              }}
+              onFocus={(e) => {
+                // Select all text when focused to make it easier to replace
+                e.target.select();
+              }}
+              min={table.minBuyIn}
+              max={table.maxBuyIn}
+              required
+              data-testid="buy-in-input"
+            />
+          </InputGroup>
+
           <ButtonGroup>
             <Button type="button" onClick={onClose}>
               Cancel
@@ -311,13 +366,13 @@ export const JoinDialog: React.FC<JoinDialogProps> = ({ table, onClose, onJoin }
               type="submit"
               $variant="primary"
               disabled={isButtonDisabled}
-              data-testid="join-as-observer"
+              data-testid="confirm-buy-in"
               onClick={(e) => {
                 // In test mode, always allow submission
                 if (typeof window !== 'undefined' && (window as any).Cypress) {
                   e.preventDefault();
-                  console.log('JoinDialog: Test mode - forcing submission with nickname:', nickname.trim());
-                  onJoin(nickname.trim() || 'TestPlayer');
+                  console.log('JoinDialog: Test mode - forcing submission');
+                  onJoin('TestPlayer', 100);
                   onClose();
                   return;
                 }
@@ -330,7 +385,7 @@ export const JoinDialog: React.FC<JoinDialogProps> = ({ table, onClose, onJoin }
                 }
               }}
             >
-              {table.status === 'full' ? 'Join as Observer' : 'Join Table'}
+              {table.status === 'full' ? 'Table is Full' : 'Join Table'}
             </Button>
           </ButtonGroup>
         </Form>

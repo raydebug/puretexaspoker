@@ -21,10 +21,10 @@ describe('Observer Flow - Join as Observer and Pick Seat', () => {
 
     // Join a table (this should take us to observer view)
     cy.get('[data-testid^="table-"]').first().click();
-    cy.get('[data-testid="buy-in-input"]').should('be.visible');
+    
+    // New simplified dialog - only nickname needed
     cy.get('[data-testid="nickname-input"]').should('be.visible').clear().type('ObserverPlayer');
-    cy.get('[data-testid="buy-in-input"]').clear().type('100');
-    cy.get('[data-testid="confirm-buy-in"]').should('be.visible').click({ force: true });
+    cy.get('[data-testid="join-as-observer"]').should('be.visible').click({ force: true });
 
     // Should be redirected to game page in observer mode
     cy.url().should('include', '/game/');
@@ -65,10 +65,10 @@ describe('Observer Flow - Join as Observer and Pick Seat', () => {
     
     cy.get('[data-testid="lobby-container"]').should('be.visible');
     cy.get('[data-testid^="table-"]').first().click();
-    cy.get('[data-testid="buy-in-input"]').should('be.visible');
+    
+    // New simplified dialog - only nickname needed
     cy.get('[data-testid="nickname-input"]').clear().type('SeatClicker');
-    cy.get('[data-testid="buy-in-input"]').clear().type('100');
-    cy.get('[data-testid="confirm-buy-in"]').click({ force: true });
+    cy.get('[data-testid="join-as-observer"]').click({ force: true });
 
     // Check basic observer view elements
     cy.get('[data-testid="observer-view"]').should('be.visible');
@@ -94,10 +94,10 @@ describe('Observer Flow - Join as Observer and Pick Seat', () => {
     
     cy.get('[data-testid="lobby-container"]').should('be.visible');
     cy.get('[data-testid^="table-"]').first().click();
-    cy.get('[data-testid="buy-in-input"]').should('be.visible');
+    
+    // New simplified dialog - only nickname needed
     cy.get('[data-testid="nickname-input"]').clear().type('LeavingObserver');
-    cy.get('[data-testid="buy-in-input"]').clear().type('100');
-    cy.get('[data-testid="confirm-buy-in"]').click({ force: true });
+    cy.get('[data-testid="join-as-observer"]').click({ force: true });
 
     cy.get('[data-testid="observer-view"]').should('be.visible');
     

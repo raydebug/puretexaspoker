@@ -56,24 +56,14 @@ const Label = styled.span`
   color: #ffd700;
 `;
 
-const BuyInSection = styled.div`
-  margin-bottom: 2rem;
-`;
-
-const Input = styled.input`
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border-radius: 4px;
+const ObserverNote = styled.div`
+  background: rgba(255, 215, 0, 0.1);
   border: 1px solid #ffd700;
-  background: rgba(0, 0, 0, 0.8);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 2rem;
   color: #ffd700;
-  font-size: 1rem;
-  margin-top: 0.5rem;
-
-  &:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
-  }
+  text-align: center;
 `;
 
 const ButtonGroup = styled.div`
@@ -105,6 +95,12 @@ const Button = styled.button<{ $primary?: boolean }>`
   }
 `;
 
+const LoadingMessage = styled.div`
+  color: #ffd700;
+  text-align: center;
+  margin: 1rem 0;
+`;
+
 const ErrorMessage = styled.div`
   color: #ff4444;
   text-align: center;
@@ -115,67 +111,42 @@ export const JoinGamePage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const table = location.state?.table as TableData;
-  const passedBuyIn = location.state?.buyIn as number;
-  const [buyIn, setBuyIn] = useState(passedBuyIn || table?.minBuyIn || 100);
   const [error, setError] = useState('');
   const [isJoining, setIsJoining] = useState(false);
 
-  // If we arrived with the buy-in already set, auto-join
+  // Auto-join as observer when page loads
   useEffect(() => {
-    if (table && passedBuyIn && !isJoining) {
-      console.log('Auto-joining table from JoinGamePage');
+    if (table && !isJoining) {
+      console.log('Auto-joining table as observer from JoinGamePage');
       
       // In test mode, navigate directly without socket connection
       if (typeof window !== 'undefined' && (window as any).Cypress) {
-        console.log('JoinGamePage: Test mode detected in useEffect - navigating directly');
+        console.log('JoinGamePage: Test mode detected - navigating directly to game');
         navigate(`/game/${table.id}`, { 
           state: { 
             table,
-            buyIn: passedBuyIn
+            role: 'observer'
           }
         });
         return;
       }
       
-      handleJoin();
+      handleJoinAsObserver();
     }
-  }, []); // Empty dependency array to run only once
+  }, [table]); // Depend on table to avoid multiple calls
 
   if (!table) {
     navigate('/');
     return null;
   }
 
-  const handleBuyInChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value);
-    setBuyIn(value);
-    setError('');
-  };
-
-  const handleJoin = () => {
-    if (buyIn < table.minBuyIn || buyIn > table.maxBuyIn) {
-      setError(`Buy-in must be between ${formatMoney(table.minBuyIn)} and ${formatMoney(table.maxBuyIn)}`);
-      return;
-    }
-
+  const handleJoinAsObserver = () => {
     try {
       setIsJoining(true);
       
       // Store nickname
       const nickname = localStorage.getItem('nickname') || 'TestPlayer';
       localStorage.setItem('nickname', nickname);
-      
-      // In test mode, skip socket connection and go directly to game
-      if (typeof window !== 'undefined' && (window as any).Cypress) {
-        console.log('JoinGamePage: Test mode - navigating directly to game');
-        navigate(`/game/${table.id}`, { 
-          state: { 
-            table,
-            buyIn
-          }
-        });
-        return;
-      }
       
       // Connect to socket and initialize the game session
       socketService.connect();
@@ -187,15 +158,15 @@ export const JoinGamePage: React.FC = () => {
       };
       socketService.onError(errorHandler);
       
-      // Join the table - ensure tableId is a number
-      console.log(`Attempting to join table ${table.id} with buy-in ${buyIn}`);
-      socketService.joinTable(Number(table.id), buyIn);
+      // Join the table as observer (no buy-in needed)
+      console.log(`Attempting to join table ${table.id} as observer`);
+      socketService.joinTable(Number(table.id)); // No buy-in parameter
       
       // Navigate to the game page immediately - the game page will handle the connection
       navigate(`/game/${table.id}`, { 
         state: { 
           table,
-          buyIn
+          role: 'observer'
         }
       });
     } catch (err) {
@@ -208,7 +179,7 @@ export const JoinGamePage: React.FC = () => {
   return (
     <Container>
       <JoinForm>
-        <Title>Join Table</Title>
+        <Title>Joining as Observer</Title>
         <TableInfo>
           <InfoRow>
             <Label>Table:</Label>
@@ -223,38 +194,30 @@ export const JoinGamePage: React.FC = () => {
             <span>{table.gameType} Hold'em ({table.maxPlayers}-max)</span>
           </InfoRow>
           <InfoRow>
-            <Label>Buy-in Range:</Label>
+            <Label>Buy-in Range (when taking a seat):</Label>
             <span>{formatMoney(table.minBuyIn)} - {formatMoney(table.maxBuyIn)}</span>
           </InfoRow>
         </TableInfo>
 
-        <BuyInSection>
-          <Label>Buy-in Amount</Label>
-          <Input
-            type="number"
-            value={buyIn}
-            onChange={handleBuyInChange}
-            min={table.minBuyIn}
-            max={table.maxBuyIn}
-            step={table.bigBlind}
-            disabled={isJoining}
-            data-testid="buy-in-input"
-          />
-        </BuyInSection>
+        <ObserverNote>
+          You're joining as an observer. You can watch the game and take a seat when ready by selecting an empty seat.
+        </ObserverNote>
 
+        {isJoining && <LoadingMessage>Joining table...</LoadingMessage>}
         {error && <ErrorMessage>{error}</ErrorMessage>}
 
-        <ButtonGroup>
-          <Button onClick={() => navigate('/lobby')} disabled={isJoining}>Cancel</Button>
-          <Button 
-            $primary 
-            onClick={handleJoin} 
-            disabled={isJoining}
-            data-testid="join-table-btn"
-          >
-            {isJoining ? 'Joining...' : 'Join Table'}
-          </Button>
-        </ButtonGroup>
+        {!isJoining && (
+          <ButtonGroup>
+            <Button onClick={() => navigate('/lobby')}>Cancel</Button>
+            <Button 
+              $primary 
+              onClick={handleJoinAsObserver}
+              data-testid="join-as-observer-btn"
+            >
+              Join as Observer
+            </Button>
+          </ButtonGroup>
+        )}
       </JoinForm>
     </Container>
   );

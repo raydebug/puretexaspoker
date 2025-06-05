@@ -617,7 +617,7 @@ class SocketService {
   }
 
   // --- Seat management ---
-  requestSeat(nickname: string, seatNumber: number) {
+  requestSeat(nickname: string, seatNumber: number, buyIn?: number) {
     try {
       if (!nickname || seatNumber === undefined) {
         throw new Error('Invalid seat request parameters');
@@ -629,12 +629,12 @@ class SocketService {
         
         // Add a listener for when connection is established
         this.socket?.once('connect', () => {
-          this.socket?.emit('seat:request', { nickname, seatNumber });
+          this.socket?.emit('seat:request', { nickname, seatNumber, buyIn });
         });
         return;
       }
       
-      this.socket.emit('seat:request', { nickname, seatNumber });
+      this.socket.emit('seat:request', { nickname, seatNumber, buyIn });
       
       // Add player to observers initially
       if (!this.observers.includes(nickname)) {
@@ -645,6 +645,7 @@ class SocketService {
       errorTrackingService.trackError(error as Error, 'requestSeat', {
         nickname,
         seatNumber,
+        buyIn,
         currentObservers: this.observers
       });
     }
@@ -1025,7 +1026,7 @@ class SocketService {
   }
 
   // Updated to match the expected signature for lobby
-  joinTable(tableId: number, buyIn: number) {
+  joinTable(tableId: number, buyIn?: number) {
     console.log(`DEBUG: joinTable called with tableId=${tableId}, buyIn=${buyIn}`);
     console.log(`DEBUG: Socket connected: ${this.socket?.connected}`);
     console.log(`DEBUG: Connection attempts: ${this.connectionAttempts}/${this.maxConnectionAttempts}`);

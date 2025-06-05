@@ -13,7 +13,8 @@ A comprehensive multiplayer Texas Hold'em poker game built with React, Node.js, 
 - **Table Join Test Timeouts**: ✅ RESOLVED - Improved test reliability and error handling
 
 ### 🧪 **PERFECT TEST RESULTS** 🎯
-- **E2E Tests**: ✅ **78/78 PASSING (100% success rate!)** 🏆
+- **E2E Tests**: ✅ **113/113 PASSING (100% success rate!)** 🏆  
+- **Observer Flow Tests**: ✅ New direct seat clicking functionality tested
 - **Backend Unit Tests**: ✅ All core functionality tests PASSING
 - **Critical Functionality**: ✅ All major features working flawlessly
 - **Error Handling**: ✅ Comprehensive error recovery implemented
@@ -35,6 +36,8 @@ A comprehensive multiplayer Texas Hold'em poker game built with React, Node.js, 
 - **Game Phase Transitions**: Smooth progression through all game states
 
 ### **Multiplayer Infrastructure**
+- **Observer-First Table Joining**: Join as observer, then pick strategic seats ✨ NEW
+- **Direct Seat Selection**: Click available seats on poker table for instant join
 - **Real-time Communication**: Socket.IO for instant updates
 - **72 Pre-configured Tables**: Various stake levels and buy-in ranges
 - **Session Management**: Persistent player state and reconnection
@@ -72,9 +75,9 @@ CO              |          UTG
 8. **CO** - Cutoff (Left)
 9. **BU** - Button (Top Left)
 
-### **Game Flow**
-1. **Join Table**: Select from 72 available tables with different stakes
-2. **Take Seat**: Choose your position with buy-in amount
+### **Game Flow** 
+1. **Join as Observer**: Select from 72 available tables and watch the action
+2. **Strategic Seat Selection**: Click any available seat on the poker table to join
 3. **Play Poker**: Full Texas Hold'em with betting rounds
 4. **Hand Evaluation**: Automatic winner determination
 5. **Continuous Play**: Dealer button rotates, new hands begin

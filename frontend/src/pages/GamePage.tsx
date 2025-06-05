@@ -13,6 +13,7 @@ import { TableData } from '../types/table';
 import SoundControls from '../components/SoundControls';
 import { soundService } from '../services/soundService';
 import { PokerTable } from '../components/Game/PokerTable';
+import { SeatSelectionDialog } from '../components/Game/SeatSelectionDialog';
 
 const GameContainer = styled.div`
   position: relative;
@@ -148,6 +149,8 @@ const GamePage: React.FC = () => {
   const [joinAttempted, setJoinAttempted] = useState(false);
   const [isObserver, setIsObserver] = useState(true); // Start as observer
   const [availableSeats, setAvailableSeats] = useState<number[]>([]);
+  const [showSeatDialog, setShowSeatDialog] = useState(false);
+  const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
 
   
   // Get table info from state if coming from JoinGamePage
@@ -229,8 +232,10 @@ const GamePage: React.FC = () => {
         // Get nickname from localStorage or use default
         const nickname = localStorage.getItem('nickname') || 'Player' + Math.floor(Math.random() * 1000);
         
-        // Join as observer first
-        socketService.joinAsObserver(nickname);
+        // Join the table as observer first (this will trigger the backend joinTable logic)
+        if (table && gameId) {
+          socketService.joinTable(parseInt(gameId));
+        }
         setIsObserver(true);
         
         // Set up error handler
@@ -351,22 +356,33 @@ const GamePage: React.FC = () => {
 
   // Function to handle seat selection for observers
   const handleSeatSelection = (seatNumber: number) => {
-    const nickname = localStorage.getItem('nickname') || 'Player' + Math.floor(Math.random() * 1000);
-    const defaultBuyIn = buyIn || table?.minBuyIn || 100;
+    setSelectedSeat(seatNumber);
+    setShowSeatDialog(true);
+  };
+
+  // Function to handle buy-in confirmation from dialog
+  const handleSeatConfirm = (buyInAmount: number) => {
+    if (selectedSeat === null) return;
     
-    // Request the seat with default buy-in
-    socketService.requestSeat(nickname, seatNumber);
+    const nickname = localStorage.getItem('nickname') || 'Player' + Math.floor(Math.random() * 1000);
+    
+    // Close dialog
+    setShowSeatDialog(false);
+    setSelectedSeat(null);
+    
+    // Request the seat with selected buy-in
+    socketService.requestSeat(nickname, selectedSeat, buyInAmount);
     
     // In test mode, simulate taking the seat
     if (typeof window !== 'undefined' && (window as any).Cypress) {
       setIsObserver(false);
       // Create a simple player for test mode
       const newPlayer = {
-        id: 'test-player-' + seatNumber,
+        id: 'test-player-' + selectedSeat,
         name: nickname,
-        seatNumber: seatNumber,
-        position: seatNumber,
-        chips: defaultBuyIn,
+        seatNumber: selectedSeat,
+        position: selectedSeat,
+        chips: buyInAmount,
         currentBet: 0,
         isDealer: false,
         isAway: false,
@@ -379,6 +395,12 @@ const GamePage: React.FC = () => {
       };
       setCurrentPlayer(newPlayer);
     }
+  };
+
+  // Function to close seat dialog
+  const handleSeatDialogClose = () => {
+    setShowSeatDialog(false);
+    setSelectedSeat(null);
   };
 
   if (error) {
@@ -437,6 +459,16 @@ const GamePage: React.FC = () => {
             observers={observers}
             currentPlayerId={currentPlayer?.id}
           />
+
+          {/* Seat Selection Dialog */}
+          {showSeatDialog && selectedSeat !== null && (
+            <SeatSelectionDialog
+              table={table}
+              seatNumber={selectedSeat}
+              onClose={handleSeatDialogClose}
+              onConfirm={handleSeatConfirm}
+            />
+          )}
         </ObserverContainer>
       </GameContainer>
     );

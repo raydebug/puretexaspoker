@@ -5,10 +5,11 @@ import { prisma } from '../db';
 
 interface ClientToServerEvents {
   getLobbyTables: () => void;
-  joinTable: (data: { tableId: number; buyIn: number; nickname?: string }) => void;
+  joinTable: (data: { tableId: number; buyIn?: number; nickname?: string }) => void;
   leaveTable: (data: { tableId: number }) => void;
   sitDown: (data: { tableId: number; buyIn: number }) => void;
   standUp: (data: { tableId: number }) => void;
+  takeSeat: (data: { seatNumber: number; buyIn: number }) => void;
 }
 
 interface ServerToClientEvents {
@@ -16,7 +17,7 @@ interface ServerToClientEvents {
   tableJoined: (data: { tableId: number; role: 'player' | 'observer'; buyIn: number; gameId?: string }) => void;
   tableError: (error: string) => void;
   gameCreated: (data: { gameId: string; tableId: number }) => void;
-  gameJoined: (data: { gameId: string; playerId: string; gameState: any }) => void;
+  gameJoined: (data: { gameId: string; playerId: string | null; gameState: any }) => void;
   gameState: (gameState: any) => void;
 }
 
@@ -55,12 +56,12 @@ export const setupLobbyHandlers = (
           where: { id: socket.id },
           update: { 
             nickname: nicknameToUse,
-            chips: buyIn 
+            chips: buyIn || 0 
           },
           create: {
             id: socket.id,
             nickname: nicknameToUse,
-            chips: buyIn
+            chips: buyIn || 0
           }
         });
       } catch (dbError: any) {
@@ -73,12 +74,12 @@ export const setupLobbyHandlers = (
               where: { id: socket.id },
               update: { 
                 nickname: fallbackNickname,
-                chips: buyIn 
+                chips: buyIn || 0 
               },
               create: {
                 id: socket.id,
                 nickname: fallbackNickname,
-                chips: buyIn
+                chips: buyIn || 0
               }
             });
           } catch (fallbackError) {
@@ -225,69 +226,34 @@ export const setupLobbyHandlers = (
         }
       }
 
-      // Add the player to the game
+      // Add the user as an observer first (observer-first flow)
       let gameService = gameManager.getGame(gameId);
       console.log(`DEBUG: Backend gameService found:`, !!gameService);
       
       if (gameService) {
-        const playerData = {
-          id: player.id,
-          name: nicknameToUse,
-          chips: buyIn,
-          isActive: true,
-          isDealer: false,
-          currentBet: 0,
-          position: 0, // Will be updated based on seat
-          seatNumber: 1, // Will be updated based on actual seat
-          isAway: false,
-          cards: [],
-          avatar: {
-            type: 'default' as const,
-            color: '#007bff'
-          }
-        };
-
-        console.log(`DEBUG: Backend adding player to game:`, playerData);
-        gameService.addPlayer(playerData);
+        // Store the buy-in amount and other data for when they select a seat
+        socket.data.buyIn = buyIn;
+        socket.data.gameId = gameId;
+        socket.data.dbTableId = dbTable.id;
+        socket.data.nickname = nicknameToUse;
+        socket.data.playerId = player.id;
         
-        // Create player-table relationship in database
-        await prisma.playerTable.upsert({
-          where: {
-            tableId_seatNumber: {
-              tableId: dbTable.id,
-              seatNumber: 1 // TODO: Find next available seat
-            }
-          },
-          update: {
-            playerId: player.id,
-            buyIn: buyIn
-          },
-          create: {
-            playerId: player.id,
-            tableId: dbTable.id,
-            seatNumber: 1, // TODO: Find next available seat
-            buyIn: buyIn
-          }
-        });
-        
-        // Join the game room
+        // Join the game room as observer
         socket.join(`game:${gameId}`);
         gameManager.joinGameRoom(gameId, socket.id);
 
-        // Get updated game state
+        // Get current game state
         const gameState = gameService.getGameState();
         
-        // Emit success events
-        console.log(`DEBUG: Backend about to emit tableJoined - tableId: ${tableId}, gameId: ${gameId}`);
-        socket.emit('tableJoined', { tableId, role: 'player', buyIn, gameId });
+        // Emit success events - user joins as observer
+        console.log(`DEBUG: Backend about to emit tableJoined as observer - tableId: ${tableId}, gameId: ${gameId}`);
+        socket.emit('tableJoined', { tableId, role: 'observer', buyIn: 0, gameId });
         
-        console.log(`DEBUG: Backend about to emit gameJoined - gameId: ${gameId}, playerId: ${player.id}`);
+        console.log(`DEBUG: Backend about to emit gameJoined as observer - gameId: ${gameId}`);
         console.log(`DEBUG: Backend gameState being sent:`, gameState);
-        socket.emit('gameJoined', { gameId, playerId: player.id, gameState });
+        socket.emit('gameJoined', { gameId, playerId: null, gameState });
         
-        console.log(`DEBUG: Backend events emitted successfully`);
-        // Broadcast to other players in the game
-        socket.to(`game:${gameId}`).emit('gameState', gameState);
+        console.log(`DEBUG: Backend user ${nicknameToUse} joined as observer successfully`);
       }
 
       broadcastTables();
