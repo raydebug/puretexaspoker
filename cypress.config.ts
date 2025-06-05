@@ -9,7 +9,7 @@ export default defineConfig({
     },
     supportFile: 'cypress/support/e2e.ts',
     specPattern: 'cypress/e2e/**/*.cy.{js,jsx,ts,tsx}',
-    video: true,
+    video: false,
     videoCompression: 32,
     screenshotOnRunFailure: true,
     defaultCommandTimeout: 10000,
