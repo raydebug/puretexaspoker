@@ -404,9 +404,7 @@ export class GameService {
     switch (this.gameState.phase) {
       case 'preflop':
         // Burn one card before dealing the flop
-        if (!this.gameState.burnedCards) {
-          this.gameState.burnedCards = [];
-        }
+        this.gameState.burnedCards = this.gameState.burnedCards || [];
         this.gameState.burnedCards.push(...this.deckService.dealCards(1, this.deck));
         this.gameState.communityCards = this.deckService.dealCards(3, this.deck);
         this.gameState.phase = 'flop';
@@ -414,26 +412,18 @@ export class GameService {
         break;
       case 'flop':
         // Burn one card before dealing the turn
-        if (!this.gameState.burnedCards) {
-          this.gameState.burnedCards = [];
-        }
+        this.gameState.burnedCards = this.gameState.burnedCards || [];
         this.gameState.burnedCards.push(...this.deckService.dealCards(1, this.deck));
-        if (!this.gameState.communityCards) {
-          this.gameState.communityCards = [];
-        }
+        this.gameState.communityCards = this.gameState.communityCards || [];
         this.gameState.communityCards.push(...this.deckService.dealCards(1, this.deck));
         this.gameState.phase = 'turn';
         this.resetBettingRound();
         break;
       case 'turn':
         // Burn one card before dealing the river
-        if (!this.gameState.burnedCards) {
-          this.gameState.burnedCards = [];
-        }
+        this.gameState.burnedCards = this.gameState.burnedCards || [];
         this.gameState.burnedCards.push(...this.deckService.dealCards(1, this.deck));
-        if (!this.gameState.communityCards) {
-          this.gameState.communityCards = [];
-        }
+        this.gameState.communityCards = this.gameState.communityCards || [];
         this.gameState.communityCards.push(...this.deckService.dealCards(1, this.deck));
         this.gameState.phase = 'river';
         this.resetBettingRound();

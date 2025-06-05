@@ -123,7 +123,7 @@ export const OnlineList: React.FC<OnlineListProps> = ({
   };
 
   return (
-    <ListContainer>
+    <ListContainer data-testid="online-users-list">
       <ListTitle>Online Users</ListTitle>
       
       {/* Players Section */}

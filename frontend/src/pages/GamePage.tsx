@@ -96,6 +96,156 @@ const ReturnButton = styled.button`
   }
 `;
 
+const ObserverContainer = styled.div`
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+`;
+
+const ObserverHeader = styled.div`
+  text-align: center;
+  margin-bottom: 2rem;
+  
+  h2 {
+    color: #ffd700;
+    margin-bottom: 0.5rem;
+    font-size: 2rem;
+  }
+  
+  p {
+    color: #ffffff;
+    opacity: 0.8;
+    font-size: 1.1rem;
+  }
+`;
+
+const ObserverControls = styled.div`
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 1rem;
+  z-index: 1000;
+`;
+
+const TakeSeatButton = styled.button`
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #2c8a3d 0%, #37a34a 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, #37a34a 0%, #4caf50 100%);
+    transform: translateY(-2px);
+  }
+  
+  &:disabled {
+    background: #666;
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+`;
+
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const SeatSelectionModal = styled.div`
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  border-radius: 1rem;
+  padding: 2rem;
+  border: 2px solid #ffd700;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+  max-width: 500px;
+  width: 90%;
+  z-index: 10000;
+  position: relative;
+  max-height: 80vh;
+  overflow-y: auto;
+`;
+
+const ModalHeader = styled.div`
+  text-align: center;
+  margin-bottom: 2rem;
+  
+  h3 {
+    color: #ffd700;
+    margin-bottom: 0.5rem;
+    font-size: 1.5rem;
+  }
+  
+  p {
+    color: #ffffff;
+    opacity: 0.8;
+  }
+`;
+
+const SeatGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+`;
+
+const SeatOption = styled.button`
+  padding: 1rem;
+  background: linear-gradient(135deg, #2c8a3d 0%, #37a34a 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: linear-gradient(135deg, #37a34a 0%, #4caf50 100%);
+    transform: translateY(-2px);
+  }
+`;
+
+const ModalActions = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+`;
+
+const CancelButton = styled.button`
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  color: #ffd700;
+  border: 2px solid #ffd700;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: #ffd700;
+    color: #000;
+  }
+`;
+
 const GamePage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -106,6 +256,9 @@ const GamePage: React.FC = () => {
   const [observers, setObservers] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [joinAttempted, setJoinAttempted] = useState(false);
+  const [isObserver, setIsObserver] = useState(true); // Start as observer
+  const [availableSeats, setAvailableSeats] = useState<number[]>([]);
+  const [showSeatSelection, setShowSeatSelection] = useState(false);
   
   // Get table info from state if coming from JoinGamePage
   const table = location.state?.table as TableData | undefined;
@@ -120,6 +273,9 @@ const GamePage: React.FC = () => {
     // In test mode, create mock data and skip socket connection
     if (typeof window !== 'undefined' && (window as any).Cypress) {
       console.log('GamePage: Test mode detected - creating mock game state');
+      
+      // Get the actual nickname from localStorage for test mode
+      const testNickname = localStorage.getItem('nickname') || 'TestPlayer';
       
       // Create mock player
       const mockPlayer: Player = {
@@ -166,8 +322,12 @@ const GamePage: React.FC = () => {
       };
       
       setGameState(mockGameState);
-      setCurrentPlayer(mockPlayer);
+      setCurrentPlayer(null); // Start as observer, no player seat yet
       setIsLoading(false);
+      // In test mode, start as observer with option to take a seat
+      setIsObserver(true);
+      setObservers([testNickname]); // Use actual test nickname from localStorage
+      setAvailableSeats([0, 1, 2, 3, 4, 5, 6, 7, 8]); // All seats available for observers
       return;
     }
     
@@ -175,6 +335,13 @@ const GamePage: React.FC = () => {
       try {
         console.log('DEBUG: GamePage attempting to connect to socket...');
         await socketService.connect();
+        
+        // Get nickname from localStorage or use default
+        const nickname = localStorage.getItem('nickname') || 'Player' + Math.floor(Math.random() * 1000);
+        
+        // Join as observer first
+        socketService.joinAsObserver(nickname);
+        setIsObserver(true);
         
         // Set up error handler
         const errorHandler = (error: { message: string; context?: string }) => {
@@ -185,6 +352,20 @@ const GamePage: React.FC = () => {
         
         socketService.onError(errorHandler);
         
+        // Listen for observer updates
+        socketService.onOnlineUsersUpdate((players: Player[], observerList: string[]) => {
+          setObservers(observerList);
+          if (gameState) {
+            const newGameState = { ...gameState, players };
+            setGameState(newGameState);
+          }
+          
+          // Calculate available seats (0-8, excluding occupied seats)
+          const occupiedSeats = players.map(p => p.seatNumber);
+          const available = Array.from({ length: 9 }, (_, i) => i).filter(seat => !occupiedSeats.includes(seat));
+          setAvailableSeats(available);
+        });
+        
         // Check for existing player and game state periodically
         const checkGameState = () => {
           const player = socketService.getCurrentPlayer();
@@ -194,6 +375,7 @@ const GamePage: React.FC = () => {
           if (player) {
             console.log('DEBUG: GamePage checkPlayer found player:', player);
             setCurrentPlayer(player);
+            setIsObserver(false); // User has a seat, no longer observer
           }
           
           console.log('DEBUG: GamePage checkGameState - state:', !!state);
@@ -201,6 +383,11 @@ const GamePage: React.FC = () => {
             console.log('DEBUG: GamePage checkGameState found state:', state);
             setGameState(state);
             setIsLoading(false);
+            
+            // Calculate available seats
+            const occupiedSeats = state.players.map(p => p.seatNumber);
+            const available = Array.from({ length: 9 }, (_, i) => i).filter(seat => !occupiedSeats.includes(seat));
+            setAvailableSeats(available);
           }
         };
         
@@ -208,14 +395,11 @@ const GamePage: React.FC = () => {
         checkGameState();
         const gameStateInterval = setInterval(checkGameState, 500);
         
-        // Set a timeout to show error if no game state is received
+        // Set a timeout to show the observer view if no game state is received
         const timeoutId = setTimeout(() => {
-          if (!socketService.getCurrentPlayer() || !socketService.getGameState()) {
-            console.log('DEBUG: GamePage timeout - creating fallback game state');
-            setError('Unable to load game. The table may be full or unavailable.');
-            setIsLoading(false);
-          }
-        }, 15000);
+          console.log('DEBUG: GamePage timeout - showing observer view');
+          setIsLoading(false);
+        }, 5000);
         
         return () => {
           clearInterval(gameStateInterval);
@@ -275,6 +459,25 @@ const GamePage: React.FC = () => {
     navigate('/');
   };
 
+  // Function to handle seat selection for observers
+  const handleSeatSelection = (seatNumber: number) => {
+    const nickname = localStorage.getItem('nickname') || 'Player' + Math.floor(Math.random() * 1000);
+    const defaultBuyIn = buyIn || table?.minBuyIn || 100;
+    
+    // Request the seat with default buy-in
+    socketService.requestSeat(nickname, seatNumber);
+    setShowSeatSelection(false);
+  };
+
+  // Function to show seat selection modal
+  const handleTakeSeat = () => {
+    if (availableSeats.length === 0) {
+      setError('No seats available at this table');
+      return;
+    }
+    setShowSeatSelection(true);
+  };
+
   if (error) {
     return (
       <GameContainer>
@@ -297,6 +500,74 @@ const GamePage: React.FC = () => {
           <LoadingText>Connecting to table...</LoadingText>
           <LoadingSubtext>Please wait while we set up your game</LoadingSubtext>
         </LoadingContainer>
+      </GameContainer>
+    );
+  }
+
+  // Observer view - user is watching the table
+  if (isObserver) {
+    return (
+      <GameContainer>
+        <ObserverContainer data-testid="observer-view">
+          <ObserverHeader>
+            <h2>Observing Table {gameId}</h2>
+            <p>You are currently watching this game. Select a seat to join the action!</p>
+          </ObserverHeader>
+          
+          <PokerTable 
+            gameState={gameState} 
+            currentPlayer={null}
+            onAction={handleAction}
+          />
+          
+          <ObserverControls>
+            <TakeSeatButton 
+              data-testid="take-seat-button" 
+              onClick={handleTakeSeat}
+              disabled={availableSeats.length === 0}
+            >
+              {availableSeats.length === 0 ? 'No Seats Available' : `Take a Seat (${availableSeats.length} available)`}
+            </TakeSeatButton>
+            <ReturnButton onClick={handleReturnToLobby}>
+              Leave Table
+            </ReturnButton>
+          </ObserverControls>
+          
+          <OnlineList 
+            players={gameState?.players || []} 
+            observers={observers}
+            currentPlayerId={currentPlayer?.id}
+          />
+        </ObserverContainer>
+        
+        {/* Seat Selection Modal */}
+        {showSeatSelection && (
+          <>
+            <ModalOverlay onClick={() => setShowSeatSelection(false)} />
+            <SeatSelectionModal data-testid="seat-selection-modal">
+              <ModalHeader>
+                <h3>Choose Your Seat</h3>
+                <p>Select an available seat to join the game</p>
+              </ModalHeader>
+              <SeatGrid>
+                {availableSeats.map(seatNumber => (
+                  <SeatOption 
+                    key={seatNumber}
+                    data-testid={`seat-option-${seatNumber}`}
+                    onClick={() => handleSeatSelection(seatNumber)}
+                  >
+                    Seat {seatNumber + 1}
+                  </SeatOption>
+                ))}
+              </SeatGrid>
+              <ModalActions>
+                <CancelButton onClick={() => setShowSeatSelection(false)}>
+                  Cancel
+                </CancelButton>
+              </ModalActions>
+            </SeatSelectionModal>
+          </>
+        )}
       </GameContainer>
     );
   }
