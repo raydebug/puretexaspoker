@@ -40,6 +40,7 @@ export interface GameState {
   id: string;
   players: Player[];
   communityCards: Card[];
+  burnedCards?: Card[];
   pot: number;
   sidePots?: SidePot[];
   currentPlayerId: string | null;

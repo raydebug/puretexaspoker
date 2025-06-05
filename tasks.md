@@ -44,6 +44,7 @@
 - [x] Add dealer button movement tests
 - [x] Add game phase transition tests
 - [x] Add blind posting tests
+- [x] Add E2E test for burn card rule
 - [x] Fix jest-dom matchers not available in all test files (e.g., .toBeInTheDocument is not a function)
 - [x] Fix text matching issues for split elements (e.g., 'Players (2)' not found)
 - [x] Fix style/highlight tests failing due to undefined elements (e.g., .toHaveStyle() on undefined)

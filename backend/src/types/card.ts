@@ -33,6 +33,7 @@ export interface GameState {
   id: string;
   players: Player[];
   communityCards: Card[];
+  burnedCards?: Card[];
   pot: number;
   currentBet: number;
   dealerPosition: number;
