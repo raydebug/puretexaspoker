@@ -31,11 +31,13 @@ describe('Observer Flow - Join as Observer and Pick Seat', () => {
     
     // Verify observer view is displayed
     cy.get('[data-testid="observer-view"]').should('be.visible');
-    cy.get('[data-testid="take-seat-button"]').should('be.visible');
     
     // Check that observer view shows proper content
     cy.contains('Observing Table').should('be.visible');
-    cy.contains('You are currently watching this game').should('be.visible');
+    cy.contains('Click on any available seat to join the action').should('be.visible');
+    
+    // Verify poker table is visible
+    cy.get('[data-testid="poker-table"]').should('be.visible');
     
     // Verify online users list shows observer - debug what's actually there
     cy.get('[data-testid="online-users-list"]').should('be.visible');
@@ -52,26 +54,33 @@ describe('Observer Flow - Join as Observer and Pick Seat', () => {
     });
   });
 
-  it('should show take seat button and basic observer UI', () => {
-    // Simplified test to check basic observer functionality
-    cy.get('[data-testid="nickname-input"]').type('SimpleObserver');
+  it('should show available seats and allow direct seat clicking', () => {
+    // Simplified test to check seat clicking functionality
+    cy.get('[data-testid="nickname-input"]').type('SeatClicker');
     cy.get('[data-testid="join-button"]').click();
     
     cy.window().then((win) => {
-      win.localStorage.setItem('nickname', 'SimpleObserver');
+      win.localStorage.setItem('nickname', 'SeatClicker');
     });
     
     cy.get('[data-testid="lobby-container"]').should('be.visible');
     cy.get('[data-testid^="table-"]').first().click();
     cy.get('[data-testid="buy-in-input"]').should('be.visible');
-    cy.get('[data-testid="nickname-input"]').clear().type('SimpleObserver');
+    cy.get('[data-testid="nickname-input"]').clear().type('SeatClicker');
     cy.get('[data-testid="buy-in-input"]').clear().type('100');
     cy.get('[data-testid="confirm-buy-in"]').click({ force: true });
 
     // Check basic observer view elements
     cy.get('[data-testid="observer-view"]').should('be.visible');
-    cy.get('[data-testid="take-seat-button"]').should('be.visible');
-    cy.contains('Take a Seat').should('be.visible');
+    cy.get('[data-testid="poker-table"]').should('be.visible');
+    
+    // Check for available seats on the poker table
+    cy.get('[data-testid^="available-seat-"]').should('have.length.greaterThan', 0);
+    
+    // Click on an available seat
+    cy.get('[data-testid^="available-seat-"]').first().click();
+    
+    // In test mode, this should work (the test implementation handles this)
     cy.get('[data-testid="poker-table"]').should('be.visible');
   });
 

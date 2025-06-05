@@ -6,6 +6,9 @@ interface PokerTableProps {
   gameState: GameState;
   currentPlayer: Player | null;
   onAction: (action: string, amount?: number) => void;
+  isObserver?: boolean;
+  availableSeats?: number[];
+  onSeatSelect?: (seatNumber: number) => void;
 }
 
 const TableContainer = styled.div`
@@ -64,24 +67,30 @@ const DealerPosition = styled.div`
 `;
 
 const PlayerSeat = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['position', 'isEmpty', 'isButton'].includes(prop),
-})<{ position: number; isEmpty: boolean; isButton: boolean }>`
+  shouldForwardProp: (prop) => !['position', 'isEmpty', 'isButton', 'isAvailable'].includes(prop),
+})<{ position: number; isEmpty: boolean; isButton: boolean; isAvailable?: boolean }>`
   position: absolute;
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: ${props => props.isEmpty ? 
-    'linear-gradient(145deg, #2a3f35, #1a2f25)' : 
-    'linear-gradient(145deg, #ffd700, #ffed4e)'};
+  background: ${props => {
+    if (props.isEmpty && props.isAvailable) {
+      return 'linear-gradient(145deg, #4a6741, #3a5735)';
+    }
+    return props.isEmpty ? 
+      'linear-gradient(145deg, #2a3f35, #1a2f25)' : 
+      'linear-gradient(145deg, #ffd700, #ffed4e)';
+  }};
   border: 3px solid ${props => {
     if (props.isButton) return '#ff6b35';
+    if (props.isEmpty && props.isAvailable) return '#6a8761';
     return props.isEmpty ? '#4a6741' : '#ffb347';
   }};
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+  cursor: ${props => (props.isEmpty && props.isAvailable) ? 'pointer' : 'default'};
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 
@@ -110,9 +119,13 @@ const PlayerSeat = styled.div.withConfig({
   }}
 
   &:hover {
-    ${props => props.isEmpty && `
-      background: linear-gradient(145deg, #3a4f45, #2a3f35);
-      border-color: #6a8761;
+    ${props => props.isEmpty && props.isAvailable && `
+      background: linear-gradient(145deg, #5a7751, #4a6741);
+      border-color: #7a9771;
+      transform: ${props.position <= 4 ? props.position === 1 || props.position === 4 ? 'scale(1.05)' : 
+        props.position === 2 ? 'translateY(-50%) scale(1.05)' : 'scale(1.05)' :
+        props.position === 5 ? 'translateX(-50%) scale(1.05)' : 
+        props.position === 8 ? 'translateY(-50%) scale(1.05)' : 'scale(1.05)'};
     `}
   }
 `;
@@ -167,10 +180,11 @@ const PlayerChips = styled.div`
   text-align: center;
 `;
 
-const EmptySeatText = styled.div`
+const EmptySeatText = styled.div<{ isAvailable?: boolean }>`
   font-size: 8px;
-  color: #888;
+  color: ${props => props.isAvailable ? '#7a9771' : '#888'};
   text-align: center;
+  font-weight: ${props => props.isAvailable ? 'bold' : 'normal'};
 `;
 
 const CommunityCardsArea = styled.div`
@@ -268,10 +282,19 @@ const POSITION_NAMES = [
   'BU',    // 9. Button - Top left
 ];
 
-export const PokerTable: React.FC<PokerTableProps> = ({ gameState, currentPlayer, onAction }) => {
+export const PokerTable: React.FC<PokerTableProps> = ({ 
+  gameState, 
+  currentPlayer, 
+  onAction, 
+  isObserver = false, 
+  availableSeats = [], 
+  onSeatSelect 
+}) => {
   const handleSeatClick = (seatNumber: number) => {
-    // Handle joining an empty seat
-    console.log(`Clicked seat ${seatNumber}`);
+    // Only allow seat selection if user is observer and seat is available
+    if (isObserver && availableSeats.includes(seatNumber) && onSeatSelect) {
+      onSeatSelect(seatNumber);
+    }
   };
 
   const renderSeat = (seatNumber: number) => {
@@ -279,6 +302,7 @@ export const PokerTable: React.FC<PokerTableProps> = ({ gameState, currentPlayer
     const isEmpty = !player;
     const positionName = POSITION_NAMES[seatNumber - 1];
     const isButton = player?.isDealer || false; // Button position
+    const isAvailable = isObserver && isEmpty && availableSeats.includes(seatNumber);
     
     return (
       <PlayerSeat
@@ -286,12 +310,16 @@ export const PokerTable: React.FC<PokerTableProps> = ({ gameState, currentPlayer
         position={seatNumber}
         isEmpty={isEmpty}
         isButton={isButton}
+        isAvailable={isAvailable}
         onClick={() => handleSeatClick(seatNumber)}
+        data-testid={isAvailable ? `available-seat-${seatNumber}` : `seat-${seatNumber}`}
       >
         <PositionLabel isButton={isButton}>{positionName}</PositionLabel>
         {isButton && <ButtonIndicator>D</ButtonIndicator>}
         {isEmpty ? (
-          <EmptySeatText>Empty Seat</EmptySeatText>
+          <EmptySeatText isAvailable={isAvailable}>
+            {isAvailable ? 'Click to Sit' : 'Empty Seat'}
+          </EmptySeatText>
         ) : (
           <>
             <PlayerName>{player.name}</PlayerName>

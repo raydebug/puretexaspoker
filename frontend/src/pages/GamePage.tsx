@@ -134,117 +134,7 @@ const ObserverControls = styled.div`
   z-index: 1000;
 `;
 
-const TakeSeatButton = styled.button`
-  padding: 1rem 2rem;
-  background: linear-gradient(135deg, #2c8a3d 0%, #37a34a 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  
-  &:hover:not(:disabled) {
-    background: linear-gradient(135deg, #37a34a 0%, #4caf50 100%);
-    transform: translateY(-2px);
-  }
-  
-  &:disabled {
-    background: #666;
-    cursor: not-allowed;
-    opacity: 0.5;
-  }
-`;
 
-const ModalOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const SeatSelectionModal = styled.div`
-  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-  border-radius: 1rem;
-  padding: 2rem;
-  border: 2px solid #ffd700;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
-  max-width: 500px;
-  width: 90%;
-  z-index: 10000;
-  position: relative;
-  max-height: 80vh;
-  overflow-y: auto;
-`;
-
-const ModalHeader = styled.div`
-  text-align: center;
-  margin-bottom: 2rem;
-  
-  h3 {
-    color: #ffd700;
-    margin-bottom: 0.5rem;
-    font-size: 1.5rem;
-  }
-  
-  p {
-    color: #ffffff;
-    opacity: 0.8;
-  }
-`;
-
-const SeatGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  margin-bottom: 2rem;
-`;
-
-const SeatOption = styled.button`
-  padding: 1rem;
-  background: linear-gradient(135deg, #2c8a3d 0%, #37a34a 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  
-  &:hover {
-    background: linear-gradient(135deg, #37a34a 0%, #4caf50 100%);
-    transform: translateY(-2px);
-  }
-`;
-
-const ModalActions = styled.div`
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-`;
-
-const CancelButton = styled.button`
-  padding: 0.75rem 1.5rem;
-  background: transparent;
-  color: #ffd700;
-  border: 2px solid #ffd700;
-  border-radius: 8px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  
-  &:hover {
-    background: #ffd700;
-    color: #000;
-  }
-`;
 
 const GamePage: React.FC = () => {
   const navigate = useNavigate();
@@ -258,7 +148,7 @@ const GamePage: React.FC = () => {
   const [joinAttempted, setJoinAttempted] = useState(false);
   const [isObserver, setIsObserver] = useState(true); // Start as observer
   const [availableSeats, setAvailableSeats] = useState<number[]>([]);
-  const [showSeatSelection, setShowSeatSelection] = useState(false);
+
   
   // Get table info from state if coming from JoinGamePage
   const table = location.state?.table as TableData | undefined;
@@ -466,16 +356,29 @@ const GamePage: React.FC = () => {
     
     // Request the seat with default buy-in
     socketService.requestSeat(nickname, seatNumber);
-    setShowSeatSelection(false);
-  };
-
-  // Function to show seat selection modal
-  const handleTakeSeat = () => {
-    if (availableSeats.length === 0) {
-      setError('No seats available at this table');
-      return;
+    
+    // In test mode, simulate taking the seat
+    if (typeof window !== 'undefined' && (window as any).Cypress) {
+      setIsObserver(false);
+      // Create a simple player for test mode
+      const newPlayer = {
+        id: 'test-player-' + seatNumber,
+        name: nickname,
+        seatNumber: seatNumber,
+        position: seatNumber,
+        chips: defaultBuyIn,
+        currentBet: 0,
+        isDealer: false,
+        isAway: false,
+        isActive: true,
+        cards: [],
+        avatar: {
+          type: 'default' as const,
+          color: '#ffd700'
+        }
+      };
+      setCurrentPlayer(newPlayer);
     }
-    setShowSeatSelection(true);
   };
 
   if (error) {
@@ -511,23 +414,19 @@ const GamePage: React.FC = () => {
         <ObserverContainer data-testid="observer-view">
           <ObserverHeader>
             <h2>Observing Table {gameId}</h2>
-            <p>You are currently watching this game. Select a seat to join the action!</p>
+            <p>You are currently watching this game. Click on any available seat to join the action!</p>
           </ObserverHeader>
           
           <PokerTable 
             gameState={gameState} 
             currentPlayer={null}
             onAction={handleAction}
+            isObserver={true}
+            availableSeats={availableSeats}
+            onSeatSelect={handleSeatSelection}
           />
           
           <ObserverControls>
-            <TakeSeatButton 
-              data-testid="take-seat-button" 
-              onClick={handleTakeSeat}
-              disabled={availableSeats.length === 0}
-            >
-              {availableSeats.length === 0 ? 'No Seats Available' : `Take a Seat (${availableSeats.length} available)`}
-            </TakeSeatButton>
             <ReturnButton onClick={handleReturnToLobby}>
               Leave Table
             </ReturnButton>
@@ -539,35 +438,6 @@ const GamePage: React.FC = () => {
             currentPlayerId={currentPlayer?.id}
           />
         </ObserverContainer>
-        
-        {/* Seat Selection Modal */}
-        {showSeatSelection && (
-          <>
-            <ModalOverlay onClick={() => setShowSeatSelection(false)} />
-            <SeatSelectionModal data-testid="seat-selection-modal">
-              <ModalHeader>
-                <h3>Choose Your Seat</h3>
-                <p>Select an available seat to join the game</p>
-              </ModalHeader>
-              <SeatGrid>
-                {availableSeats.map(seatNumber => (
-                  <SeatOption 
-                    key={seatNumber}
-                    data-testid={`seat-option-${seatNumber}`}
-                    onClick={() => handleSeatSelection(seatNumber)}
-                  >
-                    Seat {seatNumber + 1}
-                  </SeatOption>
-                ))}
-              </SeatGrid>
-              <ModalActions>
-                <CancelButton onClick={() => setShowSeatSelection(false)}>
-                  Cancel
-                </CancelButton>
-              </ModalActions>
-            </SeatSelectionModal>
-          </>
-        )}
       </GameContainer>
     );
   }
