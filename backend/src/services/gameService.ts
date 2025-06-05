@@ -401,16 +401,22 @@ export class GameService {
   private completePhase(): void {
     switch (this.gameState.phase) {
       case 'preflop':
+        // Burn one card before dealing the flop
+        this.deckService.dealCards(1, this.deck);
         this.gameState.communityCards = this.deckService.dealCards(3, this.deck);
         this.gameState.phase = 'flop';
         this.resetBettingRound();
         break;
       case 'flop':
+        // Burn one card before dealing the turn
+        this.deckService.dealCards(1, this.deck);
         this.gameState.communityCards.push(...this.deckService.dealCards(1, this.deck));
         this.gameState.phase = 'turn';
         this.resetBettingRound();
         break;
       case 'turn':
+        // Burn one card before dealing the river
+        this.deckService.dealCards(1, this.deck);
         this.gameState.communityCards.push(...this.deckService.dealCards(1, this.deck));
         this.gameState.phase = 'river';
         this.resetBettingRound();

@@ -59,6 +59,7 @@
 - [ ] Update socket handlers for game actions
 - [ ] Implement game phase transitions
 - [ ] Add error handling for socket events
+- [x] Implement burn card rule before dealing community cards
 - [x] Fix TypeScript compilation errors (e.g., missing properties in GameState type, type mismatches for Card[] vs string[], missing method implementations in GameService) - COMPLETED: All compilation errors resolved
 
 ### Frontend
