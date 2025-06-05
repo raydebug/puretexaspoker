@@ -37,20 +37,32 @@ describe('API Tests', () => {
 
     it('should not register a player with duplicate nickname', () => {
       const player = {
-        nickname: `testPlayer${Date.now()}`,
+        nickname: 'DuplicateTestPlayer', // Fixed nickname for duplicate test
         chips: 1000
       }
 
-      // Try to register same nickname - expect error response
+      // First, register the player successfully
       cy.request({
         method: 'POST',
         url: `${apiUrl}/api/players/register`,
         body: player,
         failOnStatusCode: false
-      }).then((response: Cypress.Response<any>) => {
-        // Accept both client and server errors
-        expect([400, 500]).to.include(response.status)
-        expect(response.body).to.have.property('error')
+      }).then((firstResponse: Cypress.Response<any>) => {
+        // First registration should succeed or already exist
+        expect([200, 400]).to.include(firstResponse.status)
+        
+        // Now try to register the same nickname again - this should fail
+        cy.request({
+          method: 'POST',
+          url: `${apiUrl}/api/players/register`,
+          body: player,
+          failOnStatusCode: false
+        }).then((secondResponse: Cypress.Response<any>) => {
+          // Second registration with same nickname should fail with 400
+          expect([400, 500]).to.include(secondResponse.status)
+          expect(secondResponse.body).to.have.property('error')
+          expect(secondResponse.body.error).to.include('already exists')
+        })
       })
     })
   })
