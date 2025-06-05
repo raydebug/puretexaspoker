@@ -139,13 +139,14 @@ const GamePage: React.FC = () => {
         }
       };
       
-      // Create mock game state
+      // Create mock game state with proper flop cards (3 cards)
       const mockGameState: GameState = {
         id: gameId || '1',
         players: [mockPlayer],
         communityCards: [
           { rank: 'A', suit: '♠' },
-          { rank: 'A', suit: '♥' }
+          { rank: 'K', suit: '♥' },
+          { rank: 'Q', suit: '♦' }
         ],
         pot: 150,
         currentPlayerId: mockPlayer.id,

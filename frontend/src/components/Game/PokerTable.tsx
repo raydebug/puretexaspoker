@@ -303,7 +303,7 @@ export const PokerTable: React.FC<PokerTableProps> = ({ gameState, currentPlayer
   };
 
   return (
-    <TableContainer>
+    <TableContainer data-testid="poker-table">
       <PokerTableSurface>
         {/* Dealer Position (non-player) */}
         <DealerPosition>
@@ -315,12 +315,12 @@ export const PokerTable: React.FC<PokerTableProps> = ({ gameState, currentPlayer
         {Array.from({ length: 9 }, (_, i) => renderSeat(i + 1))}
 
         {/* Pot Display */}
-        <PotDisplay>
+        <PotDisplay data-testid="pot-amount">
           Pot: ${gameState.pot}
         </PotDisplay>
 
         {/* Community Cards */}
-        <CommunityCardsArea>
+        <CommunityCardsArea data-testid="community-cards">
           {gameState.communityCards.length === 0 ? (
             <div style={{ color: '#888', fontSize: '12px' }}>Community Cards</div>
           ) : (
