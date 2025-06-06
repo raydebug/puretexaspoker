@@ -23,22 +23,22 @@ describe('Table Join Error Handling', () => {
     cy.get('[data-testid="lobby-container"]').should('be.visible');
     
     // Look for any table elements using the most reliable selector
-    cy.get('[data-testid^="table-"]', { timeout: 20000 }).should('exist');
-    cy.get('[data-testid^="table-"]').should('have.length.greaterThan', 0);
+    cy.get('[data-testid="table-row"]', { timeout: 20000 }).should('exist');
+    cy.get('[data-testid="table-row"]').should('have.length.greaterThan', 0);
 
-    // Try to join a table using the working test pattern
-    cy.get('[data-testid^="table-"]').first().click();
+    // Try to join a table using the observer-first flow
+    cy.get('[data-testid="table-row"]').first().click();
     
-    // Should show buy-in dialog
-    cy.get('[data-testid="buy-in-input"]', { timeout: 10000 }).should('be.visible');
+    // Should show join dialog with observer option
     cy.get('[data-testid="nickname-input"]').should('be.visible').clear().type('TableJoinTestPlayer');
-    cy.get('[data-testid="buy-in-input"]').clear().type('100');
+    cy.get('[data-testid="join-as-observer"]', { timeout: 10000 }).should('be.visible');
     
-    // Submit the join request
-    cy.get('[data-testid="confirm-buy-in"]', { timeout: 5000 }).should('be.visible').click({ force: true });
+    // Submit the join request as observer
+    cy.get('[data-testid="join-as-observer"]').click();
 
-    // Should navigate successfully - this tests that our error handling improvements work
+    // Should navigate successfully to observer view
     cy.url({ timeout: 15000 }).should('include', '/game/');
+    cy.get('[data-testid="observer-view"]', { timeout: 10000 }).should('be.visible');
     
     // Test passes if we reach this point without timeout errors
     cy.log('✅ Table join flow completed successfully');

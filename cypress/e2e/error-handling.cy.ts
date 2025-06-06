@@ -23,16 +23,16 @@ describe('Error Handling and Network Testing', () => {
     // Wait for lobby to load
     cy.get('[data-testid="lobby-container"]').should('be.visible');
     
-    // Join first available table
-    cy.get('[data-testid^="table-"]').first().click();
+    // Join first available table using observer-first flow
+    cy.get('[data-testid="table-row"]').first().click();
     
-    // Fill in both nickname and buy-in amount in the join dialog
+    // Use observer-first join flow
     cy.get('[data-testid="nickname-input"]').should('be.visible').clear().type('SlowNetworkPlayer');
-    cy.get('[data-testid="buy-in-input"]').clear().type('100');
-    cy.get('[data-testid="confirm-buy-in"]').should('be.visible').click({ force: true });
+    cy.get('[data-testid="join-as-observer"]').should('be.visible').click();
 
     // Verify we can navigate to game (tests basic loading)
     cy.url().should('include', '/game/');
+    cy.get('[data-testid="observer-view"]', { timeout: 10000 }).should('be.visible');
   });
 
   it('handles invalid game state gracefully', () => {
@@ -43,16 +43,16 @@ describe('Error Handling and Network Testing', () => {
     // Wait for lobby to load
     cy.get('[data-testid="lobby-container"]').should('be.visible');
     
-    // Join first available table
-    cy.get('[data-testid^="table-"]').first().click();
+    // Join first available table using observer-first flow
+    cy.get('[data-testid="table-row"]').first().click();
     
-    // Fill in both nickname and buy-in amount in the join dialog
+    // Use observer-first join flow
     cy.get('[data-testid="nickname-input"]').should('be.visible').clear().type('InvalidStatePlayer');
-    cy.get('[data-testid="buy-in-input"]').clear().type('100');
-    cy.get('[data-testid="confirm-buy-in"]').should('be.visible').click({ force: true });
+    cy.get('[data-testid="join-as-observer"]').should('be.visible').click();
 
     // Verify we can navigate to game
     cy.url().should('include', '/game/');
+    cy.get('[data-testid="observer-view"]', { timeout: 10000 }).should('be.visible');
     
     // Test that the game page loads without crashing
     cy.get('body').should('exist');
@@ -84,16 +84,16 @@ describe('Error Handling and Network Testing', () => {
     // Wait for lobby to load
     cy.get('[data-testid="lobby-container"]').should('be.visible');
     
-    // Join first available table
-    cy.get('[data-testid^="table-"]').first().click();
+    // Join first available table using observer-first flow
+    cy.get('[data-testid="table-row"]').first().click();
     
-    // Fill in both nickname and buy-in amount in the join dialog
+    // Use observer-first join flow
     cy.get('[data-testid="nickname-input"]').should('be.visible').clear().type('ConcurrentPlayer');
-    cy.get('[data-testid="buy-in-input"]').clear().type('100');
-    cy.get('[data-testid="confirm-buy-in"]').should('be.visible').click({ force: true });
+    cy.get('[data-testid="join-as-observer"]').should('be.visible').click();
 
     // Verify we can navigate to game
     cy.url().should('include', '/game/');
+    cy.get('[data-testid="observer-view"]', { timeout: 10000 }).should('be.visible');
     
     // Test that multiple actions don't crash the app
     cy.get('body').should('exist');
