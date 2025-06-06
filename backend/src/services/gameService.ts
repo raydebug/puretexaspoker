@@ -405,26 +405,32 @@ export class GameService {
       case 'preflop':
         // Burn one card before dealing the flop
         this.gameState.burnedCards = this.gameState.burnedCards || [];
-        this.gameState.burnedCards.push(...this.deckService.dealCards(1, this.deck));
-        this.gameState.communityCards = this.deckService.dealCards(3, this.deck);
+        const burnedFlop = this.deckService.dealCards(1, this.deck);
+        if (burnedFlop) this.gameState.burnedCards.push(...burnedFlop);
+        const flopCards = this.deckService.dealCards(3, this.deck);
+        if (flopCards) this.gameState.communityCards = flopCards;
         this.gameState.phase = 'flop';
         this.resetBettingRound();
         break;
       case 'flop':
         // Burn one card before dealing the turn
         this.gameState.burnedCards = this.gameState.burnedCards || [];
-        this.gameState.burnedCards.push(...this.deckService.dealCards(1, this.deck));
+        const burnedTurn = this.deckService.dealCards(1, this.deck);
+        if (burnedTurn) this.gameState.burnedCards.push(...burnedTurn);
         this.gameState.communityCards = this.gameState.communityCards || [];
-        this.gameState.communityCards.push(...this.deckService.dealCards(1, this.deck));
+        const turnCard = this.deckService.dealCards(1, this.deck);
+        if (turnCard) this.gameState.communityCards.push(...turnCard);
         this.gameState.phase = 'turn';
         this.resetBettingRound();
         break;
       case 'turn':
         // Burn one card before dealing the river
         this.gameState.burnedCards = this.gameState.burnedCards || [];
-        this.gameState.burnedCards.push(...this.deckService.dealCards(1, this.deck));
+        const burnedRiver = this.deckService.dealCards(1, this.deck);
+        if (burnedRiver) this.gameState.burnedCards.push(...burnedRiver);
         this.gameState.communityCards = this.gameState.communityCards || [];
-        this.gameState.communityCards.push(...this.deckService.dealCards(1, this.deck));
+        const riverCard = this.deckService.dealCards(1, this.deck);
+        if (riverCard) this.gameState.communityCards.push(...riverCard);
         this.gameState.phase = 'river';
         this.resetBettingRound();
         break;

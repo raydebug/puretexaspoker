@@ -19,6 +19,8 @@ interface ServerToClientEvents {
   gameCreated: (data: { gameId: string; tableId: number }) => void;
   gameJoined: (data: { gameId: string; playerId: string | null; gameState: any }) => void;
   gameState: (gameState: any) => void;
+  seatError: (error: string) => void;
+  seatTaken: (data: { seatNumber: number; playerId: string; gameState: any }) => void;
 }
 
 export const setupLobbyHandlers = (
@@ -251,7 +253,7 @@ export const setupLobbyHandlers = (
         
         console.log(`DEBUG: Backend about to emit gameJoined as observer - gameId: ${gameId}`);
         console.log(`DEBUG: Backend gameState being sent:`, gameState);
-        socket.emit('gameJoined', { gameId, playerId: null, gameState });
+        socket.emit('gameJoined', { gameId, playerId: player.id, gameState });
         
         console.log(`DEBUG: Backend user ${nicknameToUse} joined as observer successfully`);
       }
@@ -290,6 +292,99 @@ export const setupLobbyHandlers = (
     if (tableManager.standUp(tableId, socket.id)) {
       socket.emit('tableJoined', { tableId, role: 'observer', buyIn: 0 });
       broadcastTables();
+    }
+  });
+
+  // Handle take seat request (when observer wants to take a specific seat)
+  socket.on('takeSeat', async ({ seatNumber, buyIn }) => {
+    console.log(`DEBUG: Backend received takeSeat event - seatNumber: ${seatNumber}, buyIn: ${buyIn}`);
+    
+    try {
+      // Validate we have the required data from when they joined as observer
+      const gameId = socket.data.gameId;
+      const tableId = socket.data.tableId;
+      const dbTableId = socket.data.dbTableId;
+      const nickname = socket.data.nickname;
+      const playerId = socket.data.playerId;
+      
+      if (!gameId || !tableId || !dbTableId || !nickname || !playerId) {
+        socket.emit('seatError', 'Invalid session data. Please rejoin the table.');
+        return;
+      }
+      
+      // Get the table info for buy-in validation
+      const lobbyTable = tableManager.getTable(tableId);
+      if (!lobbyTable) {
+        socket.emit('seatError', 'Table not found');
+        return;
+      }
+      
+      // Validate buy-in amount
+      if (!buyIn || buyIn < lobbyTable.minBuyIn || buyIn > lobbyTable.maxBuyIn) {
+        socket.emit('seatError', `Buy-in must be between ${lobbyTable.minBuyIn} and ${lobbyTable.maxBuyIn}`);
+        return;
+      }
+      
+      // Get the game service
+      const gameService = gameManager.getGame(gameId);
+      if (!gameService) {
+        socket.emit('seatError', 'Game not found');
+        return;
+      }
+      
+      // Create player data
+      const playerData = {
+        id: playerId,
+        name: nickname,
+        chips: buyIn,
+        isActive: true,
+        isDealer: false,
+        currentBet: 0,
+        position: seatNumber,
+        seatNumber: seatNumber,
+        isAway: false,
+        cards: [],
+        avatar: {
+          type: 'default' as const,
+          color: '#007bff'
+        }
+      };
+      
+      console.log(`DEBUG: Backend attempting to add player to seat ${seatNumber}:`, playerData);
+      
+      // Add player to the game
+      gameService.addPlayer(playerData);
+      
+      // Create player-table relationship in database
+      await prisma.playerTable.create({
+        data: {
+          playerId: playerId,
+          tableId: dbTableId,
+          seatNumber: seatNumber,
+          buyIn: buyIn
+        }
+      });
+      
+      // Update stored buy-in for this player
+      socket.data.buyIn = buyIn;
+      
+      // Get updated game state
+      const gameState = gameService.getGameState();
+      
+      // Emit success events
+      console.log(`DEBUG: Backend successfully seated player in seat ${seatNumber}`);
+      socket.emit('seatTaken', { seatNumber, playerId, gameState });
+      socket.emit('tableJoined', { tableId, role: 'player', buyIn, gameId });
+      socket.emit('gameJoined', { gameId, playerId: playerId, gameState });
+      
+      // Broadcast to other players in the game
+      socket.to(`game:${gameId}`).emit('gameState', gameState);
+      
+      console.log(`DEBUG: Backend seat taking completed successfully`);
+      
+    } catch (error) {
+      console.error('Error taking seat:', error);
+      socket.emit('seatError', (error as Error).message || 'Failed to take seat');
     }
   });
 

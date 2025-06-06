@@ -233,6 +233,7 @@ Our testing suite provides complete coverage of Texas Hold'em poker scenarios:
 
 ### Test Coverage Overview
 - ✅ **15 Comprehensive Poker Game Tests** - All passing
+- ✅ **Observer List Functionality** - Players appear in observers when joining
 - ✅ **Complete Game Flow Validation** - Preflop to showdown
 - ✅ **All Hand Rankings** - Royal Flush to High Card
 - ✅ **Complex Betting Scenarios** - All-in, side pots, betting patterns
@@ -481,3 +482,11 @@ Your comprehensive Texas Hold'em poker game is ready for production with:
 - ✅ Production-ready architecture
 
 **🎰 All systems go for poker players! ♠️♥️♦️♣️** 
+
+### Core Poker Gameplay
+- **Observer-First Joining**: Players join tables as observers without buy-in requirement
+- **Seat Selection with Buy-in**: Choose buy-in amount when taking actual seats
+- **Buy-in Dropdown Options**: 
+  - Multiple options from 10x to 100x big blind (10x, 15x, 20x, 25x, 30x, 35x, 40x, 50x, 60x, 70x, 75x, 80x, 90x, 100x)
+  - Custom amount input option
+  - Real-time validation and amount display
