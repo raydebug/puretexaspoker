@@ -244,6 +244,10 @@ export const setupLobbyHandlers = (
         socket.join(`game:${gameId}`);
         gameManager.joinGameRoom(gameId, socket.id);
 
+        // Emit observer joined event to all clients in the game room
+        io.to(`game:${gameId}`).emit('observer:joined', { observer: nicknameToUse });
+        console.log(`DEBUG: Backend emitted observer:joined event for ${nicknameToUse} in game:${gameId}`);
+
         // Get current game state
         const gameState = gameService.getGameState();
         
@@ -375,7 +379,7 @@ export const setupLobbyHandlers = (
       console.log(`DEBUG: Backend successfully seated player in seat ${seatNumber}`);
       socket.emit('seatTaken', { seatNumber, playerId, gameState });
       socket.emit('tableJoined', { tableId, role: 'player', buyIn, gameId });
-      socket.emit('gameJoined', { gameId, playerId: playerId, gameState });
+              socket.emit('gameJoined', { gameId, playerId: player.id, gameState });
       
       // Broadcast to other players in the game
       socket.to(`game:${gameId}`).emit('gameState', gameState);
