@@ -23,6 +23,10 @@ interface ServerToClientEvents {
   seatTaken: (data: { seatNumber: number; playerId: string; gameState: any }) => void;
   'observer:joined': (data: { observer: string }) => void;
   'observer:left': (data: { observer: string }) => void;
+  'observer:joined': (data: { observer: string }) => void;
+  'observer:left': (data: { observer: string }) => void;
+  'observer:joined': (data: { observer: string }) => void;
+  'observer:left': (data: { observer: string }) => void;
 }
 
 export const setupLobbyHandlers = (
@@ -169,7 +173,7 @@ export const setupLobbyHandlers = (
       socket.join(`table:${tableId}`);
       socket.data.buyIn = buyIn;
       socket.data.tableId = tableId;
-      socket.data.playerId = socket.data.playerId!;
+      socket.data.playerId = player.id;
       socket.data.dbTableId = dbTable.id;
 
       // Check if there's already a game for this database table
@@ -240,7 +244,7 @@ export const setupLobbyHandlers = (
         socket.data.gameId = gameId;
         socket.data.dbTableId = dbTable.id;
         socket.data.nickname = nicknameToUse;
-        socket.data.playerId = socket.data.playerId!;
+        socket.data.playerId = player.id;
         
         // Join the game room as observer
         socket.join(`game:${gameId}`);
@@ -259,7 +263,7 @@ export const setupLobbyHandlers = (
         
         console.log(`DEBUG: Backend about to emit gameJoined as observer - gameId: ${gameId}`);
         console.log(`DEBUG: Backend gameState being sent:`, gameState);
-              socket.emit('gameJoined', { gameId, playerId: socket.data.playerId!, gameState });
+              socket.emit('gameJoined', { gameId, playerId: playerId, gameState });
         
         console.log(`DEBUG: Backend user ${nicknameToUse} joined as observer successfully`);
       }
@@ -364,7 +368,7 @@ export const setupLobbyHandlers = (
       // Create player-table relationship in database
       await prisma.playerTable.create({
         data: {
-          playerId: socket.data.playerId!,
+          playerId: playerId,
           tableId: dbTableId,
           seatNumber: seatNumber,
           buyIn: buyIn
@@ -381,7 +385,7 @@ export const setupLobbyHandlers = (
       console.log(`DEBUG: Backend successfully seated player in seat ${seatNumber}`);
       socket.emit('seatTaken', { seatNumber, playerId, gameState });
       socket.emit('tableJoined', { tableId, role: 'player', buyIn, gameId });
-      socket.emit('gameJoined', { gameId, playerId: socket.data.playerId!, gameState });
+      socket.emit('gameJoined', { gameId, playerId: playerId, gameState });
       
       // Broadcast to other players in the game
       socket.to(`game:${gameId}`).emit('gameState', gameState);
