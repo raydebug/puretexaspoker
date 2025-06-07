@@ -161,6 +161,7 @@ npm run test:e2e
 ## 🎯 **Recent Achievements**
 
 ### **Major Bug Fixes (Latest)**
+- ✅ **Fixed Observer to Player Transition** - Players now properly removed from observers list when taking seats (critical UX bug)
 - ✅ **Fixed Observer UI Crash** - Added defensive programming to prevent "Cannot read properties of undefined (reading 'substring')" error in OnlineList component
 - ✅ **Resolved "Seat is already occupied" errors** - Fixed hardcoded seat assignment
 - ✅ **Eliminated React DOM warnings** - Proper prop filtering in styled components  
@@ -168,7 +169,8 @@ npm run test:e2e
 - ✅ **Improved GameService Recreation** - Proper cleanup after server restarts
 
 ### **Current E2E Test Status**
-- ✅ **Observer Functionality**: 13/13 tests passing (100% success rate)
+- ✅ **Observer Functionality**: 13/13 tests passing (100% success rate) - **ALL BUGS FIXED**
+- ✅ **Observer to Player Transition**: Working perfectly - players removed from observers when taking seats
 - ✅ **Core Infrastructure**: API, setup, error handling all stable
 - ⚠️ **UI Flow Updates Needed**: 82 tests failing due to deprecated buy-in input references
 - 📊 **Overall Success Rate**: 87/169 tests passing (51.5%)
