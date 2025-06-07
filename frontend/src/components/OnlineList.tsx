@@ -115,12 +115,22 @@ export const OnlineList: React.FC<OnlineListProps> = ({
 }) => {
   // Create a basic avatar for observers
   const createObserverAvatar = (name: string) => {
+    if (!name || typeof name !== 'string') {
+      return {
+        type: 'initials' as const,
+        initials: '??',
+        color: '#1b4d3e'
+      };
+    }
     return {
       type: 'initials' as const,
       initials: name.substring(0, 2).toUpperCase(),
       color: '#1b4d3e'
     };
   };
+
+  // Filter out any undefined/null observers
+  const validObservers = observers.filter(observer => observer && typeof observer === 'string');
 
   return (
     <ListContainer data-testid="online-users-list">
@@ -162,10 +172,10 @@ export const OnlineList: React.FC<OnlineListProps> = ({
       {/* Observers Section */}
       <ListSection>
         <SectionTitle>
-          Observers <span>({observers.length})</span>
+          Observers <span>({validObservers.length})</span>
         </SectionTitle>
         <UserList>
-          {observers.map(observer => (
+          {validObservers.map(observer => (
             <UserItem key={observer}>
               <Avatar 
                 avatar={createObserverAvatar(observer)}
@@ -174,7 +184,7 @@ export const OnlineList: React.FC<OnlineListProps> = ({
               <span>{observer}</span>
             </UserItem>
           ))}
-          {observers.length === 0 && (
+          {validObservers.length === 0 && (
             <UserItem>No observers</UserItem>
           )}
         </UserList>
