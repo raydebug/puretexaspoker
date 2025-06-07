@@ -6,9 +6,12 @@
   "scripts": {
     "test": "npm run test:clean && concurrently --kill-others-on-fail \"cd backend && npm test\" \"cd frontend && npm test\"",
     "test:clean": "rimraf cypress/screenshots cypress/videos",
-    "test:e2e": "cypress run",
+    "test:e2e": "npm run test:e2e:api && npm run test:e2e:features",
+    "test:e2e:api": "cypress run --spec 'cypress/e2e/00-api-comprehensive.cy.ts'",
+    "test:e2e:features": "cypress run --spec 'cypress/e2e/**/*.cy.ts' --exclude 'cypress/e2e/00-api-comprehensive.cy.ts'",
     "test:e2e:open": "cypress open",
     "test:e2e:headed": "cypress run --headed",
+    "test:e2e:all": "cypress run",
     "frontend": "cd frontend && npm start",
     "backend": "cd backend && npm start",
     "kill-ports": "lsof -ti:3000,3001 | xargs kill -9 2>/dev/null || true",

@@ -169,7 +169,7 @@ export const setupLobbyHandlers = (
       socket.join(`table:${tableId}`);
       socket.data.buyIn = buyIn;
       socket.data.tableId = tableId;
-      socket.data.playerId = socket.data.playerId!;
+      socket.data.playerId = socket.id;
       socket.data.dbTableId = dbTable.id;
 
       // Check if there's already a game for this database table
@@ -197,12 +197,10 @@ export const setupLobbyHandlers = (
         
         // Check if GameService exists in memory for this game
         let gameService = gameManager.getGame(gameId);
+        console.log(`DEBUG: GameManager.getGame called with gameId: ${gameId}`);
+        console.log(`DEBUG: GameManager.getGame returning:`, gameService ? 'GAME_SERVICE' : 'NULL');
         
-        if (gameService) {
-          console.log(`DEBUG: Backend GameService found in memory for game: ${gameId}`);
-        } else {
-          console.error(`DEBUG: Backend gameService is null for gameId: ${gameId}`);
-          
+        if (!gameService) {
           // Check if it's an existing game without GameService (server restart)
           if (existingGame) {
             console.log('DEBUG: Backend GameService not in memory, recreating for existing game...');
@@ -240,7 +238,7 @@ export const setupLobbyHandlers = (
         socket.data.gameId = gameId;
         socket.data.dbTableId = dbTable.id;
         socket.data.nickname = nicknameToUse;
-        socket.data.playerId = socket.data.playerId!;
+        socket.data.playerId = socket.id;
         
         // Join the game room as observer
         socket.join(`game:${gameId}`);
@@ -259,7 +257,7 @@ export const setupLobbyHandlers = (
         
         console.log(`DEBUG: Backend about to emit gameJoined as observer - gameId: ${gameId}`);
         console.log(`DEBUG: Backend gameState being sent:`, gameState);
-              socket.emit('gameJoined', { gameId, playerId: socket.data.playerId!, gameState });
+        socket.emit('gameJoined', { gameId, playerId: socket.data.playerId!, gameState });
         
         console.log(`DEBUG: Backend user ${nicknameToUse} joined as observer successfully`);
       }
@@ -384,7 +382,7 @@ export const setupLobbyHandlers = (
       socket.emit('gameJoined', { gameId, playerId: socket.data.playerId!, gameState });
       
       // Broadcast to other players in the game
-      socket.to(`game:${gameId}`).emit('gameState', gameState);
+      io.to(`game:${gameId}`).emit('gameState', gameState);
       
       console.log(`DEBUG: Backend seat taking completed successfully`);
       

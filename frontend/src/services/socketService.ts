@@ -487,13 +487,11 @@ class SocketService {
 
     // Set up event listeners for observer management
     if (this.socket) {
-      this.socket.on('observer:joined', (observers: string[]) => {
-        this.observers = observers;
-        this.emitOnlineUsersUpdate();
-      });
-
-      this.socket.on('observer:left', (observers: string[]) => {
-        this.observers = observers;
+      // Remove the duplicate observer:joined handler - this was conflicting with the main one
+      // The correct handler is in setupListeners() method which expects { observer: string }
+      
+      this.socket.on('observer:left', (data: { observer: string }) => {
+        this.observers = this.observers.filter(observer => observer !== data.observer);
         this.emitOnlineUsersUpdate();
       });
 
