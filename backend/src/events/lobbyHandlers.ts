@@ -244,7 +244,7 @@ export const setupLobbyHandlers = (
         socket.join(`game:${gameId}`);
         gameManager.joinGameRoom(gameId, socket.id);
 
-        // Emit observer joined event to all clients in the game room
+        // Emit observer joined event to all clients in the game room (including the observer themselves)
         io.to(`game:${gameId}`).emit('observer:joined', { observer: nicknameToUse });
         console.log(`DEBUG: Backend emitted observer:joined event for ${nicknameToUse} in game:${gameId}`);
 
@@ -376,6 +376,10 @@ export const setupLobbyHandlers = (
       const gameState = gameService.getGameState();
       
       // Emit success events
+      // **CRITICAL BUG FIX**: Remove player from observers list when they take a seat
+      console.log(`DEBUG: Backend removing ${nickname} from observers when taking seat`);
+      io.to(`game:${gameId}`).emit("observer:left", { observer: nickname });
+
       console.log(`DEBUG: Backend successfully seated player in seat ${seatNumber}`);
       socket.emit('seatTaken', { seatNumber, playerId, gameState });
       socket.emit('tableJoined', { tableId, role: 'player', buyIn, gameId });
