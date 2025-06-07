@@ -54,7 +54,7 @@ io.on('connection', (socket) => {
   });
   
   // Register event handlers
-  registerSeatHandlers(io);
+  // registerSeatHandlers(io); // DISABLED: Legacy global seat handler conflicts with room-based system
   setupLobbyHandlers(io, socket);
 
   // Add a ping handler

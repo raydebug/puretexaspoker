@@ -7,7 +7,8 @@ interface SeatState {
 
 const NUM_SEATS = 5;
 let seats: SeatState = {};
-let observers: string[] = [];
+// NOTE: Observer management is now handled by lobbyHandlers.ts per-game-room
+// Removed observers array to prevent conflict with room-based observer system
 let players: Player[] = [];
 let gameState: GameState = {
   id: 'game1',
@@ -82,22 +83,10 @@ export function registerSeatHandlers(io: Server) {
   io.on('connection', (socket: Socket) => {
     let playerSeat: number | null = null;
 
-    socket.on('observer:join', ({ nickname }) => {
-      try {
-        if (!nickname) {
-          throw new Error('Nickname is required');
-        }
-        if (!observers.includes(nickname)) {
-          observers.push(nickname);
-          io.emit('observer:joined', observers);
-        }
-      } catch (error) {
-        trackError(socket, error as Error, 'observer:join');
-        socket.emit('error', { message: 'Failed to join as observer' });
-      }
-    });
+    // NOTE: observer:join handler removed - this is now handled by lobbyHandlers.ts
+    // per-game-room to avoid conflicts with the room-based observer system
 
-    socket.on('seat:request', ({ nickname, seatNumber }) => {
+    socket.on('seat:request', ({ nickname, seatNumber, buyIn }) => {
       try {
         // Validate input
         if (!nickname || seatNumber === undefined || seatNumber < 0 || seatNumber >= NUM_SEATS) {
@@ -112,7 +101,7 @@ export function registerSeatHandlers(io: Server) {
             name: nickname,
             seatNumber: seatNumber,
             position: seatNumber,
-            chips: 1000,
+            chips: buyIn || 1000, // **BUG FIX**: Use provided buyIn amount or default to 1000
             currentBet: 0,
             isDealer: false,
             isAway: false,
@@ -146,13 +135,12 @@ export function registerSeatHandlers(io: Server) {
           // Update game state
           gameState.players = players;
 
-          // Remove from observers only after successful seat assignment
-          observers = observers.filter(obs => obs !== nickname);
+          // NOTE: Observer removal is now handled by lobbyHandlers.ts takeSeat handler
+          // when the observer transitions to player
 
-          // Emit all updates in sequence
+          // Emit seat and game state updates only
           socket.emit('seat:accepted', player);
           io.emit('seat:update', seats);
-          io.emit('observer:joined', observers);
           broadcastGameState(io);
         } else {
           socket.emit('seat:error', { message: 'Seat is already taken.' });
@@ -170,14 +158,11 @@ export function registerSeatHandlers(io: Server) {
           seats[playerSeat] = null;
           players = players.filter(p => p.id !== socket.id);
 
-          // Add to observers if disconnected
-          if (nickname && !observers.includes(nickname)) {
-            observers.push(nickname);
-          }
+          // NOTE: Observer re-addition on disconnect is handled by lobbyHandlers.ts
+          // Don't manage observers here to avoid conflicts
 
-          // Emit updates in sequence
+          // Emit seat and game state updates only
           io.emit('seat:update', seats);
-          io.emit('observer:joined', observers);
           broadcastGameState(io);
         }
       } catch (error) {
@@ -186,11 +171,11 @@ export function registerSeatHandlers(io: Server) {
       }
     });
 
-    // Send current state to new connection
+    // Send current state to new connection (without observer state)
     try {
       socket.emit('seat:update', seats);
-      socket.emit('observer:joined', observers);
       socket.emit('gameState', gameState);
+      // NOTE: Observer state is sent by lobbyHandlers.ts per-game-room
     } catch (error) {
       trackError(socket, error as Error, 'initial state');
       socket.emit('error', { message: 'Failed to send initial state' });
