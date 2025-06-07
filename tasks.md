@@ -111,6 +111,12 @@
 24. ✅ COMPLETED: Unified Card type interfaces across backend types
 25. ✅ COMPLETED: Fixed all TypeScript compilation errors - builds successful
 26. ✅ COMPLETED: Updated hand evaluator service to use consistent card properties
+27. 🐛 **MAJOR BUG FIX: Observer List Issue RESOLVED** ✅
+    - **Problem**: Users joining tables didn't appear in observers list
+    - **Root Cause**: Conflicting observer:joined event handlers in socketService.ts
+    - **Solution**: Removed duplicate handler, fixed backend emission to include observer themselves
+    - **Result**: All 13 observer-related e2e tests now passing (100% success rate)
+    - **Impact**: Critical user experience bug fixed - observers now see themselves in list
 
 ## Next Steps
 1. ✅ Run all E2E tests from frontend directory and fix any failures - COMPLETED: 74/74 tests passing (100%)
@@ -156,6 +162,7 @@
 - **Texas Hold'em Game Logic**: Complete game engine supporting full Texas Hold'em rules
 - **Player Management**: Player join/leave, seat management, chip system
 - **Observer System**: Users join as observers first, then select seats strategically 🆕
+- **✅ FIXED Observer List Bug**: Users now properly appear in observers list when joining tables
 - **Hand Evaluation**: Accurate poker hand ranking and evaluation system
 - **Game Phases**: Complete flow for preflop, flop, turn, river
 - **Betting System**: Support for bet, call, raise, fold, all-in

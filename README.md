@@ -167,8 +167,13 @@ npm run test:e2e
 - ✅ **Enhanced Database Reliability** - Fallback nickname generation system
 - ✅ **Improved GameService Recreation** - Proper cleanup after server restarts
 
+### **Current E2E Test Status**
+- ✅ **Observer Functionality**: 13/13 tests passing (100% success rate)
+- ✅ **Core Infrastructure**: API, setup, error handling all stable
+- ⚠️ **UI Flow Updates Needed**: 82 tests failing due to deprecated buy-in input references
+- 📊 **Overall Success Rate**: 87/169 tests passing (51.5%)
+
 ### **Performance Improvements**
-- 📈 **96% E2E Test Success Rate** (75/78 tests passing)
 - ⚡ **Enhanced Socket Resilience** - 10 retry attempts with backoff
 - 🔄 **Robust State Management** - Proper game state synchronization
 - 🛡️ **Error Recovery** - Graceful handling of edge cases
