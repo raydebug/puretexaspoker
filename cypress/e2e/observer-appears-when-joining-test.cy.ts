@@ -54,40 +54,29 @@ describe('Observer Appears When Joining Table Bug Test', () => {
     });
   });
 
-  it('should handle observer socket events correctly', () => {
-    const playerName = 'SocketEventTest';
-    let receivedEvents = [];
-    
-    // Monitor socket events
-    cy.window().then((win) => {
-      win.socketEventLog = [];
-      
-      // Override socket service to log events
-      if (win.socketService) {
-        const originalEmit = win.socketService.socket?.emit;
-        if (originalEmit) {
-          win.socketService.socket.emit = function(event, data) {
-            win.socketEventLog.push({ event, data });
-            return originalEmit.call(this, event, data);
-          };
-        }
-      }
-    });
+  it('should show observer in list immediately after joining', () => {
+    const playerName = 'ImmediateTest';
     
     // Join table
     cy.get('[data-testid="table-row"]').first().click();
     cy.get('[data-testid="nickname-input"]').clear().type(playerName);
     cy.get('[data-testid="join-as-observer"]').click();
     
+    // Should be in observer view
     cy.get('[data-testid="observer-view"]', { timeout: 10000 }).should('be.visible');
     
-    // Check that socket events were emitted correctly
-    cy.window().then((win) => {
-      const events = win.socketEventLog || [];
-      const joinTableEvent = events.find(e => e.event === 'joinTable');
-      
-      expect(joinTableEvent).to.exist;
-      expect(joinTableEvent.data.tableId).to.be.a('number');
+    // Verify observer list shows immediately (no long wait)
+    cy.get('[data-testid="online-users-list"]', { timeout: 5000 }).should('be.visible');
+    
+    // Debug: Log what we see in the list
+    cy.get('[data-testid="online-users-list"]').then(($list) => {
+      cy.log('Online users list content:', $list.text());
+    });
+    
+    // Check that player appears in observers
+    cy.get('[data-testid="online-users-list"]').within(() => {
+      cy.contains('Observers').should('be.visible');
+      cy.contains(playerName, { timeout: 3000 }).should('be.visible');
     });
   });
 
@@ -111,5 +100,31 @@ describe('Observer Appears When Joining Table Bug Test', () => {
     
     // Should still be in observer view (if game state persists)
     cy.get('[data-testid="observer-view"], [data-testid="lobby-container"]', { timeout: 10000 }).should('be.visible');
+  });
+
+  it('should handle observer joining with existing debug logging', () => {
+    const playerName = 'DebugObserver';
+    
+    // Monitor console logs
+    cy.window().then((win) => {
+      // Capture console.log calls
+      cy.stub(win.console, 'log').as('consoleLog');
+    });
+    
+    // Join table
+    cy.get('[data-testid="table-row"]').first().click();
+    cy.get('[data-testid="nickname-input"]').clear().type(playerName);
+    cy.get('[data-testid="join-as-observer"]').click();
+    
+    cy.get('[data-testid="observer-view"]', { timeout: 10000 }).should('be.visible');
+    
+    // Verify player appears in list
+    cy.get('[data-testid="online-users-list"]').within(() => {
+      cy.contains('Observers').should('be.visible');
+      cy.contains(playerName).should('be.visible');
+    });
+    
+    // Check for debug logs (optional - if debug is enabled)
+    cy.get('@consoleLog').should('have.been.called');
   });
 }); 

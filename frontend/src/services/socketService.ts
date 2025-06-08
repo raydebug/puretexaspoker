@@ -261,9 +261,14 @@ class SocketService {
     });
 
     socket.on('observer:joined', (data: { observer: string }) => {
+      console.log('DEBUG: Frontend received observer:joined event:', data);
+      console.log('DEBUG: Frontend current observers before:', this.observers);
       if (!this.observers.includes(data.observer)) {
         this.observers.push(data.observer);
+        console.log('DEBUG: Frontend added observer, new list:', this.observers);
         this.emitOnlineUsersUpdate();
+      } else {
+        console.log('DEBUG: Frontend observer already in list:', data.observer);
       }
     });
 
