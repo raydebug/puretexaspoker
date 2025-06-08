@@ -180,7 +180,9 @@ const PlayerChips = styled.div`
   text-align: center;
 `;
 
-const EmptySeatText = styled.div<{ isAvailable?: boolean }>`
+const EmptySeatText = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isAvailable',
+})<{ isAvailable?: boolean }>`
   font-size: 8px;
   color: ${props => props.isAvailable ? '#7a9771' : '#888'};
   text-align: center;
