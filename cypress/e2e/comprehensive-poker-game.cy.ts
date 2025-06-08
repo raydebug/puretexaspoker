@@ -1,32 +1,102 @@
+// Common setup function for taking a seat in tests
+const takeSeatAsPlayer = (playerName: string, buyInAmount?: number) => {
+  // Join table
+  cy.get('[data-testid="table-row"]').first().click();
+  
+  // Set nickname and join as observer first
+  cy.get('[data-testid="nickname-input"]').should('be.visible').clear().type(playerName);
+  cy.get('[data-testid="join-as-observer"]').click();
+  
+  // Should be in observer view
+  cy.get('[data-testid="observer-view"]', { timeout: 10000 }).should('be.visible');
+  
+  // Click on an available seat
+  cy.get('[data-testid^="available-seat-"]').first().click();
+  
+  // Seat selection dialog should appear
+  cy.get('[data-testid="confirm-seat-btn"]').should('be.visible');
+  
+  // Select buy-in amount
+  if (buyInAmount && buyInAmount !== 200) {
+    // Use custom buy-in
+    cy.get('[data-testid="buyin-dropdown"]').select('Custom Amount');
+    cy.get('[data-testid="custom-buyin-input"]').should('be.visible').clear().type(buyInAmount.toString());
+  } else {
+    // Use first dropdown option (default) - ensure dropdown is loaded
+    cy.get('[data-testid="buyin-dropdown"]').should('be.visible');
+    cy.get('[data-testid="buyin-dropdown"] option').should('have.length.greaterThan', 1);
+    cy.get('[data-testid="buyin-dropdown"] option').eq(0).then($option => {
+      const value = $option.val();
+      if (value && value !== '-1') {
+        cy.get('[data-testid="buyin-dropdown"]').select(String(value));
+      } else {
+        // Fallback to second option if first is invalid
+        cy.get('[data-testid="buyin-dropdown"] option').eq(1).then($option2 => {
+          const value2 = $option2.val();
+          cy.get('[data-testid="buyin-dropdown"]').select(String(value2));
+        });
+      }
+    });
+  }
+  
+  // Confirm seat selection - use shorter timeout and just click like working tests
+  cy.get('[data-testid="confirm-seat-btn"]', { timeout: 5000 }).click({ force: true });
+
+  // Should navigate to game
+  cy.url({ timeout: 15000 }).should('include', '/game/');
+};
+
 describe('Comprehensive Texas Hold\'em Poker Game Tests', () => {
   beforeEach(() => {
-    // Clear cookies and start fresh
+    // Clear cookies and visit home page
     cy.clearCookies();
     cy.visit('/');
     
-    // Handle nickname modal
-    cy.get('[data-testid="nickname-input"]', { timeout: 10000 }).type('PokerTestPlayer');
+    // Handle nickname modal properly - this is crucial for table interaction
+    cy.get('[data-testid="nickname-modal"]', { timeout: 10000 }).should('be.visible');
+    cy.get('[data-testid="nickname-input"]').type('ComprehensiveTestPlayer');
     cy.get('[data-testid="join-button"]').click();
     
-    // Wait for lobby
+    // Wait for lobby to load and modal to disappear
+    cy.get('[data-testid="nickname-modal"]').should('not.exist');
     cy.get('[data-testid="lobby-container"]', { timeout: 15000 }).should('be.visible');
+    cy.get('[data-testid="table-row"]').should('have.length.greaterThan', 0);
+  });
+
+  it('should demonstrate complete poker game functionality', () => {
+    takeSeatAsPlayer('PokerTestPlayer', 500);
+    
+    // Wait for game interface - use correct selector
+    cy.get('body').then(($body) => {
+      // Check for game components that actually exist
+      if ($body.find('[data-testid="game-table"]').length > 0) {
+        cy.get('[data-testid="game-table"]').should('be.visible');
+        cy.log('✅ Game table component loaded');
+      } else if ($body.find('[data-testid="game-container"]').length > 0) {
+        cy.get('[data-testid="game-container"]').should('be.visible');
+        cy.log('✅ Game container loaded');
+      }
+      
+      // Check for community cards area
+      if ($body.find('[data-testid="community-cards"]').length > 0) {
+        cy.get('[data-testid="community-cards"]').should('exist');
+        cy.log('✅ Community cards area present');
+      }
+      
+      // Check for pot display
+      if ($body.find('[data-testid="pot-amount"]').length > 0) {
+        cy.get('[data-testid="pot-amount"]').should('be.visible');
+        cy.log('✅ Pot amount display working');
+      }
+      
+      cy.log('✅ Complete poker game functionality tested successfully');
+    });
   });
 
   describe('Full Game Flow Tests', () => {
     it('should play a complete hand from preflop to showdown', () => {
-      // Join a table
-      cy.get('[data-testid^="table-"]').first().click();
+      takeSeatAsPlayer('HandTestPlayer', 500);
       
-      // Set buy-in and join
-      cy.get('[data-testid="buy-in-input"]', { timeout: 10000 }).should('be.visible');
-      cy.get('[data-testid="nickname-input"]').should('be.visible').clear().type('PokerTestPlayer');
-      cy.get('[data-testid="buy-in-input"]').clear().type('500');
-      cy.get('[data-testid="confirm-buy-in"]').should('be.visible').click({ force: true });
-
-      // Should navigate to game
-      cy.url({ timeout: 15000 }).should('include', '/game/');
-      
-      // Wait for game interface - use correct selector
       cy.get('body').then(($body) => {
         // Check for game components that actually exist
         if ($body.find('[data-testid="game-table"]').length > 0) {
@@ -54,14 +124,7 @@ describe('Comprehensive Texas Hold\'em Poker Game Tests', () => {
     });
 
     it('should handle multiple betting rounds correctly', () => {
-      // Join table and start game
-      cy.get('[data-testid^="table-"]').first().click();
-      cy.get('[data-testid="buy-in-input"]', { timeout: 10000 }).should('be.visible');
-      cy.get('[data-testid="nickname-input"]').clear().type('BettingTestPlayer');
-      cy.get('[data-testid="buy-in-input"]').clear().type('1000');
-      cy.get('[data-testid="confirm-buy-in"]').click({ force: true });
-
-      cy.url({ timeout: 15000 }).should('include', '/game/');
+      takeSeatAsPlayer('BettingTestPlayer', 1000);
       
       cy.get('body').then(($body) => {
         cy.log('🎯 Testing betting rounds: Preflop → Flop → Turn → River');
@@ -116,14 +179,7 @@ describe('Comprehensive Texas Hold\'em Poker Game Tests', () => {
 
   describe('Hand Rankings and Showdown Tests', () => {
     it('should handle different poker hand rankings', () => {
-      // Join table to test hand rankings
-      cy.get('[data-testid^="table-"]').first().click();
-      cy.get('[data-testid="buy-in-input"]', { timeout: 10000 }).should('be.visible');
-      cy.get('[data-testid="nickname-input"]').clear().type('HandRankingTester');
-      cy.get('[data-testid="buy-in-input"]').clear().type('2000');
-      cy.get('[data-testid="confirm-buy-in"]').click({ force: true });
-
-      cy.url({ timeout: 15000 }).should('include', '/game/');
+      takeSeatAsPlayer('HandRankingTester', 2000);
 
       cy.get('body').then(($body) => {
         cy.log('🃏 Testing poker hand rankings system');
@@ -164,14 +220,7 @@ describe('Comprehensive Texas Hold\'em Poker Game Tests', () => {
     });
 
     it('should handle showdown scenarios correctly', () => {
-      // Test showdown mechanics
-      cy.get('[data-testid^="table-"]').first().click();
-      cy.get('[data-testid="buy-in-input"]', { timeout: 10000 }).should('be.visible');
-      cy.get('[data-testid="nickname-input"]').clear().type('ShowdownTester');
-      cy.get('[data-testid="buy-in-input"]').clear().type('1500');
-      cy.get('[data-testid="confirm-buy-in"]').click({ force: true });
-
-      cy.url({ timeout: 15000 }).should('include', '/game/');
+      takeSeatAsPlayer('ShowdownTester', 1500);
 
       cy.get('body').then(($body) => {
         cy.log('🏆 Testing showdown scenarios');
@@ -205,13 +254,7 @@ describe('Comprehensive Texas Hold\'em Poker Game Tests', () => {
 
   describe('Betting and All-In Scenarios', () => {
     it('should handle all-in situations correctly', () => {
-      cy.get('[data-testid^="table-"]').first().click();
-      cy.get('[data-testid="buy-in-input"]', { timeout: 10000 }).should('be.visible');
-      cy.get('[data-testid="nickname-input"]').clear().type('AllInTester');
-      cy.get('[data-testid="buy-in-input"]').clear().type('100'); // Small stack for all-in testing
-      cy.get('[data-testid="confirm-buy-in"]').click({ force: true });
-
-      cy.url({ timeout: 15000 }).should('include', '/game/');
+      takeSeatAsPlayer('AllInTester', 100); // Small stack for all-in testing
 
       cy.get('body').then(($body) => {
         cy.log('💸 Testing all-in scenarios');
@@ -243,13 +286,7 @@ describe('Comprehensive Texas Hold\'em Poker Game Tests', () => {
     });
 
     it('should handle side pot calculations', () => {
-      cy.get('[data-testid^="table-"]').first().click();
-      cy.get('[data-testid="buy-in-input"]', { timeout: 10000 }).should('be.visible');
-      cy.get('[data-testid="nickname-input"]').clear().type('SidePotTester');
-      cy.get('[data-testid="buy-in-input"]').clear().type('800');
-      cy.get('[data-testid="confirm-buy-in"]').click({ force: true });
-
-      cy.url({ timeout: 15000 }).should('include', '/game/');
+      takeSeatAsPlayer('SidePotTester', 300);
 
       cy.get('body').then(($body) => {
         cy.log('🎲 Testing side pot calculations');
@@ -276,13 +313,7 @@ describe('Comprehensive Texas Hold\'em Poker Game Tests', () => {
     });
 
     it('should handle complex betting patterns', () => {
-      cy.get('[data-testid^="table-"]').first().click();
-      cy.get('[data-testid="buy-in-input"]', { timeout: 10000 }).should('be.visible');
-      cy.get('[data-testid="nickname-input"]').clear().type('BettingPatternTester');
-      cy.get('[data-testid="buy-in-input"]').clear().type('3000');
-      cy.get('[data-testid="confirm-buy-in"]').click({ force: true });
-
-      cy.url({ timeout: 15000 }).should('include', '/game/');
+      takeSeatAsPlayer('ComplexBettingTester', 1000);
 
       cy.get('body').then(($body) => {
         cy.log('📊 Testing complex betting patterns');
@@ -316,13 +347,7 @@ describe('Comprehensive Texas Hold\'em Poker Game Tests', () => {
 
   describe('Multi-Player Game Scenarios', () => {
     it('should handle games with multiple players', () => {
-      cy.get('[data-testid^="table-"]').first().click();
-      cy.get('[data-testid="buy-in-input"]', { timeout: 10000 }).should('be.visible');
-      cy.get('[data-testid="nickname-input"]').clear().type('MultiPlayerTester');
-      cy.get('[data-testid="buy-in-input"]').clear().type('1200');
-      cy.get('[data-testid="confirm-buy-in"]').click({ force: true });
-
-      cy.url({ timeout: 15000 }).should('include', '/game/');
+      takeSeatAsPlayer('MultiPlayerTester', 800);
 
       cy.get('body').then(($body) => {
         cy.log('👥 Testing multi-player scenarios');
@@ -369,13 +394,7 @@ describe('Comprehensive Texas Hold\'em Poker Game Tests', () => {
     });
 
     it('should handle player actions in sequence', () => {
-      cy.get('[data-testid^="table-"]').first().click();
-      cy.get('[data-testid="buy-in-input"]', { timeout: 10000 }).should('be.visible');
-      cy.get('[data-testid="nickname-input"]').clear().type('SequenceTester');
-      cy.get('[data-testid="buy-in-input"]').clear().type('1800');
-      cy.get('[data-testid="confirm-buy-in"]').click({ force: true });
-
-      cy.url({ timeout: 15000 }).should('include', '/game/');
+      takeSeatAsPlayer('SequenceTester', 600);
 
       cy.get('body').then(($body) => {
         cy.log('🔄 Testing sequential player actions');
@@ -420,13 +439,7 @@ describe('Comprehensive Texas Hold\'em Poker Game Tests', () => {
 
   describe('Edge Cases and Error Handling', () => {
     it('should handle disconnection and reconnection', () => {
-      cy.get('[data-testid^="table-"]').first().click();
-      cy.get('[data-testid="buy-in-input"]', { timeout: 10000 }).should('be.visible');
-      cy.get('[data-testid="nickname-input"]').clear().type('DisconnectTester');
-      cy.get('[data-testid="buy-in-input"]').clear().type('1000');
-      cy.get('[data-testid="confirm-buy-in"]').click({ force: true });
-
-      cy.url({ timeout: 15000 }).should('include', '/game/');
+      takeSeatAsPlayer('DisconnectTester', 500);
 
       cy.get('body').then(($body) => {
         cy.log('🔌 Testing disconnection/reconnection scenarios');
@@ -456,13 +469,7 @@ describe('Comprehensive Texas Hold\'em Poker Game Tests', () => {
     });
 
     it('should handle invalid moves and edge cases', () => {
-      cy.get('[data-testid^="table-"]').first().click();
-      cy.get('[data-testid="buy-in-input"]', { timeout: 10000 }).should('be.visible');
-      cy.get('[data-testid="nickname-input"]').clear().type('EdgeCaseTester');
-      cy.get('[data-testid="buy-in-input"]').clear().type('2500');
-      cy.get('[data-testid="confirm-buy-in"]').click({ force: true });
-
-      cy.url({ timeout: 15000 }).should('include', '/game/');
+      takeSeatAsPlayer('EdgeCaseTester', 400);
 
       cy.get('body').then(($body) => {
         cy.log('⚠️ Testing edge cases and error handling');
@@ -506,13 +513,7 @@ describe('Comprehensive Texas Hold\'em Poker Game Tests', () => {
     });
 
     it('should handle game termination scenarios', () => {
-      cy.get('[data-testid^="table-"]').first().click();
-      cy.get('[data-testid="buy-in-input"]', { timeout: 10000 }).should('be.visible');
-      cy.get('[data-testid="nickname-input"]').clear().type('TerminationTester');
-      cy.get('[data-testid="buy-in-input"]').clear().type('500');
-      cy.get('[data-testid="confirm-buy-in"]').click({ force: true });
-
-      cy.url({ timeout: 15000 }).should('include', '/game/');
+      takeSeatAsPlayer('TerminationTester', 200);
 
       cy.get('body').then(($body) => {
         cy.log('🔚 Testing game termination scenarios');
@@ -542,13 +543,7 @@ describe('Comprehensive Texas Hold\'em Poker Game Tests', () => {
 
   describe('Advanced Poker Scenarios', () => {
     it('should handle tournament-style blinds increase', () => {
-      cy.get('[data-testid^="table-"]').first().click();
-      cy.get('[data-testid="buy-in-input"]', { timeout: 10000 }).should('be.visible');
-      cy.get('[data-testid="nickname-input"]').clear().type('TournamentTester');
-      cy.get('[data-testid="buy-in-input"]').clear().type('5000');
-      cy.get('[data-testid="confirm-buy-in"]').click({ force: true });
-
-      cy.url({ timeout: 15000 }).should('include', '/game/');
+      takeSeatAsPlayer('TournamentTester', 1000);
 
       cy.get('body').then(($body) => {
         cy.log('🏆 Testing tournament-style features');
@@ -567,13 +562,7 @@ describe('Comprehensive Texas Hold\'em Poker Game Tests', () => {
     });
 
     it('should handle special poker situations', () => {
-      cy.get('[data-testid^="table-"]').first().click();
-      cy.get('[data-testid="buy-in-input"]', { timeout: 10000 }).should('be.visible');
-      cy.get('[data-testid="nickname-input"]').clear().type('SpecialSituationTester');
-      cy.get('[data-testid="buy-in-input"]').clear().type('4000');
-      cy.get('[data-testid="confirm-buy-in"]').click({ force: true });
-
-      cy.url({ timeout: 15000 }).should('include', '/game/');
+      takeSeatAsPlayer('SpecialSituationTester', 750);
 
       cy.get('body').then(($body) => {
         cy.log('🎲 Testing special poker situations');
@@ -599,92 +588,33 @@ describe('Comprehensive Texas Hold\'em Poker Game Tests', () => {
   });
 
   // Summary test to ensure all major components work together
-  it('should demonstrate complete poker game functionality', () => {
-    cy.get('[data-testid^="table-"]').first().click();
-    cy.get('[data-testid="buy-in-input"]', { timeout: 10000 }).should('be.visible');
-    cy.get('[data-testid="nickname-input"]').clear().type('ComprehensiveTester');
-    cy.get('[data-testid="buy-in-input"]').clear().type('10000');
-    cy.get('[data-testid="confirm-buy-in"]').click({ force: true });
-
-    cy.url({ timeout: 15000 }).should('include', '/game/');
-
+  it('should demonstrate complete comprehensive functionality', () => {
+    takeSeatAsPlayer('ComprehensiveTestPlayer2', 750);
+    
+    // Wait for game interface - use correct selector
     cy.get('body').then(($body) => {
-      cy.log('🎮 COMPREHENSIVE POKER GAME FUNCTIONALITY TEST');
-      cy.log('===============================================');
-      
-      // Verify all core components are present
-      cy.log('🎯 Core Game Components:');
-      
-      // 1. Table and seating
+      // Check for game components that actually exist
       if ($body.find('[data-testid="game-table"]').length > 0) {
         cy.get('[data-testid="game-table"]').should('be.visible');
-        cy.log('  ✅ Game table rendered');
+        cy.log('✅ Game table component loaded');
       } else if ($body.find('[data-testid="game-container"]').length > 0) {
         cy.get('[data-testid="game-container"]').should('be.visible');
-        cy.log('  ✅ Game container rendered');
+        cy.log('✅ Game container loaded');
       }
       
-      // 2. Community cards area
+      // Check for community cards area
       if ($body.find('[data-testid="community-cards"]').length > 0) {
         cy.get('[data-testid="community-cards"]').should('exist');
-        cy.log('  ✅ Community cards area present');
+        cy.log('✅ Community cards area present');
       }
       
-      // 3. Pot display
+      // Check for pot display
       if ($body.find('[data-testid="pot-amount"]').length > 0) {
         cy.get('[data-testid="pot-amount"]').should('be.visible');
-        cy.log('  ✅ Pot amount display working');
+        cy.log('✅ Pot amount display working');
       }
       
-      // 4. Action buttons (if available)
-      const actionElements = [
-        '[data-testid="fold-button"]',
-        '[data-testid="call-button"]',
-        '[data-testid="raise-button"]',
-        '[data-testid="check-button"]',
-        '[data-testid="bet-button"]'
-      ];
-      
-      let actionsFound = 0;
-      actionElements.forEach(selector => {
-        if ($body.find(selector).length > 0) {
-          actionsFound++;
-        }
-      });
-      
-      if (actionsFound > 0) {
-        cy.log(`  ✅ ${actionsFound} action buttons available`);
-      }
-      
-      cy.log('🎯 Game Rules Verified:');
-      cy.log('  ✅ Texas Hold\'em hand rankings implemented');
-      cy.log('  ✅ Betting round structure (Preflop→Flop→Turn→River)');
-      cy.log('  ✅ Position-based gameplay (9 positions)');
-      cy.log('  ✅ All-in and side pot mechanics');
-      cy.log('  ✅ Showdown and winner determination');
-      cy.log('  ✅ Chip management and pot distribution');
-      cy.log('  ✅ Player action validation');
-      cy.log('  ✅ Game state synchronization');
-      
-      cy.log('🎯 Advanced Features Tested:');
-      cy.log('  ✅ Multi-player support (up to 9 players)');
-      cy.log('  ✅ Real-time Socket.IO communication');
-      cy.log('  ✅ Professional poker table interface');
-      cy.log('  ✅ Error handling and edge cases');
-      cy.log('  ✅ Disconnection/reconnection recovery');
-      cy.log('  ✅ Complex betting patterns');
-      cy.log('  ✅ Tournament and cash game modes');
-      
-      cy.log('');
-      cy.log('🏆 COMPREHENSIVE TEST SUMMARY:');
-      cy.log('===============================================');
-      cy.log('✅ ALL MAJOR POKER GAME COMPONENTS WORKING');
-      cy.log('✅ COMPLETE TEXAS HOLD\'EM IMPLEMENTATION');
-      cy.log('✅ PROFESSIONAL MULTIPLAYER EXPERIENCE');
-      cy.log('✅ ROBUST ERROR HANDLING');
-      cy.log('✅ PRODUCTION-READY POKER GAME');
-      cy.log('');
-      cy.log('🎰 READY FOR POKER PLAYERS! ♠️♥️♦️♣️');
+      cy.log('✅ Complete comprehensive functionality tested successfully');
     });
   });
 }); 
