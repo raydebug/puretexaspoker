@@ -52,17 +52,21 @@ export const setupLobbyHandlers = (
       const nicknameToUse = nickname || `Player${socket.id.slice(0, 4)}`;
       console.log(`DEBUG: Backend using nickname: ${nicknameToUse}`);
       
-      // First, try to create a player in the database if they don't exist
+      // First, clean up any existing player records for this socket to prevent constraints
+      await prisma.$transaction(async (tx) => {
+        // Clean up in proper order to respect foreign key constraints
+        await tx.message.deleteMany({ where: { playerId: socket.id } });
+        await tx.gameAction.deleteMany({ where: { playerId: socket.id } });
+        await tx.playerTable.deleteMany({ where: { playerId: socket.id } });
+        await tx.player.deleteMany({ where: { id: socket.id } });
+      });
+      
+      // Create a player in the database
       console.log(`DEBUG: Backend creating/updating player in database...`);
       let player;
       try {
-        player = await prisma.player.upsert({
-          where: { id: socket.id },
-          update: { 
-            nickname: nicknameToUse,
-            chips: buyIn || 0 
-          },
-          create: {
+        player = await prisma.player.create({
+          data: {
             id: socket.id,
             nickname: nicknameToUse,
             chips: buyIn || 0
@@ -72,15 +76,10 @@ export const setupLobbyHandlers = (
         // Handle unique constraint errors for nickname
         if (dbError.code === 'P2002' && dbError.meta?.target?.includes('nickname')) {
           console.log(`DEBUG: Backend nickname "${nicknameToUse}" already exists, using fallback`);
-          const fallbackNickname = `Player${socket.id.slice(0, 6)}`;
+          const fallbackNickname = `Player${socket.id.slice(0, 6)}_${Date.now()}`;
           try {
-            player = await prisma.player.upsert({
-              where: { id: socket.id },
-              update: { 
-                nickname: fallbackNickname,
-                chips: buyIn || 0 
-              },
-              create: {
+            player = await prisma.player.create({
+              data: {
                 id: socket.id,
                 nickname: fallbackNickname,
                 chips: buyIn || 0
@@ -88,20 +87,20 @@ export const setupLobbyHandlers = (
             });
           } catch (fallbackError) {
             console.error(`DEBUG: Backend fallback database error:`, fallbackError);
-            socket.emit('tableError', 'Database error: Could not create player');
+            socket.emit('tableError', 'Database error: Could not create player with unique nickname');
             return;
           }
         } else {
           console.error(`DEBUG: Backend database error:`, dbError);
-          socket.emit('tableError', 'Database error: Failed to create player');
+          socket.emit('tableError', `Database error: ${dbError.message || 'Failed to create player'}`);
           return;
         }
       }
-      console.log(`DEBUG: Backend player upserted:`, player);
+      console.log(`DEBUG: Backend player created:`, player);
 
       // Join the table in the table manager
       console.log(`DEBUG: Backend joining table in TableManager...`);
-      const tableResult = tableManager.joinTable(tableId, socket.id, nicknameToUse);
+      const tableResult = tableManager.joinTable(tableId, socket.id, player.nickname);
       console.log(`DEBUG: Backend TableManager join result:`, tableResult);
 
       if (!tableResult.success) {
@@ -116,7 +115,7 @@ export const setupLobbyHandlers = (
           }
           
           // Retry the join
-          const retryResult = tableManager.joinTable(tableId, socket.id, nicknameToUse);
+          const retryResult = tableManager.joinTable(tableId, socket.id, player.nickname);
           console.log(`DEBUG: Backend retry join result:`, retryResult);
           
           if (!retryResult.success) {
@@ -205,26 +204,32 @@ export const setupLobbyHandlers = (
           if (existingGame) {
             console.log('DEBUG: Backend GameService not in memory, recreating for existing game...');
             
-            // First clear any existing player-table relationships for this table
-            await prisma.playerTable.deleteMany({
-              where: { tableId: dbTable.id }
+            // Clean up in proper order to respect foreign key constraints
+            await prisma.$transaction(async (tx) => {
+              // Delete in correct order: Messages → GameActions → Games → PlayerTables
+              await tx.message.deleteMany({
+                where: { 
+                  player: { 
+                    playerTables: { 
+                      some: { tableId: dbTable.id } 
+                    } 
+                  } 
+                }
+              });
+              await tx.gameAction.deleteMany({ where: { gameId: existingGame.id } });
+              await tx.game.delete({ where: { id: existingGame.id } });
+              await tx.playerTable.deleteMany({ where: { tableId: dbTable.id } });
             });
-            console.log('DEBUG: Backend cleared existing player-table relationships');
-            
-            // Delete the stale database record first
-            await prisma.game.delete({
-              where: { id: existingGame.id }
-            });
-            console.log('DEBUG: Backend deleted stale database game record');
+            console.log('DEBUG: Backend cleaned up stale game data with proper foreign key ordering');
             
             // Create a fresh game using gameManager
             const gameState = await gameManager.createGame(dbTable.id);
             gameId = gameState.id!;
             console.log(`DEBUG: Backend recreated game with new ID: ${gameId}`);
+          } else {
+            socket.emit('tableError', 'Failed to create or find game service');
+            return;
           }
-          
-          socket.emit('tableError', 'Failed to create or find game service');
-          return;
         }
       }
 
@@ -237,7 +242,7 @@ export const setupLobbyHandlers = (
         socket.data.buyIn = buyIn;
         socket.data.gameId = gameId;
         socket.data.dbTableId = dbTable.id;
-        socket.data.nickname = nicknameToUse;
+        socket.data.nickname = player.nickname;
         socket.data.playerId = socket.id;
         
         // Join the game room as observer
@@ -245,24 +250,24 @@ export const setupLobbyHandlers = (
         gameManager.joinGameRoom(gameId, socket.id);
 
         // Emit observer joined event to all clients in the game room (including the observer themselves)
-        io.to(`game:${gameId}`).emit('observer:joined', { observer: nicknameToUse });
-        console.log(`DEBUG: Backend emitted observer:joined event for ${nicknameToUse} in game:${gameId}`);
+        io.to(`game:${gameId}`).emit('observer:joined', { observer: player.nickname });
+        console.log(`DEBUG: Backend emitted observer:joined event for ${player.nickname} in game:${gameId}`);
 
         // Get current game state
         const gameState = gameService.getGameState();
         
         // Emit success events - user joins as observer
-        console.log(`DEBUG: Backend about to emit tableJoined as observer - tableId: ${tableId}, gameId: ${gameId}`);
-        socket.emit('tableJoined', { tableId, role: 'observer', buyIn: 0, gameId });
+        socket.emit('tableJoined', { tableId, role: 'observer', buyIn: buyIn || 0, gameId });
+        socket.emit('gameJoined', { gameId, playerId: socket.id, gameState });
         
-        console.log(`DEBUG: Backend about to emit gameJoined as observer - gameId: ${gameId}`);
-        console.log(`DEBUG: Backend gameState being sent:`, gameState);
-        socket.emit('gameJoined', { gameId, playerId: socket.data.playerId!, gameState });
+        console.log(`DEBUG: Backend successfully joined ${player.nickname} as observer to game ${gameId}`);
         
-        console.log(`DEBUG: Backend user ${nicknameToUse} joined as observer successfully`);
+      } else {
+        console.error(`DEBUG: Backend gameService is null for gameId: ${gameId}`);
+        socket.emit('tableError', 'Failed to join game as observer');
+        return;
       }
-
-      broadcastTables();
+      
     } catch (error) {
       console.error('Error joining table:', error);
       socket.emit('tableError', (error as Error).message || 'Failed to join table');
@@ -336,6 +341,19 @@ export const setupLobbyHandlers = (
         return;
       }
       
+      // Check if seat is available before trying to take it
+      const existingPlayerTable = await prisma.playerTable.findFirst({
+        where: {
+          tableId: dbTableId,
+          seatNumber: seatNumber
+        }
+      });
+      
+      if (existingPlayerTable) {
+        socket.emit('seatError', `Seat ${seatNumber} is already taken`);
+        return;
+      }
+      
       // Create player data
       const playerData = {
         id: playerId,
@@ -359,15 +377,36 @@ export const setupLobbyHandlers = (
       // Add player to the game
       gameService.addPlayer(playerData);
       
-      // Create player-table relationship in database
-      await prisma.playerTable.create({
-        data: {
-          playerId: socket.data.playerId!,
-          tableId: dbTableId,
-          seatNumber: seatNumber,
-          buyIn: buyIn
+      // Create player-table relationship in database with error handling
+      try {
+        await prisma.playerTable.create({
+          data: {
+            playerId: socket.data.playerId!,
+            tableId: dbTableId,
+            seatNumber: seatNumber,
+            buyIn: buyIn
+          }
+        });
+      } catch (dbError: any) {
+        // If seat was taken between our check and create, handle it gracefully
+        if (dbError.code === 'P2002' && dbError.meta?.target?.includes('tableId_seatNumber')) {
+          console.log(`DEBUG: Backend seat ${seatNumber} was taken by another player during processing`);
+          
+          // Remove player from game service since DB creation failed
+          gameService.removePlayer(playerId);
+          
+          socket.emit('seatError', `Seat ${seatNumber} was just taken by another player`);
+          return;
+        } else {
+          console.error('DEBUG: Backend database error creating PlayerTable:', dbError);
+          
+          // Remove player from game service since DB creation failed
+          gameService.removePlayer(playerId);
+          
+          socket.emit('seatError', `Database error: ${dbError.message || 'Failed to take seat'}`);
+          return;
         }
-      });
+      }
       
       // Update stored buy-in for this player
       socket.data.buyIn = buyIn;
