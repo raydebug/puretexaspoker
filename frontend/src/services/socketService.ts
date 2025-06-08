@@ -455,51 +455,37 @@ class SocketService {
 
   private onSuccessfulConnection() {
     console.log('DEBUG: Connected to server successfully with ID:', this.socket?.id);
+    this.connectionAttempts = 0;
     this.isConnecting = false;
     this.connectionLock = false;
+    console.log('Connection successful, resetting connection attempts counter');
+
+    // Check if nickname is stored and emit a login event
+    const savedNickname = cookieService.getNickname();
+    const savedSeatNumber = cookieService.getSeatNumber();
     
-    // Only reset connection attempts if we haven't reached max attempts
-    if (this.connectionAttempts < this.maxConnectionAttempts) {
-      this.connectionAttempts = 0;
-      console.log('Connection successful, resetting connection attempts counter');
-    }
+    console.log('DEBUG: Connection established with saved nickname:', savedNickname, 'seat:', savedSeatNumber);
     
-    this.emit('connected');
+    // Request lobby tables on successful connection
+    this.requestLobbyTables();
 
-    // Get user info from cookies
-    const nickname = cookieService.getNickname();
-    const seatNumber = cookieService.getSeatNumber();
-
-    if (nickname) {
-      if (seatNumber === null) {
-        // If no seat number, join as observer
-        this.joinAsObserver(nickname);
-      } else {
-        // If has seat number, join game
-        this.joinGame(nickname, seatNumber);
-      }
-    }
-
-    // Set up heartbeat
-    if (this.heartbeatInterval) {
-      clearInterval(this.heartbeatInterval);
-    }
+    // Start heartbeat mechanism
     this.heartbeatInterval = setInterval(() => {
-      if (this.socket?.connected) {
-        this.socket.emit('heartbeat');
+      if (this.socket && this.socket.connected) {
+        this.socket.emit('ping');
+      } else {
+        if (this.heartbeatInterval) {
+          clearInterval(this.heartbeatInterval);
+          this.heartbeatInterval = undefined;
+        }
       }
     }, 30000);
 
     // Set up event listeners for observer management
     if (this.socket) {
-      // Remove the duplicate observer:joined handler - this was conflicting with the main one
-      // The correct handler is in setupListeners() method which expects { observer: string }
+      // NOTE: observer:joined and observer:left handlers are already set up in setupListeners()
+      // We don't need duplicate handlers here
       
-      this.socket.on('observer:left', (data: { observer: string }) => {
-        this.observers = this.observers.filter(observer => observer !== data.observer);
-        this.emitOnlineUsersUpdate();
-      });
-
       this.socket.on('playerJoined', (player: Player) => {
         if (!this.gameState) {
           this.gameState = this.getInitialGameState();
@@ -514,7 +500,7 @@ class SocketService {
           }
         }
         
-        // Remove player from observers list
+        // Remove player from observers list when they become a player
         this.observers = this.observers.filter(observer => observer !== player.name);
         
         // Emit update with the new state - send the updated player and filtered observers
