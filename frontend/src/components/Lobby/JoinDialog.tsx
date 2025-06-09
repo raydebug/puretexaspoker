@@ -300,18 +300,17 @@ export const JoinDialog: React.FC<JoinDialogProps> = ({ table, onClose, onJoin }
     });
 
     // Set up success listener to close dialog on successful join
-    const unsubscribeTableJoined = socketService.getSocket()?.on('tableJoined', () => {
+    const tableJoinedHandler = () => {
       clearError();
       onClose();
-    });
+    };
+    socketService.getSocket()?.on('tableJoined', tableJoinedHandler);
 
     window.addEventListener('keydown', handleEscape);
     return () => {
       window.removeEventListener('keydown', handleEscape);
       unsubscribeError();
-      if (unsubscribeTableJoined) {
-        socketService.getSocket()?.off('tableJoined', unsubscribeTableJoined);
-      }
+      socketService.getSocket()?.off('tableJoined', tableJoinedHandler);
     };
   }, [onClose]);
 

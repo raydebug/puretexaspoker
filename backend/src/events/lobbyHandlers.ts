@@ -24,7 +24,26 @@ interface ServerToClientEvents {
   seatTaken: (data: { seatNumber: number; playerId: string; gameState: any }) => void;
   'observer:joined': (data: { observer: string }) => void;
   'observer:left': (data: { observer: string }) => void;
+  'player:disconnected': (data: { playerId: string; nickname: string; timeoutSeconds: number }) => void;
+  'player:reconnected': (data: { playerId: string; nickname: string }) => void;
+  'player:removedFromSeat': (data: { playerId: string; nickname: string; seatNumber: number; reason: string }) => void;
 }
+
+// Connection monitoring state
+interface PlayerConnectionState {
+  playerId: string;
+  nickname: string;
+  gameId: string;
+  seatNumber: number;
+  tableId: number;
+  dbTableId: string;
+  disconnectedAt: number;
+  timeoutId: NodeJS.Timeout;
+}
+
+// Track disconnected players across all connections
+const disconnectedPlayers = new Map<string, PlayerConnectionState>();
+const DISCONNECT_TIMEOUT_MS = 5000; // 5 seconds
 
 export const setupLobbyHandlers = (
   io: Server<ClientToServerEvents, ServerToClientEvents>,
@@ -33,6 +52,82 @@ export const setupLobbyHandlers = (
   // Broadcast table updates to all connected clients
   const broadcastTables = () => {
     io.emit('tablesUpdate', tableManager.getAllTables());
+  };
+
+  // Helper function to handle player reconnection
+  const handlePlayerReconnection = (playerId: string, nickname: string, gameId: string) => {
+    const connectionState = disconnectedPlayers.get(playerId);
+    if (connectionState) {
+      console.log(`DEBUG: Player ${nickname} reconnected, cancelling timeout`);
+      
+      // Clear the timeout
+      clearTimeout(connectionState.timeoutId);
+      
+      // Remove from disconnected players tracking
+      disconnectedPlayers.delete(playerId);
+      
+      // Notify other players that this player reconnected
+      io.to(`game:${gameId}`).emit('player:reconnected', {
+        playerId,
+        nickname
+      });
+
+      console.log(`DEBUG: Successfully cancelled timeout for reconnected player ${nickname}`);
+      return true;
+    }
+    return false;
+  };
+
+  // Helper function to move player from seat to observer due to timeout
+  const movePlayerToObserver = async (connectionState: PlayerConnectionState) => {
+    try {
+      console.log(`DEBUG: Moving disconnected player ${connectionState.nickname} to observers after timeout`);
+      
+      // Get the game service
+      const gameService = gameManager.getGame(connectionState.gameId);
+      if (!gameService) {
+        console.log(`DEBUG: Game service not found for gameId: ${connectionState.gameId}`);
+        return;
+      }
+
+      // Remove player from their seat in game service
+      gameService.removePlayer(connectionState.playerId);
+
+      // Remove from database seat assignment
+      await prisma.playerTable.deleteMany({
+        where: {
+          playerId: connectionState.playerId,
+          tableId: connectionState.dbTableId
+        }
+      });
+
+      // Get updated game state
+      const gameState = gameService.getGameState();
+
+      // Emit events to notify all clients in the game room
+      io.to(`game:${connectionState.gameId}`).emit('player:removedFromSeat', {
+        playerId: connectionState.playerId,
+        nickname: connectionState.nickname,
+        seatNumber: connectionState.seatNumber,
+        reason: 'Disconnected for more than 5 seconds'
+      });
+
+      // Move player to observers
+      io.to(`game:${connectionState.gameId}`).emit('observer:joined', { 
+        observer: connectionState.nickname 
+      });
+
+      // Broadcast updated game state
+      io.to(`game:${connectionState.gameId}`).emit('gameState', gameState);
+
+      console.log(`DEBUG: Successfully moved ${connectionState.nickname} from seat ${connectionState.seatNumber} to observers`);
+
+    } catch (error) {
+      console.error('Error moving player to observer:', error);
+    } finally {
+      // Remove from disconnected players tracking
+      disconnectedPlayers.delete(connectionState.playerId);
+    }
   };
 
   // Handle initial table list request
@@ -281,6 +376,9 @@ export const setupLobbyHandlers = (
         // Get current game state
         const gameState = gameService.getGameState();
         
+        // **CONNECTION MONITORING**: Check if this player was disconnected and cancel timeout
+        handlePlayerReconnection(socket.id, player.nickname, gameId);
+
         // Emit success events - user joins as observer
         socket.emit('tableJoined', { tableId, role: 'observer', buyIn: buyIn || 0, gameId });
         socket.emit('gameJoined', { gameId, playerId: socket.id, gameState });
@@ -444,6 +542,9 @@ export const setupLobbyHandlers = (
       console.log(`DEBUG: Backend removing ${nickname} from observers when taking seat`);
       io.to(`game:${gameId}`).emit("observer:left", { observer: nickname });
 
+      // **CONNECTION MONITORING**: Check if this player was disconnected and cancel timeout
+      handlePlayerReconnection(playerId, nickname, gameId);
+
       console.log(`DEBUG: Backend successfully seated player in seat ${seatNumber}`);
       socket.emit('seatTaken', { seatNumber, playerId, gameState });
       socket.emit('tableJoined', { tableId, role: 'player', buyIn, gameId });
@@ -460,12 +561,78 @@ export const setupLobbyHandlers = (
     }
   });
 
-  // Handle client disconnect
-  socket.on('disconnect', () => {
+  // Handle client disconnect - start monitoring for timeout
+  socket.on('disconnect', async () => {
+    console.log(`DEBUG: Player ${socket.id} disconnected, starting timeout monitoring`);
+    
     const allTables = tableManager.getAllTables();
     for (const table of allTables) {
       tableManager.leaveTable(table.id, socket.id);
     }
     broadcastTables();
+
+    // Check if this player was seated in a game
+    const gameId = socket.data.gameId;
+    const nickname = socket.data.nickname;
+    const tableId = socket.data.tableId;
+    const dbTableId = socket.data.dbTableId;
+
+    if (gameId && nickname && tableId && dbTableId) {
+      try {
+        // Find the player's seat assignment in the database
+        const playerTable = await prisma.playerTable.findFirst({
+          where: {
+            playerId: socket.id,
+            tableId: dbTableId
+          }
+        });
+
+        if (playerTable && playerTable.seatNumber !== null) {
+          console.log(`DEBUG: Player ${nickname} (${socket.id}) was seated at seat ${playerTable.seatNumber}, starting 5-second timeout`);
+          
+          // Clear any existing timeout for this player
+          const existingState = disconnectedPlayers.get(socket.id);
+          if (existingState) {
+            clearTimeout(existingState.timeoutId);
+          }
+
+          // Set up timeout to move player to observer after 5 seconds
+          const timeoutId = setTimeout(() => {
+            const connectionState = disconnectedPlayers.get(socket.id);
+            if (connectionState) {
+              console.log(`DEBUG: Timeout expired for player ${nickname}, moving to observers`);
+              movePlayerToObserver(connectionState);
+            }
+          }, DISCONNECT_TIMEOUT_MS);
+
+          // Store connection state for timeout tracking
+          const connectionState: PlayerConnectionState = {
+            playerId: socket.id,
+            nickname,
+            gameId,
+            seatNumber: playerTable.seatNumber,
+            tableId,
+            dbTableId,
+            disconnectedAt: Date.now(),
+            timeoutId
+          };
+
+          disconnectedPlayers.set(socket.id, connectionState);
+
+          // Notify other players that this player is disconnected
+          io.to(`game:${gameId}`).emit('player:disconnected', {
+            playerId: socket.id,
+            nickname,
+            timeoutSeconds: DISCONNECT_TIMEOUT_MS / 1000
+          });
+
+          console.log(`DEBUG: Set up ${DISCONNECT_TIMEOUT_MS}ms timeout for player ${nickname}`);
+        } else {
+          console.log(`DEBUG: Player ${nickname} was not seated, no timeout needed`);
+        }
+      } catch (error) {
+        console.error('Error setting up disconnect timeout:', error);
+      }
+    }
   });
 }; 

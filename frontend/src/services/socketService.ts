@@ -507,6 +507,43 @@ class SocketService {
       });
     });
 
+    // Handle player connection status events
+    socket.on('player:disconnected', (data: { playerId: string; nickname: string; timeoutSeconds: number }) => {
+      console.log('DEBUG: Frontend received player:disconnected event:', data);
+      this.emitSystemMessage(`Player ${data.nickname} disconnected and will be removed from their seat if not reconnected within ${data.timeoutSeconds} seconds.`);
+    });
+
+    socket.on('player:reconnected', (data: { playerId: string; nickname: string }) => {
+      console.log('DEBUG: Frontend received player:reconnected event:', data);
+      this.emitSystemMessage(`Player ${data.nickname} reconnected.`);
+    });
+
+    socket.on('player:removedFromSeat', (data: { playerId: string; nickname: string; seatNumber: number; reason: string }) => {
+      console.log('DEBUG: Frontend received player:removedFromSeat event:', data);
+      
+      if (this.gameState) {
+        // Remove player from game state
+        const removedPlayer = this.gameState.players.find(p => p && p.id === data.playerId);
+        if (removedPlayer) {
+          // Remove from players list
+          this.gameState.players = this.gameState.players.filter(p => p && p.id !== data.playerId);
+          
+          // Add to observers if not already there
+          if (!this.observers.includes(data.nickname)) {
+            this.observers = [...this.observers, data.nickname];
+          }
+          
+          // Emit updates
+          this.emitGameStateUpdate(this.gameState);
+          this.emitOnlineUsersUpdate();
+          
+          console.log(`DEBUG: Moved player ${data.nickname} from seat ${data.seatNumber} to observers due to: ${data.reason}`);
+        }
+      }
+      
+      this.emitSystemMessage(`Player ${data.nickname} was removed from seat ${data.seatNumber} (${data.reason})`);
+    });
+
     socket.on('disconnect', (reason) => {
       console.log('DEBUG: Frontend socket disconnect event:', reason);
       console.log('DEBUG: Frontend socket ID at disconnect:', socket.id);

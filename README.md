@@ -38,6 +38,7 @@ A comprehensive multiplayer Texas Hold'em poker game built with React, Node.js, 
 - **Betting System**: Fold, Call, Raise with proper validation
 - **Turn Management**: Accurate dealer button rotation and blind positioning
 - **Game Phase Transitions**: Smooth progression through all game states
+- **Connection Monitoring**: Automatic 5-second timeout system for disconnected players
 
 ### **Multiplayer Infrastructure**
 - **✅ FIXED: Observer-First Table Joining**: Join as observer, see yourself in observers list, then pick strategic seats
