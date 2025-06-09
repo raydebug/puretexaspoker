@@ -1367,10 +1367,4 @@ class SocketService {
   }
 }
 
-const createObserverAvatar = (nickname: string): AvatarType => ({
-  type: 'initials',
-  initials: nickname.slice(0, 2).toUpperCase(),
-  color: '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')
-});
-
 export const socketService = new SocketService();

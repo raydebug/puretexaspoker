@@ -312,7 +312,7 @@ export const JoinDialog: React.FC<JoinDialogProps> = ({ table, onClose, onJoin }
       unsubscribeError();
       socketService.getSocket()?.off('tableJoined', tableJoinedHandler);
     };
-  }, [onClose]);
+  }, [onClose, nickname]);
 
   const clearError = () => {
     setErrorMessage('');
