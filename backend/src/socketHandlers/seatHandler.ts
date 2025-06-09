@@ -5,7 +5,7 @@ interface SeatState {
   [seatNumber: number]: string | null; // nickname or null
 }
 
-const NUM_SEATS = 5;
+const NUM_SEATS = 9;
 let seats: SeatState = {};
 // NOTE: Observer management is now handled by lobbyHandlers.ts per-game-room
 // Removed observers array to prevent conflict with room-based observer system
@@ -31,7 +31,8 @@ let gameState: GameState = {
   isHandComplete: false
 };
 
-for (let i = 0; i < NUM_SEATS; i++) seats[i] = null;
+// Initialize seats 1-9 (1-based numbering to match frontend)
+for (let i = 1; i <= NUM_SEATS; i++) seats[i] = null;
 
 // Error tracking function
 const trackError = (socket: Socket, error: Error, context: string) => {
@@ -88,9 +89,25 @@ export function registerSeatHandlers(io: Server) {
 
     socket.on('seat:request', ({ nickname, seatNumber, buyIn }) => {
       try {
-        // Validate input
-        if (!nickname || seatNumber === undefined || seatNumber < 0 || seatNumber >= NUM_SEATS) {
-          throw new Error('Invalid seat request parameters');
+        console.log('DEBUG: Seat request received:', { nickname, seatNumber, buyIn, socketId: socket.id });
+        
+        // Validate input with better error messages
+        if (!nickname || typeof nickname !== 'string') {
+          throw new Error('Invalid nickname: must be a non-empty string');
+        }
+        
+        if (seatNumber === undefined || seatNumber === null) {
+          throw new Error('Invalid seat number: seatNumber is required');
+        }
+        
+        // Updated validation: seats 1-9 (1-based numbering to match frontend)
+        if (typeof seatNumber !== 'number' || seatNumber < 1 || seatNumber > NUM_SEATS) {
+          throw new Error(`Invalid seat number: must be between 1 and ${NUM_SEATS}, got ${seatNumber}`);
+        }
+        
+        // Validate buyIn if provided
+        if (buyIn !== undefined && (typeof buyIn !== 'number' || isNaN(buyIn) || buyIn <= 0)) {
+          throw new Error(`Invalid buy-in amount: must be a positive number, got ${buyIn}`);
         }
 
         // Check if seat is available

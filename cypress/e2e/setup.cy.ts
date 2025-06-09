@@ -21,23 +21,34 @@ describe('Basic Setup', () => {
 
   it('should show nickname modal when no nickname is set', () => {
     cy.visit('/', { failOnStatusCode: false });
-    cy.get('[data-testid="nickname-modal"]').should('exist');
-    cy.get('[data-testid="nickname-input"]').should('exist');
+    // Wait for the React app to mount by checking for any React rendered content
+    cy.get('body').should('not.be.empty');
+    cy.get('#root').should('exist');
+    // Wait for React app to load components
+    cy.get('[data-testid="game-container"]', { timeout: 30000 }).should('exist');
+    // Then check for the nickname modal
+    cy.get('[data-testid="nickname-modal"]', { timeout: 15000 }).should('be.visible');
+    cy.get('[data-testid="nickname-input"]').should('be.visible');
   });
 
   it('should allow entering nickname in modal and show lobby', () => {
     cy.visit('/', { failOnStatusCode: false });
-    cy.get('[data-testid="nickname-input"]').type('TestPlayer');
+    // Wait for React app to load
+    cy.get('[data-testid="game-container"]', { timeout: 15000 }).should('exist');
+    cy.get('[data-testid="nickname-modal"]', { timeout: 10000 }).should('be.visible');
+    cy.get('[data-testid="nickname-input"]').should('be.visible').type('TestPlayer');
     cy.get('[data-testid="join-button"]').click();
     cy.get('[data-testid="nickname-modal"]').should('not.exist');
-    cy.get('[data-testid="game-container"]').should('exist');
+    cy.get('[data-testid="lobby-container"]', { timeout: 10000 }).should('be.visible');
     cy.contains('Welcome, TestPlayer');
   });
 
   it('should have the main game container if nickname cookie is set', () => {
     cy.setCookie('playerNickname', 'TestPlayer');
     cy.visit('/', { failOnStatusCode: false });
-    cy.get('[data-testid="game-container"]').should('exist');
+    // Wait for React app to load
+    cy.get('[data-testid="game-container"]', { timeout: 15000 }).should('exist');
+    cy.get('[data-testid="lobby-container"]', { timeout: 10000 }).should('be.visible');
     cy.contains('Welcome, TestPlayer');
   });
 }); 

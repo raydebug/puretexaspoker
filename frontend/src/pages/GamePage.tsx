@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, startTransition } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { GameBoard } from '../components/GameBoard';
@@ -135,8 +135,6 @@ const ObserverControls = styled.div`
   z-index: 1000;
 `;
 
-
-
 const GamePage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -255,9 +253,9 @@ const GamePage: React.FC = () => {
             setGameState(newGameState);
           }
           
-          // Calculate available seats (0-8, excluding occupied seats)
+          // Calculate available seats (1-9, excluding occupied seats)
           const occupiedSeats = players.map(p => p.seatNumber);
-          const available = Array.from({ length: 9 }, (_, i) => i).filter(seat => !occupiedSeats.includes(seat));
+          const available = Array.from({ length: 9 }, (_, i) => i + 1).filter(seat => !occupiedSeats.includes(seat));
           setAvailableSeats(available);
         });
         
@@ -279,9 +277,9 @@ const GamePage: React.FC = () => {
             setGameState(state);
             setIsLoading(false);
             
-            // Calculate available seats
+            // Calculate available seats (1-9, excluding occupied seats)
             const occupiedSeats = state.players.map(p => p.seatNumber);
-            const available = Array.from({ length: 9 }, (_, i) => i).filter(seat => !occupiedSeats.includes(seat));
+            const available = Array.from({ length: 9 }, (_, i) => i + 1).filter(seat => !occupiedSeats.includes(seat));
             setAvailableSeats(available);
           }
         };
@@ -375,25 +373,46 @@ const GamePage: React.FC = () => {
     
     // In test mode, simulate taking the seat
     if (typeof window !== 'undefined' && (window as any).Cypress) {
-      setIsObserver(false);
-      // Create a simple player for test mode
-      const newPlayer = {
-        id: 'test-player-' + selectedSeat,
-        name: nickname,
-        seatNumber: selectedSeat,
-        position: selectedSeat,
-        chips: buyInAmount,
-        currentBet: 0,
-        isDealer: false,
-        isAway: false,
-        isActive: true,
-        cards: [],
-        avatar: {
-          type: 'default' as const,
-          color: '#ffd700'
-        }
-      };
-      setCurrentPlayer(newPlayer);
+      // Use startTransition to batch all state updates together
+      startTransition(() => {
+        // Create a simple player for test mode
+        const newPlayer = {
+          id: 'test-player-' + selectedSeat,
+          name: nickname,
+          seatNumber: selectedSeat,
+          position: selectedSeat,
+          chips: buyInAmount,
+          currentBet: 0,
+          isDealer: false,
+          isAway: false,
+          isActive: true,
+          cards: [],
+          avatar: {
+            type: 'default' as const,
+            color: '#ffd700'
+          }
+        };
+
+        // Update all state atomically
+        setCurrentPlayer(newPlayer);
+        setIsObserver(false);
+        
+        // Remove player from observers list
+        setObservers(prevObservers => prevObservers.filter(observer => observer !== nickname));
+        
+        // Update gameState to include the new player
+        setGameState(prevGameState => {
+          if (!prevGameState) return prevGameState;
+          
+          const updatedGameState = {
+            ...prevGameState,
+            players: [...prevGameState.players, newPlayer]
+          };
+          
+          console.log('DEBUG: Updated gameState with new player:', updatedGameState);
+          return updatedGameState;
+        });
+      });
     }
   };
 
@@ -480,6 +499,12 @@ const GamePage: React.FC = () => {
         gameState={gameState}
         currentPlayer={currentPlayer}
         onAction={handleAction}
+      />
+      
+      <OnlineList 
+        players={gameState?.players || []} 
+        observers={observers}
+        currentPlayerId={currentPlayer?.id}
       />
     </GameContainer>
   );

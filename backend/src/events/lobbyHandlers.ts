@@ -16,6 +16,7 @@ interface ServerToClientEvents {
   tablesUpdate: (tables: TableData[]) => void;
   tableJoined: (data: { tableId: number; role: 'player' | 'observer'; buyIn: number; gameId?: string }) => void;
   tableError: (error: string) => void;
+  nicknameError: (data: { message: string; suggestedNames?: string[] }) => void;
   gameCreated: (data: { gameId: string; tableId: number }) => void;
   gameJoined: (data: { gameId: string; playerId: string | null; gameState: any }) => void;
   gameState: (gameState: any) => void;
@@ -75,21 +76,45 @@ export const setupLobbyHandlers = (
       } catch (dbError: any) {
         // Handle unique constraint errors for nickname
         if (dbError.code === 'P2002' && dbError.meta?.target?.includes('nickname')) {
-          console.log(`DEBUG: Backend nickname "${nicknameToUse}" already exists, using fallback`);
-          const fallbackNickname = `Player${socket.id.slice(0, 6)}_${Date.now()}`;
-          try {
-            player = await prisma.player.create({
-              data: {
-                id: socket.id,
-                nickname: fallbackNickname,
-                chips: buyIn || 0
-              }
+          console.log(`DEBUG: Backend nickname "${nicknameToUse}" already exists, rejecting with error`);
+          
+          // Generate suggested alternative nicknames
+          const suggestedNames: string[] = [];
+          const baseName = nicknameToUse;
+          
+          // Generate 3 suggested alternatives
+          for (let i = 1; i <= 3; i++) {
+            const suggestion = `${baseName}${Math.floor(Math.random() * 1000) + 1}`;
+            // Quick check if this suggestion is already taken
+            const existingPlayer = await prisma.player.findFirst({
+              where: { nickname: suggestion }
             });
-          } catch (fallbackError) {
-            console.error(`DEBUG: Backend fallback database error:`, fallbackError);
-            socket.emit('tableError', 'Database error: Could not create player with unique nickname');
-            return;
+            if (!existingPlayer) {
+              suggestedNames.push(suggestion);
+            }
           }
+          
+          // Add some creative alternatives if we have room
+          if (suggestedNames.length < 3) {
+            const suffixes = ['Pro', 'Ace', 'King', 'Star', 'Player'];
+            for (const suffix of suffixes) {
+              if (suggestedNames.length >= 3) break;
+              const suggestion = `${baseName}_${suffix}`;
+              const existingPlayer = await prisma.player.findFirst({
+                where: { nickname: suggestion }
+              });
+              if (!existingPlayer) {
+                suggestedNames.push(suggestion);
+              }
+            }
+          }
+          
+          // Emit specific nickname error with suggestions
+          socket.emit('nicknameError', {
+            message: `The nickname "${nicknameToUse}" is already taken. Please choose a different name.`,
+            suggestedNames: suggestedNames.length > 0 ? suggestedNames : undefined
+          });
+          return;
         } else {
           console.error(`DEBUG: Backend database error:`, dbError);
           socket.emit('tableError', `Database error: ${dbError.message || 'Failed to create player'}`);

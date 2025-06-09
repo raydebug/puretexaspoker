@@ -404,7 +404,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     
     // Find players who have increased their bets
     gameState.players.forEach(player => {
-      const previousPlayer = lastGameStateRef.current?.players.find(p => p.id === player.id);
+      const previousPlayer = lastGameStateRef.current?.players.find(p => p && p.id === player.id);
       
       if (previousPlayer && player.currentBet > previousPlayer.currentBet) {
         const betAmount = player.currentBet - previousPlayer.currentBet;
@@ -600,7 +600,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       </div>
       
       {chipAnimations.map((animation, index) => {
-        const player = gameState.players.find(p => p.id === animation.playerId);
+        const player = gameState.players.find(p => p && p.id === animation.playerId);
         if (!player || !tableRef.current) return null;
         
         const playerElement = tableRef.current.querySelector(`div[data-player-id="${player.id}"]`);

@@ -10,7 +10,7 @@ export type SeatState = { [seatNumber: number]: string | null };
 type SeatUpdateCallback = (seats: SeatState) => void;
 type SeatErrorCallback = (error: string) => void;
 type OnlineUsersCallback = (players: Player[], observers: string[]) => void;
-type ErrorCallback = (error: { message: string; context?: string }) => void;
+type ErrorCallback = (error: { message: string; context?: string; suggestedNames?: string[] }) => void;
 type ChatMessageCallback = (message: ChatMessage) => void;
 type SystemMessageCallback = (message: string) => void;
 type TablesUpdateCallback = (tables: TableData[]) => void;
@@ -48,7 +48,7 @@ class SocketService {
   private isJoiningTable = false; // Add flag to prevent multiple join attempts
 
   // Event listeners
-  private errorListeners: ((error: { message: string; context: string; severity?: string; retryable?: boolean }) => void)[] = [];
+  private errorListeners: ((error: { message: string; context: string; severity?: string; retryable?: boolean; suggestedNames?: string[] }) => void)[] = [];
   private chatMessageListeners: ((message: ChatMessage) => void)[] = [];
   private systemMessageListeners: ((message: string) => void)[] = [];
   private gameStateListeners: ((state: GameState) => void)[] = [];
@@ -282,18 +282,33 @@ class SocketService {
     });
 
     socket.on('seat:accepted', (data: { seatNumber: number; playerId: string; player: Player }) => {
-      // Update the game state with the new player
-      if (this.gameState) {
-        // Find if player already exists or add new player
-        const existingPlayerIndex = this.gameState.players.findIndex(p => p.id === data.player.id);
-        if (existingPlayerIndex !== -1) {
-          this.gameState.players[existingPlayerIndex] = data.player;
-        } else {
-          this.gameState.players.push(data.player);
+      try {
+        // Update the game state with the new player
+        if (this.gameState && data && data.player && data.player.id) {
+          // Find if player already exists or add new player
+          const existingPlayerIndex = this.gameState.players.findIndex(p => p && p.id === data.player.id);
+          if (existingPlayerIndex !== -1) {
+            this.gameState.players[existingPlayerIndex] = data.player;
+          } else {
+            this.gameState.players.push(data.player);
+          }
+          
+          // CRITICAL FIX: Remove player from observers list when they take a seat
+          if (data.player.name) {
+            this.observers = this.observers.filter(observer => observer !== data.player.name);
+            console.log('DEBUG: Removed player from observers:', data.player.name);
+            console.log('DEBUG: Remaining observers:', this.observers);
+          }
+          
+          this.emitGameStateUpdate(this.gameState);
+          this.emitOnlineUsersUpdate(); // Update the online users list
         }
-        this.emitGameStateUpdate(this.gameState);
+        this.emitSeatUpdate({ [data.seatNumber]: data.playerId });
+      } catch (error) {
+        console.error('Error in seat:accepted handler:', error);
+        console.error('Data received:', data);
+        console.error('Current gameState:', this.gameState);
       }
-      this.emitSeatUpdate({ [data.seatNumber]: data.playerId });
     });
 
     socket.on('seat:error', (error: string) => {
@@ -307,28 +322,58 @@ class SocketService {
     });
 
     socket.on('playerJoined', (data: { player: Player }) => {
-      console.log('DEBUG: Frontend received playerJoined event:', data);
-      if (this.gameState) {
-        // Check if player already exists in the game state
-        const existingPlayerIndex = this.gameState.players.findIndex(p => p.id === data.player.id);
-        if (existingPlayerIndex === -1) {
-          this.gameState.players.push(data.player);
+      try {
+        console.log('DEBUG: Frontend received playerJoined event:', data);
+        if (this.gameState && data && data.player && data.player.id) {
+          // Check if player already exists in the game state
+          const existingPlayerIndex = this.gameState.players.findIndex(p => p && p.id === data.player.id);
+          if (existingPlayerIndex === -1) {
+            this.gameState.players.push(data.player);
+            
+            // CRITICAL FIX: Remove player from observers list when they become a player
+            if (data.player.name) {
+              this.observers = this.observers.filter(observer => observer !== data.player.name);
+              console.log('DEBUG: Removed player from observers in playerJoined:', data.player.name);
+              console.log('DEBUG: Remaining observers:', this.observers);
+            }
+            
+            this.emitGameStateUpdate(this.gameState);
+            this.emitOnlineUsersUpdate(); // Update the online users list
+          }
+        }
+      } catch (error) {
+        console.error('Error in playerJoined handler:', error);
+        console.error('Data received:', data);
+        console.error('Current gameState:', this.gameState);
+      }
+    });
+
+    socket.on('playerLeft', (playerId: string) => {
+      if (this.gameState && playerId) {
+        const player = this.gameState.players.find(p => p && p.id === playerId);
+        if (player) {
+          // Add to observers if not already there
+          if (!this.observers.includes(player.name)) {
+            this.observers = [...this.observers, player.name];
+          }
+          
+          // Remove from players list
+          this.gameState.players = this.gameState.players.filter(p => p && p.id !== playerId);
+          
+          console.log('DEBUG: Player left and moved to observers:', player.name);
+          console.log('DEBUG: Current observers:', this.observers);
+          console.log('DEBUG: Remaining players:', this.gameState.players.length);
+          
+          // Emit update with proper current state
           this.emitGameStateUpdate(this.gameState);
+          this.emitOnlineUsersUpdate();
         }
       }
     });
 
-    socket.on('playerLeft', (data: { playerId: string }) => {
-      console.log('DEBUG: Frontend received playerLeft event:', data);
-      if (this.gameState) {
-        this.gameState.players = this.gameState.players.filter(p => p.id !== data.playerId);
-        this.emitGameStateUpdate(this.gameState);
-      }
-    });
-
     socket.on('player:statusUpdated', (data: { playerId: string; isAway: boolean }) => {
-      if (this.gameState) {
-        const player = this.gameState.players.find(p => p.id === data.playerId);
+      if (this.gameState && data && data.playerId) {
+        const player = this.gameState.players.find(p => p && p.id === data.playerId);
         if (player) {
           player.isAway = data.isAway;
           this.emitGameStateUpdate(this.gameState);
@@ -337,8 +382,8 @@ class SocketService {
     });
 
     socket.on('player:stoodUp', (data: { playerId: string }) => {
-      if (this.gameState) {
-        this.gameState.players = this.gameState.players.filter(p => p.id !== data.playerId);
+      if (this.gameState && data && data.playerId) {
+        this.gameState.players = this.gameState.players.filter(p => p && p.id !== data.playerId);
         this.emitGameStateUpdate(this.gameState);
       }
     });
@@ -387,13 +432,22 @@ class SocketService {
       this.gameState = data.gameState;
       
       // Set the current player
-      const currentPlayer = data.gameState.players.find(p => p.id === data.playerId);
+      // Check if user is joining as an observer or as a player
+      const currentPlayer = data.gameState && data.gameState.players && data.playerId 
+        ? data.gameState.players.find(p => p && p.id === data.playerId) 
+        : null;
       if (currentPlayer) {
         console.log('DEBUG: Frontend found and setting currentPlayer:', currentPlayer);
         this.currentPlayer = currentPlayer;
+      } else if (data.playerId) {
+        // User joined as observer - they won't be in players array until they take a seat
+        console.log('DEBUG: Frontend user joined as observer (not in players array yet)');
+        console.log('DEBUG: Frontend observer ID:', data.playerId);
+        console.log('DEBUG: Frontend current players in game:', data.gameState.players.length);
+        this.currentPlayer = null; // Clear any previous player state
       } else {
-        console.error('DEBUG: Frontend could not find player in gameState.players:', data.gameState.players);
-        console.error('DEBUG: Frontend looking for playerId:', data.playerId);
+        console.log('DEBUG: Frontend no playerId provided - viewing game as guest');
+        this.currentPlayer = null;
       }
       
       // Emit the updated game state
@@ -405,6 +459,15 @@ class SocketService {
       console.log('DEBUG: Frontend received tableError event:', error);
       console.log('DEBUG: Frontend socket still connected:', socket.connected);
       this.emitError({ message: error, context: 'table:error' });
+    });
+
+    socket.on('nicknameError', (data: { message: string; suggestedNames?: string[] }) => {
+      console.log('DEBUG: Frontend received nicknameError event:', data);
+      this.emitError({ 
+        message: data.message, 
+        context: 'nickname:error',
+        suggestedNames: data.suggestedNames 
+      });
     });
 
     socket.on('connect_error', (error) => {
@@ -491,8 +554,8 @@ class SocketService {
           this.gameState = this.getInitialGameState();
         }
 
-        if (this.gameState) {
-          const existingPlayerIndex = this.gameState.players.findIndex(p => p.id === player.id);
+        if (this.gameState && player && player.id) {
+          const existingPlayerIndex = this.gameState.players.findIndex(p => p && p.id === player.id);
           if (existingPlayerIndex !== -1) {
             this.gameState.players[existingPlayerIndex] = player;
           } else {
@@ -501,17 +564,19 @@ class SocketService {
         }
         
         // Remove player from observers list when they become a player
-        this.observers = this.observers.filter(observer => observer !== player.name);
-        
-        // Emit update with the new state - send the updated player and filtered observers
-        this.onlineUsersListeners.forEach(callback => {
-          callback([player], this.observers);
-        });
+        if (player && player.name) {
+          this.observers = this.observers.filter(observer => observer !== player.name);
+          
+          // Emit update with the new state - send the updated player and filtered observers
+          this.onlineUsersListeners.forEach(callback => {
+            callback([player], this.observers);
+          });
+        }
       });
 
       this.socket.on('playerLeft', (playerId: string) => {
-        if (this.gameState) {
-          const player = this.gameState.players.find(p => p.id === playerId);
+        if (this.gameState && playerId) {
+          const player = this.gameState.players.find(p => p && p.id === playerId);
           if (player) {
             // Add to observers if not already there
             if (!this.observers.includes(player.name)) {
@@ -519,12 +584,15 @@ class SocketService {
             }
             
             // Remove from players list
-            this.gameState.players = this.gameState.players.filter(p => p.id !== playerId);
+            this.gameState.players = this.gameState.players.filter(p => p && p.id !== playerId);
             
-            // Emit update with the new state - send empty players array and only the player's name in observers
-            this.onlineUsersListeners.forEach(callback => {
-              callback([], [player.name]);
-            });
+            console.log('DEBUG: Player left and moved to observers:', player.name);
+            console.log('DEBUG: Current observers:', this.observers);
+            console.log('DEBUG: Remaining players:', this.gameState.players.length);
+            
+            // Emit update with proper current state
+            this.emitGameStateUpdate(this.gameState);
+            this.emitOnlineUsersUpdate();
           }
         }
       });
@@ -557,8 +625,8 @@ class SocketService {
   }
 
   getCurrentSeat(): number | null {
-    if (!this.gameState || !this.currentPlayer) return null;
-    const player = this.gameState.players.find(p => p.id === this.currentPlayer?.id);
+    if (!this.gameState || !this.currentPlayer || !this.currentPlayer.id) return null;
+    const player = this.gameState.players.find(p => p && p.id === this.currentPlayer?.id);
     return player?.seatNumber ?? null;
   }
 
@@ -570,7 +638,7 @@ class SocketService {
     };
   }
 
-  private emitError(error: { message: string; context: string }) {
+  private emitError(error: { message: string; context: string; suggestedNames?: string[] }) {
     this.errorListeners.forEach(callback => callback(error));
   }
 
@@ -1059,156 +1127,42 @@ class SocketService {
       // Set up listeners for table join responses
       this.socket.once('tableJoined', (data) => {
         console.log('DEBUG: tableJoined event received:', data);
-        // Don't reset flag yet, wait for gameJoined
         this.socket?.off('disconnect', disconnectHandler);
       });
       
       this.socket.once('gameJoined', (data) => {
         console.log('DEBUG: gameJoined event received in joinTable listener:', data);
-        // Reset flag since we successfully joined
         this.isJoiningTable = false;
-        console.log('DEBUG: Set isJoiningTable = false after successful gameJoined');
         this.socket?.off('disconnect', disconnectHandler);
       });
       
       this.socket.once('tableError', (error) => {
         console.error('DEBUG: tableError event received:', error);
         this.emitError({ message: error, context: 'table:join_error' });
-        // Reset flag on error
         this.isJoiningTable = false;
-        console.log('DEBUG: Set isJoiningTable = false after tableError');
         this.socket?.off('disconnect', disconnectHandler);
       });
       
-      // Add timeout to reset flag if no response
       setTimeout(() => {
         if (this.isJoiningTable) {
           console.log('DEBUG: joinTable timeout - resetting isJoiningTable flag');
           this.isJoiningTable = false;
           this.socket?.off('disconnect', disconnectHandler);
         }
-      }, 30000); // 30 second timeout
-      
+      }, 30000);
     } else {
       console.warn('Socket not connected when trying to join table, connecting first');
-      
-      // Reset flag if connection fails
       this.isJoiningTable = false;
-      
-      // If we've reached max connection attempts, don't try to connect again
-      if (this.connectionAttempts >= this.maxConnectionAttempts) {
-        console.error('Max connection attempts reached, cannot join table');
-        this.emitError({ 
-          message: 'Unable to connect to server. Please refresh the page and try again.', 
-          context: 'table:max_attempts_reached' 
-        });
-        return;
-      }
-      
-      // Clear any existing connection attempts and reset state
-      if (this.socket) {
-        this.removeAllSocketListeners();
-        this.socket.off('connect');
-      }
-      
-      // Force reset connection state to ensure we can connect
-      this.isConnecting = false;
-      this.connectionLock = false;
-      this.lastConnectionAttempt = 0;
-      
-      // Create a fresh connection
-      const socket = this.connect();
-      
-      if (socket) {
-        // Register the connect handler with our unique name
-        socket.once('connect', () => {
-          console.log(`Socket connected (${socket.id}), waiting to join table ${tableId}`);
-          
-          // Wait for connection to stabilize before joining
-          setTimeout(() => {
-            // Check again if the socket is still connected
-            if (socket.connected) {
-              console.log(`Now joining table ${tableId} with buy-in ${buyIn}`);
-              
-              // Get nickname from localStorage
-              const nickname = localStorage.getItem('nickname') || `Player${Math.floor(Math.random() * 1000)}`;
-              console.log(`DEBUG: Using nickname: ${nickname}`);
-              
-              // Add disconnect listener
-              const disconnectHandler = (reason: string) => {
-                console.error(`DEBUG: Socket disconnected during delayed joinTable! Reason: ${reason}`);
-                this.isJoiningTable = false;
-              };
-              socket.once('disconnect', disconnectHandler);
-              
-              socket.emit('joinTable', { tableId, buyIn, nickname });
-              
-              // Set up listeners for table join responses
-              socket.once('tableJoined', (data) => {
-                console.log('DEBUG: tableJoined event received:', data);
-                socket.off('disconnect', disconnectHandler);
-              });
-              
-              socket.once('gameJoined', (data) => {
-                console.log('DEBUG: gameJoined event received:', data);
-                this.isJoiningTable = false;
-                socket.off('disconnect', disconnectHandler);
-              });
-              
-              socket.once('tableError', (error) => {
-                console.error('DEBUG: tableError event received:', error);
-                this.emitError({ message: error, context: 'table:join_error' });
-                this.isJoiningTable = false;
-                socket.off('disconnect', disconnectHandler);
-              });
-              
-            } else {
-              console.error('Connection was lost after initial connect');
-              this.isJoiningTable = false;
-              this.emitError({ 
-                message: 'Failed to join table: connection was lost', 
-                context: 'table:join_failed' 
-              });
-            }
-          }, 2000); // Wait 2 seconds for connection to stabilize
-        });
-        
-        // Add error handler for connection failures
-        socket.once('connect_error', (error) => {
-          console.error('Connection failed during table join:', error);
-          this.isJoiningTable = false;
-          this.emitError({ 
-            message: 'Failed to connect to server for table join', 
-            context: 'table:connection_error' 
-          });
-        });
-        
-      } else {
-        this.isJoiningTable = false;
-        this.emitError({ 
-          message: 'Failed to create socket connection for joining table', 
-          context: 'table:connection_failed' 
-        });
-      }
     }
   }
 
   private removeAllSocketListeners() {
     if (!this.socket) return;
-    
-    // Remove all event listeners
     this.socket.removeAllListeners();
-    
-    // Remove all socket.io listeners
-    this.socket.io.removeAllListeners();
-    
-    // Clear any intervals
     if (this.heartbeatInterval) {
       clearInterval(this.heartbeatInterval);
       this.heartbeatInterval = undefined;
     }
-
-    // Clear all callback arrays
     this.seatUpdateListeners = [];
     this.seatErrorListeners = [];
     this.onlineUsersListeners = [];
@@ -1216,29 +1170,6 @@ class SocketService {
     this.chatMessageListeners = [];
     this.systemMessageListeners = [];
     this.tablesUpdateListeners = [];
-
-    // Remove specific event listeners that might be causing leaks
-    this.socket.off('disconnect');
-    this.socket.off('observer:join');
-    this.socket.off('seat:request');
-    this.socket.off('connect');
-    this.socket.off('connect_error');
-    this.socket.off('error');
-    this.socket.off('observer:joined');
-    this.socket.off('observer:left');
-    this.socket.off('seat:update');
-    this.socket.off('seat:accepted');
-    this.socket.off('seat:error');
-    this.socket.off('gameState');
-    this.socket.off('playerJoined');
-    this.socket.off('playerLeft');
-    this.socket.off('player:statusUpdated');
-    this.socket.off('player:stoodUp');
-    this.socket.off('chat:message');
-    this.socket.off('chat:system');
-    this.socket.off('tablesUpdate');
-    this.socket.off('tableJoined');
-    this.socket.off('tableError');
   }
 
   getGameState(): GameState | null {
@@ -1253,12 +1184,8 @@ class SocketService {
     this.currentPlayer = player;
   }
 
-  // Create a function to get initial game state
   private getInitialGameState(id: string = '1', players: Player[] = []): GameState {
-    console.log(`DEBUG: getInitialGameState called with id=${id}, players=${players.length}`);
-    console.log(`DEBUG: getInitialGameState call stack:`, new Error().stack);
-    
-    const initialState: GameState = {
+    return {
       id,
       players,
       communityCards: [],
@@ -1278,104 +1205,56 @@ class SocketService {
       winner: undefined,
       isHandComplete: false
     };
-    
-    console.log(`DEBUG: getInitialGameState returning:`, initialState);
-    return initialState;
   }
 
-  // For testing purposes only
   getConnectionAttempts(): number {
     return this.connectionAttempts;
   }
 
-  // For testing purposes only
   isLocked(): boolean {
     return this.connectionLock;
   }
 
-  // Add method to reset connection state
   resetConnectionState() {
-    console.log('DEBUG: Manually resetting connection state');
     this.connectionAttempts = 0;
-    this.connectionLock = false;
     this.isConnecting = false;
+    this.connectionLock = false;
     this.lastConnectionAttempt = 0;
   }
 
-  // Add method to emit game actions
   emitGameAction(action: string, amount?: number) {
     if (!this.socket?.connected) {
-      console.error('Cannot emit game action: socket not connected');
+      console.warn('Cannot emit game action: socket not connected');
+      return;
+    }
+    
+    if (!this.currentPlayer?.id || !this.currentGameId) {
+      console.warn('Cannot emit game action: no current player or game');
       return;
     }
 
-    console.log(`DEBUG: Emitting game action: ${action}`, amount ? `with amount: ${amount}` : '');
-    
-    switch (action) {
-      case 'fold':
-        this.socket.emit('gameAction', { action: 'fold' });
-        break;
-      case 'call':
-        this.socket.emit('gameAction', { action: 'call' });
-        break;
-      case 'raise':
-        this.socket.emit('gameAction', { action: 'raise', amount });
-        break;
-      case 'check':
-        this.socket.emit('gameAction', { action: 'check' });
-        break;
-      case 'bet':
-        this.socket.emit('gameAction', { action: 'bet', amount });
-        break;
-      default:
-        console.error('Unknown game action:', action);
-    }
+    const actionData = {
+      gameId: this.currentGameId,
+      playerId: this.currentPlayer.id,
+      action,
+      ...(amount !== undefined && { amount })
+    };
+
+    console.log('DEBUG: Emitting game action:', actionData);
+    this.socket.emit('game:action', actionData);
   }
 
   private handleDisconnect(reason: string) {
-    this.isConnecting = false;
-    this.connectionLock = false;
+    console.log('DEBUG: handleDisconnect called with reason:', reason);
     
-    // Only attempt reconnection for transport-related disconnects
-    if (reason === 'transport close' || reason === 'transport error') {
-      console.log(`Disconnected due to ${reason}, attempting reconnection...`);
-      
-      // Don't attempt reconnection if we've reached max attempts
-      if (this.connectionAttempts >= this.maxConnectionAttempts) {
-        console.error(`Already reached maximum connection attempts (${this.maxConnectionAttempts}), not attempting to reconnect`);
-        const error = {
-          message: `Failed to connect after ${this.maxConnectionAttempts} attempts`,
-          context: 'socket:max_attempts'
-        };
-        
-        // First emit through the socket
-        if (this.socket) {
-          this.socket.emit('error', error);
-        }
-        
-        // Then emit through our error emitter
-        this.emitError(error);
-        
-        // Finally, clean up the socket to prevent further connection attempts
-        if (this.socket) {
-          this.removeAllSocketListeners();
-          this.socket.disconnect();
-          this.socket = null;
-        }
-        return;
-      }
-      
-      // Calculate backoff time based on test mode and attempts
-      const backoffTime = this.isTestMode ? 0 : this.reconnectionBackoff * Math.pow(2, this.connectionAttempts);
-      console.log(`Will retry connection in ${backoffTime/1000} seconds`);
-      
+    if (reason !== 'io client disconnect' && reason !== 'transport close' && !this.isConnecting) {
       setTimeout(() => {
         if (!this.socket?.connected) {
           this.connect();
         }
-      }, backoffTime);
-    } else {
-      console.log(`Disconnected due to ${reason}, no reconnection needed`);
+      }, this.reconnectionBackoff);
+      
+      this.reconnectionBackoff = Math.min(this.reconnectionBackoff * 2, 30000);
     }
   }
 
@@ -1392,10 +1271,13 @@ class SocketService {
   }
 
   private emitGameStateUpdate(state: GameState) {
+    // Filter out any undefined/null players to prevent runtime errors
+    if (state && state.players) {
+      state.players = state.players.filter(p => p && p.id);
+    }
     this.gameStateListeners.forEach(callback => callback(state));
   }
 
-  // Enhanced error handling with retry logic
   private handleSocketError = (error: { message: string; event?: string; severity?: string; retryable?: boolean }) => {
     const errorObj = {
       message: error.message,
@@ -1406,12 +1288,10 @@ class SocketService {
 
     this.emitError(errorObj);
     
-    // If error is retryable, add to retry queue
     if (error.retryable && error.event && this.retryQueue.length < 10) {
-      // Find the last attempted event data from socket emit calls
       this.retryQueue.push({
         event: error.event,
-        data: null, // This would need to be stored from the original call
+        data: null,
         attempts: 0
       });
     }
@@ -1426,7 +1306,6 @@ class SocketService {
         return false;
       }
 
-      // Retry after exponential backoff
       const delay = Math.pow(2, item.attempts) * 1000;
       setTimeout(() => {
         if (this.socket?.connected) {
@@ -1439,13 +1318,11 @@ class SocketService {
     });
   };
 
-  // Add method to leave current table
   leaveCurrentTable() {
     if (this.socket?.connected && this.currentGameId) {
       console.log(`DEBUG: Leaving current table/game: ${this.currentGameId}`);
       this.socket.emit('leaveTable', { tableId: this.currentGameId });
       
-      // Clear current state
       this.currentGameId = null;
       this.gameState = null;
       this.currentPlayer = null;
@@ -1453,11 +1330,10 @@ class SocketService {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const createObserverAvatar = (nickname: string): AvatarType => ({
   type: 'initials',
-  initials: nickname.substring(0, 2).toUpperCase(),
-  color: '#1abc9c'
+  initials: nickname.slice(0, 2).toUpperCase(),
+  color: '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')
 });
 
-export const socketService = new SocketService(); 
+export const socketService = new SocketService();

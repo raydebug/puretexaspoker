@@ -58,7 +58,7 @@ export const GameStatus: React.FC<GameStatusProps> = ({ gameState, currentPlayer
       return "It's your turn!";
     }
 
-    const currentPlayer = gameState.players.find(p => p.id === gameState.currentPlayerId);
+    const currentPlayer = gameState.players.find(p => p && p.id === gameState.currentPlayerId);
     if (currentPlayer) {
       return `Waiting for ${currentPlayer.name} to act...`;
     }

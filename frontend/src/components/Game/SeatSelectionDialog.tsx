@@ -188,8 +188,8 @@ export const SeatSelectionDialog: React.FC<SeatSelectionDialogProps> = ({
     }
   }
 
-  // Add some intermediate options for more choice
-  const intermediateMultipliers = [15, 25, 35, 50, 75];
+  // Add some intermediate options for more choice (excluding 50 to avoid duplication)
+  const intermediateMultipliers = [15, 25, 35, 75];
   intermediateMultipliers.forEach(multiplier => {
     const amount = bigBlind * multiplier;
     if (amount >= minBuyIn && amount <= maxBuyIn) {
@@ -261,12 +261,12 @@ export const SeatSelectionDialog: React.FC<SeatSelectionDialogProps> = ({
     <DialogOverlay onClick={onClose}>
       <DialogContent onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
-          <Title>Take Seat {seatNumber + 1}</Title>
+          <Title>Take Seat {seatNumber}</Title>
           <CloseButton onClick={onClose}>×</CloseButton>
         </DialogHeader>
 
         <SeatInfo>
-          <div><strong>Seat {seatNumber + 1}</strong></div>
+          <div><strong>Seat {seatNumber}</strong></div>
           <div>Stakes: {table?.stakes || '$10/$20'}</div>
           <div>Big Blind: {formatMoney(bigBlind)}</div>
         </SeatInfo>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { TableData } from '../../types/table';
 import { formatMoney } from '../../utils/formatUtils';
+import { socketService } from '../../services/socketService';
 
 export interface JoinDialogProps {
   table: TableData;
@@ -171,8 +172,94 @@ const StatusBadge = styled.span<{ $status: TableData['status'] }>`
   text-transform: capitalize;
 `;
 
+const ErrorPopup = styled.div`
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  border: 2px solid #dc3545;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  z-index: 10001;
+  max-width: 400px;
+  width: 90%;
+`;
+
+const ErrorTitle = styled.h3`
+  color: #dc3545;
+  margin: 0 0 15px 0;
+  font-size: 1.2rem;
+`;
+
+const ErrorMessage = styled.p`
+  color: #333;
+  margin: 0 0 15px 0;
+  line-height: 1.4;
+`;
+
+const SuggestionsTitle = styled.h4`
+  color: #666;
+  margin: 15px 0 10px 0;
+  font-size: 1rem;
+`;
+
+const SuggestionsList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+`;
+
+const SuggestionButton = styled.button`
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background: #0056b3;
+  }
+`;
+
+const ErrorButtonGroup = styled.div`
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+`;
+
+const ErrorButton = styled.button<{ variant?: 'primary' | 'secondary' }>`
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+
+  ${props => props.variant === 'primary' ? `
+    background: #dc3545;
+    color: white;
+    &:hover {
+      background: #c82333;
+    }
+  ` : `
+    background: #6c757d;
+    color: white;
+    &:hover {
+      background: #5a6268;
+    }
+  `}
+`;
+
 export const JoinDialog: React.FC<JoinDialogProps> = ({ table, onClose, onJoin }) => {
   const [nickname, setNickname] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [suggestions, setSuggestions] = useState<string[]>([]);
 
   useEffect(() => {
     // Load nickname from localStorage if available
@@ -199,23 +286,53 @@ export const JoinDialog: React.FC<JoinDialogProps> = ({ table, onClose, onJoin }
     // Handle escape key press
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        clearError();
         onClose();
       }
     };
 
+    // Set up error listener for nickname conflicts
+    const unsubscribeError = socketService.onError((error) => {
+      if (error.context === 'nickname:error') {
+        setErrorMessage(error.message);
+        setSuggestions(error.suggestedNames || []);
+      }
+    });
+
+    // Set up success listener to close dialog on successful join
+    const unsubscribeTableJoined = socketService.getSocket()?.on('tableJoined', () => {
+      clearError();
+      onClose();
+    });
+
     window.addEventListener('keydown', handleEscape);
     return () => {
       window.removeEventListener('keydown', handleEscape);
+      unsubscribeError();
+      if (unsubscribeTableJoined) {
+        socketService.getSocket()?.off('tableJoined', unsubscribeTableJoined);
+      }
     };
   }, [onClose]);
 
+  const clearError = () => {
+    setErrorMessage('');
+    setSuggestions([]);
+  };
+
+  const handleSuggestionClick = (suggestedName: string) => {
+    setNickname(suggestedName);
+    clearError();
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    clearError(); // Clear any previous errors
     console.log('JoinDialog: Form submitted', { nickname: nickname.trim() });
     if (nickname.trim()) {
       console.log('JoinDialog: Calling onJoin with', nickname.trim());
       onJoin(nickname.trim());
-      onClose(); // Close dialog when successfully submitting
+      // Don't close dialog immediately - wait for success or error
     } else {
       console.log('JoinDialog: Form validation failed', {
         hasNickname: !!nickname.trim()
@@ -248,12 +365,40 @@ export const JoinDialog: React.FC<JoinDialogProps> = ({ table, onClose, onJoin }
   }
 
   return (
-    <DialogOverlay onClick={onClose}>
-      <DialogContent onClick={(e) => e.stopPropagation()}>
-        <DialogHeader>
-          <Title>Join Table: {table.name}</Title>
-          <CloseButton onClick={onClose}>×</CloseButton>
-        </DialogHeader>
+    <>
+      {errorMessage && (
+        <ErrorPopup data-testid="nickname-error-popup">
+          <ErrorTitle>Nickname Already Taken</ErrorTitle>
+          <ErrorMessage>{errorMessage}</ErrorMessage>
+          {suggestions.length > 0 && (
+            <>
+              <SuggestionsTitle>Try one of these suggestions:</SuggestionsTitle>
+              <SuggestionsList>
+                {suggestions.map((suggestion, index) => (
+                  <SuggestionButton
+                    key={index}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    data-testid={`suggestion-${index}`}
+                  >
+                    {suggestion}
+                  </SuggestionButton>
+                ))}
+              </SuggestionsList>
+            </>
+          )}
+          <ErrorButtonGroup>
+            <ErrorButton variant="secondary" onClick={clearError}>
+              Try Again
+            </ErrorButton>
+          </ErrorButtonGroup>
+        </ErrorPopup>
+      )}
+      <DialogOverlay onClick={onClose}>
+        <DialogContent onClick={(e) => e.stopPropagation()}>
+          <DialogHeader>
+            <Title>Join Table: {table.name}</Title>
+            <CloseButton onClick={onClose}>×</CloseButton>
+          </DialogHeader>
 
         <TableInfo>
           <InfoItem>
@@ -336,5 +481,6 @@ export const JoinDialog: React.FC<JoinDialogProps> = ({ table, onClose, onJoin }
         </Form>
       </DialogContent>
     </DialogOverlay>
+    </>
   );
 }; 

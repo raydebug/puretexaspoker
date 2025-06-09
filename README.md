@@ -502,3 +502,26 @@ Your comprehensive Texas Hold'em poker game is ready for production with:
   - Multiple options from 10x to 100x big blind (10x, 15x, 20x, 25x, 30x, 35x, 40x, 50x, 60x, 70x, 75x, 80x, 90x, 100x)
   - Custom amount input option
   - Real-time validation and amount display
+
+## Features
+
+### Core Poker Functionality
+- **Multi-table Lobby**: Browse and join multiple poker tables
+- **Real-time Gameplay**: Live poker game with WebSocket communication
+- **Player Management**: Handle player joining, leaving, and seat management
+- **Game State Synchronization**: Real-time updates across all connected clients
+- **Username Validation**: Prevents duplicate usernames with helpful error messages and suggestions
+
+### Technical Features
+- **Robust Error Handling**: Comprehensive error tracking and recovery
+- **Observer Mode**: Join tables as observer before taking a seat
+- **Responsive UI**: Works on desktop and mobile devices
+- **Real-time Chat**: In-game messaging system (when implemented)
+- **Session Persistence**: Maintains player state across page reloads
+
+### Username Validation System
+- **Duplicate Prevention**: Automatically rejects duplicate nicknames
+- **Smart Suggestions**: Provides alternative nickname suggestions when conflicts occur
+- **User-Friendly Errors**: Clear error messages with actionable next steps
+- **Popup Interface**: Intuitive error popup with suggestion buttons
+- **Seamless Recovery**: Easy retry mechanism for users to choose different names
