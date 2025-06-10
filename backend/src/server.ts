@@ -13,6 +13,7 @@ import { registerGameHandlers } from './socketHandlers/gameHandler';
 import { setupLobbyHandlers } from './events/lobbyHandlers';
 import { prisma } from './db';
 import { tableManager } from './services/TableManager';
+import { locationManager } from './services/LocationManager';
 
 // Create default tables for testing
 async function createDefaultTables() {
@@ -109,7 +110,10 @@ io.on('connection', (socket) => {
 });
 
 // Initialize default tables and start server
-createDefaultTables().then(() => {
+createDefaultTables().then(async () => {
+  // Initialize location manager
+  await locationManager.initialize();
+  
   httpServer.listen(port, () => {
     console.log(`Server is running on port ${port}`);
   });

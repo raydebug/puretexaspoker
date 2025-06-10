@@ -209,6 +209,11 @@ export const setupLobbyHandlers = (
       }
       console.log(`DEBUG: Backend player created:`, player);
 
+      // Update user location first (before any table operations)
+      const observerLocation = LocationManager.createTableObserverLocation(tableId);
+      await locationManager.updateUserLocation(socket.id, player.nickname, observerLocation);
+      console.log(`DEBUG: Backend updated ${player.nickname} location to: ${observerLocation} BEFORE table operations`);
+
       // Join the table in the table manager
       console.log(`DEBUG: Backend joining table in TableManager...`);
       const tableResult = tableManager.joinTable(tableId, socket.id, player.nickname);
@@ -232,11 +237,15 @@ export const setupLobbyHandlers = (
           if (!retryResult.success) {
             console.error(`DEBUG: Backend table join failed on retry: ${retryResult.error}`);
             socket.emit('tableError', retryResult.error || 'Failed to join table after leaving previous table');
+            // Revert location update on failure
+            await locationManager.updateUserLocation(socket.id, player.nickname, 'lobby');
             return;
           }
         } else {
           console.error(`DEBUG: Backend table join failed: ${tableResult.error}`);
           socket.emit('tableError', tableResult.error || 'Failed to join table');
+          // Revert location update on failure
+          await locationManager.updateUserLocation(socket.id, player.nickname, 'lobby');
           return;
         }
       }
@@ -360,17 +369,13 @@ export const setupLobbyHandlers = (
         socket.join(`game:${gameId}`);
         gameManager.joinGameRoom(gameId, socket.id);
 
-        // Update user location to table observer
-        const observerLocation = LocationManager.createTableObserverLocation(tableId);
-        await locationManager.updateUserLocation(socket.id, player.nickname, observerLocation);
-
-        // Emit location update event
+        // Emit location update event (location was already updated earlier)
         io.to(`game:${gameId}`).emit('location:updated', { 
           playerId: socket.id,
           nickname: player.nickname,
           location: observerLocation
         });
-        console.log(`DEBUG: Backend updated ${player.nickname} location to: ${observerLocation}`);
+        console.log(`DEBUG: Backend location already updated, now emitting location:updated event`);
 
         // Get current game state
         const gameState = gameService.getGameState();

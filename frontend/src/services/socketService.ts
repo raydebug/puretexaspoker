@@ -1294,23 +1294,25 @@ class SocketService {
 
   // Updated to match the expected signature for lobby
   joinTable(tableId: number, buyIn?: number) {
-    console.log(`DEBUG: joinTable called with tableId=${tableId}, buyIn=${buyIn}`);
-    console.log(`DEBUG: Socket connected: ${this.socket?.connected}`);
-    console.log(`DEBUG: Connection attempts: ${this.connectionAttempts}/${this.maxConnectionAttempts}`);
-    console.log(`DEBUG: Socket ID: ${this.socket?.id}`);
-    console.log(`DEBUG: isJoiningTable flag: ${this.isJoiningTable}`);
+    // Update location immediately when joining table (before backend processing)
+    const targetLocation = `table-${tableId}`;
+    this.currentUserLocation = targetLocation;
+    console.log(`🎯 FRONTEND: Immediately updating location to: ${targetLocation} when joining table ${tableId}`);
+    this.logCurrentUserStatus();
     
-    // Prevent multiple simultaneous join attempts
-    if (this.isJoiningTable) {
-      console.log('DEBUG: Already joining table, ignoring duplicate request');
+    if (!this.socket) {
+      console.error('No socket connection available');
+      this.emitError({ message: 'No connection to server', context: 'connection:error' });
       return;
     }
-    
+
+    if (this.isJoiningTable) {
+      console.warn('Already joining a table, ignoring duplicate request');
+      return;
+    }
+
     this.isJoiningTable = true;
-    console.log('DEBUG: Set isJoiningTable = true');
-    
-    // First, try to leave any existing table
-    this.leaveCurrentTable();
+    console.log(`DEBUG: isJoiningTable set to true for table ${tableId}`);
     
     if (this.socket?.connected) {
       console.log(`Joining table ${tableId} with buy-in ${buyIn}`);
@@ -1352,16 +1354,9 @@ class SocketService {
         this.isJoiningTable = false;
         this.socket?.off('disconnect', disconnectHandler);
       });
-      
-      setTimeout(() => {
-        if (this.isJoiningTable) {
-          console.log('DEBUG: joinTable timeout - resetting isJoiningTable flag');
-          this.isJoiningTable = false;
-          this.socket?.off('disconnect', disconnectHandler);
-        }
-      }, 30000);
     } else {
-      console.warn('Socket not connected when trying to join table, connecting first');
+      console.error('Socket not connected');
+      this.emitError({ message: 'Not connected to server', context: 'connection:error' });
       this.isJoiningTable = false;
     }
   }
