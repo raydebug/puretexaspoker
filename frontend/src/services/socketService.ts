@@ -3,6 +3,7 @@ import { GameState, Player } from '../types/game';
 import { TableData } from '../types/table';
 import { cookieService } from './cookieService';
 import { errorTrackingService } from './errorTrackingService';
+import { navigationService } from './navigationService';
 import { EventEmitter } from 'events';
 
 export type SeatState = { [seatNumber: number]: string | null };
@@ -46,6 +47,9 @@ class SocketService {
   private currentGameId: string | null = null;
   private retryQueue: Array<{ event: string; data: any; attempts: number }> = [];
   private isJoiningTable = false; // Add flag to prevent multiple join attempts
+  private players: any[] = [];
+  private currentUserId: string | null = null;
+  private currentUserLocation: string = 'lobby'; // Track current user's location
 
   // Event listeners
   private errorListeners: ((error: { message: string; context: string; severity?: string; retryable?: boolean; suggestedNames?: string[] }) => void)[] = [];
@@ -58,10 +62,19 @@ class SocketService {
   private onlineUsersListeners: ((players: Player[], observers: string[]) => void)[] = [];
 
   constructor() {
+    // Set up event emitter with higher max listeners to avoid warnings
+    this.eventEmitter.setMaxListeners(50);
+    
     // Auto-detect test environment
     if (typeof window !== 'undefined' && (window as any).Cypress) {
       this.setTestMode(true);
       console.log('DEBUG: Cypress detected, enabling test mode');
+    }
+
+    // Add to window for debugging (non-production only)
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+      (window as any).socketService = this;
+      console.log('🔧 FRONTEND: SocketService available on window.socketService for debugging');
     }
   }
 
@@ -256,6 +269,12 @@ class SocketService {
     socket.on('connect', () => {
       this.onSuccessfulConnection();
       
+      // Log initial user status
+      this.currentUserId = socket.id || null;
+      console.log(`🔌 FRONTEND: Socket connected with ID: ${socket.id}`);
+      console.log(`📍 FRONTEND: Initial location: ${this.currentUserLocation}`);
+      this.logCurrentUserStatus();
+      
       // Process any queued retries
       this.processRetryQueue();
     });
@@ -272,16 +291,31 @@ class SocketService {
       }
     });
 
-    socket.on('observer:left', (data: { observer: string }) => {
-      console.log('DEBUG: Frontend received observer:left event:', data);
-      console.log('DEBUG: Frontend observers before removal:', this.observers);
-      this.observers = this.observers.filter(observer => observer !== data.observer);
-      console.log('DEBUG: Frontend observers after removal:', this.observers);
+    socket.on('location:updated', (data: { playerId: string; nickname: string; location: string }) => {
+      console.log('DEBUG: Frontend received location:updated event:', data);
+      this.handleLocationUpdate(data);
+    });
+
+    socket.on('location:usersAtTable', (data: { tableId: number; observers: string[]; players: { nickname: string; seatNumber: number }[] }) => {
+      console.log('DEBUG: Frontend received location:usersAtTable event:', data);
+      this.observers = data.observers;
       this.emitOnlineUsersUpdate();
     });
 
     socket.on('seatTaken', (data: { seatNumber: number; playerId: string; gameState: any }) => {
       console.log('DEBUG: Frontend received seatTaken event:', data);
+      
+      // Update location if this is for the current user
+      if (this.socket?.id === data.playerId) {
+        // Extract table ID from current game state or current location
+        const tableIdMatch = this.currentUserLocation.match(/table-(\d+)/);
+        if (tableIdMatch) {
+          const tableId = tableIdMatch[1];
+          this.currentUserLocation = `table-${tableId}-seat-${data.seatNumber}`;
+          console.log(`🎯 FRONTEND: Took seat ${data.seatNumber}, location updated to: ${this.currentUserLocation}`);
+          this.logCurrentUserStatus();
+        }
+      }
       
       // Update game state immediately
       if (data.gameState) {
@@ -289,6 +323,7 @@ class SocketService {
         this.emitGameStateUpdate(data.gameState);
       }
       
+      // The location:updated event will handle user list updates
       // Find the player who took the seat and remove them from observers
       if (data.gameState && data.gameState.players) {
         const playerWhoTookSeat = data.gameState.players.find((p: any) => p && p.id === data.playerId);
@@ -416,11 +451,23 @@ class SocketService {
       console.log('DEBUG: Frontend received tableJoined event:', data);
       console.log('DEBUG: Frontend socket still connected:', socket.connected);
       console.log('DEBUG: Frontend socket ID:', socket.id);
+      
+      // Update location based on role
+      if (data.role === 'observer') {
+        this.currentUserLocation = `table-${data.tableId}`;
+        console.log(`🎯 FRONTEND: Joined as observer, location updated to: ${this.currentUserLocation}`);
+      } else if (data.role === 'player') {
+        // For players, we'll get the exact seat from the seatTaken event
+        console.log(`🎯 FRONTEND: Joined as player at table ${data.tableId}, waiting for seat assignment`);
+      }
+      
       if (data.gameId) {
         // Store the game ID for this session
         this.currentGameId = data.gameId;
         console.log('DEBUG: Frontend stored gameId:', this.currentGameId);
       }
+      
+      this.logCurrentUserStatus();
     });
 
     // Handle game creation and joining
@@ -717,6 +764,123 @@ class SocketService {
     this.onlineUsersListeners.forEach(callback => {
         callback(players, this.observers);
     });
+  }
+
+  /**
+   * Handle location update events to manage observers and players lists
+   * Public method for testing purposes
+   */
+  public handleLocationUpdate(data: { playerId: string; nickname: string; location: string }) {
+    const { playerId, nickname, location } = data;
+    
+    // Check if this update is for the current user
+    const isCurrentUser = this.socket?.id === playerId;
+    
+    if (isCurrentUser) {
+      this.currentUserLocation = location;
+      console.log(`🎯 FRONTEND: Current user location updated to: ${location}`);
+      console.log(`🎯 FRONTEND: Current user (${nickname}) is now at: ${this.parseLocationForDisplay(location)}`);
+      
+      // Automatic navigation based on location
+      this.handleLocationBasedNavigation(location);
+    }
+    
+    // Parse location to determine user's new state
+    if (location === 'lobby') {
+      // User moved to lobby - remove from observers and players
+      this.observers = this.observers.filter(observer => observer !== nickname);
+      this.emitOnlineUsersUpdate();
+      
+    } else if (location.startsWith('table-') && !location.includes('-seat-')) {
+      // User is observing a table (location: "table-X")
+      if (!this.observers.includes(nickname)) {
+        this.observers.push(nickname);
+      }
+      this.emitOnlineUsersUpdate();
+      
+    } else if (location.includes('-seat-')) {
+      // User took a seat (location: "table-X-seat-Y")
+      // Remove from observers if they were observing
+      this.observers = this.observers.filter(observer => observer !== nickname);
+      this.emitOnlineUsersUpdate();
+    }
+    
+    console.log(`DEBUG: Frontend processed location update for ${nickname}: ${location}`);
+    console.log(`DEBUG: Frontend observers after update:`, this.observers);
+    
+    // Log current user status every location update
+    this.logCurrentUserStatus();
+  }
+
+  /**
+   * Handle automatic navigation based on location changes
+   */
+  private handleLocationBasedNavigation(location: string) {
+    // Only navigate if in browser environment
+    if (typeof window === 'undefined') return;
+    
+    if (location === 'lobby') {
+      // If user location is lobby but not on lobby page, redirect
+      if (!navigationService.isOnLobby()) {
+        console.log('🚀 FRONTEND: Location is lobby but not on lobby page, redirecting...');
+        console.log(`🚀 FRONTEND: Current path: ${navigationService.getCurrentPath()}`);
+        navigationService.navigateToLobby(true);
+      }
+    } else if (location.startsWith('table-')) {
+      // If user is at a table, they should be on the corresponding game page
+      const tableMatch = location.match(/^table-(\d+)/);
+      if (tableMatch) {
+        const tableId = tableMatch[1];
+        const currentGameId = navigationService.getCurrentGameId();
+        
+        // If not on the correct game page, navigate there
+        if (!navigationService.isOnGamePage() || currentGameId !== tableId) {
+          console.log(`🚀 FRONTEND: Location is ${location}, navigating to game page for table ${tableId}`);
+          console.log(`🚀 FRONTEND: Current path: ${navigationService.getCurrentPath()}`);
+          navigationService.navigateToGame(tableId, true);
+        }
+      }
+    }
+  }
+
+  /**
+   * Parse location string for human-readable display
+   */
+  private parseLocationForDisplay(location: string): string {
+    if (location === 'lobby') {
+      return 'Lobby (browsing tables)';
+    }
+    
+    const tableMatch = location.match(/^table-(\d+)$/);
+    if (tableMatch) {
+      return `Table ${tableMatch[1]} (observing)`;
+    }
+    
+    const seatMatch = location.match(/^table-(\d+)-seat-(\d+)$/);
+    if (seatMatch) {
+      return `Table ${seatMatch[1]}, Seat ${seatMatch[2]} (playing)`;
+    }
+    
+    return location;
+  }
+
+  /**
+   * Log current user's status for debugging
+   */
+  private logCurrentUserStatus() {
+    console.log(`📍 FRONTEND: Current User Status:`);
+    console.log(`   Socket ID: ${this.socket?.id || 'Not connected'}`);
+    console.log(`   Location: ${this.currentUserLocation}`);
+    console.log(`   Parsed: ${this.parseLocationForDisplay(this.currentUserLocation)}`);
+    console.log(`   Total observers: ${this.observers.length}`);
+    console.log(`   Total players: ${this.gameState?.players?.length || 0}`);
+  }
+
+  /**
+   * Get current user's location (public method for debugging)
+   */
+  getCurrentUserLocation(): string {
+    return this.currentUserLocation;
   }
 
   // --- Seat management ---
