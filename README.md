@@ -6,6 +6,13 @@ A modern, real-time Texas Hold'em poker game built with React, TypeScript, Node.
 
 ### Recent Major Features Implemented
 
+#### ✅ Observer-Player State Exclusion (FIXED)
+- **Issue**: Users could appear in both observers list and on a seat simultaneously
+- **Root Cause**: Missing seatTaken event handler and race conditions between multiple observer removal mechanisms
+- **Solution**: Added proper seatTaken event handler with immediate state synchronization and removed duplicate observer removal logic
+- **Testing**: ✅ E2E test verifying users cannot be both observers and players
+- **Status**: Critical state management bug resolved, production ready
+
 #### ✅ Username Validation & Duplicate Prevention
 - **Backend**: Smart rejection system preventing duplicate nicknames with intelligent suggestions
 - **Frontend**: Professional error popup with alternative nickname suggestions  
