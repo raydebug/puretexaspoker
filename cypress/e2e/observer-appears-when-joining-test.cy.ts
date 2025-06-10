@@ -27,6 +27,21 @@ describe('Observer Appears When Joining Table Bug Test', () => {
     cy.get('[data-testid="nickname-input"]').clear().type(playerName);
     cy.get('[data-testid="join-as-observer"]').click();
     
+    // **VERIFY IMMEDIATE BACKEND LOCATION UPDATE**: Backend should receive location update immediately
+    cy.wait(1000); // Wait for immediate location update to process
+    
+    // **VERIFY WELCOME POPUP**: Should show "welcome join table-<x>" before navigation
+    cy.get('[data-testid="welcome-popup"]', { timeout: 5000 }).should('be.visible');
+    cy.get('[data-testid="welcome-popup"]').within(() => {
+      cy.contains('Welcome!').should('be.visible');
+      cy.contains('You\'re joining table-').should('be.visible');
+      cy.log('✅ Welcome popup displayed successfully');
+    });
+    
+    // Wait for popup to auto-close (2.5 seconds) and navigation to complete
+    cy.get('[data-testid="welcome-popup"]', { timeout: 4000 }).should('not.exist');
+    cy.log('✅ Welcome popup closed after timeout');
+    
     // **VERIFY LOCATION BEFORE ENTERING GAME PAGE**: Should update to table-x
     cy.url({ timeout: 10000 }).should('include', '/game/').then((url) => {
       // Extract table ID from URL

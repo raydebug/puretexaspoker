@@ -1301,6 +1301,29 @@ class SocketService {
     return this.lobbyTables;
   }
 
+  // Immediately update user location in backend when join button is clicked
+  updateUserLocationImmediate(tableId: number, nickname: string) {
+    if (!this.socket) {
+      console.error('No socket connection available for location update');
+      return;
+    }
+
+    if (!this.socket.connected) {
+      console.error('Socket not connected for location update');
+      return;
+    }
+
+    const targetLocation = `table-${tableId}`;
+    console.log(`🎯 FRONTEND: Sending immediate location update to backend - ${nickname} → ${targetLocation}`);
+    
+    // Emit immediate location update event to backend
+    this.socket.emit('updateUserLocation', { 
+      tableId, 
+      nickname, 
+      location: targetLocation 
+    });
+  }
+
   // Updated to match the expected signature for lobby
   joinTable(tableId: number, buyIn?: number) {
     // Store previous location for potential rollback

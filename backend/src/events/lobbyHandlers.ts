@@ -11,6 +11,7 @@ interface ClientToServerEvents {
   sitDown: (data: { tableId: number; buyIn: number }) => void;
   standUp: (data: { tableId: number }) => void;
   takeSeat: (data: { seatNumber: number; buyIn: number }) => void;
+  updateUserLocation: (data: { tableId: number; nickname: string; location: string }) => void;
 }
 
 interface ServerToClientEvents {
@@ -170,6 +171,46 @@ export const setupLobbyHandlers = (
     const tables = tableManager.getAllTables();
     console.log(`Lobby: Sending ${tables.length} tables to client`);
     socket.emit('tablesUpdate', tables);
+  });
+
+  // Handle immediate location update when join button is clicked in lobby
+  socket.on('updateUserLocation', async ({ tableId, nickname, location }) => {
+    console.log(`🎯 BACKEND: Received immediate location update - ${nickname} → ${location} (table ${tableId})`);
+    
+    try {
+      // Get or create player in database if not exists
+      let player;
+      try {
+        player = await prisma.player.upsert({
+          where: { id: socket.id },
+          update: { nickname },
+          create: {
+            id: socket.id,
+            nickname,
+            chips: 0
+          }
+        });
+        console.log(`🎯 BACKEND: Player ready for location update:`, player);
+      } catch (dbError: any) {
+        console.error(`🎯 BACKEND: Failed to create/update player for location update:`, dbError);
+        return;
+      }
+
+      // Update user location immediately in backend
+      await locationManager.updateUserLocation(socket.id, nickname, location);
+      console.log(`🎯 BACKEND: Successfully updated ${nickname} location to: ${location} IMMEDIATELY from lobby`);
+
+      // Emit location update event to notify all clients
+      io.emit('location:updated', { 
+        playerId: socket.id,
+        nickname: nickname,
+        location: location
+      });
+      console.log(`🎯 BACKEND: Broadcasted immediate location:updated event for ${nickname}`);
+
+    } catch (error) {
+      console.error('🎯 BACKEND: Error in immediate location update:', error);
+    }
   });
 
   // Handle table join request - this immediately creates a game and adds the player

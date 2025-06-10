@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import styled from 'styled-components';
 import { JoinDialog } from './JoinDialog';
+import { WelcomePopup } from '../common/WelcomePopup';
 import { socketService } from '../../services/socketService';
 import { TableData } from '../../types/table';
 import { useNavigate } from 'react-router-dom';
@@ -183,6 +184,8 @@ export const TableGrid: React.FC<TableGridProps> = ({ filters }) => {
   const [error, setError] = useState<string | null>(null);
   const [selectedTable, setSelectedTable] = useState<TableData | null>(null);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
+  const [showWelcomePopup, setShowWelcomePopup] = useState(false);
+  const [joiningTable, setJoiningTable] = useState<TableData | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -269,7 +272,7 @@ export const TableGrid: React.FC<TableGridProps> = ({ filters }) => {
       const targetLocation = `table-${selectedTable.id}`;
       console.log(`🎯 LOBBY: Immediately updating user location to: ${targetLocation} when joining table ${selectedTable.id}`);
       
-      // Update the socketService location immediately
+      // Update the socketService location immediately (frontend)
       try {
         // Set the location directly in socketService
         (socketService as any).currentUserLocation = targetLocation;
@@ -278,15 +281,38 @@ export const TableGrid: React.FC<TableGridProps> = ({ filters }) => {
         console.warn('🎯 LOBBY: Failed to update socketService location:', error);
       }
       
-      console.log('TableGrid: Navigating to /join-table with state', { table: selectedTable });
+      // **IMMEDIATELY UPDATE BACKEND LOCATION** when join button is clicked
+      try {
+        socketService.updateUserLocationImmediate(selectedTable.id, nickname);
+        console.log(`🎯 LOBBY: Backend location update request sent for table ${selectedTable.id}`);
+      } catch (error) {
+        console.warn('🎯 LOBBY: Failed to send backend location update:', error);
+      }
+      
+      // Show welcome popup before navigation
+      setJoiningTable(selectedTable);
+      setShowJoinDialog(false); // Close join dialog
+      setShowWelcomePopup(true); // Show welcome popup
+    } else {
+      console.log('TableGrid: No selected table found');
+    }
+  };
+
+  const handleWelcomeComplete = () => {
+    console.log('TableGrid: Welcome popup completed, navigating to join-table');
+    if (joiningTable) {
+      console.log('TableGrid: Navigating to /join-table with state', { table: joiningTable });
       // Navigate to the Join Game page with table data (no buyIn needed for observer)
       navigate('/join-table', { 
         state: { 
-          table: selectedTable
+          table: joiningTable
         } 
       });
-    } else {
-      console.log('TableGrid: No selected table found');
+      
+      // Reset state
+      setShowWelcomePopup(false);
+      setJoiningTable(null);
+      setSelectedTable(null);
     }
   };
 
@@ -420,6 +446,15 @@ export const TableGrid: React.FC<TableGridProps> = ({ filters }) => {
           table={selectedTable}
           onClose={handleJoinDialogClose}
           onJoin={handleJoinTable}
+        />
+      )}
+
+      {joiningTable && (
+        <WelcomePopup
+          tableName={joiningTable.name}
+          tableId={joiningTable.id}
+          isVisible={showWelcomePopup}
+          onComplete={handleWelcomeComplete}
         />
       )}
     </GridContainer>
