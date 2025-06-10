@@ -1519,6 +1519,20 @@ class SocketService {
       return;
     }
     
+    // Extract table ID from path (e.g., /game/3 -> 3)
+    const tableIdMatch = currentPath.match(/\/game\/(\d+)/);
+    const currentTableId = tableIdMatch ? tableIdMatch[1] : null;
+    
+    // Check if user's location indicates they should be at this table
+    const expectedLocation = currentTableId ? `table-${currentTableId}` : null;
+    const userLocation = this.currentUserLocation;
+    
+    // If user's location matches expected location, they're in the right place
+    if (expectedLocation && userLocation === expectedLocation) {
+      console.log(`🎯 PRESENCE: User location "${userLocation}" matches expected "${expectedLocation}", allowing stay`);
+      return;
+    }
+    
     // Check if user is in players list
     const isPlayer = state && state.players && state.players.some(player => 
       player && player.name === savedNickname
@@ -1528,7 +1542,8 @@ class SocketService {
     const isObserver = this.observers.includes(savedNickname);
     
     if (!isPlayer && !isObserver) {
-      console.log(`🚀 REDIRECT: User "${savedNickname}" not found in players or observers list, redirecting to lobby`);
+      console.log(`🚀 REDIRECT: User "${savedNickname}" not found in players or observers list`);
+      console.log(`🚀 REDIRECT: User location: "${userLocation}", Expected: "${expectedLocation}"`);
       console.log('🚀 REDIRECT: Current players:', state?.players?.map(p => p?.name) || []);
       console.log('🚀 REDIRECT: Current observers:', this.observers);
       

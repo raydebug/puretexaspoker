@@ -265,6 +265,19 @@ export const TableGrid: React.FC<TableGridProps> = ({ filters }) => {
       // Save nickname for future use
       localStorage.setItem('nickname', nickname);
       
+      // Update location immediately when user chooses to join table in lobby
+      const targetLocation = `table-${selectedTable.id}`;
+      console.log(`🎯 LOBBY: Immediately updating user location to: ${targetLocation} when joining table ${selectedTable.id}`);
+      
+      // Update the socketService location immediately
+      try {
+        // Set the location directly in socketService
+        (socketService as any).currentUserLocation = targetLocation;
+        console.log(`🎯 LOBBY: SocketService location updated to: ${targetLocation}`);
+      } catch (error) {
+        console.warn('🎯 LOBBY: Failed to update socketService location:', error);
+      }
+      
       console.log('TableGrid: Navigating to /join-table with state', { table: selectedTable });
       // Navigate to the Join Game page with table data (no buyIn needed for observer)
       navigate('/join-table', { 
