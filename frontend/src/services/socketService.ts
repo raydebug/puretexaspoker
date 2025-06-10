@@ -49,7 +49,8 @@ class SocketService {
   private isJoiningTable = false; // Add flag to prevent multiple join attempts
   private players: any[] = [];
   private currentUserId: string | null = null;
-  private currentUserLocation: string = 'lobby'; // Track current user's location
+  private currentUserTable: number | null = null; // Track current user's table (null = lobby)
+  private currentUserSeat: number | null = null; // Track current user's seat (null = observing)
 
   // Event listeners
   private errorListeners: ((error: { message: string; context: string; severity?: string; retryable?: boolean; suggestedNames?: string[] }) => void)[] = [];
@@ -782,19 +783,30 @@ class SocketService {
   public handleLocationUpdate(data: { playerId: string; nickname: string; location?: string; table?: number | null; seat?: number | null }) {
     const { playerId, nickname } = data;
     
-    // Convert new table/seat format to location string for backward compatibility
-    let location: string;
-    if (data.location) {
-      // Old format - use the location string directly
-      location = data.location;
-    } else if (data.table !== undefined && data.seat !== undefined) {
-      // New format - convert table/seat to location string
-      if (data.table === null) {
-        location = 'lobby';
-      } else if (data.seat === null) {
-        location = `table-${data.table}`;
+    // Use new table/seat format directly
+    let table: number | null;
+    let seat: number | null;
+    
+    if (data.table !== undefined && data.seat !== undefined) {
+      // New format - use table/seat directly
+      table = data.table;
+      seat = data.seat;
+    } else if (data.location) {
+      // Old format - convert location string to table/seat for backward compatibility
+      if (data.location === 'lobby') {
+        table = null;
+        seat = null;
+      } else if (data.location.startsWith('table-') && !data.location.includes('-seat-')) {
+        const tableMatch = data.location.match(/^table-(\d+)$/);
+        table = tableMatch ? parseInt(tableMatch[1]) : null;
+        seat = null;
+      } else if (data.location.includes('-seat-')) {
+        const seatMatch = data.location.match(/^table-(\d+)-seat-(\d+)$/);
+        table = seatMatch ? parseInt(seatMatch[1]) : null;
+        seat = seatMatch ? parseInt(seatMatch[2]) : null;
       } else {
-        location = `table-${data.table}-seat-${data.seat}`;
+        console.warn('Invalid location string:', data.location);
+        return;
       }
     } else {
       console.warn('Invalid location update data:', data);
@@ -805,35 +817,36 @@ class SocketService {
     const isCurrentUser = this.socket?.id === playerId;
     
     if (isCurrentUser) {
-      this.currentUserLocation = location;
-      console.log(`🎯 FRONTEND: Current user location updated to: ${location}`);
-      console.log(`🎯 FRONTEND: Current user (${nickname}) is now at: ${this.parseLocationForDisplay(location)}`);
+      this.currentUserTable = table;
+      this.currentUserSeat = seat;
+      console.log(`🎯 FRONTEND: Current user location updated to: table=${table}, seat=${seat}`);
+      console.log(`🎯 FRONTEND: Current user (${nickname}) is now at: ${this.parseTableSeatForDisplay(table, seat)}`);
       
       // Automatic navigation based on location
-      this.handleLocationBasedNavigation(location);
+      this.handleLocationBasedNavigation(table, seat);
     }
     
-    // Parse location to determine user's new state
-    if (location === 'lobby') {
+    // Determine user's new state based on table/seat
+    if (table === null) {
       // User moved to lobby - remove from observers and players
       this.observers = this.observers.filter(observer => observer !== nickname);
       this.emitOnlineUsersUpdate();
       
-    } else if (location.startsWith('table-') && !location.includes('-seat-')) {
-      // User is observing a table (location: "table-X")
+    } else if (seat === null) {
+      // User is observing a table (table=X, seat=null)
       if (!this.observers.includes(nickname)) {
         this.observers.push(nickname);
       }
       this.emitOnlineUsersUpdate();
       
-    } else if (location.includes('-seat-')) {
-      // User took a seat (location: "table-X-seat-Y")
+    } else {
+      // User took a seat (table=X, seat=Y)
       // Remove from observers if they were observing
       this.observers = this.observers.filter(observer => observer !== nickname);
       this.emitOnlineUsersUpdate();
     }
     
-    console.log(`DEBUG: Frontend processed location update for ${nickname}: ${location}`);
+    console.log(`DEBUG: Frontend processed location update for ${nickname}: table=${table}, seat=${seat}`);
     console.log(`DEBUG: Frontend observers after update:`, this.observers);
     
     // Log current user status every location update
@@ -841,38 +854,49 @@ class SocketService {
   }
 
   /**
-   * Handle automatic navigation based on location changes
+   * Handle automatic navigation based on table/seat changes
    */
-  private handleLocationBasedNavigation(location: string) {
+  private handleLocationBasedNavigation(table: number | null, seat: number | null) {
     // Only navigate if in browser environment
     if (typeof window === 'undefined') return;
     
-    if (location === 'lobby') {
-      // If user location is lobby but not on lobby page, redirect
+    if (table === null) {
+      // If user is in lobby but not on lobby page, redirect
       if (!navigationService.isOnLobby()) {
-        console.log('🚀 FRONTEND: Location is lobby but not on lobby page, redirecting...');
+        console.log('🚀 FRONTEND: User is in lobby but not on lobby page, redirecting...');
         console.log(`🚀 FRONTEND: Current path: ${navigationService.getCurrentPath()}`);
         navigationService.navigateToLobby(true);
       }
-    } else if (location.startsWith('table-')) {
+    } else {
       // If user is at a table, they should be on the corresponding game page
-      const tableMatch = location.match(/^table-(\d+)/);
-      if (tableMatch) {
-        const tableId = tableMatch[1];
-        const currentGameId = navigationService.getCurrentGameId();
-        
-        // If not on the correct game page, navigate there
-        if (!navigationService.isOnGamePage() || currentGameId !== tableId) {
-          console.log(`🚀 FRONTEND: Location is ${location}, navigating to game page for table ${tableId}`);
-          console.log(`🚀 FRONTEND: Current path: ${navigationService.getCurrentPath()}`);
-          navigationService.navigateToGame(tableId, true);
-        }
+      const currentGameId = navigationService.getCurrentGameId();
+      
+      // If not on the correct game page, navigate there
+      if (!navigationService.isOnGamePage() || currentGameId !== table.toString()) {
+        console.log(`🚀 FRONTEND: User is at table ${table} (seat=${seat}), navigating to game page`);
+        console.log(`🚀 FRONTEND: Current path: ${navigationService.getCurrentPath()}`);
+        navigationService.navigateToGame(table.toString(), true);
       }
     }
   }
 
   /**
-   * Parse location string for human-readable display
+   * Parse table/seat for human-readable display
+   */
+  private parseTableSeatForDisplay(table: number | null, seat: number | null): string {
+    if (table === null) {
+      return 'Lobby (browsing tables)';
+    }
+    
+    if (seat === null) {
+      return `Table ${table} (observing)`;
+    }
+    
+    return `Table ${table}, Seat ${seat} (playing)`;
+  }
+
+  /**
+   * Parse location string for human-readable display (legacy support)
    */
   private parseLocationForDisplay(location: string): string {
     if (location === 'lobby') {
@@ -898,8 +922,8 @@ class SocketService {
   private logCurrentUserStatus() {
     console.log(`📍 FRONTEND: Current User Status:`);
     console.log(`   Socket ID: ${this.socket?.id || 'Not connected'}`);
-    console.log(`   Location: ${this.currentUserLocation}`);
-    console.log(`   Parsed: ${this.parseLocationForDisplay(this.currentUserLocation)}`);
+    console.log(`   Table: ${this.currentUserTable}, Seat: ${this.currentUserSeat}`);
+    console.log(`   Parsed: ${this.parseTableSeatForDisplay(this.currentUserTable, this.currentUserSeat)}`);
     console.log(`   Total observers: ${this.observers.length}`);
     console.log(`   Total players: ${this.gameState?.players?.length || 0}`);
   }
@@ -908,7 +932,21 @@ class SocketService {
    * Get current user's location (public method for debugging)
    */
   getCurrentUserLocation(): string {
-    return this.currentUserLocation;
+    // Convert table/seat back to location string for backward compatibility
+    if (this.currentUserTable === null) {
+      return 'lobby';
+    } else if (this.currentUserSeat === null) {
+      return `table-${this.currentUserTable}`;
+    } else {
+      return `table-${this.currentUserTable}-seat-${this.currentUserSeat}`;
+    }
+  }
+
+  /**
+   * Get current user's table/seat (new method for direct access)
+   */
+  getCurrentUserTableSeat(): { table: number | null; seat: number | null } {
+    return { table: this.currentUserTable, seat: this.currentUserSeat };
   }
 
   // --- Seat management ---
