@@ -9,6 +9,16 @@ describe('Observer Appears When Joining Table Bug Test', () => {
   it('should add player to observers list when joining a table', () => {
     const playerName = 'ObserverBugTest';
     
+    // **VERIFY INITIAL LOCATION**: Should start in lobby
+    cy.window().then((win) => {
+      const socketService = (win as any).socketService;
+      if (socketService) {
+        const initialLocation = socketService.getCurrentUserLocation();
+        expect(initialLocation).to.equal('lobby');
+        cy.log('✅ Initial location verified: lobby');
+      }
+    });
+    
     // Join a table as observer
     cy.get('[data-testid="table-row"]')
       .first()
@@ -17,10 +27,36 @@ describe('Observer Appears When Joining Table Bug Test', () => {
     cy.get('[data-testid="nickname-input"]').clear().type(playerName);
     cy.get('[data-testid="join-as-observer"]').click();
     
+    // **VERIFY LOCATION BEFORE ENTERING GAME PAGE**: Should update to table-x
+    cy.url({ timeout: 10000 }).should('include', '/game/').then((url) => {
+      // Extract table ID from URL
+      const urlMatch = url.match(/\/game\/(\d+)/);
+      if (urlMatch) {
+        const expectedTableId = urlMatch[1];
+        const expectedLocation = `table-${expectedTableId}`;
+        
+        // Wait for socket connection and location update
+        cy.wait(3000);
+        
+        cy.window().then((win) => {
+          const socketService = (win as any).socketService;
+          if (socketService) {
+            const currentLocation = socketService.getCurrentUserLocation();
+            cy.log('🔍 Current location after join:', currentLocation);
+            cy.log('🔍 Expected location:', expectedLocation);
+            
+            // **CRITICAL VERIFICATION**: Location attribute must be updated before checking observers
+            expect(currentLocation).to.equal(expectedLocation);
+            cy.log('✅ Location attribute correctly updated from lobby to:', currentLocation);
+          }
+        });
+      }
+    });
+    
     // Should be in observer view
     cy.get('[data-testid="observer-view"]', { timeout: 10000 }).should('be.visible');
     
-    // **CRITICAL TEST**: Player should appear in observers list
+    // **CRITICAL TEST**: Player should appear in observers list (only after location is verified)
     cy.get('[data-testid="online-users-list"]', { timeout: 15000 }).should('be.visible');
     
     cy.get('[data-testid="online-users-list"]').within(() => {

@@ -182,3 +182,18 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Status**: ✅ Production Ready | **Last Updated**: June 10, 2025
+
+## Testing
+
+### E2E Tests
+Enhanced e2e tests now include comprehensive location attribute verification:
+
+- **Location Transition Verification**: Tests verify that user location correctly updates from 'lobby' to 'table-x' before entering game page
+- **Observer Flow Testing**: Complete join → location update → observer appearance flow verification  
+- **5/5 Passing Tests**: All observer-related functionality thoroughly tested and verified
+- **Critical Checkpoints**: Location attribute validation at each step of the user journey
+
+Key test improvements:
+- Pre-game page location verification to catch location update issues early
+- Socket service location tracking integration  
+- Enhanced debugging and logging for location state changes
