@@ -26,9 +26,14 @@ describe('User Location Transition Flow', () => {
     cy.get('[data-testid="nickname-input"]').clear().type(playerName);
     cy.get('[data-testid="join-as-observer"]').click();
     
+    // Wait for navigation to complete first (this is key!)
+    cy.url({ timeout: 10000 }).should('include', '/game/');
+    
+    // Wait for the actual socket join to complete and location to update
+    cy.wait(3000);
+    
     // Verify browser navigates to the game page
     cy.get('[data-testid="observer-view"]', { timeout: 10000 }).should('be.visible');
-    cy.url().should('include', '/game/');
     
     // **CRITICAL TEST**: Verify user location is updated from 'lobby' to 'table-x'
     cy.window().then((win) => {
