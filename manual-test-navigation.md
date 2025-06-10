@@ -22,38 +22,49 @@ This test verifies that users are automatically redirected from game pages to th
 4. Since location is already "lobby" but you're on game page, the automatic navigation should trigger
 5. You should be automatically redirected to the lobby (`/`)
 
-#### Method 2: Simulating Location Change
-1. Go to lobby page: `http://localhost:3000/`
-2. Join a table as observer to change location to "table-X"
-3. Navigate directly to a different game page: `http://localhost:3000/game/2`
-4. In console, simulate location change back to lobby:
+#### Method 2: Direct Navigation Test  
+1. Open browser to `http://localhost:3000`
+2. Wait for full page load (2-3 seconds)
+3. Manually type in URL: `http://localhost:3000/game/1`
+4. You should be automatically redirected back to lobby
+
+#### Method 3: User Presence Test (New Test)
+This tests the user presence-based redirection that checks if user is in players or observers list.
+
+1. Open browser to `http://localhost:3000` 
+2. Set a nickname cookie (if not already set):
    ```javascript
-   window.socketService.handleLocationUpdate({
-     playerId: window.socketService.getSocket().id,
-     nickname: 'TestUser',
-     location: 'lobby'
-   })
+   document.cookie = "playerNickname=TestUser; path=/"
    ```
-5. You should be automatically redirected to lobby within seconds
+3. Wait for connection and initial load (2-3 seconds)
+4. Manually navigate to a game page: `http://localhost:3000/game/1`
+5. **Expected Result**: User should be automatically redirected to lobby because they are not in the players or observers list for that game
 
-### Expected Results
-- ✅ **Before Fix**: User would stay on game page despite location being "lobby" (logs would show location but no navigation)
-- ✅ **After Fix**: User is automatically redirected to lobby when location is "lobby" but on game page
+#### Method 4: Console Verification
+1. After any of the above tests, check console logs for:
+   ```
+   🚀 REDIRECT: User "TestUser" not found in players or observers list, redirecting to lobby
+   🚀 REDIRECT: Current players: []
+   🚀 REDIRECT: Current observers: []
+   ```
 
-### Console Output to Look For
-```
-🎯 FRONTEND: Current user location updated to: lobby
-🎯 FRONTEND: Current user (TestUser) is now at: Lobby (browsing tables)
-🚀 FRONTEND: Location is lobby but not on lobby page, redirecting...
-🚀 FRONTEND: Current path: /game/1
-🚀 NAVIGATION: Navigating to / (replace: true)
-```
+### Expected Behavior
+- **Immediate Redirection**: Users should be redirected within 1-2 seconds
+- **Console Logging**: Clear log messages explaining why redirection occurred
+- **No Manual Intervention**: Process should be completely automatic
+- **State Consistency**: User location should be "lobby" after redirection
 
-### Verification
-- User should end up on lobby page (`/`)
-- URL should be `http://localhost:3000/`
-- Console should show navigation messages
-- No errors in console
+### Success Criteria
+✅ User cannot stay on game page when location is "lobby"  
+✅ User cannot stay on game page when not in players/observers list  
+✅ Console logs show clear redirection reasoning  
+✅ Redirection happens automatically without user action  
+✅ Users end up on lobby page (`/`)  
+
+### Notes
+- The user presence check is more reliable than location-based checking
+- This fixes the bug where frontend logs showed location as "lobby" but user could still stay on game page
+- The fix activates on any game state update, ensuring consistent enforcement
 
 ## Additional Test Cases
 

@@ -156,6 +156,16 @@
     - **Testing**: E2E test continues to pass, manual test guide created for verification
     - **Impact**: Eliminates location/page mismatch bug that could leave users stranded on wrong pages
 
+33. 🛠️ **BUG FIX: Enhanced User Presence-Based Navigation** ✅  
+    - **Problem**: More robust solution needed - check if user actually belongs at the table (in players or observers list)
+    - **Approach**: Instead of relying on location state, verify user presence in actual game state (players/observers lists)
+    - **Solution**: Added `checkUserPresenceAndRedirect` method that triggers on every game state update
+    - **Logic**: If user is on game page but not found in players OR observers list, automatically redirect to lobby
+    - **Benefits**: More reliable than location-based checking, works like automatic "leave table" function
+    - **Implementation**: Triggers on `emitGameStateUpdate`, checks current path, verifies user presence, redirects if not found
+    - **Testing**: Added E2E test "should redirect to lobby when user is not in players or observers list"
+    - **Impact**: Prevents users from staying on game pages when they don't belong there, ensuring state consistency
+
 ## Next Steps
 1. ✅ Run all E2E tests from frontend directory and fix any failures - COMPLETED: 74/74 tests passing (100%)
 2. ✅ Implement comprehensive test coverage - COMPLETED: E2E critical paths fully covered  
