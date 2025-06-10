@@ -1,18 +1,19 @@
 import { prisma } from '../db';
 
 /**
- * Location Manager - Tracks user locations throughout the application
+ * Location Manager - Tracks user locations using table/seat attributes
  * 
- * Location formats:
- * - "lobby" - user is browsing tables in the lobby
- * - "table-{tableId}" - user is observing table {tableId}
- * - "table-{tableId}-seat-{seatNumber}" - user is sitting at seat {seatNumber} on table {tableId}
+ * Location logic:
+ * - table: null, seat: null → user is in lobby
+ * - table: X, seat: null → user is observing table X  
+ * - table: X, seat: Y → user is playing at table X, seat Y
  */
 
 export interface UserLocation {
   playerId: string;
   nickname: string;
-  location: string;
+  table: number | null;
+  seat: number | null;
   updatedAt: Date;
 }
 
@@ -34,13 +35,14 @@ export class LocationManager {
   /**
    * Update user location both in memory and database
    */
-  async updateUserLocation(playerId: string, nickname: string, location: string): Promise<void> {
-    console.log(`LocationManager: Updating ${nickname} (${playerId}) location to: ${location}`);
+  async updateUserLocation(playerId: string, nickname: string, table: number | null, seat: number | null = null): Promise<void> {
+    console.log(`LocationManager: Updating ${nickname} (${playerId}) to table: ${table}, seat: ${seat}`);
     
     const userLocation: UserLocation = {
       playerId,
       nickname,
-      location,
+      table,
+      seat,
       updatedAt: new Date()
     };
 
@@ -51,7 +53,7 @@ export class LocationManager {
     try {
       await prisma.player.update({
         where: { id: playerId },
-        data: { location }
+        data: { table, seat }
       });
       console.log(`LocationManager: Successfully updated ${nickname} location in database`);
     } catch (error) {
@@ -63,6 +65,27 @@ export class LocationManager {
   }
 
   /**
+   * Move user to lobby (table: null, seat: null)
+   */
+  async moveToLobby(playerId: string, nickname: string): Promise<void> {
+    return this.updateUserLocation(playerId, nickname, null, null);
+  }
+
+  /**
+   * Move user to observe a table (table: X, seat: null)
+   */
+  async moveToTableObserver(playerId: string, nickname: string, tableId: number): Promise<void> {
+    return this.updateUserLocation(playerId, nickname, tableId, null);
+  }
+
+  /**
+   * Move user to a seat at a table (table: X, seat: Y)
+   */
+  async moveToTableSeat(playerId: string, nickname: string, tableId: number, seatNumber: number): Promise<void> {
+    return this.updateUserLocation(playerId, nickname, tableId, seatNumber);
+  }
+
+  /**
    * Get user's current location
    */
   getUserLocation(playerId: string): UserLocation | null {
@@ -70,35 +93,87 @@ export class LocationManager {
   }
 
   /**
-   * Get all users at a specific location
-   */
-  getUsersAtLocation(location: string): UserLocation[] {
-    return Array.from(this.userLocations.values())
-      .filter(user => user.location === location);
-  }
-
-  /**
-   * Get all users observing a specific table (location: "table-{tableId}")
-   */
-  getObserversAtTable(tableId: number): UserLocation[] {
-    const tableLocation = `table-${tableId}`;
-    return this.getUsersAtLocation(tableLocation);
-  }
-
-  /**
-   * Get all users seated at a specific table (location: "table-{tableId}-seat-{seatNumber}")
-   */
-  getPlayersAtTable(tableId: number): UserLocation[] {
-    const tablePrefix = `table-${tableId}-seat-`;
-    return Array.from(this.userLocations.values())
-      .filter(user => user.location.startsWith(tablePrefix));
-  }
-
-  /**
-   * Get all users in the lobby (location: "lobby")
+   * Get all users in lobby (table: null)
    */
   getUsersInLobby(): UserLocation[] {
-    return this.getUsersAtLocation('lobby');
+    return Array.from(this.userLocations.values())
+      .filter(user => user.table === null);
+  }
+
+  /**
+   * Get all users observing a specific table (table: X, seat: null)
+   */
+  getObserversAtTable(tableId: number): UserLocation[] {
+    return Array.from(this.userLocations.values())
+      .filter(user => user.table === tableId && user.seat === null);
+  }
+
+  /**
+   * Get all users seated at a specific table (table: X, seat: not null)
+   */
+  getPlayersAtTable(tableId: number): UserLocation[] {
+    return Array.from(this.userLocations.values())
+      .filter(user => user.table === tableId && user.seat !== null);
+  }
+
+  /**
+   * Get all users at a specific table (both observers and players)
+   */
+  getAllUsersAtTable(tableId: number): UserLocation[] {
+    return Array.from(this.userLocations.values())
+      .filter(user => user.table === tableId);
+  }
+
+  /**
+   * Check if user is in lobby
+   */
+  isUserInLobby(playerId: string): boolean {
+    const location = this.getUserLocation(playerId);
+    return location ? location.table === null : true;
+  }
+
+  /**
+   * Check if user is observing a table
+   */
+  isUserObservingTable(playerId: string, tableId?: number): boolean {
+    const location = this.getUserLocation(playerId);
+    if (!location) return false;
+    
+    const isObserving = location.table !== null && location.seat === null;
+    if (tableId !== undefined) {
+      return isObserving && location.table === tableId;
+    }
+    return isObserving;
+  }
+
+  /**
+   * Check if user is playing at a table
+   */
+  isUserPlayingAtTable(playerId: string, tableId?: number): boolean {
+    const location = this.getUserLocation(playerId);
+    if (!location) return false;
+    
+    const isPlaying = location.table !== null && location.seat !== null;
+    if (tableId !== undefined) {
+      return isPlaying && location.table === tableId;
+    }
+    return isPlaying;
+  }
+
+  /**
+   * Get user's current table (if any)
+   */
+  getUserTable(playerId: string): number | null {
+    const location = this.getUserLocation(playerId);
+    return location ? location.table : null;
+  }
+
+  /**
+   * Get user's current seat (if any)
+   */
+  getUserSeat(playerId: string): number | null {
+    const location = this.getUserLocation(playerId);
+    return location ? location.seat : null;
   }
 
   /**
@@ -113,7 +188,77 @@ export class LocationManager {
   }
 
   /**
-   * Parse location string to extract components
+   * Get location display string for logging/debugging
+   */
+  getLocationDisplay(playerId: string): string {
+    const location = this.getUserLocation(playerId);
+    if (!location) return 'unknown';
+    
+    if (location.table === null) return 'lobby';
+    if (location.seat === null) return `table-${location.table} (observer)`;
+    return `table-${location.table} seat-${location.seat}`;
+  }
+
+  /**
+   * Get summary of all locations for debugging
+   */
+  getLocationSummary(): { [locationKey: string]: string[] } {
+    const summary: { [locationKey: string]: string[] } = {};
+    
+    for (const user of this.userLocations.values()) {
+      let locationKey: string;
+      if (user.table === null) {
+        locationKey = 'lobby';
+      } else if (user.seat === null) {
+        locationKey = `table-${user.table}-observers`;
+      } else {
+        locationKey = `table-${user.table}-players`;
+      }
+      
+      if (!summary[locationKey]) {
+        summary[locationKey] = [];
+      }
+      summary[locationKey].push(`${user.nickname}${user.seat !== null ? ` (seat ${user.seat})` : ''}`);
+    }
+
+    return summary;
+  }
+
+  /**
+   * Initialize location manager by loading existing players from database
+   */
+  async initialize(): Promise<void> {
+    try {
+      const players = await prisma.player.findMany({
+        select: {
+          id: true,
+          nickname: true,
+          table: true,
+          seat: true,
+          updatedAt: true
+        }
+      });
+
+      for (const player of players) {
+        this.userLocations.set(player.id, {
+          playerId: player.id,
+          nickname: player.nickname,
+          table: player.table,
+          seat: player.seat,
+          updatedAt: player.updatedAt
+        });
+      }
+
+      console.log(`LocationManager: Initialized with ${players.length} users`);
+      console.log('LocationManager: Current locations:', this.getLocationSummary());
+    } catch (error) {
+      console.error('LocationManager: Failed to initialize:', error);
+    }
+  }
+
+  /**
+   * Legacy method for backward compatibility - converts old location string to table/seat
+   * @deprecated Use table/seat methods instead
    */
   parseLocation(location: string): { type: 'lobby' | 'table-observer' | 'table-player'; tableId?: number; seatNumber?: number } {
     if (location === 'lobby') {
@@ -138,66 +283,6 @@ export class LocationManager {
     }
 
     throw new Error(`Invalid location format: ${location}`);
-  }
-
-  /**
-   * Create location string for table observer
-   */
-  static createTableObserverLocation(tableId: number): string {
-    return `table-${tableId}`;
-  }
-
-  /**
-   * Create location string for table player
-   */
-  static createTablePlayerLocation(tableId: number, seatNumber: number): string {
-    return `table-${tableId}-seat-${seatNumber}`;
-  }
-
-  /**
-   * Get summary of all locations for debugging
-   */
-  getLocationSummary(): { [location: string]: string[] } {
-    const summary: { [location: string]: string[] } = {};
-    
-    for (const user of this.userLocations.values()) {
-      if (!summary[user.location]) {
-        summary[user.location] = [];
-      }
-      summary[user.location].push(user.nickname);
-    }
-
-    return summary;
-  }
-
-  /**
-   * Initialize location manager by loading existing players from database
-   */
-  async initialize(): Promise<void> {
-    try {
-      const players = await prisma.player.findMany({
-        select: {
-          id: true,
-          nickname: true,
-          location: true,
-          updatedAt: true
-        }
-      });
-
-      for (const player of players) {
-        this.userLocations.set(player.id, {
-          playerId: player.id,
-          nickname: player.nickname,
-          location: player.location,
-          updatedAt: player.updatedAt
-        });
-      }
-
-      console.log(`LocationManager: Initialized with ${players.length} users`);
-      console.log('LocationManager: Current locations:', this.getLocationSummary());
-    } catch (error) {
-      console.error('LocationManager: Failed to initialize:', error);
-    }
   }
 }
 

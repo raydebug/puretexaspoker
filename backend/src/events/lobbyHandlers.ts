@@ -174,8 +174,8 @@ export const setupLobbyHandlers = (
   });
 
   // Handle immediate location update when join button is clicked in lobby
-  socket.on('updateUserLocation', async ({ tableId, nickname, location }) => {
-    console.log(`🎯 BACKEND: Received immediate location update - ${nickname} → ${location} (table ${tableId})`);
+  socket.on('updateUserLocation', async ({ tableId, nickname }) => {
+    console.log(`🎯 BACKEND: Received immediate location update - ${nickname} → table ${tableId} (observer)`);
     
     try {
       // Get or create player in database if not exists
@@ -196,15 +196,16 @@ export const setupLobbyHandlers = (
         return;
       }
 
-      // Update user location immediately in backend
-      await locationManager.updateUserLocation(socket.id, nickname, location);
-      console.log(`🎯 BACKEND: Successfully updated ${nickname} location to: ${location} IMMEDIATELY from lobby`);
+      // Update user location immediately in backend - move to table observer
+      await locationManager.moveToTableObserver(socket.id, nickname, tableId);
+      console.log(`🎯 BACKEND: Successfully updated ${nickname} to observe table ${tableId} IMMEDIATELY`);
 
       // Emit location update event to notify all clients
       io.emit('location:updated', { 
         playerId: socket.id,
         nickname: nickname,
-        location: location
+        table: tableId,
+        seat: null
       });
       console.log(`🎯 BACKEND: Broadcasted immediate location:updated event for ${nickname}`);
 
@@ -250,10 +251,9 @@ export const setupLobbyHandlers = (
       }
       console.log(`DEBUG: Backend player created:`, player);
 
-      // Update user location first (before any table operations)
-      const observerLocation = LocationManager.createTableObserverLocation(tableId);
-      await locationManager.updateUserLocation(socket.id, player.nickname, observerLocation);
-      console.log(`DEBUG: Backend updated ${player.nickname} location to: ${observerLocation} BEFORE table operations`);
+      // Update user location first (before any table operations) - move to table observer
+      await locationManager.moveToTableObserver(socket.id, player.nickname, tableId);
+      console.log(`DEBUG: Backend updated ${player.nickname} to observe table ${tableId} BEFORE table operations`);
 
       // Join the table in the table manager
       console.log(`DEBUG: Backend joining table in TableManager...`);
@@ -279,14 +279,14 @@ export const setupLobbyHandlers = (
             console.error(`DEBUG: Backend table join failed on retry: ${retryResult.error}`);
             socket.emit('tableError', retryResult.error || 'Failed to join table after leaving previous table');
             // Revert location update on failure
-            await locationManager.updateUserLocation(socket.id, player.nickname, 'lobby');
+            await locationManager.moveToLobby(socket.id, player.nickname);
             return;
           }
         } else {
           console.error(`DEBUG: Backend table join failed: ${tableResult.error}`);
           socket.emit('tableError', tableResult.error || 'Failed to join table');
           // Revert location update on failure
-          await locationManager.updateUserLocation(socket.id, player.nickname, 'lobby');
+          await locationManager.moveToLobby(socket.id, player.nickname);
           return;
         }
       }

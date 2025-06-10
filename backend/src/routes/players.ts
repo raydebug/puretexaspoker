@@ -18,8 +18,8 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Chips must be a positive number' });
     }
 
-    // Check if player already exists
-    const existingPlayer = await prisma.player.findUnique({
+    // Check if player already exists (use findFirst since nickname is no longer unique)
+    const existingPlayer = await prisma.player.findFirst({
       where: { nickname: nickname.trim() }
     });
 
@@ -47,8 +47,8 @@ router.post('/register', async (req, res) => {
   try {
     const { nickname, chips } = req.body;
 
-    // Check if player already exists
-    const existingPlayer = await prisma.player.findUnique({
+    // Check if player already exists (use findFirst since nickname is no longer unique)
+    const existingPlayer = await prisma.player.findFirst({
       where: { nickname }
     });
 
