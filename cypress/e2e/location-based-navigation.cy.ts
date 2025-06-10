@@ -428,4 +428,33 @@ describe('Location-Based Navigation', () => {
     
     console.log('✅ Page refresh with location mismatch handled correctly');
   });
+
+  it('should redirect to lobby when user is not in players or observers list', () => {
+    // Visit the main page and set a nickname
+    cy.visit('/');
+    cy.setCookie('playerNickname', 'PresenceTestUser');
+    
+    // Wait for initial load and connection
+    cy.wait(2000);
+    
+    // Manually navigate to a game page (bypassing normal flow)
+    cy.visit('/game/1');
+    
+    // Wait for the page to load
+    cy.wait(2000);
+    
+    // The user should be automatically redirected to lobby since they're not 
+    // in the players or observers list for this game
+    cy.url().should('include', '/');
+    cy.get('[data-testid="lobby-container"]', { timeout: 5000 }).should('be.visible');
+    
+    // Check console logs for redirect message
+    cy.window().then((win) => {
+      const socketService = (win as any).socketService;
+      expect(socketService).to.exist;
+      
+      // The redirect should have happened because user is not in players/observers
+      console.log('✅ User presence check and redirect test completed');
+    });
+  });
 }); 

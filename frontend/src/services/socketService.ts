@@ -1480,11 +1480,56 @@ class SocketService {
     this.eventEmitter.off(event, callback);
   }
 
+  /**
+   * Check if current user is present in players or observers list
+   * If not present but on game page, redirect to lobby
+   */
+  private checkUserPresenceAndRedirect(state: GameState) {
+    // Only perform check if we're in browser environment
+    if (typeof window === 'undefined') return;
+    
+    const currentPath = window.location.pathname;
+    
+    // Only check if user is on a game page (not lobby)
+    if (!currentPath.includes('/game/')) return;
+    
+    const savedNickname = cookieService.getNickname();
+    if (!savedNickname) {
+      console.log('🚀 REDIRECT: No nickname found, redirecting to lobby');
+      navigationService.navigate('/', true);
+      return;
+    }
+    
+    // Check if user is in players list
+    const isPlayer = state && state.players && state.players.some(player => 
+      player && player.name === savedNickname
+    );
+    
+    // Check if user is in observers list
+    const isObserver = this.observers.includes(savedNickname);
+    
+    if (!isPlayer && !isObserver) {
+      console.log(`🚀 REDIRECT: User "${savedNickname}" not found in players or observers list, redirecting to lobby`);
+      console.log('🚀 REDIRECT: Current players:', state?.players?.map(p => p?.name) || []);
+      console.log('🚀 REDIRECT: Current observers:', this.observers);
+      
+      // Use navigationService to redirect to lobby
+      navigationService.navigate('/', true);
+      
+      // Also emit a system message to explain why they were redirected
+      this.emitSystemMessage('You have been redirected to the lobby because you are not connected to this table.');
+    }
+  }
+
   private emitGameStateUpdate(state: GameState) {
     // Filter out any undefined/null players to prevent runtime errors
     if (state && state.players) {
       state.players = state.players.filter(p => p && p.id);
     }
+    
+    // Check if current user should be at this table - if not, redirect to lobby
+    this.checkUserPresenceAndRedirect(state);
+    
     this.gameStateListeners.forEach(callback => callback(state));
   }
 
