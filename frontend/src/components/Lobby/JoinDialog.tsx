@@ -310,7 +310,10 @@ export const JoinDialog: React.FC<JoinDialogProps> = ({ table, onClose, onJoin }
     return () => {
       window.removeEventListener('keydown', handleEscape);
       unsubscribeError();
-      socketService.getSocket()?.off('tableJoined', tableJoinedHandler);
+      const socket = socketService.getSocket();
+      if (socket) {
+        socket.off('tableJoined', tableJoinedHandler);
+      }
     };
   }, [onClose, nickname]);
 

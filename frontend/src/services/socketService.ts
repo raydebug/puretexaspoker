@@ -1,8 +1,8 @@
 import { io, Socket } from 'socket.io-client';
-import { GameState, Player, Avatar as AvatarType } from '../types/shared';
+import { GameState, Player } from '../types/game';
+import { TableData } from '../types/table';
 import { cookieService } from './cookieService';
 import { errorTrackingService } from './errorTrackingService';
-import { TableData } from '../types/table';
 import { EventEmitter } from 'events';
 
 export type SeatState = { [seatNumber: number]: string | null };
@@ -273,8 +273,31 @@ class SocketService {
     });
 
     socket.on('observer:left', (data: { observer: string }) => {
+      console.log('DEBUG: Frontend received observer:left event:', data);
+      console.log('DEBUG: Frontend observers before removal:', this.observers);
       this.observers = this.observers.filter(observer => observer !== data.observer);
+      console.log('DEBUG: Frontend observers after removal:', this.observers);
       this.emitOnlineUsersUpdate();
+    });
+
+    socket.on('seatTaken', (data: { seatNumber: number; playerId: string; gameState: any }) => {
+      console.log('DEBUG: Frontend received seatTaken event:', data);
+      
+      // Update game state immediately
+      if (data.gameState) {
+        this.gameState = data.gameState;
+        this.emitGameStateUpdate(data.gameState);
+      }
+      
+      // Find the player who took the seat and remove them from observers
+      if (data.gameState && data.gameState.players) {
+        const playerWhoTookSeat = data.gameState.players.find((p: any) => p && p.id === data.playerId);
+        if (playerWhoTookSeat && playerWhoTookSeat.name) {
+          console.log('DEBUG: Removing player from observers after seatTaken:', playerWhoTookSeat.name);
+          this.observers = this.observers.filter(observer => observer !== playerWhoTookSeat.name);
+          this.emitOnlineUsersUpdate();
+        }
+      }
     });
 
     socket.on('seat:update', (seats: SeatState) => {
@@ -291,13 +314,6 @@ class SocketService {
             this.gameState.players[existingPlayerIndex] = data.player;
           } else {
             this.gameState.players.push(data.player);
-          }
-          
-          // CRITICAL FIX: Remove player from observers list when they take a seat
-          if (data.player.name) {
-            this.observers = this.observers.filter(observer => observer !== data.player.name);
-            console.log('DEBUG: Removed player from observers:', data.player.name);
-            console.log('DEBUG: Remaining observers:', this.observers);
           }
           
           this.emitGameStateUpdate(this.gameState);
@@ -329,13 +345,6 @@ class SocketService {
           const existingPlayerIndex = this.gameState.players.findIndex(p => p && p.id === data.player.id);
           if (existingPlayerIndex === -1) {
             this.gameState.players.push(data.player);
-            
-            // CRITICAL FIX: Remove player from observers list when they become a player
-            if (data.player.name) {
-              this.observers = this.observers.filter(observer => observer !== data.player.name);
-              console.log('DEBUG: Removed player from observers in playerJoined:', data.player.name);
-              console.log('DEBUG: Remaining observers:', this.observers);
-            }
             
             this.emitGameStateUpdate(this.gameState);
             this.emitOnlineUsersUpdate(); // Update the online users list
