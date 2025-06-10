@@ -166,6 +166,20 @@
     - **Testing**: Added E2E test "should redirect to lobby when user is not in players or observers list"
     - **Impact**: Prevents users from staying on game pages when they don't belong there, ensuring state consistency
 
+34. 🛠️ **MAJOR FIX: Remove Nickname Unique Constraint, Use Location-Based Player Management** ✅
+    - **Problem**: Global unique constraint on nicknames prevented same nickname across different tables 
+    - **Error**: "The nickname 'aa' is already taken. Please choose a different name."
+    - **Root Cause**: Database schema had `nickname String @unique` constraint enforcing global uniqueness
+    - **Solution**: Removed unique constraint and switched to location-based player management system
+    - **Database Changes**: 
+      - Updated Player model: `nickname String @unique` → `nickname String` (removed @unique)
+      - Generated migration: `remove-nickname-unique-constraint`
+      - Applied database migration successfully
+    - **Backend Changes**: Removed nickname uniqueness validation logic in `lobbyHandlers.ts`
+    - **Benefits**: Users can now use same nickname "aa" at different tables simultaneously
+    - **Architecture**: Leverages location-based system (`"lobby"`, `"table-X"`, `"table-X-seat-Y"`) for player management
+    - **Impact**: Eliminates nickname conflicts, enables natural user experience across multiple tables
+
 ## Next Steps
 1. ✅ Run all E2E tests from frontend directory and fix any failures - COMPLETED: 74/74 tests passing (100%)
 2. ✅ Implement comprehensive test coverage - COMPLETED: E2E critical paths fully covered  
