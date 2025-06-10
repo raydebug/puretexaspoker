@@ -2,6 +2,7 @@ import { Server, Socket } from 'socket.io';
 import { tableManager, TableData } from '../services/TableManager';
 import { gameManager } from '../services/gameManager';
 import { prisma } from '../db';
+import { locationManager, LocationManager } from '../services/LocationManager';
 
 interface ClientToServerEvents {
   getLobbyTables: () => void;
@@ -22,8 +23,8 @@ interface ServerToClientEvents {
   gameState: (gameState: any) => void;
   seatError: (error: string) => void;
   seatTaken: (data: { seatNumber: number; playerId: string; gameState: any }) => void;
-  'observer:joined': (data: { observer: string }) => void;
-  'observer:left': (data: { observer: string }) => void;
+  'location:updated': (data: { playerId: string; nickname: string; location: string }) => void;
+  'location:usersAtTable': (data: { tableId: number; observers: string[]; players: { nickname: string; seatNumber: number }[] }) => void;
   'player:disconnected': (data: { playerId: string; nickname: string; timeoutSeconds: number }) => void;
   'player:reconnected': (data: { playerId: string; nickname: string }) => void;
   'player:removedFromSeat': (data: { playerId: string; nickname: string; seatNumber: number; reason: string }) => void;
@@ -52,6 +53,29 @@ export const setupLobbyHandlers = (
   // Broadcast table updates to all connected clients
   const broadcastTables = () => {
     io.emit('tablesUpdate', tableManager.getAllTables());
+  };
+
+  // Helper function to broadcast current users at a table
+  const broadcastTableUsers = (tableId: number, gameId: string) => {
+    const observers = locationManager.getObserversAtTable(tableId);
+    const players = locationManager.getPlayersAtTable(tableId);
+    
+    const observerNames = observers.map(user => user.nickname);
+    const playerData = players.map(user => {
+      const location = locationManager.parseLocation(user.location);
+      return {
+        nickname: user.nickname,
+        seatNumber: location.seatNumber!
+      };
+    });
+
+    io.to(`game:${gameId}`).emit('location:usersAtTable', {
+      tableId,
+      observers: observerNames,
+      players: playerData
+    });
+    
+    console.log(`DEBUG: Broadcasted table ${tableId} users - Observers: ${observerNames.length}, Players: ${playerData.length}`);
   };
 
   // Helper function to handle player reconnection
@@ -101,8 +125,23 @@ export const setupLobbyHandlers = (
         }
       });
 
+      // Update user location from seat to observer
+      const observerLocation = LocationManager.createTableObserverLocation(connectionState.tableId);
+      await locationManager.updateUserLocation(
+        connectionState.playerId, 
+        connectionState.nickname, 
+        observerLocation
+      );
+
       // Get updated game state
       const gameState = gameService.getGameState();
+
+      // Emit location update event
+      io.to(`game:${connectionState.gameId}`).emit('location:updated', {
+        playerId: connectionState.playerId,
+        nickname: connectionState.nickname,
+        location: observerLocation
+      });
 
       // Emit events to notify all clients in the game room
       io.to(`game:${connectionState.gameId}`).emit('player:removedFromSeat', {
@@ -110,11 +149,6 @@ export const setupLobbyHandlers = (
         nickname: connectionState.nickname,
         seatNumber: connectionState.seatNumber,
         reason: 'Disconnected for more than 5 seconds'
-      });
-
-      // Move player to observers
-      io.to(`game:${connectionState.gameId}`).emit('observer:joined', { 
-        observer: connectionState.nickname 
       });
 
       // Broadcast updated game state
@@ -157,7 +191,7 @@ export const setupLobbyHandlers = (
         await tx.player.deleteMany({ where: { id: socket.id } });
       });
       
-      // Create a player in the database
+      // Create a player in the database - no more unique nickname constraint
       console.log(`DEBUG: Backend creating/updating player in database...`);
       let player;
       try {
@@ -169,52 +203,9 @@ export const setupLobbyHandlers = (
           }
         });
       } catch (dbError: any) {
-        // Handle unique constraint errors for nickname
-        if (dbError.code === 'P2002' && dbError.meta?.target?.includes('nickname')) {
-          console.log(`DEBUG: Backend nickname "${nicknameToUse}" already exists, rejecting with error`);
-          
-          // Generate suggested alternative nicknames
-          const suggestedNames: string[] = [];
-          const baseName = nicknameToUse;
-          
-          // Generate 3 suggested alternatives
-          for (let i = 1; i <= 3; i++) {
-            const suggestion = `${baseName}${Math.floor(Math.random() * 1000) + 1}`;
-            // Quick check if this suggestion is already taken
-            const existingPlayer = await prisma.player.findFirst({
-              where: { nickname: suggestion }
-            });
-            if (!existingPlayer) {
-              suggestedNames.push(suggestion);
-            }
-          }
-          
-          // Add some creative alternatives if we have room
-          if (suggestedNames.length < 3) {
-            const suffixes = ['Pro', 'Ace', 'King', 'Star', 'Player'];
-            for (const suffix of suffixes) {
-              if (suggestedNames.length >= 3) break;
-              const suggestion = `${baseName}_${suffix}`;
-              const existingPlayer = await prisma.player.findFirst({
-                where: { nickname: suggestion }
-              });
-              if (!existingPlayer) {
-                suggestedNames.push(suggestion);
-              }
-            }
-          }
-          
-          // Emit specific nickname error with suggestions
-          socket.emit('nicknameError', {
-            message: `The nickname "${nicknameToUse}" is already taken. Please choose a different name.`,
-            suggestedNames: suggestedNames.length > 0 ? suggestedNames : undefined
-          });
-          return;
-        } else {
-          console.error(`DEBUG: Backend database error:`, dbError);
-          socket.emit('tableError', `Database error: ${dbError.message || 'Failed to create player'}`);
-          return;
-        }
+        console.error(`DEBUG: Backend database error:`, dbError);
+        socket.emit('tableError', `Database error: ${dbError.message || 'Failed to create player'}`);
+        return;
       }
       console.log(`DEBUG: Backend player created:`, player);
 
@@ -369,9 +360,17 @@ export const setupLobbyHandlers = (
         socket.join(`game:${gameId}`);
         gameManager.joinGameRoom(gameId, socket.id);
 
-        // Emit observer joined event to all clients in the game room (including the observer themselves)
-        io.to(`game:${gameId}`).emit('observer:joined', { observer: player.nickname });
-        console.log(`DEBUG: Backend emitted observer:joined event for ${player.nickname} in game:${gameId}`);
+        // Update user location to table observer
+        const observerLocation = LocationManager.createTableObserverLocation(tableId);
+        await locationManager.updateUserLocation(socket.id, player.nickname, observerLocation);
+
+        // Emit location update event
+        io.to(`game:${gameId}`).emit('location:updated', { 
+          playerId: socket.id,
+          nickname: player.nickname,
+          location: observerLocation
+        });
+        console.log(`DEBUG: Backend updated ${player.nickname} location to: ${observerLocation}`);
 
         // Get current game state
         const gameState = gameService.getGameState();
@@ -537,10 +536,17 @@ export const setupLobbyHandlers = (
       // Get updated game state
       const gameState = gameService.getGameState();
       
-      // Emit success events
-      // **CRITICAL BUG FIX**: Remove player from observers list when they take a seat
-      console.log(`DEBUG: Backend removing ${nickname} from observers when taking seat`);
-      io.to(`game:${gameId}`).emit("observer:left", { observer: nickname });
+      // Update user location from observer to player seat
+      const playerLocation = LocationManager.createTablePlayerLocation(tableId, seatNumber);
+      await locationManager.updateUserLocation(socket.id, nickname, playerLocation);
+      
+      // Emit location update to notify all clients
+      io.to(`game:${gameId}`).emit('location:updated', { 
+        playerId: socket.id,
+        nickname: nickname,
+        location: playerLocation
+      });
+      console.log(`DEBUG: Backend updated ${nickname} location to: ${playerLocation}`);
 
       // **CONNECTION MONITORING**: Check if this player was disconnected and cancel timeout
       handlePlayerReconnection(playerId, nickname, gameId);
@@ -571,7 +577,8 @@ export const setupLobbyHandlers = (
     }
     broadcastTables();
 
-    // Check if this player was seated in a game
+    // Get user's current location before potential timeout handling
+    const userLocation = locationManager.getUserLocation(socket.id);
     const gameId = socket.data.gameId;
     const nickname = socket.data.nickname;
     const tableId = socket.data.tableId;
@@ -628,11 +635,18 @@ export const setupLobbyHandlers = (
 
           console.log(`DEBUG: Set up ${DISCONNECT_TIMEOUT_MS}ms timeout for player ${nickname}`);
         } else {
-          console.log(`DEBUG: Player ${nickname} was not seated, no timeout needed`);
+          console.log(`DEBUG: Player ${nickname} was not seated, removing from location tracking`);
+          // If player was just observing, remove immediately from location tracking
+          locationManager.removeUser(socket.id);
         }
       } catch (error) {
         console.error('Error setting up disconnect timeout:', error);
+        // Fallback: remove user from location tracking
+        locationManager.removeUser(socket.id);
       }
+    } else {
+      // No game context, just remove from location tracking
+      locationManager.removeUser(socket.id);
     }
   });
 }; 
