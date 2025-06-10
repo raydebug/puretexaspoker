@@ -291,7 +291,7 @@ class SocketService {
       }
     });
 
-    socket.on('location:updated', (data: { playerId: string; nickname: string; location: string }) => {
+    socket.on('location:updated', (data: { playerId: string; nickname: string; location?: string; table?: number | null; seat?: number | null }) => {
       console.log('DEBUG: Frontend received location:updated event:', data);
       this.handleLocationUpdate(data);
     });
@@ -779,8 +779,27 @@ class SocketService {
    * Handle location update events to manage observers and players lists
    * Public method for testing purposes
    */
-  public handleLocationUpdate(data: { playerId: string; nickname: string; location: string }) {
-    const { playerId, nickname, location } = data;
+  public handleLocationUpdate(data: { playerId: string; nickname: string; location?: string; table?: number | null; seat?: number | null }) {
+    const { playerId, nickname } = data;
+    
+    // Convert new table/seat format to location string for backward compatibility
+    let location: string;
+    if (data.location) {
+      // Old format - use the location string directly
+      location = data.location;
+    } else if (data.table !== undefined && data.seat !== undefined) {
+      // New format - convert table/seat to location string
+      if (data.table === null) {
+        location = 'lobby';
+      } else if (data.seat === null) {
+        location = `table-${data.table}`;
+      } else {
+        location = `table-${data.table}-seat-${data.seat}`;
+      }
+    } else {
+      console.warn('Invalid location update data:', data);
+      return;
+    }
     
     // Check if this update is for the current user
     const isCurrentUser = this.socket?.id === playerId;

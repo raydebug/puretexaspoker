@@ -11,7 +11,7 @@ interface ClientToServerEvents {
   sitDown: (data: { tableId: number; buyIn: number }) => void;
   standUp: (data: { tableId: number }) => void;
   takeSeat: (data: { seatNumber: number; buyIn: number }) => void;
-  updateUserLocation: (data: { tableId: number; nickname: string; location: string }) => void;
+  updateUserLocation: (data: { tableId: number; nickname: string }) => void;
 }
 
 interface ServerToClientEvents {
@@ -24,7 +24,7 @@ interface ServerToClientEvents {
   gameState: (gameState: any) => void;
   seatError: (error: string) => void;
   seatTaken: (data: { seatNumber: number; playerId: string; gameState: any }) => void;
-  'location:updated': (data: { playerId: string; nickname: string; location: string }) => void;
+  'location:updated': (data: { playerId: string; nickname: string; table: number | null; seat: number | null }) => void;
   'location:usersAtTable': (data: { tableId: number; observers: string[]; players: { nickname: string; seatNumber: number }[] }) => void;
   'player:disconnected': (data: { playerId: string; nickname: string; timeoutSeconds: number }) => void;
   'player:reconnected': (data: { playerId: string; nickname: string }) => void;
@@ -63,10 +63,9 @@ export const setupLobbyHandlers = (
     
     const observerNames = observers.map(user => user.nickname);
     const playerData = players.map(user => {
-      const location = locationManager.parseLocation(user.location);
       return {
         nickname: user.nickname,
-        seatNumber: location.seatNumber!
+        seatNumber: user.seat!
       };
     });
 
@@ -127,11 +126,10 @@ export const setupLobbyHandlers = (
       });
 
       // Update user location from seat to observer
-      const observerLocation = LocationManager.createTableObserverLocation(connectionState.tableId);
-      await locationManager.updateUserLocation(
+      await locationManager.moveToTableObserver(
         connectionState.playerId, 
         connectionState.nickname, 
-        observerLocation
+        connectionState.tableId
       );
 
       // Get updated game state
@@ -141,7 +139,8 @@ export const setupLobbyHandlers = (
       io.to(`game:${connectionState.gameId}`).emit('location:updated', {
         playerId: connectionState.playerId,
         nickname: connectionState.nickname,
-        location: observerLocation
+        table: connectionState.tableId,
+        seat: null
       });
 
       // Emit events to notify all clients in the game room
@@ -414,7 +413,8 @@ export const setupLobbyHandlers = (
         io.to(`game:${gameId}`).emit('location:updated', { 
           playerId: socket.id,
           nickname: player.nickname,
-          location: observerLocation
+          table: tableId,
+          seat: null
         });
         console.log(`DEBUG: Backend location already updated, now emitting location:updated event`);
 
@@ -583,16 +583,16 @@ export const setupLobbyHandlers = (
       const gameState = gameService.getGameState();
       
       // Update user location from observer to player seat
-      const playerLocation = LocationManager.createTablePlayerLocation(tableId, seatNumber);
-      await locationManager.updateUserLocation(socket.id, nickname, playerLocation);
+      await locationManager.moveToTableSeat(socket.id, nickname, tableId, seatNumber);
       
       // Emit location update to notify all clients
       io.to(`game:${gameId}`).emit('location:updated', { 
         playerId: socket.id,
         nickname: nickname,
-        location: playerLocation
+        table: tableId,
+        seat: seatNumber
       });
-      console.log(`DEBUG: Backend updated ${nickname} location to: ${playerLocation}`);
+      console.log(`DEBUG: Backend updated ${nickname} location to table ${tableId}, seat ${seatNumber}`);
 
       // **CONNECTION MONITORING**: Check if this player was disconnected and cancel timeout
       handlePlayerReconnection(playerId, nickname, gameId);

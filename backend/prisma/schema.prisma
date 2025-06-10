@@ -32,6 +32,7 @@ model Player {
   id          String        @id @default(uuid())
   nickname    String        // Removed @unique constraint - allow same nickname across different tables
   chips       Int
+  location    String        @default("lobby") // "lobby", "table-X", or "table-X-seat-Y"
   table       Int?          // Table ID - null means in lobby
   seat        Int?          // Seat number - null means observing (if table is not null)
   createdAt   DateTime      @default(now())
