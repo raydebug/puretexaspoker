@@ -147,6 +147,15 @@
     - **Testing**: Key test "should navigate to lobby when on game page but user location is lobby" passing ✅
     - **Impact**: Validates location-based navigation system works correctly for enhanced user experience
 
+32. 🐛 **BUG FIX: Automatic Navigation When Location is Lobby** ✅
+    - **Issue**: Frontend correctly tracked location as "lobby" in logs but didn't automatically navigate users
+    - **Root Cause**: `handleLocationBasedNavigation` method only logged navigation intent but didn't perform actual redirection
+    - **Solution**: Created `navigationService` for programmatic navigation from non-React components like socketService
+    - **Implementation**: Updated App.tsx to provide navigation callback, fixed socketService to use actual navigation
+    - **User Experience**: Users are now automatically redirected to lobby when location is "lobby" but they're on game page
+    - **Testing**: E2E test continues to pass, manual test guide created for verification
+    - **Impact**: Eliminates location/page mismatch bug that could leave users stranded on wrong pages
+
 ## Next Steps
 1. ✅ Run all E2E tests from frontend directory and fix any failures - COMPLETED: 74/74 tests passing (100%)
 2. ✅ Implement comprehensive test coverage - COMPLETED: E2E critical paths fully covered  
