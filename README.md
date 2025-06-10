@@ -37,6 +37,7 @@ A modern, real-time Texas Hold'em poker game built with React, TypeScript, Node.
 - **Setup Tests**: ✅ 3/3 passing - Basic application functionality
 - **Observer Flow**: ✅ 3/3 passing - Table joining and seat selection
 - **Observer Appearance**: ✅ 5/5 passing - User joining table appears in observers list
+- **Location Transition**: ✅ 1/2 passing - User location updates from lobby to table-x during join
 - **Username Duplicate**: ✅ 2/2 passing - Error handling and recovery
 - **API Backend**: ✅ 42/42 passing - Complete backend stability
 
@@ -95,6 +96,7 @@ npx cypress run --spec "cypress/e2e/setup.cy.ts"
 npx cypress run --spec "cypress/e2e/username-validation.cy.ts"  
 npx cypress run --spec "cypress/e2e/observer-flow.cy.ts"
 npx cypress run --spec "cypress/e2e/observer-appears-when-joining-test.cy.ts"
+npx cypress run --spec "cypress/e2e/user-location-transition-flow.cy.ts"
 ```
 
 ## 🎮 How to Play
