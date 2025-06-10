@@ -452,6 +452,10 @@ class SocketService {
       console.log('DEBUG: Frontend socket still connected:', socket.connected);
       console.log('DEBUG: Frontend socket ID:', socket.id);
       
+      // Reset the joining flag immediately when table join is successful
+      this.isJoiningTable = false;
+      console.log('DEBUG: isJoiningTable flag reset to false after successful tableJoined');
+      
       // Update location based on role
       if (data.role === 'observer') {
         this.currentUserLocation = `table-${data.tableId}`;
@@ -514,6 +518,11 @@ class SocketService {
     socket.on('tableError', (error: string) => {
       console.log('DEBUG: Frontend received tableError event:', error);
       console.log('DEBUG: Frontend socket still connected:', socket.connected);
+      
+      // Reset the joining flag on error
+      this.isJoiningTable = false;
+      console.log('DEBUG: isJoiningTable flag reset to false after tableError');
+      
       this.emitError({ message: error, context: 'table:error' });
     });
 
@@ -1294,6 +1303,9 @@ class SocketService {
 
   // Updated to match the expected signature for lobby
   joinTable(tableId: number, buyIn?: number) {
+    // Store previous location for potential rollback
+    const previousLocation = this.currentUserLocation;
+    
     // Update location immediately when joining table (before backend processing)
     const targetLocation = `table-${tableId}`;
     this.currentUserLocation = targetLocation;
@@ -1302,12 +1314,18 @@ class SocketService {
     
     if (!this.socket) {
       console.error('No socket connection available');
+      // Revert location on connection error
+      this.currentUserLocation = previousLocation;
+      console.log(`🎯 FRONTEND: Reverted location to: ${previousLocation} due to connection error`);
       this.emitError({ message: 'No connection to server', context: 'connection:error' });
       return;
     }
 
     if (this.isJoiningTable) {
       console.warn('Already joining a table, ignoring duplicate request');
+      // Revert location since join is blocked
+      this.currentUserLocation = previousLocation;
+      console.log(`🎯 FRONTEND: Reverted location to: ${previousLocation} due to join in progress`);
       return;
     }
 
@@ -1350,12 +1368,18 @@ class SocketService {
       
       this.socket.once('tableError', (error) => {
         console.error('DEBUG: tableError event received:', error);
+        // Revert location on join error
+        this.currentUserLocation = previousLocation;
+        console.log(`🎯 FRONTEND: Reverted location to: ${previousLocation} due to table join error`);
         this.emitError({ message: error, context: 'table:join_error' });
         this.isJoiningTable = false;
         this.socket?.off('disconnect', disconnectHandler);
       });
     } else {
       console.error('Socket not connected');
+      // Revert location on connection error
+      this.currentUserLocation = previousLocation;
+      console.log(`🎯 FRONTEND: Reverted location to: ${previousLocation} due to socket not connected`);
       this.emitError({ message: 'Not connected to server', context: 'connection:error' });
       this.isJoiningTable = false;
     }

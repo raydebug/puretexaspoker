@@ -304,18 +304,21 @@ export const JoinDialog: React.FC<JoinDialogProps> = ({ table, onClose, onJoin }
       clearError();
       onClose();
     };
-    socketService.getSocket()?.on('tableJoined', tableJoinedHandler);
+    
+    const socket = socketService.getSocket();
+    if (socket) {
+      socket.on('tableJoined', tableJoinedHandler);
+    }
 
     window.addEventListener('keydown', handleEscape);
     return () => {
       window.removeEventListener('keydown', handleEscape);
       unsubscribeError();
-      const socket = socketService.getSocket();
       if (socket) {
         socket.off('tableJoined', tableJoinedHandler);
       }
     };
-  }, [onClose, nickname]);
+  }, [onClose]);
 
   const clearError = () => {
     setErrorMessage('');
