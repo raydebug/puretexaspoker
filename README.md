@@ -205,7 +205,17 @@ Enhanced e2e tests now include comprehensive location attribute verification:
 - **5/5 Passing Tests**: All observer-related functionality thoroughly tested and verified
 - **Critical Checkpoints**: Location attribute validation at each step of the user journey
 
+#### ✅ Complete Observer-to-Player Flow Test (Latest)
+- **Comprehensive Coverage**: End-to-end test covering the complete user journey
+- **11 Step Verification**: lobby → observer → players list → seat changes → final location state
+- **Location Tracking**: Detailed location attribute verification at each transition point
+- **Seat Management**: Tests taking seats, standing up, and changing seats
+- **Multi-user Scenarios**: Verifies multiple users can be observers and players simultaneously
+- **Cookie-based Setup**: Uses successful test patterns for reliable execution
+
 Key test improvements:
 - Pre-game page location verification to catch location update issues early
 - Socket service location tracking integration  
 - Enhanced debugging and logging for location state changes
+- Complete observer-to-player transition with seat selection testing
+- Multiple seat changes and location state validation
