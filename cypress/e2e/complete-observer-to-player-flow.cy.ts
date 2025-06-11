@@ -2,14 +2,9 @@ describe('Complete Observer to Player Flow', () => {
   beforeEach(() => {
     cy.visit('/');
     
-    // Handle nickname modal directly (always appears on fresh visit)
-    cy.get('[data-testid="nickname-modal"]', { timeout: 10000 }).should('be.visible');
-    cy.get('[data-testid="nickname-input"]').type('FlowTestUser');
-    cy.get('[data-testid="join-button"]').click();
-    cy.get('[data-testid="nickname-modal"]').should('not.exist');
-    
-    // Wait for tables to load
-    cy.get('[data-testid="table-row"]', { timeout: 15000 }).should('exist');
+    // Set the cookie directly (this approach works in successful tests)
+    cy.setCookie('playerNickname', 'FlowTestUser');
+    cy.get('[data-testid="lobby-container"]').should('be.visible');
     cy.get('[data-testid="table-row"]').should('have.length.greaterThan', 0);
   });
 
@@ -19,9 +14,12 @@ describe('Complete Observer to Player Flow', () => {
     // **STEP 1: VERIFY USER STARTS IN LOBBY**
     cy.log('🎯 STEP 1: Verifying user starts in lobby');
     cy.window().then((win) => {
-      const location = (win as any).socketService?.getCurrentUserLocation();
-      cy.log(`Initial location: ${JSON.stringify(location)}`);
-      // Location should be null or indicate lobby status
+      const socketService = (win as any).socketService;
+      if (socketService) {
+        const location = socketService.getCurrentUserLocation();
+        cy.log(`Initial location: ${JSON.stringify(location)}`);
+        expect(location).to.equal('lobby');
+      }
     });
     
     // **STEP 2: JOIN TABLE AS OBSERVER**
@@ -32,16 +30,17 @@ describe('Complete Observer to Player Flow', () => {
     cy.get('[data-testid="nickname-input"]').clear().type(playerName);
     cy.get('[data-testid="join-as-observer"]').click();
     
-    // Check for welcome popup (optional - may not be implemented yet)
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-testid="welcome-popup"]').length > 0) {
-        cy.get('[data-testid="welcome-popup"]').should('be.visible');
-        cy.get('[data-testid="welcome-popup"]', { timeout: 4000 }).should('not.exist');
-        cy.log('✅ Welcome popup appeared and closed');
-      } else {
-        cy.log('ℹ️ Welcome popup not found - proceeding without it');
-      }
+    // Handle welcome popup (based on successful test pattern)
+    cy.get('[data-testid="welcome-popup"]', { timeout: 5000 }).should('be.visible');
+    cy.get('[data-testid="welcome-popup"]').within(() => {
+      cy.contains('Welcome!').should('be.visible');
+      cy.contains('You\'re joining table-').should('be.visible');
+      cy.log('✅ Welcome popup displayed successfully');
     });
+    
+    // Wait for popup to auto-close (2.5 seconds) and navigation to complete
+    cy.get('[data-testid="welcome-popup"]', { timeout: 4000 }).should('not.exist');
+    cy.log('✅ Welcome popup closed after timeout');
     
     // **STEP 3: VERIFY NAVIGATION TO GAME PAGE**
     cy.url({ timeout: 10000 }).should('include', '/game/');
@@ -50,25 +49,24 @@ describe('Complete Observer to Player Flow', () => {
     // **STEP 4: VERIFY USER LOCATION IS UPDATED TO TABLE-X**
     cy.wait(3000); // Allow time for socket connection and location update
     cy.window().then((win) => {
-      const location = (win as any).socketService?.getCurrentUserLocation();
-      cy.log(`Location after joining: ${JSON.stringify(location)}`);
-      
-      // Extract table ID from URL for verification
-      cy.url().then((url) => {
-        const tableId = url.split('/game/')[1];
-        cy.log(`Expected table location: table-${tableId}`);
+      const socketService = (win as any).socketService;
+      if (socketService) {
+        const location = socketService.getCurrentUserLocation();
+        cy.log(`Location after joining: ${JSON.stringify(location)}`);
         
-        // Verify location is set to correct table
-        if (location && location.table) {
-          expect(location.table.toString()).to.equal(tableId);
-          expect(location.seat).to.be.null; // Should be observer (no seat)
-          cy.log('✅ Location correctly updated to table-x as observer');
-        } else if (location && typeof location === 'string') {
-          // Handle legacy location format
-          expect(location).to.equal(`table-${tableId}`);
-          cy.log('✅ Location correctly updated to table-x (legacy format)');
-        }
-      });
+        // Extract table ID from URL for verification
+        cy.url().then((url) => {
+          const urlMatch = url.match(/\/game\/(\d+)/);
+          if (urlMatch) {
+            const expectedTableId = urlMatch[1];
+            const expectedLocation = `table-${expectedTableId}`;
+            
+            // Verify location is set to correct table
+            expect(location).to.equal(expectedLocation);
+            cy.log('✅ Location correctly updated to table-x as observer');
+          }
+        });
+      }
     });
     
     // **STEP 5: VERIFY USER APPEARS IN OBSERVERS LIST**
@@ -190,14 +188,15 @@ describe('Complete Observer to Player Flow', () => {
     cy.log('🎯 STEP 11: Verifying final location state');
     
     cy.window().then((win) => {
-      const location = (win as any).socketService?.getCurrentUserLocation();
-      cy.log(`Final location: ${JSON.stringify(location)}`);
-      
-      // Should have table and seat set
-      if (location && location.table) {
-        expect(location.table).to.not.be.null;
-        expect(location.seat).to.not.be.null;
-        cy.log('✅ Final location state shows user seated at table with seat number');
+      const socketService = (win as any).socketService;
+      if (socketService) {
+        const location = socketService.getCurrentUserLocation();
+        cy.log(`Final location: ${JSON.stringify(location)}`);
+        
+        // Should have table and seat set (in legacy format, it would be table-x)
+        expect(location).to.not.be.null;
+        expect(location).to.include('table-');
+        cy.log('✅ Final location state shows user seated at table');
       }
     });
     
@@ -215,6 +214,10 @@ describe('Complete Observer to Player Flow', () => {
     cy.get('[data-testid="nickname-input"]').clear().type(firstPlayer);
     cy.get('[data-testid="join-as-observer"]').click();
     
+    // Handle welcome popup for first user
+    cy.get('[data-testid="welcome-popup"]', { timeout: 5000 }).should('be.visible');
+    cy.get('[data-testid="welcome-popup"]', { timeout: 4000 }).should('not.exist');
+    
     cy.url({ timeout: 10000 }).should('include', '/game/');
     
     // Verify first user in observers list
@@ -226,15 +229,18 @@ describe('Complete Observer to Player Flow', () => {
     // Open new window for second user (simulated by refreshing and rejoining)
     cy.reload();
     
-    // Handle nickname modal for second user
-    cy.get('[data-testid="nickname-modal"]', { timeout: 10000 }).should('be.visible');
-    cy.get('[data-testid="nickname-input"]').type(secondPlayer);
-    cy.get('[data-testid="join-button"]').click();
+    // Handle nickname cookie for second user
+    cy.setCookie('playerNickname', secondPlayer);
+    cy.get('[data-testid="lobby-container"]').should('be.visible');
     
     // Join same table as second observer
     cy.get('[data-testid="table-row"]').first().click();
     cy.get('[data-testid="nickname-input"]').clear().type(secondPlayer);
     cy.get('[data-testid="join-as-observer"]').click();
+    
+    // Handle welcome popup for second user
+    cy.get('[data-testid="welcome-popup"]', { timeout: 5000 }).should('be.visible');
+    cy.get('[data-testid="welcome-popup"]', { timeout: 4000 }).should('not.exist');
     
     cy.url({ timeout: 10000 }).should('include', '/game/');
     

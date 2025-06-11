@@ -273,7 +273,7 @@ class SocketService {
       // Log initial user status
       this.currentUserId = socket.id || null;
       console.log(`🔌 FRONTEND: Socket connected with ID: ${socket.id}`);
-      console.log(`📍 FRONTEND: Initial location: ${this.currentUserLocation}`);
+      console.log(`📍 FRONTEND: Initial location: table=${this.currentUserTable}, seat=${this.currentUserSeat}`);
       this.logCurrentUserStatus();
       
       // Process any queued retries
@@ -308,12 +308,10 @@ class SocketService {
       
       // Update location if this is for the current user
       if (this.socket?.id === data.playerId) {
-        // Extract table ID from current game state or current location
-        const tableIdMatch = this.currentUserLocation.match(/table-(\d+)/);
-        if (tableIdMatch) {
-          const tableId = tableIdMatch[1];
-          this.currentUserLocation = `table-${tableId}-seat-${data.seatNumber}`;
-          console.log(`🎯 FRONTEND: Took seat ${data.seatNumber}, location updated to: ${this.currentUserLocation}`);
+        // Update current user location to seated
+        if (this.currentUserTable !== null) {
+          this.currentUserSeat = data.seatNumber;
+          console.log(`🎯 FRONTEND: Took seat ${data.seatNumber}, location updated to: table=${this.currentUserTable}, seat=${this.currentUserSeat}`);
           this.logCurrentUserStatus();
         }
       }
@@ -459,8 +457,9 @@ class SocketService {
       
       // Update location based on role
       if (data.role === 'observer') {
-        this.currentUserLocation = `table-${data.tableId}`;
-        console.log(`🎯 FRONTEND: Joined as observer, location updated to: ${this.currentUserLocation}`);
+        this.currentUserTable = data.tableId;
+        this.currentUserSeat = null;
+        console.log(`🎯 FRONTEND: Joined as observer, location updated to: table=${this.currentUserTable}, seat=${this.currentUserSeat}`);
       } else if (data.role === 'player') {
         // For players, we'll get the exact seat from the seatTaken event
         console.log(`🎯 FRONTEND: Joined as player at table ${data.tableId}, waiting for seat assignment`);
@@ -869,12 +868,12 @@ class SocketService {
       }
     } else {
       // If user is at a table, they should be on the corresponding game page
-      const currentGameId = navigationService.getCurrentGameId();
-      
-      // If not on the correct game page, navigate there
+        const currentGameId = navigationService.getCurrentGameId();
+        
+        // If not on the correct game page, navigate there
       if (!navigationService.isOnGamePage() || currentGameId !== table.toString()) {
         console.log(`🚀 FRONTEND: User is at table ${table} (seat=${seat}), navigating to game page`);
-        console.log(`🚀 FRONTEND: Current path: ${navigationService.getCurrentPath()}`);
+          console.log(`🚀 FRONTEND: Current path: ${navigationService.getCurrentPath()}`);
         navigationService.navigateToGame(table.toString(), true);
       }
     }
@@ -886,7 +885,7 @@ class SocketService {
   private parseTableSeatForDisplay(table: number | null, seat: number | null): string {
     if (table === null) {
       return 'Lobby (browsing tables)';
-    }
+        }
     
     if (seat === null) {
       return `Table ${table} (observing)`;
@@ -1384,19 +1383,21 @@ class SocketService {
   // Updated to match the expected signature for lobby
   joinTable(tableId: number, buyIn?: number) {
     // Store previous location for potential rollback
-    const previousLocation = this.currentUserLocation;
+    const previousTable = this.currentUserTable;
+    const previousSeat = this.currentUserSeat;
     
     // Update location immediately when joining table (before backend processing)
-    const targetLocation = `table-${tableId}`;
-    this.currentUserLocation = targetLocation;
-    console.log(`🎯 FRONTEND: Immediately updating location to: ${targetLocation} when joining table ${tableId}`);
+    this.currentUserTable = tableId;
+    this.currentUserSeat = null; // Initially observing
+    console.log(`🎯 FRONTEND: Immediately updating location to: table=${this.currentUserTable}, seat=${this.currentUserSeat} when joining table ${tableId}`);
     this.logCurrentUserStatus();
     
     if (!this.socket) {
       console.error('No socket connection available');
       // Revert location on connection error
-      this.currentUserLocation = previousLocation;
-      console.log(`🎯 FRONTEND: Reverted location to: ${previousLocation} due to connection error`);
+      this.currentUserTable = previousTable;
+      this.currentUserSeat = previousSeat;
+      console.log(`🎯 FRONTEND: Reverted location to: table=${previousTable}, seat=${previousSeat} due to connection error`);
       this.emitError({ message: 'No connection to server', context: 'connection:error' });
       return;
     }
@@ -1404,8 +1405,9 @@ class SocketService {
     if (this.isJoiningTable) {
       console.warn('Already joining a table, ignoring duplicate request');
       // Revert location since join is blocked
-      this.currentUserLocation = previousLocation;
-      console.log(`🎯 FRONTEND: Reverted location to: ${previousLocation} due to join in progress`);
+      this.currentUserTable = previousTable;
+      this.currentUserSeat = previousSeat;
+      console.log(`🎯 FRONTEND: Reverted location to: table=${previousTable}, seat=${previousSeat} due to join in progress`);
       return;
     }
 
@@ -1449,8 +1451,9 @@ class SocketService {
       this.socket.once('tableError', (error) => {
         console.error('DEBUG: tableError event received:', error);
         // Revert location on join error
-        this.currentUserLocation = previousLocation;
-        console.log(`🎯 FRONTEND: Reverted location to: ${previousLocation} due to table join error`);
+        this.currentUserTable = previousTable;
+        this.currentUserSeat = previousSeat;
+        console.log(`🎯 FRONTEND: Reverted location to: table=${previousTable}, seat=${previousSeat} due to table join error`);
         this.emitError({ message: error, context: 'table:join_error' });
         this.isJoiningTable = false;
         this.socket?.off('disconnect', disconnectHandler);
@@ -1458,8 +1461,9 @@ class SocketService {
     } else {
       console.error('Socket not connected');
       // Revert location on connection error
-      this.currentUserLocation = previousLocation;
-      console.log(`🎯 FRONTEND: Reverted location to: ${previousLocation} due to socket not connected`);
+      this.currentUserTable = previousTable;
+      this.currentUserSeat = previousSeat;
+      console.log(`🎯 FRONTEND: Reverted location to: table=${previousTable}, seat=${previousSeat} due to socket not connected`);
       this.emitError({ message: 'Not connected to server', context: 'connection:error' });
       this.isJoiningTable = false;
     }
@@ -1604,12 +1608,12 @@ class SocketService {
     const currentTableId = tableIdMatch ? tableIdMatch[1] : null;
     
     // Check if user's location indicates they should be at this table
-    const expectedLocation = currentTableId ? `table-${currentTableId}` : null;
-    const userLocation = this.currentUserLocation;
+    const expectedTableId = currentTableId ? parseInt(currentTableId) : null;
+    const userLocation = this.getCurrentUserLocation(); // Use the method that converts table/seat to string
     
     // If user's location matches expected location, they're in the right place
-    if (expectedLocation && userLocation === expectedLocation) {
-      console.log(`🎯 PRESENCE: User location "${userLocation}" matches expected "${expectedLocation}", allowing stay`);
+    if (expectedTableId && this.currentUserTable === expectedTableId) {
+      console.log(`🎯 PRESENCE: User at table ${this.currentUserTable} matches expected table ${expectedTableId}, allowing stay`);
       return;
     }
     
@@ -1623,7 +1627,7 @@ class SocketService {
     
     if (!isPlayer && !isObserver) {
       console.log(`🚀 REDIRECT: User "${savedNickname}" not found in players or observers list`);
-      console.log(`🚀 REDIRECT: User location: "${userLocation}", Expected: "${expectedLocation}"`);
+      console.log(`🚀 REDIRECT: User location: "${userLocation}", Expected table: ${expectedTableId}`);
       console.log('🚀 REDIRECT: Current players:', state?.players?.map(p => p?.name) || []);
       console.log('🚀 REDIRECT: Current observers:', this.observers);
       
