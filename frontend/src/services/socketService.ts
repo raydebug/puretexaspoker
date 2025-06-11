@@ -365,6 +365,13 @@ class SocketService {
       this.emitSeatError(error);
     });
 
+    // Handle new takeSeat error format 
+    socket.on('seatError', (error: string) => {
+      console.log('DEBUG: Frontend received seatError event:', error);
+      this.emitSeatError(error);
+      this.emitError({ message: error, context: 'seat:error' });
+    });
+
     socket.on('gameState', (gameState: GameState) => {
       console.log('DEBUG: Frontend received gameState event:', gameState);
       this.gameState = gameState;
@@ -979,6 +986,33 @@ class SocketService {
         seatNumber,
         buyIn,
         currentObservers: this.observers
+      });
+    }
+  }
+
+  // New takeSeat method for the room-based system (replaces requestSeat for observers->players)
+  takeSeat(seatNumber: number, buyIn: number) {
+    try {
+      if (seatNumber === undefined || !buyIn) {
+        throw new Error('Invalid takeSeat parameters');
+      }
+      
+      if (!this.socket?.connected) {
+        console.warn('Socket not connected when taking seat, connecting first');
+        this.connect();
+        
+        // Add a listener for when connection is established
+        this.socket?.once('connect', () => {
+          this.socket?.emit('takeSeat', { seatNumber, buyIn });
+        });
+        return;
+      }
+      
+      this.socket.emit('takeSeat', { seatNumber, buyIn });
+    } catch (error) {
+      errorTrackingService.trackError(error as Error, 'takeSeat', {
+        seatNumber,
+        buyIn
       });
     }
   }

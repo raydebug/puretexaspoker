@@ -368,8 +368,8 @@ const GamePage: React.FC = () => {
     setShowSeatDialog(false);
     setSelectedSeat(null);
     
-    // Request the seat with selected buy-in
-    socketService.requestSeat(nickname, selectedSeat, buyInAmount);
+    // Request the seat with selected buy-in using the new takeSeat method
+    socketService.takeSeat(selectedSeat, buyInAmount);
     
     // In test mode, simulate taking the seat
     if (typeof window !== 'undefined' && (window as any).Cypress) {
