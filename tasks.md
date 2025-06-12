@@ -23,8 +23,14 @@
 
 ### Testing & Quality
 - [ ] Complete remaining location transition tests (1/2 passing)
-- [ ] Enhance E2E test coverage for edge cases
+- [ ] Add mobile responsiveness tests
 - [ ] Add performance benchmarks
+- [ ] Add edge case coverage for:
+  - Socket disconnection scenarios
+  - Concurrent user actions
+  - Network latency handling
+  - Browser compatibility
+- [ ] Add load testing for multi-table scenarios
 
 ### Technical Debt
 - [ ] Optimize socket connection handling
