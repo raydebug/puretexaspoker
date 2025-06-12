@@ -402,6 +402,15 @@ export const setupLobbyHandlers = (
         socket.data.nickname = player.nickname;
         socket.data.playerId = socket.id;
         
+        console.log(`DEBUG: Backend session data SET for socket ${socket.id}:`, {
+          buyIn: socket.data.buyIn,
+          gameId: socket.data.gameId,
+          tableId: socket.data.tableId,
+          dbTableId: socket.data.dbTableId,
+          nickname: socket.data.nickname,
+          playerId: socket.data.playerId
+        });
+        
         // Join the game room as observer
         socket.join(`game:${gameId}`);
         gameManager.joinGameRoom(gameId, socket.id);
@@ -472,6 +481,7 @@ export const setupLobbyHandlers = (
   // Handle take seat request (when observer wants to take a specific seat)
   socket.on('takeSeat', async ({ seatNumber, buyIn }) => {
     console.log(`DEBUG: Backend received takeSeat event - seatNumber: ${seatNumber}, buyIn: ${buyIn}`);
+    console.log(`DEBUG: Backend takeSeat handler called on socket ID: ${socket.id}`);
     
     try {
       // Validate we have the required data from when they joined as observer

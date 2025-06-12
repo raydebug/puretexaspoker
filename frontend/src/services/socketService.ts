@@ -1016,16 +1016,23 @@ class SocketService {
       }
       
       if (!this.socket?.connected) {
-        console.warn('Socket not connected when taking seat, connecting first');
-        this.connect();
+        console.error('🚨 CRITICAL BUG: Socket not connected during takeSeat - this will create a new socket and lose session data!');
+        console.error('Current socket state:', {
+          socket: !!this.socket,
+          connected: this.socket?.connected,
+          id: this.socket?.id
+        });
         
-        // Add a listener for when connection is established
-        this.socket?.once('connect', () => {
-          this.socket?.emit('takeSeat', { seatNumber, buyIn });
+        // DO NOT reconnect as this will create a new socket and lose session data
+        // Instead, emit an error to inform the user
+        this.emitError({ 
+          message: 'Connection lost. Please refresh the page and rejoin the table.', 
+          context: 'takeSeat:connection_lost' 
         });
         return;
       }
       
+      console.log(`DEBUG: takeSeat called with socket ID: ${this.socket.id}, connected: ${this.socket.connected}`);
       this.socket.emit('takeSeat', { seatNumber, buyIn });
     } catch (error) {
       errorTrackingService.trackError(error as Error, 'takeSeat', {
