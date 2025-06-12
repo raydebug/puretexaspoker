@@ -326,10 +326,6 @@ export const setupLobbyHandlers = (
 
       // Join the socket room for this table
       socket.join(`table:${tableId}`);
-      socket.data.buyIn = buyIn;
-      socket.data.tableId = tableId;
-      socket.data.playerId = socket.id;
-      socket.data.dbTableId = dbTable.id;
 
       // Check if there's already a game for this database table
       let existingGame = await prisma.game.findFirst({
@@ -398,9 +394,10 @@ export const setupLobbyHandlers = (
       console.log(`DEBUG: Backend gameService found:`, !!gameService);
       
       if (gameService) {
-        // Store the buy-in amount and other data for when they select a seat
+        // Store ALL session data needed for takeSeat
         socket.data.buyIn = buyIn;
         socket.data.gameId = gameId;
+        socket.data.tableId = tableId;
         socket.data.dbTableId = dbTable.id;
         socket.data.nickname = player.nickname;
         socket.data.playerId = socket.id;
@@ -484,7 +481,17 @@ export const setupLobbyHandlers = (
       const nickname = socket.data.nickname;
       const playerId = socket.data.playerId;
       
+      console.log(`DEBUG: Backend session data check:`, {
+        gameId: !!gameId,
+        tableId: !!tableId,
+        dbTableId: !!dbTableId,
+        nickname: !!nickname,
+        playerId: !!playerId,
+        values: { gameId, tableId, dbTableId, nickname, playerId }
+      });
+      
       if (!gameId || !tableId || !dbTableId || !nickname || !playerId) {
+        console.log(`DEBUG: Backend missing session data - sending seatError`);
         socket.emit('seatError', 'Invalid session data. Please rejoin the table.');
         return;
       }
