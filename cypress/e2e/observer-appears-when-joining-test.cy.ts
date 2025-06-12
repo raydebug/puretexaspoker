@@ -6,6 +6,43 @@ describe('Observer Appears When Joining Table Bug Test', () => {
     cy.get('[data-testid="table-row"]').should('have.length.greaterThan', 0);
   });
 
+  it('PAUSE TEST: Show UI when user appears in observers list', () => {
+    const playerName = 'PauseTestUser';
+    
+    // Join table as observer
+    cy.log('🎯 STEP 1: Joining table as observer');
+    cy.get('[data-testid="table-row"]').first().click();
+    cy.get('[data-testid="nickname-input"]').clear().type(playerName);
+    cy.get('[data-testid="join-as-observer"]').click();
+    
+    // Wait for navigation to game page
+    cy.log('🎯 STEP 2: Waiting for game page navigation');
+    cy.url({ timeout: 15000 }).should('include', '/game/');
+    
+    // Wait for observer view
+    cy.log('🎯 STEP 3: Waiting for observer view to load');
+    cy.get('[data-testid="observer-view"]', { timeout: 10000 }).should('be.visible');
+    
+    // Wait for observers list to appear
+    cy.log('🎯 STEP 4: Waiting for observers list to appear');
+    cy.get('[data-testid="online-users-list"]', { timeout: 10000 }).should('be.visible');
+    
+    // Verify user appears in observers list
+    cy.log('🎯 STEP 5: Verifying user appears in observers list');
+    cy.get('[data-testid="online-users-list"]').within(() => {
+      cy.contains('Observers').should('be.visible');
+      cy.contains(playerName, { timeout: 5000 }).should('be.visible');
+      cy.contains(/Observers \(\d+\)/).should('be.visible');
+    });
+    
+    // 🔴 PAUSE HERE - User is now in observers list!
+    cy.log('✅ SUCCESS: User appears in observers list! Pausing to inspect UI...');
+    cy.pause(); // This will pause the test execution
+    
+    // After resuming, log the final state
+    cy.log('🎯 Test resumed - observers list verified');
+  });
+
   it('should add player to observers list when joining a table', () => {
     const playerName = 'ObserverBugTest';
     
