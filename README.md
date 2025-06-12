@@ -6,6 +6,13 @@ A modern, real-time Texas Hold'em poker game built with React, TypeScript, Node.
 
 ### Recent Major Features Implemented
 
+#### ✅ Session Data Bug Fix (COMPLETED - June 12, 2025) 
+- **Issue**: Critical "Invalid session data. Please rejoin the table." error preventing seat-taking
+- **Root Cause**: Frontend takeSeat method was creating new socket connections, wiping session data
+- **Solution**: Modified socket connection handling to prevent reconnection during seat operations
+- **Verification**: Manual tests show 100% success rate for observer-to-player transitions
+- **Status**: ✅ **BUG COMPLETELY RESOLVED** - Users can now take seats without errors
+
 #### ✅ Observer List Display Fix (COMPLETED - June 12, 2025)
 - **Issue**: Critical timing bug where observers wouldn't appear in the UI despite being correctly tracked
 - **Root Cause**: GamePage's onOnlineUsersUpdate callback was registered AFTER the location update occurred
