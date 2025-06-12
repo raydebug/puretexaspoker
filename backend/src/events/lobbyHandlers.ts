@@ -217,6 +217,7 @@ export const setupLobbyHandlers = (
   socket.on('joinTable', async ({ tableId, buyIn, nickname }) => {
     console.log(`DEBUG: Backend received joinTable event - tableId: ${tableId}, buyIn: ${buyIn}, nickname: ${nickname}`);
     console.log(`DEBUG: Backend socket.id: ${socket.id}`);
+    console.log(`DEBUG: Backend joinTable handler STARTING...`);
     
     try {
       // Get or create a player for this socket
@@ -390,8 +391,10 @@ export const setupLobbyHandlers = (
       }
 
       // Add the user as an observer first (observer-first flow)
+      console.log(`DEBUG: Backend about to call gameManager.getGame with gameId: ${gameId}`);
       let gameService = gameManager.getGame(gameId);
       console.log(`DEBUG: Backend gameService found:`, !!gameService);
+      console.log(`DEBUG: Backend gameService type:`, typeof gameService);
       
       if (gameService) {
         // Store ALL session data needed for takeSeat
@@ -438,6 +441,7 @@ export const setupLobbyHandlers = (
         
       } else {
         console.error(`DEBUG: Backend gameService is null for gameId: ${gameId}`);
+        console.error(`DEBUG: Backend emitting tableError - Failed to join game as observer`);
         socket.emit('tableError', 'Failed to join game as observer');
         return;
       }
