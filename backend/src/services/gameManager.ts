@@ -10,7 +10,8 @@ export class GameManager {
 
   private constructor() {
     // Initialize with default game for testing
-    this.createGame('test-game-id');
+    const testGame = new GameService('test-game-id');
+    this.games.set('test-game-id', testGame);
   }
 
   public static getInstance(): GameManager {
