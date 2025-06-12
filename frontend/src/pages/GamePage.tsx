@@ -252,12 +252,17 @@ const GamePage: React.FC = () => {
         
         // Listen for observer updates
         socketService.onOnlineUsersUpdate((players: Player[], observerList: string[]) => {
+          console.log('🎯 GamePage: onOnlineUsersUpdate callback TRIGGERED!');
           console.log('🎯 GamePage: Received onlineUsersUpdate:', { 
             players: players.length, 
             observerList: observerList.length,
             observers: observerList 
           });
+          console.log('🎯 GamePage: Previous observers state:', observers);
+          console.log('🎯 GamePage: Calling setObservers with:', observerList);
           setObservers(observerList);
+          console.log('🎯 GamePage: setObservers called successfully');
+          
           if (gameState) {
             const newGameState = { ...gameState, players };
             setGameState(newGameState);

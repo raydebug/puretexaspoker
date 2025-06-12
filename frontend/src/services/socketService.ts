@@ -773,6 +773,16 @@ class SocketService {
 
   onOnlineUsersUpdate(callback: OnlineUsersCallback) {
     this.onlineUsersListeners.push(callback);
+    
+    // Immediately call the callback with current state when registering
+    const players = this.gameState?.players || [];
+    console.log('🎯 FRONTEND: onOnlineUsersUpdate callback registered, calling immediately with current state:', {
+      players: players.length,
+      observers: this.observers.length,
+      observersList: this.observers
+    });
+    callback(players, this.observers);
+    
     return () => {
       this.onlineUsersListeners = this.onlineUsersListeners.filter(cb => cb !== callback);
     };
@@ -780,8 +790,21 @@ class SocketService {
 
   private emitOnlineUsersUpdate() {
     const players = this.gameState?.players || [];
-    this.onlineUsersListeners.forEach(callback => {
+    console.log('📡 FRONTEND: About to emit onlineUsersUpdate', {
+      players: players.length,
+      observers: this.observers.length,
+      observersList: this.observers,
+      listeners: this.onlineUsersListeners.length
+    });
+    console.log('📡 FRONTEND: Calling', this.onlineUsersListeners.length, 'listeners with observers:', this.observers);
+    this.onlineUsersListeners.forEach((callback, index) => {
+      console.log(`📡 FRONTEND: Calling listener ${index} with:`, { players: players.length, observers: this.observers });
+      try {
         callback(players, this.observers);
+        console.log(`📡 FRONTEND: Successfully called listener ${index}`);
+      } catch (error) {
+        console.error(`📡 FRONTEND: Error in listener ${index}:`, error);
+      }
     });
   }
 
