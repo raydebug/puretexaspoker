@@ -208,6 +208,19 @@
       - ❌ OnlineList UI: Shows 0 observers (WRONG)
     - **Technical Analysis**: Location updates happened immediately on join, but UI callbacks registered later in useEffect
     - **Solution**: Enhanced `onOnlineUsersUpdate()` method to immediately call new callbacks with current state upon registration
+
+38. 🐛 **CRITICAL FIX: "Invalid session data" Error on takeSeat** ✅ (June 12, 2025)
+    - **Problem**: Users got "Invalid session data. Please rejoin the table." error when trying to take seats
+    - **Root Cause**: `takeSeat` handler required 5 session data fields, but `joinTable` was only setting 4 of them
+    - **Symptoms**:
+      - ❌ Missing `gameId` and `nickname` in socket.data during takeSeat validation
+      - ❌ Session data set in two different places with incomplete data in first location
+      - ❌ Users disconnected immediately when attempting takeSeat
+    - **Solution**: 
+      - Removed duplicate/incomplete session data setting
+      - Ensured ALL required fields are set: `gameId`, `tableId`, `dbTableId`, `nickname`, `playerId`, `buyIn`
+      - Added debug logging for session data validation
+    - **Impact**: Users can now successfully take seats without session errors ✅
     - **Code Changes**: 
       - Modified socketService.ts: Added immediate callback invocation in registration method
       - Enhanced logging for debugging callback registration and execution timing
