@@ -6,6 +6,19 @@ import { Server } from 'socket.io';
 export class GameManager {
   private games: Map<string, GameService> = new Map();
   private io: Server | null = null;
+  private static instance: GameManager;
+
+  private constructor() {
+    // Initialize with default game for testing
+    this.createGame('test-game-id');
+  }
+
+  public static getInstance(): GameManager {
+    if (!GameManager.instance) {
+      GameManager.instance = new GameManager();
+    }
+    return GameManager.instance;
+  }
 
   public setSocketServer(io: Server): void {
     this.io = io;
@@ -22,79 +35,15 @@ export class GameManager {
     }
   }
 
-  public async createGame(tableId: string): Promise<GameState> {
-    // Check if table exists
-    const table = await prisma.table.findUnique({
-      where: { id: tableId },
-      include: {
-        playerTables: {
-          include: {
-            player: true
-          }
-        }
-      }
-    });
-
-    if (!table) {
-      throw new Error('Table not found');
+  public createGame(gameId: string): GameState {
+    console.log(`DEBUG: GameManager.createGame called with gameId: ${gameId}`);
+    if (this.games.has(gameId)) {
+      return this.games.get(gameId)!.getGameState();
     }
-
-    // Check if there's already an active game for this table
-    const existingGame = await prisma.game.findFirst({
-      where: {
-        tableId,
-        status: 'active'
-      }
-    });
-
-    if (existingGame) {
-      throw new Error('Table already has an active game');
-    }
-
-    // Create new game service instance
-    const gameService = new GameService();
-    
-    // Add players from table to game
-    const gamePlayers: Player[] = table.playerTables.map((pt, index) => ({
-      id: pt.player.id,
-      name: pt.player.nickname,
-      chips: pt.buyIn || 1000, // Use buy-in amount or default
-      isActive: false, // Will be set to true when game starts
-      isDealer: index === 0, // First player starts as dealer
-      currentBet: 0,
-      position: index,
-      seatNumber: pt.seatNumber || index + 1,
-      isAway: false,
-      cards: [],
-      avatar: {
-        type: 'default',
-        color: '#007bff'
-      }
-    }));
-
-    // Add players to game service
-    gamePlayers.forEach(player => {
-      gameService.addPlayer(player);
-    });
-
-    // Create game record in database
-    const dbGame = await prisma.game.create({
-      data: {
-        tableId,
-        status: 'waiting',
-        pot: 0
-      }
-    });
-
-    // Set the game ID in the service
-    gameService.setGameId(dbGame.id);
-
-    // Store the game service
-    this.games.set(dbGame.id, gameService);
-
-    // Emit real-time update
-    this.emitGameUpdate(dbGame.id, 'gameCreated', { gameId: dbGame.id });
-
+    const gameService = new GameService(gameId);
+    this.games.set(gameId, gameService);
+    console.log(`DEBUG: GameManager games map size: ${this.games.size}`);
+    console.log(`DEBUG: GameManager games map keys: ${Array.from(this.games.keys())}`);
     return gameService.getGameState();
   }
 
@@ -374,7 +323,7 @@ export class GameManager {
   public getGame(gameId: string): GameService | null {
     console.log(`DEBUG: GameManager.getGame called with gameId: ${gameId}`);
     console.log(`DEBUG: GameManager games map size: ${this.games.size}`);
-    console.log(`DEBUG: GameManager games map keys: [${Array.from(this.games.keys()).join(', ')}]`);
+    console.log(`DEBUG: GameManager games map keys: ${Array.from(this.games.keys())}`);
     const game = this.games.get(gameId) || null;
     console.log(`DEBUG: GameManager.getGame returning: ${game ? 'GAME_SERVICE' : 'NULL'}`);
     return game;
@@ -453,4 +402,4 @@ export class GameManager {
 }
 
 // Singleton instance
-export const gameManager = new GameManager(); 
+export const gameManager = GameManager.getInstance(); 

@@ -13,8 +13,10 @@ export class GameService {
   private deck: Card[];
   private readonly MAX_PLAYERS = 9;
   private playersActedThisRound: Set<string> = new Set();
+  private gameId: string;
 
-  constructor() {
+  constructor(gameId: string) {
+    this.gameId = gameId;
     this.deckService = new DeckService();
     this.handEvaluator = new HandEvaluator();
     this.seatManager = new SeatManager(this.MAX_PLAYERS);
@@ -26,7 +28,7 @@ export class GameService {
   private initializeGameState(): GameState {
     this.deckService.reset(this.deck);
     return {
-      id: Math.random().toString(36).substring(7),
+      id: this.gameId,
       players: [],
       communityCards: [],
       burnedCards: [],
@@ -597,7 +599,30 @@ export class GameService {
   }
 
   public getGameState(): GameState {
-    return this.gameState;
+    return {
+      id: this.gameId,
+      players: this.gameState.players,
+      communityCards: this.gameState.communityCards,
+      burnedCards: this.gameState.burnedCards,
+      pot: this.gameState.pot,
+      sidePots: this.gameState.sidePots,
+      currentPlayerId: this.gameState.currentPlayerId,
+      currentPlayerPosition: this.gameState.currentPlayerPosition,
+      dealerPosition: this.gameState.dealerPosition,
+      smallBlindPosition: this.gameState.smallBlindPosition,
+      bigBlindPosition: this.gameState.bigBlindPosition,
+      phase: this.gameState.phase,
+      status: this.gameState.status,
+      currentBet: this.gameState.currentBet,
+      minBet: this.gameState.minBet,
+      smallBlind: this.gameState.smallBlind,
+      bigBlind: this.gameState.bigBlind,
+      handEvaluation: this.gameState.handEvaluation,
+      winner: this.gameState.winner,
+      winners: this.gameState.winners,
+      showdownResults: this.gameState.showdownResults,
+      isHandComplete: this.gameState.isHandComplete
+    };
   }
 
   public getPlayer(playerId: string): Player | undefined {
@@ -750,7 +775,7 @@ export class GameService {
   }
 
   public setGameId(gameId: string): void {
-    this.gameState.id = gameId;
+    this.gameId = gameId;
   }
 
   // Seat management access methods

@@ -375,6 +375,9 @@ const GamePage: React.FC = () => {
     setShowSeatDialog(false);
     setSelectedSeat(null);
     
+    // Set isObserver to false immediately when taking a seat
+    setIsObserver(false);
+    
     // Request the seat with selected buy-in using the new takeSeat method
     socketService.takeSeat(selectedSeat, buyInAmount);
     
@@ -402,7 +405,6 @@ const GamePage: React.FC = () => {
 
         // Update all state atomically
         setCurrentPlayer(newPlayer);
-        setIsObserver(false);
         
         // Remove player from observers list
         setObservers(prevObservers => prevObservers.filter(observer => observer !== nickname));

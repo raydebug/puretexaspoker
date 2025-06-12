@@ -25,7 +25,7 @@ interface ServerToClientEvents {
   seatError: (error: string) => void;
   seatTaken: (data: { seatNumber: number; playerId: string; gameState: any }) => void;
   'location:updated': (data: { playerId: string; nickname: string; table: number | null; seat: number | null }) => void;
-  'location:usersAtTable': (data: { tableId: number; observers: string[]; players: { nickname: string; seatNumber: number }[] }) => void;
+  'location:usersAtTable': (data: { tableId: number; totalUsers: number }) => void;
   'player:disconnected': (data: { playerId: string; nickname: string; timeoutSeconds: number }) => void;
   'player:reconnected': (data: { playerId: string; nickname: string }) => void;
   'player:removedFromSeat': (data: { playerId: string; nickname: string; seatNumber: number; reason: string }) => void;
@@ -61,21 +61,14 @@ export const setupLobbyHandlers = (
     const observers = locationManager.getObserversAtTable(tableId);
     const players = locationManager.getPlayersAtTable(tableId);
     
-    const observerNames = observers.map(user => user.nickname);
-    const playerData = players.map(user => {
-      return {
-        nickname: user.nickname,
-        seatNumber: user.seat!
-      };
-    });
-
+    const totalUsers = observers.length + players.length;
+    
     io.to(`game:${gameId}`).emit('location:usersAtTable', {
       tableId,
-      observers: observerNames,
-      players: playerData
+      totalUsers
     });
     
-    console.log(`DEBUG: Broadcasted table ${tableId} users - Observers: ${observerNames.length}, Players: ${playerData.length}`);
+    console.log(`DEBUG: Broadcasted table ${tableId} users - Total: ${totalUsers}`);
   };
 
   // Helper function to handle player reconnection

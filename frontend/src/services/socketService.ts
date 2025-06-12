@@ -29,7 +29,7 @@ export interface ChatMessage {
 // Extend Socket type to include EventEmitter methods
 type ExtendedSocket = Socket & EventEmitter;
 
-class SocketService {
+export class SocketService {
   private socket: ExtendedSocket | null = null;
   private isConnecting = false;
   private connectionLock = false;
@@ -51,6 +51,8 @@ class SocketService {
   private currentUserId: string | null = null;
   private currentUserTable: number | null = null; // Track current user's table (null = lobby)
   private currentUserSeat: number | null = null; // Track current user's seat (null = observing)
+  private isPlayer: boolean = false;
+  private isObserver: boolean = false;
 
   // Event listeners
   private errorListeners: ((error: { message: string; context: string; severity?: string; retryable?: boolean; suggestedNames?: string[] }) => void)[] = [];
@@ -300,9 +302,9 @@ class SocketService {
       console.log('🎯 FRONTEND: Broadcasting observer update to UI components');
     });
 
-    socket.on('location:usersAtTable', (data: { tableId: number; observers: string[]; players: { nickname: string; seatNumber: number }[] }) => {
+    socket.on('location:usersAtTable', (data: { tableId: number; totalUsers: number }) => {
       console.log('DEBUG: Frontend received location:usersAtTable event:', data);
-      this.observers = data.observers;
+      // Update the total users count in the UI
       this.emitOnlineUsersUpdate();
     });
 
@@ -311,7 +313,14 @@ class SocketService {
       
       // Update location if this is for the current user
       if (this.socket?.id === data.playerId) {
-        // Update current user location to seated
+        // Set player state first
+        const playerWhoTookSeat = data.gameState?.players?.find((p: any) => p && p.id === data.playerId);
+        if (playerWhoTookSeat) {
+          this.currentPlayer = playerWhoTookSeat;
+          console.log(`🎯 FRONTEND: Set current player state for seat ${data.seatNumber}:`, playerWhoTookSeat);
+        }
+
+        // Then update location
         if (this.currentUserTable !== null) {
           this.currentUserSeat = data.seatNumber;
           console.log(`🎯 FRONTEND: Took seat ${data.seatNumber}, location updated to: table=${this.currentUserTable}, seat=${this.currentUserSeat}`);
@@ -325,8 +334,7 @@ class SocketService {
         this.emitGameStateUpdate(data.gameState);
       }
       
-      // The location:updated event will handle user list updates
-      // Find the player who took the seat and remove them from observers
+      // Remove from observers list after player state is set
       if (data.gameState && data.gameState.players) {
         const playerWhoTookSeat = data.gameState.players.find((p: any) => p && p.id === data.playerId);
         if (playerWhoTookSeat && playerWhoTookSeat.name) {
@@ -1009,37 +1017,31 @@ class SocketService {
   }
 
   // New takeSeat method for the room-based system (replaces requestSeat for observers->players)
-  takeSeat(seatNumber: number, buyIn: number) {
-    try {
-      if (seatNumber === undefined || !buyIn) {
-        throw new Error('Invalid takeSeat parameters');
-      }
-      
+  public async takeSeat(seatNumber: number, buyIn: number): Promise<void> {
+    if (!this.socket?.connected) {
+      console.warn('Socket not connected, attempting to reconnect...');
+      await this.connect();
+      // Wait for connection
+      await new Promise(resolve => setTimeout(resolve, 1000));
       if (!this.socket?.connected) {
-        console.error('🚨 CRITICAL BUG: Socket not connected during takeSeat - this will create a new socket and lose session data!');
-        console.error('Current socket state:', {
-          socket: !!this.socket,
-          connected: this.socket?.connected,
-          id: this.socket?.id
-        });
-        
-        // DO NOT reconnect as this will create a new socket and lose session data
-        // Instead, emit an error to inform the user
-        this.emitError({ 
-          message: 'Connection lost. Please refresh the page and rejoin the table.', 
-          context: 'takeSeat:connection_lost' 
-        });
+        throw new Error('Failed to reconnect socket');
+      }
+    }
+
+    return new Promise((resolve, reject) => {
+      if (!this.socket) {
+        reject(new Error('Socket not initialized'));
         return;
       }
-      
-      console.log(`DEBUG: takeSeat called with socket ID: ${this.socket.id}, connected: ${this.socket.connected}`);
-      this.socket.emit('takeSeat', { seatNumber, buyIn });
-    } catch (error) {
-      errorTrackingService.trackError(error as Error, 'takeSeat', {
-        seatNumber,
-        buyIn
+
+      this.socket.emit('takeSeat', { seatNumber, buyIn }, (response: any) => {
+        if (response.error) {
+          reject(new Error(response.error));
+        } else {
+          resolve();
+        }
       });
-    }
+    });
   }
 
   onSeatUpdate(callback: SeatUpdateCallback) {
@@ -1646,55 +1648,26 @@ class SocketService {
    * Check if current user is present in players or observers list
    * If not present but on game page, redirect to lobby
    */
-  private checkUserPresenceAndRedirect(state: GameState) {
-    // Only perform check if we're in browser environment
-    if (typeof window === 'undefined') return;
-    
-    const currentPath = window.location.pathname;
-    
-    // Only check if user is on a game page (not lobby)
-    if (!currentPath.includes('/game/')) return;
-    
-    const savedNickname = cookieService.getNickname();
-    if (!savedNickname) {
-      console.log('🚀 REDIRECT: No nickname found, redirecting to lobby');
-      navigationService.navigate('/', true);
+  private checkUserPresenceAndRedirect() {
+    if (!this.socket?.connected) {
+      console.warn('Socket not connected during presence check');
       return;
     }
-    
-    // Extract table ID from path (e.g., /game/3 -> 3)
-    const tableIdMatch = currentPath.match(/\/game\/(\d+)/);
-    const currentTableId = tableIdMatch ? tableIdMatch[1] : null;
-    
-    // Check if user's location indicates they should be at this table
-    const expectedTableId = currentTableId ? parseInt(currentTableId) : null;
-    const userLocation = this.getCurrentUserLocation(); // Use the method that converts table/seat to string
-    
-    // If user's location matches expected location, they're in the right place
-    if (expectedTableId && this.currentUserTable === expectedTableId) {
-      console.log(`🎯 PRESENCE: User at table ${this.currentUserTable} matches expected table ${expectedTableId}, allowing stay`);
+
+    const currentLocation = this.getCurrentUserLocation();
+    console.log('Current user location:', currentLocation);
+
+    if (!currentLocation) {
+      console.warn('No current location found');
       return;
     }
-    
-    // Check if user is in players list
-    const isPlayer = state && state.players && state.players.some(player => 
-      player && player.name === savedNickname
-    );
-    
-    // Check if user is in observers list
-    const isObserver = this.observers.includes(savedNickname);
-    
-    if (!isPlayer && !isObserver) {
-      console.log(`🚀 REDIRECT: User "${savedNickname}" not found in players or observers list`);
-      console.log(`🚀 REDIRECT: User location: "${userLocation}", Expected table: ${expectedTableId}`);
-      console.log('🚀 REDIRECT: Current players:', state?.players?.map(p => p?.name) || []);
-      console.log('🚀 REDIRECT: Current observers:', this.observers);
-      
-      // Use navigationService to redirect to lobby
-      navigationService.navigate('/', true);
-      
-      // Also emit a system message to explain why they were redirected
-      this.emitSystemMessage('You have been redirected to the lobby because you are not connected to this table.');
+
+    const [tableId] = currentLocation.split('-seat-');
+    const expectedTable = `table-${tableId}`;
+
+    if (!this.isPlayer && !this.isObserver && this.socket.connected) {
+      console.log('User not found in players or observers, redirecting to lobby');
+      window.location.href = '/';
     }
   }
 
@@ -1705,7 +1678,7 @@ class SocketService {
     }
     
     // Check if current user should be at this table - if not, redirect to lobby
-    this.checkUserPresenceAndRedirect(state);
+    this.checkUserPresenceAndRedirect();
     
     this.gameStateListeners.forEach(callback => callback(state));
   }

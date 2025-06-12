@@ -211,23 +211,10 @@ const OnlineList = styled.div`
   color: white;
   min-width: 200px;
 
-  .online-list {
-    margin-bottom: 20px;
-  }
-
-  .players-list {
-    margin-bottom: 20px;
-  }
-
-  .observers-list {
-    margin-bottom: 20px;
-  }
-
-  .player-name {
-    display: block;
-    margin: 5px 0;
-    font-weight: normal;
-    opacity: 1;
+  .online-count {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #ffd700;
   }
 `;
 
@@ -496,29 +483,8 @@ export const GameLobby: React.FC<GameLobbyProps> = ({ onJoinGame }) => {
             )}
           </Table>
           <OnlineList>
-            <div className="online-list">
-              <h3>Online Players</h3>
-              {players.map((player) => (
-                <span key={player.id} className="player-name">
-                  {player.name} {player.isAway ? "(Away)" : ""}
-                </span>
-              ))}
-            </div>
-            <div className="players-list">
-              <h3>Players</h3>
-              {Object.entries(occupiedSeats).map(([seat, name]) => (
-                <span key={seat} className="player-name">
-                  {name}
-                </span>
-              ))}
-            </div>
-            <div className="observers-list">
-              <h3>Observers</h3>
-              {observers.map((name) => (
-                <span key={name} className="player-name">
-                  {name}
-                </span>
-              ))}
+            <div className="online-count">
+              Online Users: {players.length + observers.length}
             </div>
           </OnlineList>
         </>
