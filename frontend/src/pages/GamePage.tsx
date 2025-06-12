@@ -143,6 +143,11 @@ const GamePage: React.FC = () => {
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [observers, setObservers] = useState<string[]>([]);
+  
+  // Add effect to log observer changes
+  useEffect(() => {
+    console.log('🎯 GamePage: Observers state updated:', observers);
+  }, [observers]);
   const [isLoading, setIsLoading] = useState(true);
   const [joinAttempted, setJoinAttempted] = useState(false);
   const [isObserver, setIsObserver] = useState(true); // Start as observer
@@ -247,6 +252,11 @@ const GamePage: React.FC = () => {
         
         // Listen for observer updates
         socketService.onOnlineUsersUpdate((players: Player[], observerList: string[]) => {
+          console.log('🎯 GamePage: Received onlineUsersUpdate:', { 
+            players: players.length, 
+            observerList: observerList.length,
+            observers: observerList 
+          });
           setObservers(observerList);
           if (gameState) {
             const newGameState = { ...gameState, players };

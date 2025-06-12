@@ -113,6 +113,14 @@ export const OnlineList: React.FC<OnlineListProps> = ({
   observers,
   currentPlayerId
 }) => {
+  // Add logging to track prop changes
+  console.log('🎯 OnlineList: Component rendering with props:', {
+    players: players.length,
+    observers: observers.length,
+    observersList: observers,
+    currentPlayerId
+  });
+
   // Create a basic avatar for observers
   const createObserverAvatar = (name: string) => {
     if (!name || typeof name !== 'string') {
@@ -131,6 +139,7 @@ export const OnlineList: React.FC<OnlineListProps> = ({
 
   // Filter out any undefined/null observers
   const validObservers = observers.filter(observer => observer && typeof observer === 'string');
+  console.log('🎯 OnlineList: Valid observers after filtering:', validObservers);
 
   return (
     <ListContainer data-testid="online-users-list">

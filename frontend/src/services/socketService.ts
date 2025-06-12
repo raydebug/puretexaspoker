@@ -293,8 +293,11 @@ class SocketService {
     });
 
     socket.on('location:updated', (data: { playerId: string; nickname: string; location?: string; table?: number | null; seat?: number | null }) => {
-      console.log('DEBUG: Frontend received location:updated event:', data);
+      console.log('🎯 FRONTEND: Received location:updated event:', data);
+      console.log('🎯 FRONTEND: Current observers before update:', this.observers);
       this.handleLocationUpdate(data);
+      console.log('🎯 FRONTEND: Current observers after update:', this.observers);
+      console.log('🎯 FRONTEND: Broadcasting observer update to UI components');
     });
 
     socket.on('location:usersAtTable', (data: { tableId: number; observers: string[]; players: { nickname: string; seatNumber: number }[] }) => {
@@ -840,9 +843,15 @@ class SocketService {
       
     } else if (seat === null) {
       // User is observing a table (table=X, seat=null)
+      console.log(`🎯 FRONTEND: User ${nickname} is observing table ${table}`);
+      console.log(`🎯 FRONTEND: Current observers before adding:`, this.observers);
       if (!this.observers.includes(nickname)) {
         this.observers.push(nickname);
+        console.log(`✅ FRONTEND: Added ${nickname} to observers list`);
+      } else {
+        console.log(`ℹ️ FRONTEND: ${nickname} already in observers list`);
       }
+      console.log(`🎯 FRONTEND: Current observers after processing:`, this.observers);
       this.emitOnlineUsersUpdate();
       
     } else {
