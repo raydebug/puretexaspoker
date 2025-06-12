@@ -198,6 +198,21 @@
     - **Goal**: Replace location strings with structured table/seat attributes for better data management
     - **Schema Changes**: 
       - Updated Player model: `location String` → `table Int? seat Int?`
+
+37. 🐛 **CRITICAL FIX: Observer List Display Timing Issue** ✅ (June 12, 2025)
+    - **Problem**: Observers wouldn't appear in UI despite being correctly tracked in backend/socketService
+    - **Root Cause**: GamePage's `onOnlineUsersUpdate` callback was registered AFTER location update already occurred
+    - **Symptoms Identified**:
+      - ✅ SocketService observers array: `['username']` (CORRECT)
+      - ❌ GamePage observers state: `[]` (WRONG - empty array) 
+      - ❌ OnlineList UI: Shows 0 observers (WRONG)
+    - **Technical Analysis**: Location updates happened immediately on join, but UI callbacks registered later in useEffect
+    - **Solution**: Enhanced `onOnlineUsersUpdate()` method to immediately call new callbacks with current state upon registration
+    - **Code Changes**: 
+      - Modified socketService.ts: Added immediate callback invocation in registration method
+      - Enhanced logging for debugging callback registration and execution timing
+    - **Testing**: Created comprehensive E2E tests to validate observer list functionality
+    - **Impact**: CRITICAL UI bug resolved - observers now appear instantly when joining tables, fixing major user experience issue
       - Logic: `table=null, seat=null` → lobby; `table=X, seat=null` → observing; `table=X, seat=Y` → playing
     - **Backend Changes**:
       - Complete LocationManager refactor with table/seat-based methods (`moveToTableObserver`, `moveToTableSeat`, `moveToLobby`)

@@ -6,6 +6,18 @@ A modern, real-time Texas Hold'em poker game built with React, TypeScript, Node.
 
 ### Recent Major Features Implemented
 
+#### ✅ Observer List Display Fix (COMPLETED - June 12, 2025)
+- **Issue**: Critical timing bug where observers wouldn't appear in the UI despite being correctly tracked
+- **Root Cause**: GamePage's onOnlineUsersUpdate callback was registered AFTER the location update occurred
+- **Symptoms**: 
+  - SocketService observers array: ✅ ['username'] (CORRECT)
+  - GamePage observers state: ❌ [] (WRONG - empty array)
+  - OnlineList UI: ❌ Shows 0 observers (WRONG)
+- **Solution**: Enhanced onOnlineUsersUpdate() to immediately call new callbacks with current state
+- **Technical**: Added immediate callback invocation in SocketService registration method
+- **Testing**: Created comprehensive E2E test to validate observer list functionality
+- **Status**: Critical UI bug resolved, observers now appear instantly when joining tables
+
 #### ✅ Location System Refactoring (COMPLETED)
 - **Change**: Refactored location system from location strings to table/seat attributes
 - **Schema**: Updated Player model from `location` string to `table` (Int?) and `seat` (Int?) fields
