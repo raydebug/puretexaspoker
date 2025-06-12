@@ -609,6 +609,16 @@ export class GameService {
       throw new Error('Maximum number of players reached');
     }
 
+    // Check if player already exists to prevent duplicates (by ID or nickname)
+    const existingPlayer = this.getPlayer(player.id);
+    if (existingPlayer) {
+      console.log(`DEBUG: Player ${player.name} (${player.id}) already exists in game, removing old instance`);
+      this.removePlayer(player.id);
+    }
+
+    // Also remove any players with the same nickname to prevent nickname-based duplicates
+    this.removePlayerByNickname(player.name);
+
     // If player has a seat number, try to assign that specific seat
     if (player.seatNumber) {
       const result = this.seatManager.assignSeat(player.id, player.seatNumber);
@@ -626,6 +636,7 @@ export class GameService {
     }
 
     this.gameState.players.push(player);
+    console.log(`DEBUG: Successfully added player ${player.name} to seat ${player.seatNumber}`);
   }
 
   public removePlayer(playerId: string): void {
@@ -634,6 +645,24 @@ export class GameService {
     
     // Remove from players array
     this.gameState.players = this.gameState.players.filter(p => p.id !== playerId);
+  }
+
+  public removePlayerByNickname(nickname: string): void {
+    // Find all players with this nickname and remove them
+    const playersToRemove = this.gameState.players.filter(p => p.name === nickname);
+    
+    if (playersToRemove.length > 0) {
+      console.log(`DEBUG: Removing ${playersToRemove.length} duplicate players with nickname "${nickname}"`);
+      
+      playersToRemove.forEach(player => {
+        // Remove from seat manager
+        this.seatManager.leaveSeat(player.id);
+        console.log(`DEBUG: Removed player ${player.name} (${player.id}) from seat ${player.seatNumber}`);
+      });
+      
+      // Remove from players array
+      this.gameState.players = this.gameState.players.filter(p => p.name !== nickname);
+    }
   }
 
   public updatePlayerStatus(playerId: string, isAway: boolean): void {

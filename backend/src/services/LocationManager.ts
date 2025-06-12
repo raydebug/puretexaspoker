@@ -188,6 +188,25 @@ export class LocationManager {
   }
 
   /**
+   * Remove all instances of a user by nickname (handles duplicate reconnections)
+   */
+  removeUserByNickname(nickname: string): void {
+    const toRemove: string[] = [];
+    for (const [playerId, user] of this.userLocations.entries()) {
+      if (user.nickname === nickname) {
+        toRemove.push(playerId);
+      }
+    }
+    
+    if (toRemove.length > 0) {
+      console.log(`LocationManager: Removing ${toRemove.length} instances of nickname "${nickname}"`);
+      toRemove.forEach(playerId => {
+        this.userLocations.delete(playerId);
+      });
+    }
+  }
+
+  /**
    * Get location display string for logging/debugging
    */
   getLocationDisplay(playerId: string): string {

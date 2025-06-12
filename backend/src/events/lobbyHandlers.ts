@@ -195,9 +195,88 @@ export const setupLobbyHandlers = (
         return;
       }
 
+      // Clean up any existing instances of this nickname to prevent duplicates
+      locationManager.removeUserByNickname(nickname);
+      
       // Update user location immediately in backend - move to table observer
       await locationManager.moveToTableObserver(socket.id, nickname, tableId);
       console.log(`🎯 BACKEND: Successfully updated ${nickname} to observe table ${tableId} IMMEDIATELY`);
+
+      // CRITICAL FIX: Set up session data for takeSeat functionality
+      // Find the table and game to set session data properly
+      console.log(`🎯 BACKEND: Setting up session data for table ${tableId}...`);
+      const lobbyTable = tableManager.getTable(tableId);
+      console.log(`🎯 BACKEND: Found lobby table:`, lobbyTable ? 'YES' : 'NO');
+      if (lobbyTable) {
+        // Create or find corresponding database table
+        const dbTableName = `${lobbyTable.name} (ID: ${tableId})`;
+        let dbTable = await prisma.table.findFirst({
+          where: { name: dbTableName }
+        });
+
+        if (!dbTable) {
+          // Create database table if it doesn't exist
+          dbTable = await prisma.table.create({
+            data: {
+              name: dbTableName,
+              maxPlayers: lobbyTable.maxPlayers,
+              smallBlind: lobbyTable.smallBlind,
+              bigBlind: lobbyTable.bigBlind,
+              minBuyIn: lobbyTable.minBuyIn,
+              maxBuyIn: lobbyTable.maxBuyIn
+            }
+          });
+        }
+
+        // Find or create game for this table
+        let existingGame = await prisma.game.findFirst({
+          where: {
+            tableId: dbTable.id,
+            status: { in: ['waiting', 'active'] }
+          }
+        });
+
+        let gameId: string;
+        if (!existingGame) {
+          // Create new game
+          const gameState = await gameManager.createGame(dbTable.id);
+          gameId = gameState.id!;
+        } else {
+          gameId = existingGame.id;
+          
+          // Ensure GameService exists in memory
+          let gameService = gameManager.getGame(gameId);
+          if (!gameService) {
+            // Recreate game service if needed - simplified to focus on session data fix
+            console.log(`🎯 BACKEND: Recreating game service for existing game ${gameId}...`);
+            const gameState = await gameManager.createGame(dbTable.id);
+            gameId = gameState.id!;
+            console.log(`🎯 BACKEND: Recreated game with new ID: ${gameId}`);
+          }
+        }
+
+        // SET SESSION DATA - This is the critical fix!
+        socket.data.buyIn = 200; // Default buy-in for observers who want to take seats
+        socket.data.gameId = gameId;
+        socket.data.tableId = tableId;
+        socket.data.dbTableId = dbTable.id;
+        socket.data.nickname = nickname;
+        socket.data.playerId = socket.id;
+
+        console.log(`🎯 BACKEND: Session data SET for immediate location update - socket ${socket.id}:`, {
+          buyIn: socket.data.buyIn,
+          gameId: socket.data.gameId,
+          tableId: socket.data.tableId,
+          dbTableId: socket.data.dbTableId,
+          nickname: socket.data.nickname,
+          playerId: socket.data.playerId
+        });
+
+        // Join socket rooms
+        socket.join(`table:${tableId}`);
+        socket.join(`game:${gameId}`);
+        gameManager.joinGameRoom(gameId, socket.id);
+      }
 
       // Emit location update event to notify all clients
       io.emit('location:updated', { 
@@ -208,8 +287,9 @@ export const setupLobbyHandlers = (
       });
       console.log(`🎯 BACKEND: Broadcasted immediate location:updated event for ${nickname}`);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('🎯 BACKEND: Error in immediate location update:', error);
+      console.error('🎯 BACKEND: Error stack:', error.stack);
     }
   });
 
@@ -489,11 +569,11 @@ export const setupLobbyHandlers = (
     
     try {
       // Validate we have the required data from when they joined as observer
-      const gameId = socket.data.gameId;
-      const tableId = socket.data.tableId;
-      const dbTableId = socket.data.dbTableId;
-      const nickname = socket.data.nickname;
-      const playerId = socket.data.playerId;
+      let gameId = socket.data.gameId;
+      let tableId = socket.data.tableId;
+      let dbTableId = socket.data.dbTableId;
+      let nickname = socket.data.nickname;
+      let playerId = socket.data.playerId;
       
       console.log(`DEBUG: Backend session data check:`, {
         gameId: !!gameId,
@@ -505,9 +585,88 @@ export const setupLobbyHandlers = (
       });
       
       if (!gameId || !tableId || !dbTableId || !nickname || !playerId) {
-        console.log(`DEBUG: Backend missing session data - sending seatError`);
-        socket.emit('seatError', 'Invalid session data. Please rejoin the table.');
-        return;
+        console.log(`DEBUG: Backend missing session data - attempting to reconstruct from user location`);
+        
+        // CRITICAL FIX: Reconstruct session data from user's current location
+        const userLocation = locationManager.getUserLocation(socket.id);
+        if (!userLocation || userLocation.table === null) {
+          console.log(`DEBUG: Backend cannot reconstruct - user not at any table`);
+          socket.emit('seatError', 'Invalid session data. Please rejoin the table.');
+          return;
+        }
+        
+        // Get player info from database
+        const player = await prisma.player.findUnique({
+          where: { id: socket.id }
+        });
+        
+        if (!player) {
+          console.log(`DEBUG: Backend cannot reconstruct - player not found in database`);
+          socket.emit('seatError', 'Invalid session data. Please rejoin the table.');
+          return;
+        }
+        
+        // Reconstruct missing session data
+        const reconstructedTableId = userLocation.table;
+        const reconstructedNickname = player.nickname;
+        const reconstructedPlayerId = socket.id;
+        
+        // Find the corresponding database table and game
+        const lobbyTable = tableManager.getTable(reconstructedTableId);
+        if (!lobbyTable) {
+          console.log(`DEBUG: Backend cannot reconstruct - lobby table ${reconstructedTableId} not found`);
+          socket.emit('seatError', 'Invalid session data. Please rejoin the table.');
+          return;
+        }
+        
+        const dbTableName = `${lobbyTable.name} (ID: ${reconstructedTableId})`;
+        const dbTable = await prisma.table.findFirst({
+          where: { name: dbTableName }
+        });
+        
+        if (!dbTable) {
+          console.log(`DEBUG: Backend cannot reconstruct - database table not found`);
+          socket.emit('seatError', 'Invalid session data. Please rejoin the table.');
+          return;
+        }
+        
+        // Find existing game for this table
+        const existingGame = await prisma.game.findFirst({
+          where: {
+            tableId: dbTable.id,
+            status: { in: ['waiting', 'active'] }
+          }
+        });
+        
+        if (!existingGame) {
+          console.log(`DEBUG: Backend cannot reconstruct - no active game for table`);
+          socket.emit('seatError', 'Invalid session data. Please rejoin the table.');
+          return;
+        }
+        
+        // Reconstruct session data
+        socket.data.gameId = existingGame.id;
+        socket.data.tableId = reconstructedTableId;
+        socket.data.dbTableId = dbTable.id;
+        socket.data.nickname = reconstructedNickname;
+        socket.data.playerId = reconstructedPlayerId;
+        socket.data.buyIn = buyIn; // Use the provided buyIn
+        
+        console.log(`DEBUG: Backend successfully reconstructed session data:`, {
+          gameId: socket.data.gameId,
+          tableId: socket.data.tableId,
+          dbTableId: socket.data.dbTableId,
+          nickname: socket.data.nickname,
+          playerId: socket.data.playerId,
+          buyIn: socket.data.buyIn
+        });
+        
+        // Update variables for the rest of the function
+        gameId = socket.data.gameId;
+        tableId = socket.data.tableId;
+        dbTableId = socket.data.dbTableId;
+        nickname = socket.data.nickname;
+        playerId = socket.data.playerId;
       }
       
       // Get the table info for buy-in validation
@@ -562,6 +721,9 @@ export const setupLobbyHandlers = (
       };
       
       console.log(`DEBUG: Backend attempting to add player to seat ${seatNumber}:`, playerData);
+      
+      // Clean up any existing instances of this nickname to prevent duplicates
+      locationManager.removeUserByNickname(nickname);
       
       // Add player to the game
       gameService.addPlayer(playerData);

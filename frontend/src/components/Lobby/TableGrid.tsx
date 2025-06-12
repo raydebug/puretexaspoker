@@ -396,7 +396,13 @@ export const TableGrid: React.FC<TableGridProps> = ({ filters }) => {
       <InfoRow>
         <span>Game Type: {table.gameType}</span>
       </InfoRow>
-      <JoinButton data-testid={`join-table-${table.id}`}>
+      <JoinButton 
+        data-testid={`join-table-${table.id}`}
+        onClick={(e) => {
+          e.stopPropagation(); // Prevent card click
+          handleTableClick(table);
+        }}
+      >
         Join Table
       </JoinButton>
     </Card>
