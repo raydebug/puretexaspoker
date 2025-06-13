@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { cookieService } from '../services/cookieService';
 import { socketService } from '../services/socketService';
 import { Player } from '../types/shared';
+import { OnlineList as OnlineListComponent } from './OnlineList';
 
 const LobbyContainer = styled.div`
   min-height: 100vh;
@@ -480,7 +481,7 @@ export const GameLobby: React.FC<GameLobbyProps> = ({ onJoinGame }) => {
               </BettingControls>
             )}
           </Table>
-          <OnlineList onlineUsers={onlineUsers} />
+          <OnlineListComponent onlineUsers={onlineUsers} />
         </>
       )}
       {showSeatModal && (

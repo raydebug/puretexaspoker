@@ -1207,9 +1207,9 @@ export class SocketService {
   /**
    * Call in game
    */
-  call(gameId: string, playerId: string) {
+  call(gameId: string, playerId: string, amount?: number) {
     if (this.socket && this.socket.connected) {
-      this.socket.emit('game:action', { gameId, playerId, action: 'call' });
+      this.socket.emit('game:action', { gameId, playerId, action: 'call', amount });
     }
   }
 
