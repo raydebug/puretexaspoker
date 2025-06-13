@@ -23,6 +23,8 @@
 - Socket connection race condition - Fixed timing issue when joining tables
 - Missing resetConnectionState method - Added for proper state management
 - Missing getter methods - Added getCurrentPlayer, getGameState, getSocket methods
+- Socket event mismatch fix - Critical fix for frontend/backend event communication
+- Added takeSeat method - Enables observers to become players
 
 ## 🚧 Ongoing Tasks
 
