@@ -26,22 +26,26 @@
   * Implemented seat numbers, status indicators, and proper highlighting  
   * All unit tests (8/8) and integration tests (2/2) passing
   * E2E test: Online Users After Login - 5/5 tests passing
+- **Join Table Button Disabled State for Anonymous Users** ✅ **COMPLETE**
+  * **Feature Spec**: `cypress/e2e/features/join-table-anonymous-disabled.feature` (5 scenarios)
+  * **Test Suite**: `cypress/e2e/join-table-button-disabled-anonymous.cy.ts` - **9/9 tests passing**
+  * **Implementation**: Complete button state management for anonymous/authenticated users
+  * **Features Implemented**:
+    - Disabled join table buttons when user is anonymous
+    - Button text changes: "Join Table" → "Login to Join"
+    - Inactive styling: opacity 0.6, cursor not-allowed, gray colors
+    - Tooltip: "Please login to join tables" using title attribute
+    - Login modal triggered when disabled button clicked (fallback)
+    - Proper state transitions on login/logout
+    - Navigation prevention for disabled buttons
 
 ## 🔄 Currently Working On
 
 ### High Priority
-- **Join Table Button States for Anonymous Users** 📝 **SPECS & TESTS READY**
-  * **Feature Spec**: `cypress/e2e/features/join-table-anonymous-disabled.feature`
-  * **Test Suite**: `cypress/e2e/join-table-button-disabled-anonymous.cy.ts` (9 scenarios)
-  * **Current Status**: All 9 tests failing (expected - feature not implemented)
-  * **Requirements**:
-    - Disable join table buttons when user is anonymous
-    - Show "Login to Join" text instead of "Join Table"
-    - Apply inactive styling (opacity, cursor: not-allowed)
-    - Add tooltip: "Please login to join tables"
-    - Enable buttons after login, disable after logout
-    - Prevent navigation when disabled
-    - Optional: Click disabled button triggers login modal
+- **Observer to Player Transition Online List** 📝 **TESTS READY**
+  * **Test Suite**: `cypress/e2e/observer-to-player-online-list.cy.ts`
+  * **Requirements**: User appears in observers list when joining table, then moves to players list after taking seat
+  * **Current Status**: Test needs implementation verification
 
 ## 🚧 Ongoing Tasks
 
