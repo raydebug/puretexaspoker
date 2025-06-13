@@ -103,6 +103,27 @@ export class SocketService {
     }
   }
 
+  /**
+   * Test-only method to get lobby tables
+   */
+  getLobbyTables() {
+    return this.lobbyTables;
+  }
+
+  /**
+   * Test-only method to get connection attempts
+   */
+  getConnectionAttempts() {
+    return this.connectionAttempts;
+  }
+
+  /**
+   * Test-only method to check if connection is locked
+   */
+  isLocked() {
+    return this.connectionLock;
+  }
+
   // Add onGameState method
   onGameState(callback: (state: GameState) => void): () => void {
     if (this.socket) {

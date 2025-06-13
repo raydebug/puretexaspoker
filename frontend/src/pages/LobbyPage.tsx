@@ -186,7 +186,7 @@ const LobbyPage: React.FC = () => {
         socketService.leaveTable();
         
         socketService.requestLobbyTables();
-        socketService.onOnlineUsersUpdate((total) => {
+        socketService.onOnlineUsersUpdate((total: number) => {
           setOnlineUsers(total);
         });
       } catch (error) {
