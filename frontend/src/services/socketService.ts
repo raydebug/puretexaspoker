@@ -103,11 +103,6 @@ export class SocketService {
     }
   }
 
-  // Add getSocket method
-  getSocket(): ExtendedSocket | null {
-    return this.socket;
-  }
-
   // Add onGameState method
   onGameState(callback: (state: GameState) => void): () => void {
     if (this.socket) {
@@ -945,6 +940,20 @@ export class SocketService {
   }
 
   /**
+   * Get current player data
+   */
+  getCurrentPlayer() {
+    return this.currentPlayer;
+  }
+
+  /**
+   * Get current game state
+   */
+  getGameState() {
+    return this.gameState;
+  }
+
+  /**
    * Get initial game state for a table
    */
   private getInitialGameState(tableId: string) {
@@ -1009,6 +1018,13 @@ export class SocketService {
       // Join as observer
       this.socket.emit('table:observe', { tableId, nickname });
     }
+  }
+
+  /**
+   * Get socket instance
+   */
+  getSocket() {
+    return this.socket;
   }
 }
 
