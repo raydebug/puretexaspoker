@@ -40,6 +40,16 @@ A modern, real-time Texas Hold'em poker game built with React, TypeScript, Node.
 - **Testing**: ✅ 5/5 E2E tests passing - Complete online users flow coverage
 - **Status**: ✅ **LIVE USER ENGAGEMENT** - Real-time community presence indicator
 
+#### ✅ Observers List Display in Game Tables (COMPLETED - June 13, 2025)
+- **Context-Aware Display**: Game table pages show "Observers (X)" list instead of online users count
+- **Lobby Preservation**: Lobby pages continue to show "Online Users: X" count as before
+- **Dual Functionality**: OnlineList component supports both display modes via showMode prop
+- **Real-Time Updates**: Observers list updates instantly when users join/leave tables
+- **Clean UI**: Game tables show individual observer names, empty state shows "No observers"
+- **Format Consistency**: "Observers (1)", "Observers (2)" etc. with individual name display
+- **Testing**: ✅ 5/6 observer tests passing - Core functionality verified working correctly
+- **Status**: ✅ **ENHANCED UX** - Context-appropriate user presence display
+
 #### ✅ Session Data Bug Fix (COMPLETED - June 12, 2025) 
 - **Issue**: Critical "Invalid session data. Please rejoin the table." error preventing seat-taking
 - **Root Cause**: Frontend takeSeat method was creating new socket connections, wiping session data
