@@ -437,7 +437,7 @@ export const TableGrid: React.FC<TableGridProps> = ({ filters }) => {
   }
 
   return (
-    <GridContainer>
+    <GridContainer data-testid="table-grid">
       {stakesLevels.map((stakes) => (
         <StakesSection key={stakes}>
           <StakesHeader>{stakes} Stakes</StakesHeader>

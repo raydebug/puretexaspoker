@@ -85,7 +85,7 @@ export const TableFilters: React.FC<TableFiltersProps> = ({ filters, onFilterCha
   };
 
   return (
-    <FiltersContainer>
+    <FiltersContainer data-testid="table-filters">
       <FilterGroup>
         <FilterLabel htmlFor="search">Search Tables</FilterLabel>
         <SearchInput
