@@ -1,5 +1,8 @@
 import { defineConfig } from 'cypress'
 import setupPlugins from './cypress/plugins'
+import { addCucumberPreprocessorPlugin } from '@badeball/cypress-cucumber-preprocessor'
+import createBundler from '@bahmutov/cypress-esbuild-preprocessor'
+import { createEsbuildPlugin } from '@badeball/cypress-cucumber-preprocessor/esbuild'
 
 export default defineConfig({
   e2e: {
@@ -8,7 +11,10 @@ export default defineConfig({
       apiUrl: 'http://localhost:3001'
     },
     supportFile: 'cypress/support/e2e.ts',
-    specPattern: 'cypress/e2e/**/*.cy.{js,jsx,ts,tsx}',
+    specPattern: [
+      'cypress/e2e/**/*.cy.{js,jsx,ts,tsx}',
+      'cypress/e2e/features/**/*.feature'
+    ],
     video: false,
     videoCompression: 32,
     screenshotOnRunFailure: true,
@@ -20,7 +26,19 @@ export default defineConfig({
       openMode: 1
     },
     experimentalStudio: true,
-    setupNodeEvents(on, config) {
+    async setupNodeEvents(on, config) {
+      // Add cucumber preprocessor plugin
+      await addCucumberPreprocessorPlugin(on, config);
+      
+      // Add esbuild preprocessor with cucumber support
+      on(
+        'file:preprocessor',
+        createBundler({
+          plugins: [createEsbuildPlugin(config)],
+        })
+      );
+      
+      // Return the original plugins
       return setupPlugins(on, config)
     },
     chromeWebSecurity: false

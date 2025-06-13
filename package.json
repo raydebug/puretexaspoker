@@ -9,6 +9,8 @@
     "test:e2e": "npm run test:e2e:api && npm run test:e2e:features",
     "test:e2e:api": "cypress run --spec 'cypress/e2e/00-api-comprehensive.cy.ts'",
     "test:e2e:features": "cypress run --spec 'cypress/e2e/[!0]*.cy.ts,cypress/e2e/features/**/*.cy.ts'",
+    "test:e2e:cucumber": "cypress run --spec 'cypress/e2e/features/**/*.feature'",
+    "test:e2e:cucumber:open": "cypress open --config specPattern='cypress/e2e/features/**/*.feature'",
     "test:e2e:open": "cypress open",
     "test:e2e:headed": "cypress run --headed",
     "test:e2e:all": "cypress run",
@@ -29,6 +31,8 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@bahmutov/cypress-esbuild-preprocessor": "^2.2.5",
+    "@badeball/cypress-cucumber-preprocessor": "^22.1.0",
     "@types/chai": "^5.2.2",
     "@types/chai-jquery": "^1.1.43",
     "@types/cypress": "^0.1.6",
@@ -47,5 +51,11 @@
   },
   "dependencies": {
     "socket.io-client": "^4.8.1"
+  },
+  "cypress-cucumber-preprocessor": {
+    "stepDefinitions": "cypress/e2e/step_definitions/**/*.ts",
+    "nonGlobalStepDefinitions": false,
+    "filterSpecs": true,
+    "omitFiltered": true
   }
 }
