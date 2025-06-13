@@ -974,14 +974,20 @@ export class SocketService {
    * Join a table as observer or player
    */
   joinTable(tableId: number, buyIn?: number) {
-    if (!this.socket || !this.socket.connected) {
-      throw new Error('Socket not connected');
+    if (!this.socket) {
+      throw new Error('Socket not initialized. Please connect first.');
+    }
+    
+    if (!this.socket.connected) {
+      throw new Error('Socket not connected. Please wait for connection or try again.');
     }
     
     const nickname = localStorage.getItem('nickname');
     if (!nickname) {
-      throw new Error('No nickname set');
+      throw new Error('No nickname set. Please set a nickname first.');
     }
+    
+    console.log(`🎯 SOCKET: Joining table ${tableId} as ${buyIn ? 'player' : 'observer'} with nickname: ${nickname}`);
     
     if (buyIn) {
       // Join as player with buy-in

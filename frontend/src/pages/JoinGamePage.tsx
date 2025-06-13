@@ -148,9 +148,6 @@ export const JoinGamePage: React.FC = () => {
       const nickname = localStorage.getItem('nickname') || 'TestPlayer';
       localStorage.setItem('nickname', nickname);
       
-      // Connect to socket and initialize the game session
-      socketService.connect();
-      
       // Listen for errors
       const errorHandler = (err: { message: string }) => {
         setError(err.message || 'Failed to join table. Please try again.');
@@ -158,17 +155,42 @@ export const JoinGamePage: React.FC = () => {
       };
       socketService.onError(errorHandler);
       
-      // Join the table as observer (no buy-in needed)
-      console.log(`Attempting to join table ${table.id} as observer`);
-      socketService.joinTable(Number(table.id)); // No buy-in parameter
+      // Connect to socket and wait for connection
+      socketService.connect();
       
-      // Navigate to the game page immediately - the game page will handle the connection
-      navigate(`/game/${table.id}`, { 
-        state: { 
-          table,
-          role: 'observer'
+      // Wait for connection and then join table
+      let connectionAttempts = 0;
+      const maxAttempts = 50; // 5 seconds total (50 * 100ms)
+      
+      const checkConnectionAndJoin = () => {
+        connectionAttempts++;
+        const socket = socketService.getSocket();
+        
+        if (socket && socket.connected) {
+          // Socket is connected, now join the table
+          console.log(`Attempting to join table ${table.id} as observer`);
+          socketService.joinTable(Number(table.id)); // No buy-in parameter
+          
+          // Navigate to the game page
+          navigate(`/game/${table.id}`, { 
+            state: { 
+              table,
+              role: 'observer'
+            }
+          });
+        } else if (connectionAttempts < maxAttempts) {
+          // Not connected yet, wait a bit and try again
+          setTimeout(checkConnectionAndJoin, 100);
+        } else {
+          // Timeout reached
+          setError('Connection timeout. Please try again.');
+          setIsJoining(false);
         }
-      });
+      };
+      
+      // Start checking for connection
+      checkConnectionAndJoin();
+      
     } catch (err) {
       console.error('Join error:', err);
       setError('Failed to join table. Please try again.');
