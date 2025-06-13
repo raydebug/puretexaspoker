@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { TableGrid } from '../components/Lobby/TableGrid';
@@ -240,26 +240,53 @@ const LobbyPage: React.FC = () => {
     setShowModal(true);
   };
 
-  const handleModalSubmit = (e: React.FormEvent) => {
+  const closeModal = useCallback(() => {
+    console.log('🔍 FRONTEND: closeModal called');
+    setShowModal(false);
+    setModalError('');
+  }, []);
+
+  const handleModalSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (!nicknameInput.trim()) {
       setModalError('Please enter your nickname');
       return;
     }
+    
+    console.log('🔍 FRONTEND: Login form submitted, processing...');
+    
+    // Set all state updates together using functional updates to ensure they execute
     Cookies.set('playerNickname', nicknameInput, { expires: 7 });
-    setUserName(nicknameInput);
-    setShowModal(false);
+    
+    // Use functional state updates to ensure they execute in order
+    setUserName(prevUserName => {
+      console.log('🔍 FRONTEND: Setting userName from', prevUserName, 'to', nicknameInput);
+      return nicknameInput;
+    });
+    
     setModalError('');
-    // Socket is already connected from useEffect
-    socketService.requestLobbyTables();
-    // Emit user login event to update online users count
-    console.log(`🔍 FRONTEND: Emitting user login for: ${nicknameInput}`);
-    socketService.emitUserLogin(nicknameInput);
-  };
+    
+    // Force modal to close using functional update
+    setShowModal(prevShowModal => {
+      console.log('🔍 FRONTEND: Setting showModal from', prevShowModal, 'to false');
+      return false;
+    });
+    
+    console.log('🔍 FRONTEND: All state updates queued');
+    
+    // Use setTimeout to ensure state updates complete before socket events
+    setTimeout(() => {
+      console.log('🔍 FRONTEND: Delayed socket operations starting...');
+      // Socket is already connected from useEffect
+      socketService.requestLobbyTables();
+      // Emit user login event to update online users count
+      console.log(`🔍 FRONTEND: Emitting user login for: ${nicknameInput}`);
+      socketService.emitUserLogin(nicknameInput);
+    }, 300); // Increased delay to ensure all state updates complete
+  }, [nicknameInput]);
 
-  const handleBrowseAnonymously = () => {
-    setShowModal(false);
-    setModalError('');
+  const handleBrowseAnonymously = useCallback(() => {
+    closeModal();
     // Connect socket for anonymous browsing (read-only mode)
     const connectAnonymously = async () => {
       try {
@@ -274,7 +301,7 @@ const LobbyPage: React.FC = () => {
       }
     };
     connectAnonymously();
-  };
+  }, [closeModal]);
 
   const handleModalOverlayClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -294,6 +321,13 @@ const LobbyPage: React.FC = () => {
       document.removeEventListener('keydown', handleEscapeKey);
     };
   }, [showModal]);
+
+  // Debug modal state changes
+  useEffect(() => {
+    console.log('🔍 FRONTEND: Modal state changed to:', showModal);
+    console.log('🔍 FRONTEND: Current userName:', userName);
+    console.log('🔍 FRONTEND: Current nicknameInput:', nicknameInput);
+  }, [showModal, userName, nicknameInput]);
 
   return (
     <LobbyContainer data-testid="lobby-container">
@@ -328,12 +362,25 @@ const LobbyPage: React.FC = () => {
         <TableGrid 
           filters={filters} 
           isAuthenticated={!!userName} 
-          onLoginRequired={() => setShowModal(true)}
+          onLoginRequired={() => {
+            // Only show modal if user is not already authenticated
+            if (!userName) {
+              console.log('🔍 FRONTEND: onLoginRequired called, showing modal');
+              setShowModal(true);
+            } else {
+              console.log('🔍 FRONTEND: onLoginRequired called but user already authenticated:', userName);
+            }
+          }}
         />
       </Content>
 
       {showModal && (
-        <ModalOverlay data-testid="nickname-modal" onClick={handleModalOverlayClick}>
+        <ModalOverlay 
+          key={`modal-${showModal}-${userName}`} 
+          data-testid="nickname-modal" 
+          onClick={handleModalOverlayClick}
+          style={{ display: showModal ? 'flex' : 'none' }}
+        >
           <Modal>
             <ModalTitle>Enter Your Nickname</ModalTitle>
             <form onSubmit={handleModalSubmit}>
