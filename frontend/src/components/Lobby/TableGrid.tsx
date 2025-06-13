@@ -13,6 +13,8 @@ interface TableGridProps {
     players: string;
     gameType: string;
   };
+  isAuthenticated?: boolean;
+  onLoginRequired?: () => void;
 }
 
 const GridContainer = styled.div`
@@ -178,7 +180,7 @@ const RetryButton = styled.button`
   }
 `;
 
-export const TableGrid: React.FC<TableGridProps> = ({ filters }) => {
+export const TableGrid: React.FC<TableGridProps> = ({ filters, isAuthenticated = false, onLoginRequired }) => {
   const [tables, setTables] = useState<TableData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -253,6 +255,13 @@ export const TableGrid: React.FC<TableGridProps> = ({ filters }) => {
 
   const handleTableClick = (table: TableData) => {
     if (error) return;
+    
+    // If user is not authenticated, trigger login flow instead of join dialog
+    if (!isAuthenticated && onLoginRequired) {
+      onLoginRequired();
+      return;
+    }
+    
     setSelectedTable(table);
     setShowJoinDialog(true);
   };

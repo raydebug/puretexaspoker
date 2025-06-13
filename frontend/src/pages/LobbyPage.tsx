@@ -312,7 +312,11 @@ const LobbyPage: React.FC = () => {
           filters={filters}
           onFilterChange={handleFilterChange}
         />
-        <TableGrid filters={filters} />
+        <TableGrid 
+          filters={filters} 
+          isAuthenticated={!!userName} 
+          onLoginRequired={() => setShowModal(true)}
+        />
       </Content>
 
       {showModal && (
