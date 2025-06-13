@@ -283,8 +283,7 @@ export const GameLobby: React.FC<GameLobbyProps> = ({ onJoinGame }) => {
   const [gameStatus, setGameStatus] = useState('Waiting for players...');
   const [isPlayerTurn, setIsPlayerTurn] = useState(false);
   const [betAmount, setBetAmount] = useState(0);
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [observers, setObservers] = useState<string[]>([]);
+  const [onlineUsers, setOnlineUsers] = useState(0);
   const navigate = useNavigate();
 
   // Load saved data and connect socket on component mount
@@ -308,8 +307,7 @@ export const GameLobby: React.FC<GameLobbyProps> = ({ onJoinGame }) => {
     // Connect socket and listen for online users updates
     socketService.connect();
     socketService.onOnlineUsersUpdate((players, observers) => {
-      setPlayers(players as Player[]);
-      setObservers(observers);
+      setOnlineUsers(players.length + observers.length);
     });
 
     return () => {
@@ -482,11 +480,7 @@ export const GameLobby: React.FC<GameLobbyProps> = ({ onJoinGame }) => {
               </BettingControls>
             )}
           </Table>
-          <OnlineList>
-            <div className="online-count">
-              Online Users: {players.length + observers.length}
-            </div>
-          </OnlineList>
+          <OnlineList onlineUsers={onlineUsers} />
         </>
       )}
       {showSeatModal && (

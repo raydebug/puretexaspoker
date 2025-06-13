@@ -12,6 +12,7 @@ export class GameManager {
     // Initialize with default game for testing
     const testGame = new GameService('test-game-id');
     this.games.set('test-game-id', testGame);
+    console.log(`DEBUG: GameManager initialized with test game. Map size: ${this.games.size}`);
   }
 
   public static getInstance(): GameManager {

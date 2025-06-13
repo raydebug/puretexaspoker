@@ -1,6 +1,5 @@
 import React from 'react';
 import styled from 'styled-components';
-import { Player } from '../types/game';
 
 const ListContainer = styled.div`
   position: fixed;
@@ -27,20 +26,13 @@ const ListTitle = styled.h3`
 `;
 
 interface OnlineListProps {
-  players: Player[];
-  observers: string[];
-  currentPlayerId?: string;
+  onlineUsers: number;
 }
 
-export const OnlineList: React.FC<OnlineListProps> = ({
-  players,
-  observers,
-}) => {
-  const totalUsers = players.length + observers.length;
-
+export const OnlineList: React.FC<OnlineListProps> = ({ onlineUsers }) => {
   return (
     <ListContainer data-testid="online-users-list">
-      <ListTitle>Online Users: {totalUsers}</ListTitle>
+      <ListTitle>Online Users: {onlineUsers}</ListTitle>
     </ListContainer>
   );
 }; 
