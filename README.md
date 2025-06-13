@@ -15,6 +15,15 @@ A modern, real-time Texas Hold'em poker game built with React, TypeScript, Node.
 - **Testing**: ✅ 13/13 E2E tests passing - Complete anonymous-first flow coverage
 - **Status**: ✅ **MAJOR UX UPGRADE** - Professional zero-friction user experience
 
+#### ✅ Login-First Join Table Flow (COMPLETED - June 13, 2025)
+- **Smart Authentication**: "Join Table" button triggers appropriate flow based on user state
+- **Anonymous Users**: Clicking "Join Table" opens login modal first, then proceeds to table joining
+- **Authenticated Users**: Clicking "Join Table" directly opens join dialog for immediate table access
+- **Consistent UX**: Same button text ("Join Table") for all users with context-aware behavior
+- **Seamless Flow**: Login → Table Join sequence feels natural and uninterrupted
+- **Testing**: ✅ 5/5 E2E tests passing - Complete login-first join flow coverage
+- **Status**: ✅ **SMART UX ENHANCEMENT** - Optimal user experience for both anonymous and authenticated users
+
 #### ✅ Session Data Bug Fix (COMPLETED - June 12, 2025) 
 - **Issue**: Critical "Invalid session data. Please rejoin the table." error preventing seat-taking
 - **Root Cause**: Frontend takeSeat method was creating new socket connections, wiping session data
@@ -82,6 +91,7 @@ A modern, real-time Texas Hold'em poker game built with React, TypeScript, Node.
 - **Anonymous-First Lobby**: ✅ 7/7 passing - Zero friction lobby access without forced login
 - **Anonymous Browsing**: ✅ 4/4 passing - Logout to anonymous state with full lobby access
 - **Lobby Basic Functions**: ✅ 2/2 passing - Anonymous browsing and UI components
+- **Join Table Button Behavior**: ✅ 5/5 passing - Login-first flow for anonymous users, direct join for authenticated users
 - **API Backend**: ✅ 42/42 passing - Complete backend stability
 
 ### 🚀 Key Technical Features
@@ -143,6 +153,7 @@ npx cypress run --spec "cypress/e2e/user-location-transition-flow.cy.ts"
 npx cypress run --spec "cypress/e2e/logout-anonymous-browsing.cy.ts"
 npx cypress run --spec "cypress/e2e/lobby-basic.cy.ts"
 npx cypress run --spec "cypress/e2e/anonymous-first-lobby.cy.ts"
+npx cypress run --spec "cypress/e2e/join-table-button-text.cy.ts"
 ```
 
 ## 🎮 How to Play
@@ -151,7 +162,7 @@ npx cypress run --spec "cypress/e2e/anonymous-first-lobby.cy.ts"
 2. **Browse Anonymously**: Immediately browse tables, filters, online users without any login
 3. **Optional Login**: Click "Login" button in header when ready to interact (duplicates prevented)
 4. **Browse Tables**: View available poker tables in the lobby with full filter options
-5. **Join as Observer**: Click "Join Table" to enter as observer first (requires login)
+5. **Join as Observer**: Click "Join Table" - anonymous users will login first, then enter as observer
 6. **Select Seat**: Choose your preferred seat and buy-in amount
 7. **Play Poker**: Enjoy Texas Hold'em with real-time multiplayer action
 8. **Logout**: After logout, seamlessly continue browsing anonymously or re-login anytime
