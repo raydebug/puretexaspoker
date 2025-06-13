@@ -923,12 +923,25 @@ export class SocketService {
   }
 
   /**
-   * Request lobby tables from server
+   * Request lobby tables from server (public method)
    */
-  private requestLobbyTables() {
+  requestLobbyTables() {
     if (this.socket && this.socket.connected) {
       this.socket.emit('lobby:getTables');
     }
+  }
+
+  /**
+   * Reset connection state - clears cached data without disconnecting
+   */
+  resetConnectionState() {
+    console.log('🔄 SOCKET: Resetting connection state');
+    this.gameState = null;
+    this.currentPlayer = null;
+    this.currentUserTable = null;
+    this.currentUserSeat = null;
+    this.retryQueue = [];
+    // Don't reset listeners or disconnect socket
   }
 
   /**
