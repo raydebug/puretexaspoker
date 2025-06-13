@@ -2,6 +2,11 @@
 
 A modern, real-time Texas Hold'em poker game built with React, TypeScript, Node.js, and Socket.io.
 
+## 🧪 Testing Status: ✅ 23/23 Tests Passing (100% Success Rate)
+- **Anonymous-First Lobby Flow**: 13/13 ✅ 
+- **Login-First Join Table Flow**: 5/5 ✅
+- **Online Users After Login**: 5/5 ✅ (**NEW**)
+
 ## 🎯 Current Status: Production Ready ✅
 
 ### Recent Major Features Implemented
@@ -23,6 +28,17 @@ A modern, real-time Texas Hold'em poker game built with React, TypeScript, Node.
 - **Seamless Flow**: Login → Table Join sequence feels natural and uninterrupted
 - **Testing**: ✅ 5/5 E2E tests passing - Complete login-first join flow coverage
 - **Status**: ✅ **SMART UX ENHANCEMENT** - Optimal user experience for both anonymous and authenticated users
+
+#### ✅ Online Users Count After Login (COMPLETED - June 13, 2025)
+- **Real-Time Tracking**: Online users count updates immediately when users login/logout
+- **Anonymous→Authenticated**: Count increases from 0→1 when user logs in (with Welcome message)
+- **Authenticated→Anonymous**: Count decreases from 1→0 when user logs out
+- **Global State Management**: Backend tracks authenticated users across all socket connections
+- **Live Broadcasting**: WebSocket events broadcast count updates to all connected clients instantly
+- **User Experience**: Right-top corner shows "Welcome, [Username]" and "Logout" button after login
+- **State Persistence**: Handles user switching, disconnections, and multiple login scenarios correctly
+- **Testing**: ✅ 5/5 E2E tests passing - Complete online users flow coverage
+- **Status**: ✅ **LIVE USER ENGAGEMENT** - Real-time community presence indicator
 
 #### ✅ Session Data Bug Fix (COMPLETED - June 12, 2025) 
 - **Issue**: Critical "Invalid session data. Please rejoin the table." error preventing seat-taking
