@@ -21,6 +21,8 @@
 - Socket service export issue - Added missing socketService singleton
 - Missing joinTable method - Added method for table joining functionality
 - Socket connection race condition - Fixed timing issue when joining tables
+- Missing resetConnectionState method - Added for proper state management
+- Missing getter methods - Added getCurrentPlayer, getGameState, getSocket methods
 
 ## 🚧 Ongoing Tasks
 
