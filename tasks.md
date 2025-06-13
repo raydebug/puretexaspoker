@@ -30,6 +30,12 @@
 - ✅ E2E test coverage for session establishment - Comprehensive tests validating all fixes
 - ✅ TypeScript compilation errors - ALL FIXED (ChatBox, OnlineList, missing methods)
 - ✅ UI overlap issues - FIXED (OnlineList positioning)
+- ✅ OnlineList component specs alignment - Fixed major conflicts between implementation and tests
+  - Implemented detailed Players/Observers sections with seat numbers
+  - Added status indicators: (You), (Away) with proper styling
+  - Fixed React prop warnings with shouldForwardProp
+  - Support both lobby count mode and detailed game mode
+  - All unit, integration, and e2e tests passing (5/5)
 
 ## 🚧 Ongoing Tasks
 
@@ -65,6 +71,7 @@
 - API Backend: 42/42
 - Session Establishment: 3/3 ✨ NEW
 - Observer → Player Transition: 3/3 ✅ FULL FLOW
+- Online Users After Login: 5/5 ✅ NEWLY FIXED
 
 ### Pending Tests
 - Location Transition: 1/2
