@@ -19,6 +19,8 @@ When('I login with nickname {string}', (nickname: string) => {
 })
 
 When('I click join table to visit the game page', () => {
+  // After login, the join table button should now be enabled and clickable
+  cy.get('[data-testid^="join-table-"]').first().should('not.be.disabled')
   cy.get('[data-testid^="join-table-"]').first().click()
   cy.url().should('include', '/table/')
 })
@@ -43,15 +45,16 @@ Then('I should be prompted to login first', () => {
 
 Then('I should see a welcome message with {string} on the top right', (nickname: string) => {
   cy.get('[data-testid="user-info"]').should('be.visible')
-  cy.get('[data-testid="user-nickname"]').should('contain', nickname)
+  cy.get('[data-testid="user-name"]').should('contain', `Welcome, ${nickname}`)
 })
 
 Then('the online users count should be updated to reflect my login', () => {
-  cy.get('[data-testid="online-count"]').should('be.visible')
+  cy.get('[data-testid="online-users-list"]').should('be.visible')
+  cy.get('[data-testid="online-users-list"]').should('contain.text', 'Online Users')
 })
 
 Then('the online users count should increase by 1', () => {
-  cy.get('[data-testid="online-count"]').invoke('text').then((text) => {
+  cy.get('[data-testid="online-users-list"]').invoke('text').then((text) => {
     const count = parseInt(text.match(/\d+/)?.[0] || '0')
     expect(count).to.be.greaterThan(0)
   })
