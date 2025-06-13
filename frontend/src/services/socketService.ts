@@ -12,7 +12,7 @@ export type SeatState = { [seatNumber: number]: string | null };
 
 type SeatUpdateCallback = (seats: SeatState) => void;
 type SeatErrorCallback = (error: string) => void;
-export type OnlineUsersCallback = (onlineUsers: number) => void;
+export type OnlineUsersCallback = ((onlineUsers: number) => void) | ((players: any[], observers: string[]) => void);
 type ErrorCallback = (error: { message: string; context?: string; suggestedNames?: string[] }) => void;
 type ChatMessageCallback = (message: ChatMessage) => void;
 type SystemMessageCallback = (message: string) => void;
@@ -547,7 +547,14 @@ export class SocketService {
 
     socket.on('onlineUsers', (count: number) => {
       if (this.onlineUsersCallback) {
-        this.onlineUsersCallback(count);
+        // Check if callback expects two parameters (players, observers)
+        if (this.onlineUsersCallback.length === 2) {
+          const players = this.gameState?.players || [];
+          (this.onlineUsersCallback as any)(players, this.observers);
+        } else {
+          // Single parameter callback (total count)
+          (this.onlineUsersCallback as any)(count);
+        }
       }
     });
   }
@@ -690,7 +697,16 @@ export class SocketService {
   private emitOnlineUsersUpdate() {
     const players = this.gameState?.players || [];
     const totalUsers = players.length + this.observers.length;
-    this.onlineUsersCallback?.(totalUsers);
+    
+    if (this.onlineUsersCallback) {
+      // Check if callback expects two parameters (players, observers)
+      if (this.onlineUsersCallback.length === 2) {
+        (this.onlineUsersCallback as any)(players, this.observers);
+      } else {
+        // Single parameter callback (total count)
+        (this.onlineUsersCallback as any)(totalUsers);
+      }
+    }
   }
 
   /**
@@ -1057,6 +1073,131 @@ export class SocketService {
    */
   getSocket() {
     return this.socket;
+  }
+
+  /**
+   * Subscribe to chat messages
+   */
+  onChatMessage(callback: ChatMessageCallback) {
+    this.chatMessageListeners.push(callback);
+    return () => {
+      this.chatMessageListeners = this.chatMessageListeners.filter(cb => cb !== callback);
+    };
+  }
+
+  /**
+   * Unsubscribe from chat messages
+   */
+  offChatMessage() {
+    this.chatMessageListeners = [];
+  }
+
+  /**
+   * Subscribe to system messages
+   */
+  onSystemMessage(callback: SystemMessageCallback) {
+    this.systemMessageListeners.push(callback);
+    return () => {
+      this.systemMessageListeners = this.systemMessageListeners.filter(cb => cb !== callback);
+    };
+  }
+
+  /**
+   * Unsubscribe from system messages
+   */
+  offSystemMessage() {
+    this.systemMessageListeners = [];
+  }
+
+  /**
+   * Send chat message
+   */
+  sendChatMessage(gameId: string, message: ChatMessage) {
+    if (this.socket && this.socket.connected) {
+      this.socket.emit('chat:message', { gameId, message });
+    }
+  }
+
+  /**
+   * Subscribe to seat updates
+   */
+  onSeatUpdate(callback: SeatUpdateCallback) {
+    this.seatUpdateListeners.push(callback);
+    return () => {
+      this.seatUpdateListeners = this.seatUpdateListeners.filter(cb => cb !== callback);
+    };
+  }
+
+  /**
+   * Subscribe to seat errors
+   */
+  onSeatError(callback: SeatErrorCallback) {
+    this.seatErrorListeners.push(callback);
+    return () => {
+      this.seatErrorListeners = this.seatErrorListeners.filter(cb => cb !== callback);
+    };
+  }
+
+  /**
+   * Request seat at table
+   */
+  requestSeat(nickname: string, seatNumber: number) {
+    if (this.socket && this.socket.connected) {
+      this.socket.emit('seat:request', { nickname, seatNumber });
+    }
+  }
+
+  /**
+   * Place bet in game
+   */
+  placeBet(gameId: string, playerId: string, amount: number) {
+    if (this.socket && this.socket.connected) {
+      this.socket.emit('game:action', { gameId, playerId, action: 'bet', amount });
+    }
+  }
+
+  /**
+   * Fold in game
+   */
+  fold(gameId: string, playerId: string) {
+    if (this.socket && this.socket.connected) {
+      this.socket.emit('game:action', { gameId, playerId, action: 'fold' });
+    }
+  }
+
+  /**
+   * Emit game action
+   */
+  emitGameAction(action: string, amount?: number) {
+    if (this.socket && this.socket.connected && this.gameState) {
+      const data: any = { 
+        gameId: this.gameState.id, 
+        playerId: this.currentPlayer?.id, 
+        action 
+      };
+      if (amount !== undefined) {
+        data.amount = amount;
+      }
+      this.socket.emit('game:action', data);
+    }
+  }
+
+  /**
+   * Update player status (away/back)
+   */
+  updatePlayerStatus(gameId: string, playerId: string, isAway: boolean) {
+    if (this.socket && this.socket.connected) {
+      this.socket.emit('player:updateStatus', { gameId, playerId, isAway });
+    }
+  }
+
+  /**
+   * Stand up from table
+   */
+  standUp(gameId: string, playerId: string) {
+    if (this.socket && this.socket.connected) {
+      this.socket.emit('player:standUp', { gameId, playerId });
+    }
   }
 }
 

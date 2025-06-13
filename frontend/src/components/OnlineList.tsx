@@ -26,13 +26,26 @@ const ListTitle = styled.h3`
 `;
 
 interface OnlineListProps {
-  onlineUsers: number;
+  onlineUsers?: number;
+  players?: any[];
+  observers?: string[];
+  currentPlayerId?: string;
 }
 
-export const OnlineList: React.FC<OnlineListProps> = ({ onlineUsers }) => {
+export const OnlineList: React.FC<OnlineListProps> = ({ 
+  onlineUsers, 
+  players = [], 
+  observers = [], 
+  currentPlayerId 
+}) => {
+  // Calculate total online users if not provided directly
+  const totalUsers = onlineUsers !== undefined 
+    ? onlineUsers 
+    : players.length + observers.length;
+
   return (
     <ListContainer data-testid="online-users-list">
-      <ListTitle>Online Users: {onlineUsers}</ListTitle>
+      <ListTitle>Online Users: {totalUsers}</ListTitle>
     </ListContainer>
   );
 }; 
