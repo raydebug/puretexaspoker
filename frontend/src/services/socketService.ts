@@ -594,7 +594,7 @@ export class SocketService {
       
       this.socket.on('playerJoined', (player: Player) => {
         if (!this.gameState) {
-          this.gameState = this.getInitialGameState();
+          this.gameState = null; // Initialize as null, will be set by game state events
         }
 
         if (this.gameState && player && player.id) {
@@ -967,6 +967,28 @@ export class SocketService {
         seat: null, // Observer mode
         nickname 
       });
+    }
+  }
+
+  /**
+   * Join a table as observer or player
+   */
+  joinTable(tableId: number, buyIn?: number) {
+    if (!this.socket || !this.socket.connected) {
+      throw new Error('Socket not connected');
+    }
+    
+    const nickname = localStorage.getItem('nickname');
+    if (!nickname) {
+      throw new Error('No nickname set');
+    }
+    
+    if (buyIn) {
+      // Join as player with buy-in
+      this.socket.emit('table:join', { tableId, nickname, buyIn });
+    } else {
+      // Join as observer
+      this.socket.emit('table:observe', { tableId, nickname });
     }
   }
 }
