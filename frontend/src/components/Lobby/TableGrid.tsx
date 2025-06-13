@@ -94,20 +94,28 @@ const InfoRow = styled.div`
   font-size: 0.9rem;
 `;
 
-const JoinButton = styled.button`
+const JoinButton = styled.button<{ $isDisabled?: boolean }>`
   width: 100%;
   padding: 0.75rem;
   margin-top: 1rem;
   border-radius: 4px;
   border: none;
-  background: #2c8a3d;
-  color: white;
+  background: ${props => props.$isDisabled ? '#666' : '#2c8a3d'};
+  color: ${props => props.$isDisabled ? '#ccc' : 'white'};
   font-weight: bold;
-  cursor: pointer;
+  cursor: ${props => props.$isDisabled ? 'not-allowed' : 'pointer'};
+  opacity: ${props => props.$isDisabled ? '0.6' : '1'};
   transition: all 0.2s;
   
   &:hover {
-    background: #37a34a;
+    background: ${props => props.$isDisabled ? '#666' : '#37a34a'};
+  }
+
+  &:disabled {
+    background: #666;
+    color: #ccc;
+    cursor: not-allowed;
+    opacity: 0.6;
   }
 `;
 
@@ -385,37 +393,51 @@ export const TableGrid: React.FC<TableGridProps> = ({ filters, isAuthenticated =
     });
   }, [tablesByStakes]);
 
-  const renderTable = (table: TableData) => (
-    <Card
-      key={table.id}
-      onClick={() => handleTableClick(table)}
-      data-testid="table-row"
-      data-table-id={table.id}
-    >
-      <TableName>
-        {table.name}
-        <Status $isRunning={table.status === 'active'} data-testid={`table-status-${table.id}`}>
-          {table.status === 'active' ? 'Running' : 'Waiting'}
-        </Status>
-      </TableName>
-      <InfoRow data-testid={`table-info-${table.id}`}>
-        <span>Players: {table.players}/{table.maxPlayers}</span>
-        <span>Stakes: {table.stakes}</span>
-      </InfoRow>
-      <InfoRow>
-        <span>Game Type: {table.gameType}</span>
-      </InfoRow>
-      <JoinButton 
-        data-testid={`join-table-${table.id}`}
-        onClick={(e) => {
-          e.stopPropagation(); // Prevent card click
-          handleTableClick(table);
-        }}
+  const renderTable = (table: TableData) => {
+    const isButtonDisabled = !isAuthenticated;
+    const buttonText = isAuthenticated ? 'Join Table' : 'Login to Join';
+    const tooltipText = isAuthenticated ? '' : 'Please login to join tables';
+
+    return (
+      <Card
+        key={table.id}
+        onClick={() => handleTableClick(table)}
+        data-testid="table-row"
+        data-table-id={table.id}
       >
-        Join Table
-      </JoinButton>
-    </Card>
-  );
+        <TableName>
+          {table.name}
+          <Status $isRunning={table.status === 'active'} data-testid={`table-status-${table.id}`}>
+            {table.status === 'active' ? 'Running' : 'Waiting'}
+          </Status>
+        </TableName>
+        <InfoRow data-testid={`table-info-${table.id}`}>
+          <span>Players: {table.players}/{table.maxPlayers}</span>
+          <span>Stakes: {table.stakes}</span>
+        </InfoRow>
+        <InfoRow>
+          <span>Game Type: {table.gameType}</span>
+        </InfoRow>
+        <JoinButton 
+          data-testid={`join-table-${table.id}`}
+          $isDisabled={isButtonDisabled}
+          disabled={isButtonDisabled}
+          title={tooltipText}
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent card click
+            if (!isAuthenticated && onLoginRequired) {
+              // Trigger login modal for anonymous users
+              onLoginRequired();
+            } else {
+              handleTableClick(table);
+            }
+          }}
+        >
+          {buttonText}
+        </JoinButton>
+      </Card>
+    );
+  };
 
   if (isLoading) {
     return (

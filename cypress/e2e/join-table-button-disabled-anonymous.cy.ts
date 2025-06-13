@@ -120,38 +120,17 @@ describe('Join Table Button States for Anonymous Users', () => {
     cy.get('[data-testid="anonymous-info"]').should('be.visible');
     cy.get('[data-testid="table-grid"]').should('be.visible');
     
-    // **CRITICAL CHECK 6: Tooltip should appear on hover**
-    cy.get('[data-testid^="join-table-"]').first().trigger('mouseover');
-    
-    // Check for tooltip (exact implementation may vary)
-    cy.get('body').then(($body) => {
-      // Look for tooltip elements
-      const tooltipSelectors = [
-        '[data-testid="tooltip"]',
-        '[role="tooltip"]',
-        '.tooltip',
-        '[title]'
-      ];
-      
-      let tooltipFound = false;
-      tooltipSelectors.forEach(selector => {
-        if ($body.find(selector).length > 0) {
-          cy.get(selector).should('contain.text', 'login');
-          tooltipFound = true;
-          cy.log('✅ Tooltip found and contains login message');
-        }
-      });
-      
-      // Alternative: check title attribute
-      if (!tooltipFound) {
-        cy.get('[data-testid^="join-table-"]').first().should('have.attr', 'title');
-        cy.get('[data-testid^="join-table-"]').first().then(($btn) => {
-          const title = $btn.attr('title');
-          expect(title).to.include('login');
-          cy.log('✅ Button has title attribute with login message');
-        });
-      }
+    // **CRITICAL CHECK 6: Check title attribute for tooltip**
+    cy.get('[data-testid^="join-table-"]').first().should('have.attr', 'title');
+    cy.get('[data-testid^="join-table-"]').first().then(($btn) => {
+      const title = $btn.attr('title');
+      expect(title).to.include('login');
+      cy.log('✅ Button has title attribute with login message');
     });
+    
+    // Also verify the title attribute contains the expected text
+    cy.get('[data-testid^="join-table-"]').first().should('have.attr', 'title', 'Please login to join tables');
+    cy.log('✅ Tooltip shows correct message for disabled button');
   });
 
   it('should trigger login modal when disabled button is clicked (fallback behavior)', () => {
@@ -188,7 +167,11 @@ describe('Join Table Button States for Anonymous Users', () => {
       cy.url().should('not.include', '/game/');
       cy.log('✅ Disabled button prevents navigation to game page');
       
-      // Should remain in lobby
+      // Login modal appears instead of navigation
+      cy.get('[data-testid="nickname-modal"]').should('be.visible');
+      
+      // Close modal to check that we're still in lobby
+      cy.get('[data-testid="browse-anonymously-button"]').click();
       cy.get('[data-testid="table-grid"]').should('be.visible');
       cy.get('[data-testid="anonymous-info"]').should('be.visible');
     });
@@ -202,10 +185,10 @@ describe('Join Table Button States for Anonymous Users', () => {
     // Verify initial disabled state
     cy.get('[data-testid^="join-table-"]').first().should('be.disabled');
     
-    // Interact with page (scroll, filter, etc.)
-    cy.get('[data-testid="table-grid"]').scrollTo('bottom');
+    // Interact with page (use viewport scroll instead of element scroll)
+    cy.scrollTo('bottom');
     cy.wait(500);
-    cy.get('[data-testid="table-grid"]').scrollTo('top');
+    cy.scrollTo('top');
     
     // Check if filters exist and interact with them
     cy.get('body').then(($body) => {
