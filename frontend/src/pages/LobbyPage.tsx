@@ -5,6 +5,7 @@ import { TableGrid } from '../components/Lobby/TableGrid';
 import { TableFilters } from '../components/Lobby/TableFilters';
 import { socketService } from '../services/socketService';
 import { OnlineList } from '../components/OnlineList';
+import { LoginModal } from '../components/LoginModal';
 import Cookies from 'js-cookie';
 
 const LobbyContainer = styled.div`
@@ -89,87 +90,7 @@ const LogoutButton = styled.button`
   }
 `;
 
-const ModalOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-`;
 
-const Modal = styled.div`
-  background: #222;
-  border-radius: 16px;
-  padding: 2rem;
-  min-width: 320px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  border: 1px solid #ffd700;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-`;
-
-const ModalTitle = styled.h2`
-  color: #ffd700;
-  margin-bottom: 1rem;
-`;
-
-const ModalInput = styled.input`
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border-radius: 4px;
-  border: 1px solid #ffd700;
-  background: rgba(0, 0, 0, 0.8);
-  color: #ffd700;
-  font-size: 1rem;
-  margin-bottom: 1rem;
-`;
-
-const ModalButton = styled.button`
-  width: 100%;
-  padding: 1rem;
-  border-radius: 4px;
-  border: 1px solid #2c8a3d;
-  background: #2c8a3d;
-  color: #ffd700;
-  font-size: 1rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin-bottom: 0.5rem;
-  &:hover {
-    background: #37a34a;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  }
-`;
-
-const ModalSkipButton = styled.button`
-  width: 100%;
-  padding: 0.75rem;
-  border-radius: 4px;
-  border: 1px solid #666;
-  background: transparent;
-  color: #ccc;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  &:hover {
-    border-color: #ffd700;
-    color: #ffd700;
-  }
-`;
-
-const ModalError = styled.div`
-  color: #ff4444;
-  text-align: center;
-  margin-bottom: 1rem;
-`;
 
 const LobbyPage: React.FC = () => {
   const navigate = useNavigate();
@@ -181,8 +102,6 @@ const LobbyPage: React.FC = () => {
     gameType: 'all',
   });
   const [showModal, setShowModal] = useState(false);
-  const [nicknameInput, setNicknameInput] = useState('');
-  const [modalError, setModalError] = useState('');
   const [onlineUsers, setOnlineUsers] = useState(0);
 
   useEffect(() => {
@@ -240,53 +159,39 @@ const LobbyPage: React.FC = () => {
     setShowModal(true);
   };
 
-  const closeModal = useCallback(() => {
-    console.log('🔍 FRONTEND: closeModal called');
-    setShowModal(false);
-    setModalError('');
+  const handleLogin = useCallback(async (nickname: string) => {
+    console.log('🔍 FRONTEND: Login requested for:', nickname);
+    
+    try {
+      // Save to cookie first
+      Cookies.set('playerNickname', nickname, { expires: 7 });
+      console.log('🔍 FRONTEND: Cookie saved');
+      
+      // Update username state
+      setUserName(nickname);
+      console.log('🔍 FRONTEND: Username state updated');
+      
+      // Close modal
+      setShowModal(false);
+      console.log('🔍 FRONTEND: Modal closed');
+      
+      // Socket operations
+      console.log('🔍 FRONTEND: Starting socket operations...');
+      socketService.requestLobbyTables();
+      socketService.emitUserLogin(nickname);
+      
+      console.log('🔍 FRONTEND: Login process completed successfully');
+      
+    } catch (error) {
+      console.error('🔍 FRONTEND: Error during login:', error);
+      throw error; // Re-throw to let modal handle the error
+    }
   }, []);
 
-  const handleModalSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    if (!nicknameInput.trim()) {
-      setModalError('Please enter your nickname');
-      return;
-    }
+  const handleCloseModal = useCallback(() => {
+    console.log('🔍 FRONTEND: Modal close requested');
+    setShowModal(false);
     
-    console.log('🔍 FRONTEND: Login form submitted, processing...');
-    
-    // Set all state updates together using functional updates to ensure they execute
-    Cookies.set('playerNickname', nicknameInput, { expires: 7 });
-    
-    // Use functional state updates to ensure they execute in order
-    setUserName(prevUserName => {
-      console.log('🔍 FRONTEND: Setting userName from', prevUserName, 'to', nicknameInput);
-      return nicknameInput;
-    });
-    
-    setModalError('');
-    
-    // Force modal to close using functional update
-    setShowModal(prevShowModal => {
-      console.log('🔍 FRONTEND: Setting showModal from', prevShowModal, 'to false');
-      return false;
-    });
-    
-    console.log('🔍 FRONTEND: All state updates queued');
-    
-    // Use setTimeout to ensure state updates complete before socket events
-    setTimeout(() => {
-      console.log('🔍 FRONTEND: Delayed socket operations starting...');
-      // Socket is already connected from useEffect
-      socketService.requestLobbyTables();
-      // Emit user login event to update online users count
-      console.log(`🔍 FRONTEND: Emitting user login for: ${nicknameInput}`);
-      socketService.emitUserLogin(nicknameInput);
-    }, 300); // Increased delay to ensure all state updates complete
-  }, [nicknameInput]);
-
-  const handleBrowseAnonymously = useCallback(() => {
-    closeModal();
     // Connect socket for anonymous browsing (read-only mode)
     const connectAnonymously = async () => {
       try {
@@ -301,33 +206,13 @@ const LobbyPage: React.FC = () => {
       }
     };
     connectAnonymously();
-  }, [closeModal]);
-
-  const handleModalOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      handleBrowseAnonymously();
-    }
-  };
-
-  const handleEscapeKey = (e: KeyboardEvent) => {
-    if (e.key === 'Escape' && showModal) {
-      handleBrowseAnonymously();
-    }
-  };
-
-  useEffect(() => {
-    document.addEventListener('keydown', handleEscapeKey);
-    return () => {
-      document.removeEventListener('keydown', handleEscapeKey);
-    };
-  }, [showModal]);
+  }, []);
 
   // Debug modal state changes
   useEffect(() => {
     console.log('🔍 FRONTEND: Modal state changed to:', showModal);
     console.log('🔍 FRONTEND: Current userName:', userName);
-    console.log('🔍 FRONTEND: Current nicknameInput:', nicknameInput);
-  }, [showModal, userName, nicknameInput]);
+  }, [showModal, userName]);
 
   return (
     <LobbyContainer data-testid="lobby-container">
@@ -374,38 +259,11 @@ const LobbyPage: React.FC = () => {
         />
       </Content>
 
-      {showModal && (
-        <ModalOverlay 
-          key={`modal-${showModal}-${userName}`} 
-          data-testid="nickname-modal" 
-          onClick={handleModalOverlayClick}
-          style={{ display: showModal ? 'flex' : 'none' }}
-        >
-          <Modal>
-            <ModalTitle>Enter Your Nickname</ModalTitle>
-            <form onSubmit={handleModalSubmit}>
-              <ModalInput
-                type="text"
-                value={nicknameInput}
-                onChange={e => {
-                  setNicknameInput(e.target.value);
-                  setModalError('');
-                }}
-                placeholder="Your nickname"
-                autoFocus
-                data-testid="nickname-input"
-              />
-              {modalError && <ModalError data-testid="modal-error">{modalError}</ModalError>}
-              <ModalButton type="submit" data-testid="join-button">
-                Start Playing
-              </ModalButton>
-            </form>
-            <ModalSkipButton type="button" onClick={handleBrowseAnonymously} data-testid="browse-anonymously-button">
-              Browse Anonymously
-            </ModalSkipButton>
-          </Modal>
-        </ModalOverlay>
-      )}
+      <LoginModal
+        isOpen={showModal && !userName}
+        onLogin={handleLogin}
+        onClose={handleCloseModal}
+      />
     </LobbyContainer>
   );
 };
