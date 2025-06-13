@@ -20,22 +20,28 @@
 - User state management & authentication
 - Socket service export issue - Added missing socketService singleton
 - Missing joinTable method - Added method for table joining functionality
-- Socket connection race condition - Fixed timing issue when joining tables
-- Missing resetConnectionState method - Added for proper state management
-- Missing getter methods - Added getCurrentPlayer, getGameState, getSocket methods
-- Socket event mismatch fix - Critical fix for frontend/backend event communication
-- Added takeSeat method - Enables observers to become players
-- Session cleanup on lobby return - Clears backend session data to prevent takeSeat failures
-- Session establishment before navigation - Waits for backend confirmation before game page redirect
-- ✅ E2E test coverage for session establishment - Comprehensive tests validating all fixes
-- ✅ TypeScript compilation errors - ALL FIXED (ChatBox, OnlineList, missing methods)
-- ✅ UI overlap issues - FIXED (OnlineList positioning)
-- ✅ OnlineList component specs alignment - Fixed major conflicts between implementation and tests
-  - Implemented detailed Players/Observers sections with seat numbers
-  - Added status indicators: (You), (Away) with proper styling
-  - Fixed React prop warnings with shouldForwardProp
-  - Support both lobby count mode and detailed game mode
-  - All unit, integration, and e2e tests passing (5/5)
+- Socket timeout issues - Enhanced connection monitoring with auto-cleanup
+- OnlineList component specs alignment - Component now matches test expectations
+  * Added detailed Players/Observers sections with counts and styling
+  * Implemented seat numbers, status indicators, and proper highlighting  
+  * All unit tests (8/8) and integration tests (2/2) passing
+  * E2E test: Online Users After Login - 5/5 tests passing
+
+## 🔄 Currently Working On
+
+### High Priority
+- **Join Table Button States for Anonymous Users** 📝 **SPECS & TESTS READY**
+  * **Feature Spec**: `cypress/e2e/features/join-table-anonymous-disabled.feature`
+  * **Test Suite**: `cypress/e2e/join-table-button-disabled-anonymous.cy.ts` (9 scenarios)
+  * **Current Status**: All 9 tests failing (expected - feature not implemented)
+  * **Requirements**:
+    - Disable join table buttons when user is anonymous
+    - Show "Login to Join" text instead of "Join Table"
+    - Apply inactive styling (opacity, cursor: not-allowed)
+    - Add tooltip: "Please login to join tables"
+    - Enable buttons after login, disable after logout
+    - Prevent navigation when disabled
+    - Optional: Click disabled button triggers login modal
 
 ## 🚧 Ongoing Tasks
 
