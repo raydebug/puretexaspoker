@@ -922,7 +922,7 @@ export class SocketService {
    */
   requestLobbyTables() {
     if (this.socket && this.socket.connected) {
-      this.socket.emit('lobby:getTables');
+      this.socket.emit('getLobbyTables');
     }
   }
 
@@ -984,10 +984,9 @@ export class SocketService {
    */
   updateUserLocationImmediate(tableId: number, nickname: string) {
     if (this.socket && this.socket.connected) {
-      this.socket.emit('location:update', { 
-        table: tableId, 
-        seat: null, // Observer mode
-        nickname 
+      this.socket.emit('updateUserLocation', { 
+        tableId: tableId, 
+        nickname: nickname
       });
     }
   }
@@ -1011,13 +1010,21 @@ export class SocketService {
     
     console.log(`🎯 SOCKET: Joining table ${tableId} as ${buyIn ? 'player' : 'observer'} with nickname: ${nickname}`);
     
-    if (buyIn) {
-      // Join as player with buy-in
-      this.socket.emit('table:join', { tableId, nickname, buyIn });
-    } else {
-      // Join as observer
-      this.socket.emit('table:observe', { tableId, nickname });
+    // Always join as observer first (observer-first flow)
+    // The backend expects 'joinTable' event and will handle the observer flow
+    this.socket.emit('joinTable', { tableId, nickname, buyIn });
+  }
+
+  /**
+   * Take a seat at the table (for observers who want to become players)
+   */
+  takeSeat(seatNumber: number, buyIn: number) {
+    if (!this.socket || !this.socket.connected) {
+      throw new Error('Socket not connected');
     }
+    
+    console.log(`🎯 SOCKET: Taking seat ${seatNumber} with buy-in ${buyIn}`);
+    this.socket.emit('takeSeat', { seatNumber, buyIn });
   }
 
   /**
