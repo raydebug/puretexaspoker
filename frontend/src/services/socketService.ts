@@ -940,6 +940,31 @@ export class SocketService {
   }
 
   /**
+   * Leave current table and return to lobby
+   */
+  leaveTable() {
+    if (this.socket && this.socket.connected) {
+      console.log('🔄 SOCKET: Leaving table and returning to lobby');
+      
+      // Emit leave table event to backend to clear session data
+      // Use tableId 0 as a special case to indicate "leave any table"
+      this.socket.emit('leaveTable', { tableId: 0 });
+      
+      // Reset local state
+      this.resetConnectionState();
+      
+      // Update location to lobby
+      const nickname = localStorage.getItem('nickname');
+      if (nickname) {
+        this.socket.emit('updateUserLocation', { 
+          tableId: null, 
+          nickname: nickname 
+        });
+      }
+    }
+  }
+
+  /**
    * Get current player data
    */
   getCurrentPlayer() {

@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { TableGrid } from '../components/Lobby/TableGrid';
 import { TableFilters } from '../components/Lobby/TableFilters';
 import { socketService } from '../services/socketService';
+import { OnlineList } from '../components/OnlineList';
 import Cookies from 'js-cookie';
 
 const LobbyContainer = styled.div`
@@ -41,14 +42,6 @@ const Subtitle = styled.p`
 const Content = styled.div`
   max-width: 1400px;
   margin: 0 auto;
-`;
-
-const OnlineList = styled.div`
-  background-color: rgba(0, 0, 0, 0.7);
-  padding: 1rem;
-  border-radius: 8px;
-  border: 1px solid #ffd700;
-  margin-bottom: 2rem;
 `;
 
 const PlayerList = styled.div`
@@ -162,7 +155,6 @@ const ModalError = styled.div`
 `;
 
 const LobbyPage: React.FC = () => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const navigate = useNavigate();
   const [userName, setUserName] = useState<string>('');
   const [filters, setFilters] = useState({
@@ -174,6 +166,7 @@ const LobbyPage: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [nicknameInput, setNicknameInput] = useState('');
   const [modalError, setModalError] = useState('');
+  const [onlineUsers, setOnlineUsers] = useState(0);
 
   useEffect(() => {
     const nickname = Cookies.get('playerNickname');
@@ -182,9 +175,31 @@ const LobbyPage: React.FC = () => {
       return;
     }
     setUserName(nickname);
-    socketService.connect();
-    socketService.requestLobbyTables();
-    // No need to disconnect here as users might navigate to a game
+    
+    // Connect socket and set up listeners
+    const connectAndSetup = async () => {
+      try {
+        await socketService.connect();
+        
+        // Clear any existing table session when returning to lobby
+        // This ensures backend session data is cleared
+        socketService.leaveTable();
+        
+        socketService.requestLobbyTables();
+        socketService.onOnlineUsersUpdate((total) => {
+          setOnlineUsers(total);
+        });
+      } catch (error) {
+        console.error('Failed to connect socket in lobby:', error);
+      }
+    };
+    
+    connectAndSetup();
+
+    // Cleanup on unmount
+    return () => {
+      socketService.disconnect();
+    };
   }, []);
 
   const handleFilterChange = (name: string, value: string) => {
@@ -210,8 +225,7 @@ const LobbyPage: React.FC = () => {
     setUserName(nicknameInput);
     setShowModal(false);
     setModalError('');
-    // Optionally, connect socket and request tables here if needed
-    socketService.connect();
+    // Socket is already connected from useEffect
     socketService.requestLobbyTables();
   };
 
@@ -232,19 +246,7 @@ const LobbyPage: React.FC = () => {
       )}
 
       <Content>
-        <OnlineList data-testid="online-players-list">
-          <h3>Online Players</h3>
-          <PlayerList>
-            {/* Add player list items here */}
-            <PlayerItem data-testid="player-item" $highlighted={true}>
-              {userName}
-            </PlayerItem>
-          </PlayerList>
-          <h3>Observers</h3>
-          <PlayerList>
-            {/* Add observer list items here */}
-          </PlayerList>
-        </OnlineList>
+        <OnlineList onlineUsers={onlineUsers} />
 
         <TableFilters
           filters={filters}

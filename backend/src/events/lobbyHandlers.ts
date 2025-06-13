@@ -527,6 +527,46 @@ export const setupLobbyHandlers = (
 
   // Handle table leave request
   socket.on('leaveTable', ({ tableId }) => {
+    console.log(`DEBUG: Backend received leaveTable event - tableId: ${tableId}, socket: ${socket.id}`);
+    
+    if (tableId === 0) {
+      // Special case: tableId 0 means "leave all tables and clear session"
+      console.log(`DEBUG: Backend clearing all session data for socket ${socket.id}`);
+      
+      // Leave all tables
+      const allTables = tableManager.getAllTables();
+      for (const table of allTables) {
+        if (tableManager.leaveTable(table.id, socket.id)) {
+          socket.leave(`table:${table.id}`);
+        }
+      }
+      
+      // Clear session data
+      if (socket.data.gameId) {
+        socket.leave(`game:${socket.data.gameId}`);
+        gameManager.leaveGameRoom(socket.data.gameId, socket.id);
+      }
+      
+      // Clear all socket session data
+      socket.data.buyIn = undefined;
+      socket.data.gameId = undefined;
+      socket.data.tableId = undefined;
+      socket.data.dbTableId = undefined;
+      socket.data.nickname = undefined;
+      socket.data.playerId = undefined;
+      
+      // Move user to lobby in location manager
+      // Try to get nickname from user's current location or just use socket ID
+      const userLocation = locationManager.getUserLocation(socket.id);
+      const nickname = userLocation?.nickname || `Player${socket.id.slice(0, 4)}`;
+      locationManager.moveToLobby(socket.id, nickname);
+      
+      console.log(`DEBUG: Backend session cleared for socket ${socket.id}`);
+      broadcastTables();
+      return;
+    }
+    
+    // Normal table leave logic
     if (tableManager.leaveTable(tableId, socket.id)) {
       socket.leave(`table:${tableId}`);
       
@@ -534,6 +574,14 @@ export const setupLobbyHandlers = (
       if (socket.data.gameId) {
         socket.leave(`game:${socket.data.gameId}`);
         gameManager.leaveGameRoom(socket.data.gameId, socket.id);
+        
+        // Clear session data when leaving table
+        socket.data.buyIn = undefined;
+        socket.data.gameId = undefined;
+        socket.data.tableId = undefined;
+        socket.data.dbTableId = undefined;
+        socket.data.nickname = undefined;
+        socket.data.playerId = undefined;
       }
       
       broadcastTables();
