@@ -187,13 +187,12 @@ const LobbyPage: React.FC = () => {
 
   useEffect(() => {
     const nickname = Cookies.get('playerNickname');
-    if (!nickname) {
-      setShowModal(true);
-      return;
+    if (nickname) {
+      setUserName(nickname);
     }
-    setUserName(nickname);
+    // No need to show modal automatically - let users browse anonymously
     
-    // Connect socket and set up listeners
+    // Connect socket and set up listeners (works for both authenticated and anonymous users)
     const connectAndSetup = async () => {
       try {
         await socketService.connect();
@@ -290,11 +289,18 @@ const LobbyPage: React.FC = () => {
         <Subtitle>Choose a table to join or observe</Subtitle>
       </Header>
 
-      {userName && (
+      {userName ? (
         <UserInfo data-testid="user-info">
           <UserName data-testid="user-name">Welcome, {userName}</UserName>
           <LogoutButton data-testid="logout-button" onClick={handleLogout}>
             Logout
+          </LogoutButton>
+        </UserInfo>
+      ) : (
+        <UserInfo data-testid="anonymous-info">
+          <UserName data-testid="anonymous-status">Browsing Anonymously</UserName>
+          <LogoutButton data-testid="login-button" onClick={() => setShowModal(true)}>
+            Login
           </LogoutButton>
         </UserInfo>
       )}

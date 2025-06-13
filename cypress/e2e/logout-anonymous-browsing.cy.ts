@@ -8,7 +8,9 @@ describe('Logout to Anonymous Browsing', () => {
   it('should allow user to stay in lobby in anonymous state after logout', () => {
     const testNickname = `TestUser${Date.now()}`;
     
-    // Step 1: Login first
+    // Step 1: Login first (start from anonymous state)
+    cy.get('[data-testid="anonymous-info"]').should('be.visible');
+    cy.get('[data-testid="login-button"]').click();
     cy.get('[data-testid="nickname-modal"]').should('be.visible');
     cy.get('[data-testid="nickname-input"]').type(testNickname);
     cy.get('[data-testid="join-button"]').click();
@@ -57,20 +59,20 @@ describe('Logout to Anonymous Browsing', () => {
     });
     cy.url().should('eq', Cypress.config().baseUrl + '/');
     
-    // Since user has no cookie, modal will appear again, but dismiss it to continue browsing
-    cy.get('[data-testid="nickname-modal"]').should('be.visible');
-    cy.get('[data-testid="browse-anonymously-button"]').click();
+    // Since user has no cookie, should be back to anonymous state automatically (no modal)
+    cy.get('[data-testid="anonymous-info"]').should('be.visible');
+    cy.get('[data-testid="nickname-modal"]').should('not.exist');
     
     // Should be in anonymous browsing state
     cy.get('[data-testid="lobby-container"]').should('be.visible');
-    cy.get('[data-testid="nickname-modal"]').should('not.exist');
     cy.get('[data-testid="user-info"]').should('not.exist');
   });
 
   it('should allow user to dismiss login modal with escape key after logout', () => {
     const testNickname = `TestUser${Date.now()}`;
     
-    // Login and logout
+    // Login and logout (start from anonymous state)
+    cy.get('[data-testid="login-button"]').click();
     cy.get('[data-testid="nickname-input"]').type(testNickname);
     cy.get('[data-testid="join-button"]').click();
     cy.get('[data-testid="logout-button"]').click();
@@ -90,7 +92,8 @@ describe('Logout to Anonymous Browsing', () => {
   it('should allow user to dismiss login modal by clicking outside after logout', () => {
     const testNickname = `TestUser${Date.now()}`;
     
-    // Login and logout
+    // Login and logout (start from anonymous state)
+    cy.get('[data-testid="login-button"]').click();
     cy.get('[data-testid="nickname-input"]').type(testNickname);
     cy.get('[data-testid="join-button"]').click();
     cy.get('[data-testid="logout-button"]').click();
@@ -111,7 +114,8 @@ describe('Logout to Anonymous Browsing', () => {
     const firstNickname = 'FirstUser';
     const secondNickname = `SecondUser${Date.now()}`;
     
-    // Login, logout, and go anonymous
+    // Login, logout, and go anonymous (start from anonymous state)
+    cy.get('[data-testid="login-button"]').click();
     cy.get('[data-testid="nickname-input"]').type(firstNickname);
     cy.get('[data-testid="join-button"]').click();
     cy.get('[data-testid="logout-button"]').click();
@@ -120,15 +124,12 @@ describe('Logout to Anonymous Browsing', () => {
     // Verify anonymous state
     cy.get('[data-testid="nickname-modal"]').should('not.exist');
     cy.get('[data-testid="user-info"]').should('not.exist');
+    cy.get('[data-testid="anonymous-info"]').should('be.visible');
     
-    // Trigger login by visiting a different page and coming back
-    // (This simulates how a user might want to login again)
-    cy.visit('/auth-demo');
-    cy.get('nav').within(() => {
-      cy.contains('Lobby').click();
-    });
+    // Trigger login by clicking login button
+    cy.get('[data-testid="login-button"]').click();
     
-    // Since no cookie exists, should show login modal again
+    // Should show login modal
     cy.get('[data-testid="nickname-modal"]').should('be.visible');
     
     // Login with new nickname
