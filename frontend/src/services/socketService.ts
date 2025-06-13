@@ -394,6 +394,13 @@ export class SocketService {
       this.emitTablesUpdate(tables);
     });
 
+    socket.on('onlineUsers:update', (data: { total: number }) => {
+      console.log('DEBUG: Received onlineUsers:update event with total:', data.total);
+      if (this.onlineUsersCallback) {
+        (this.onlineUsersCallback as any)(data.total);
+      }
+    });
+
     // Handle table joining results
     socket.on('tableJoined', (data: { tableId: number; role: 'player' | 'observer'; buyIn: number; gameId?: string }) => {
       console.log('DEBUG: Frontend received tableJoined event:', data);
@@ -960,6 +967,20 @@ export class SocketService {
   requestLobbyTables() {
     if (this.socket && this.socket.connected) {
       this.socket.emit('getLobbyTables');
+    }
+  }
+
+  emitUserLogin(nickname: string) {
+    if (this.socket && this.socket.connected) {
+      console.log(`Emitting user login for: ${nickname}`);
+      this.socket.emit('userLogin', { nickname });
+    }
+  }
+
+  emitUserLogout() {
+    if (this.socket && this.socket.connected) {
+      console.log('Emitting user logout');
+      this.socket.emit('userLogout');
     }
   }
 

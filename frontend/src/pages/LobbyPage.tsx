@@ -203,8 +203,15 @@ const LobbyPage: React.FC = () => {
         
         socketService.requestLobbyTables();
         socketService.onOnlineUsersUpdate((total: number) => {
+          console.log(`🔍 FRONTEND: Received online users update: ${total}`);
           setOnlineUsers(total);
         });
+
+        // If user is already authenticated (has cookie), emit login event
+        if (nickname) {
+          console.log(`🔍 FRONTEND: Emitting user login for existing user: ${nickname}`);
+          socketService.emitUserLogin(nickname);
+        }
       } catch (error) {
         console.error('Failed to connect socket in lobby:', error);
       }
@@ -226,6 +233,8 @@ const LobbyPage: React.FC = () => {
   };
 
   const handleLogout = () => {
+    // Emit user logout event to update online users count
+    socketService.emitUserLogout();
     Cookies.remove('playerNickname');
     setUserName('');
     setShowModal(true);
@@ -243,6 +252,9 @@ const LobbyPage: React.FC = () => {
     setModalError('');
     // Socket is already connected from useEffect
     socketService.requestLobbyTables();
+    // Emit user login event to update online users count
+    console.log(`🔍 FRONTEND: Emitting user login for: ${nicknameInput}`);
+    socketService.emitUserLogin(nicknameInput);
   };
 
   const handleBrowseAnonymously = () => {
@@ -254,6 +266,7 @@ const LobbyPage: React.FC = () => {
         await socketService.connect();
         socketService.requestLobbyTables();
         socketService.onOnlineUsersUpdate((total: number) => {
+          console.log(`🔍 FRONTEND: Received online users update (anonymous): ${total}`);
           setOnlineUsers(total);
         });
       } catch (error) {

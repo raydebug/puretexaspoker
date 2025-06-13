@@ -12,6 +12,8 @@ interface ClientToServerEvents {
   standUp: (data: { tableId: number }) => void;
   takeSeat: (data: { seatNumber: number; buyIn: number }) => void;
   updateUserLocation: (data: { tableId: number; nickname: string }) => void;
+  userLogin: (data: { nickname: string }) => void;
+  userLogout: () => void;
 }
 
 interface ServerToClientEvents {
@@ -29,6 +31,7 @@ interface ServerToClientEvents {
   'player:disconnected': (data: { playerId: string; nickname: string; timeoutSeconds: number }) => void;
   'player:reconnected': (data: { playerId: string; nickname: string }) => void;
   'player:removedFromSeat': (data: { playerId: string; nickname: string; seatNumber: number; reason: string }) => void;
+  'onlineUsers:update': (data: { total: number }) => void;
 }
 
 // Connection monitoring state
@@ -47,6 +50,9 @@ interface PlayerConnectionState {
 const disconnectedPlayers = new Map<string, PlayerConnectionState>();
 const DISCONNECT_TIMEOUT_MS = 5000; // 5 seconds
 
+// Track authenticated users (both in lobby and at tables) - GLOBAL ACROSS ALL CONNECTIONS
+const authenticatedUsers = new Map<string, { nickname: string; socketId: string; location: 'lobby' | number }>();
+
 export const setupLobbyHandlers = (
   io: Server<ClientToServerEvents, ServerToClientEvents>,
   socket: Socket<ClientToServerEvents, ServerToClientEvents>
@@ -54,6 +60,14 @@ export const setupLobbyHandlers = (
   // Broadcast table updates to all connected clients
   const broadcastTables = () => {
     io.emit('tablesUpdate', tableManager.getAllTables());
+  };
+
+  // Broadcast online users count update to all connected clients
+  const broadcastOnlineUsersUpdate = () => {
+    const totalOnlineUsers = authenticatedUsers.size;
+    console.log(`🔍 BACKEND: Broadcasting online users update - Total: ${totalOnlineUsers}`);
+    console.log(`🔍 BACKEND: Current authenticated users:`, Array.from(authenticatedUsers.keys()));
+    io.emit('onlineUsers:update', { total: totalOnlineUsers });
   };
 
   // Helper function to broadcast current users at a table
@@ -165,6 +179,48 @@ export const setupLobbyHandlers = (
     socket.emit('tablesUpdate', tables);
   });
 
+  // Handle user login event to track authenticated lobby users
+  socket.on('userLogin', ({ nickname }) => {
+    console.log(`🔍 BACKEND: User login event - ${nickname} (socket: ${socket.id})`);
+    console.log(`🔍 BACKEND: Authenticated users before login:`, Array.from(authenticatedUsers.keys()));
+    
+    // Remove any existing entry for this socket (in case of re-login)
+    for (const [key, user] of authenticatedUsers.entries()) {
+      if (user.socketId === socket.id) {
+        authenticatedUsers.delete(key);
+        console.log(`🔍 BACKEND: Removed existing entry for socket ${socket.id}`);
+        break;
+      }
+    }
+    
+    // Add or update user in authenticated users map
+    authenticatedUsers.set(nickname, {
+      nickname,
+      socketId: socket.id,
+      location: 'lobby'
+    });
+    
+    console.log(`🔍 BACKEND: Added authenticated user ${nickname} to lobby tracking`);
+    console.log(`🔍 BACKEND: Authenticated users after login:`, Array.from(authenticatedUsers.keys()));
+    broadcastOnlineUsersUpdate();
+  });
+
+  // Handle user logout event
+  socket.on('userLogout', () => {
+    console.log(`DEBUG: User logout event (socket: ${socket.id})`);
+    
+    // Remove user from authenticated users map
+    for (const [key, user] of authenticatedUsers.entries()) {
+      if (user.socketId === socket.id) {
+        authenticatedUsers.delete(key);
+        console.log(`DEBUG: Removed authenticated user ${user.nickname} from tracking`);
+        break;
+      }
+    }
+    
+    broadcastOnlineUsersUpdate();
+  });
+
   // Handle immediate location update when join button is clicked in lobby
   socket.on('updateUserLocation', async ({ tableId, nickname }) => {
     console.log(`🎯 BACKEND: Received immediate location update - ${nickname} → table ${tableId} (observer)`);
@@ -269,6 +325,14 @@ export const setupLobbyHandlers = (
         socket.join(`table:${tableId}`);
         socket.join(`game:${gameId}`);
         gameManager.joinGameRoom(gameId, socket.id);
+      }
+
+      // Update authenticated user location if they're tracked
+      if (authenticatedUsers.has(nickname)) {
+        const user = authenticatedUsers.get(nickname)!;
+        user.location = tableId;
+        authenticatedUsers.set(nickname, user);
+        console.log(`DEBUG: Updated authenticated user ${nickname} location to table ${tableId}`);
       }
 
       // Emit location update event to notify all clients
@@ -840,6 +904,16 @@ export const setupLobbyHandlers = (
   // Handle client disconnect - start monitoring for timeout
   socket.on('disconnect', async () => {
     console.log(`DEBUG: Player ${socket.id} disconnected, starting timeout monitoring`);
+    
+    // Remove user from authenticated users tracking
+    for (const [key, user] of authenticatedUsers.entries()) {
+      if (user.socketId === socket.id) {
+        authenticatedUsers.delete(key);
+        console.log(`DEBUG: Removed disconnected user ${user.nickname} from authenticated users tracking`);
+        break;
+      }
+    }
+    broadcastOnlineUsersUpdate();
     
     const allTables = tableManager.getAllTables();
     for (const table of allTables) {
