@@ -27,6 +27,7 @@
 - Added takeSeat method - Enables observers to become players
 - Session cleanup on lobby return - Clears backend session data to prevent takeSeat failures
 - Session establishment before navigation - Waits for backend confirmation before game page redirect
+- ✅ E2E test coverage for session establishment - Comprehensive tests validating all fixes
 
 ## 🚧 Ongoing Tasks
 
@@ -60,6 +61,7 @@
 - Observer Appearance: 5/5
 - Username Duplicate: 2/2
 - API Backend: 42/42
+- Session Establishment: 3/3 ✨ NEW
 
 ### Pending Tests
 - Location Transition: 1/2
