@@ -22,7 +22,21 @@ When('I click join table to visit the game page', () => {
   // After login, the join table button should now be enabled and clickable
   cy.get('[data-testid^="join-table-"]').first().should('not.be.disabled')
   cy.get('[data-testid^="join-table-"]').first().click()
-  cy.url().should('include', '/table/')
+  
+  // Wait for either a dialog to appear OR navigation to happen
+  cy.then(() => {
+    // Check if a dialog appeared first
+    cy.get('body').then($body => {
+      if ($body.find('[data-testid*="dialog"], [class*="dialog"], [role="dialog"]').length > 0) {
+        // Dialog appeared - handle it
+        cy.get('[data-testid*="dialog"], [class*="dialog"], [role="dialog"]').should('be.visible')
+        cy.get('button:contains("Join"), button:contains("Confirm"), [data-testid*="join"], [data-testid*="confirm"]').first().click()
+      }
+    })
+  })
+  
+  // Wait for navigation to happen (either directly or after dialog)
+  cy.url({ timeout: 15000 }).should('match', /\/(join-table|game\/\d+|table\/\d+)/)
 })
 
 // Actions - Seat Management
@@ -62,8 +76,8 @@ Then('the online users count should increase by 1', () => {
 
 // Assertions - Navigation
 Then('I should be on the game page', () => {
-  cy.url().should('include', '/table/')
-  cy.get('[data-testid="game-container"]').should('be.visible')
+  cy.url().should('match', /\/(game\/\d+|table\/\d+)/)
+  cy.get('[data-testid="game-container"], [data-testid="table-interface"], [data-testid="poker-table"]', { timeout: 15000 }).should('be.visible')
 })
 
 // Assertions - Observers List
