@@ -141,10 +141,27 @@ const ModalButton = styled.button`
   font-weight: bold;
   cursor: pointer;
   transition: all 0.2s;
+  margin-bottom: 0.5rem;
   &:hover {
     background: #37a34a;
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+`;
+
+const ModalSkipButton = styled.button`
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 4px;
+  border: 1px solid #666;
+  background: transparent;
+  color: #ccc;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  &:hover {
+    border-color: #ffd700;
+    color: #ffd700;
   }
 `;
 
@@ -229,6 +246,43 @@ const LobbyPage: React.FC = () => {
     socketService.requestLobbyTables();
   };
 
+  const handleBrowseAnonymously = () => {
+    setShowModal(false);
+    setModalError('');
+    // Connect socket for anonymous browsing (read-only mode)
+    const connectAnonymously = async () => {
+      try {
+        await socketService.connect();
+        socketService.requestLobbyTables();
+        socketService.onOnlineUsersUpdate((total: number) => {
+          setOnlineUsers(total);
+        });
+      } catch (error) {
+        console.error('Failed to connect socket anonymously:', error);
+      }
+    };
+    connectAnonymously();
+  };
+
+  const handleModalOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      handleBrowseAnonymously();
+    }
+  };
+
+  const handleEscapeKey = (e: KeyboardEvent) => {
+    if (e.key === 'Escape' && showModal) {
+      handleBrowseAnonymously();
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [showModal]);
+
   return (
     <LobbyContainer data-testid="lobby-container">
       <Header>
@@ -256,7 +310,7 @@ const LobbyPage: React.FC = () => {
       </Content>
 
       {showModal && (
-        <ModalOverlay data-testid="nickname-modal">
+        <ModalOverlay data-testid="nickname-modal" onClick={handleModalOverlayClick}>
           <Modal>
             <ModalTitle>Enter Your Nickname</ModalTitle>
             <form onSubmit={handleModalSubmit}>
@@ -276,6 +330,9 @@ const LobbyPage: React.FC = () => {
                 Start Playing
               </ModalButton>
             </form>
+            <ModalSkipButton type="button" onClick={handleBrowseAnonymously} data-testid="browse-anonymously-button">
+              Browse Anonymously
+            </ModalSkipButton>
           </Modal>
         </ModalOverlay>
       )}

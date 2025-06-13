@@ -4,7 +4,7 @@ import styled from 'styled-components';
 const ListContainer = styled.div`
   position: fixed;
   right: 2rem;
-  top: 8rem;
+  top: 12rem;
   background-color: rgba(0, 0, 0, 0.8);
   border-radius: 1rem;
   padding: 1.5rem;
