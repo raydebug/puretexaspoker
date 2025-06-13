@@ -18,6 +18,9 @@
 - Username validation & duplicate prevention
 - Player connection monitoring
 - User state management & authentication
+- Socket service export issue - Added missing socketService singleton
+- Missing joinTable method - Added method for table joining functionality
+- Socket connection race condition - Fixed timing issue when joining tables
 
 ## 🚧 Ongoing Tasks
 
