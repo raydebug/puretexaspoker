@@ -15,9 +15,9 @@ const ListContainer = styled.div`
   z-index: 100;
 `;
 
-const ListTitle = styled.h3`
+const SectionTitle = styled.h3`
   color: #ffd700;
-  margin: 0;
+  margin: 0 0 1rem 0;
   text-align: center;
   font-size: 1.2rem;
   font-weight: bold;
@@ -25,27 +25,68 @@ const ListTitle = styled.h3`
   letter-spacing: 1px;
 `;
 
+const ObserversList = styled.div`
+  margin-top: 0.5rem;
+`;
+
+const ObserverItem = styled.div`
+  color: #e0e0e0;
+  padding: 0.25rem 0;
+  font-size: 0.9rem;
+  text-align: center;
+`;
+
+const EmptyMessage = styled.div`
+  color: #888;
+  font-style: italic;
+  text-align: center;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+`;
+
 interface OnlineListProps {
   onlineUsers?: number;
   players?: any[];
   observers?: string[];
   currentPlayerId?: string;
+  showMode?: 'onlineUsers' | 'observers';
 }
 
 export const OnlineList: React.FC<OnlineListProps> = ({ 
   onlineUsers, 
   players = [], 
   observers = [], 
-  currentPlayerId 
+  currentPlayerId,
+  showMode = 'onlineUsers'
 }) => {
-  // Calculate total online users if not provided directly
+  // If showMode is 'observers', display observers list
+  if (showMode === 'observers') {
+    return (
+      <ListContainer data-testid="online-users-list">
+        <SectionTitle>Observers ({observers.length})</SectionTitle>
+        <ObserversList>
+          {observers.length > 0 ? (
+            observers.map((observer, index) => (
+              <ObserverItem key={index} data-testid={`observer-${index}`}>
+                {observer}
+              </ObserverItem>
+            ))
+          ) : (
+            <EmptyMessage>No observers</EmptyMessage>
+          )}
+        </ObserversList>
+      </ListContainer>
+    );
+  }
+
+  // Default mode: show online users count (for lobby)
   const totalUsers = onlineUsers !== undefined 
     ? onlineUsers 
     : players.length + observers.length;
 
   return (
     <ListContainer data-testid="online-users-list">
-      <ListTitle>Online Users: {totalUsers}</ListTitle>
+      <SectionTitle>Online Users: {totalUsers}</SectionTitle>
     </ListContainer>
   );
 }; 

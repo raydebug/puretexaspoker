@@ -486,6 +486,7 @@ const GamePage: React.FC = () => {
             players={gameState?.players || []} 
             observers={observers}
             currentPlayerId={currentPlayer?.id}
+            showMode="observers"
           />
 
           {/* Seat Selection Dialog */}
@@ -514,6 +515,7 @@ const GamePage: React.FC = () => {
         players={gameState?.players || []} 
         observers={observers}
         currentPlayerId={currentPlayer?.id}
+        showMode="observers"
       />
     </GameContainer>
   );
