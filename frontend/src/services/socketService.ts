@@ -958,13 +958,17 @@ export class SocketService {
   /**
    * Leave current table and return to lobby
    */
-  leaveTable() {
+  leaveTable(gameId?: string, playerId?: string) {
     if (this.socket && this.socket.connected) {
       console.log('🔄 SOCKET: Leaving table and returning to lobby');
       
-      // Emit leave table event to backend to clear session data
-      // Use tableId 0 as a special case to indicate "leave any table"
-      this.socket.emit('leaveTable', { tableId: 0 });
+      if (gameId && playerId) {
+        // Specific player leaving a specific game
+        this.socket.emit('player:leaveTable', { gameId, playerId });
+      } else {
+        // General leave table - use tableId 0 as a special case to indicate "leave any table"
+        this.socket.emit('leaveTable', { tableId: 0 });
+      }
       
       // Reset local state
       this.resetConnectionState();
@@ -1197,6 +1201,78 @@ export class SocketService {
   standUp(gameId: string, playerId: string) {
     if (this.socket && this.socket.connected) {
       this.socket.emit('player:standUp', { gameId, playerId });
+    }
+  }
+
+  /**
+   * Call in game
+   */
+  call(gameId: string, playerId: string) {
+    if (this.socket && this.socket.connected) {
+      this.socket.emit('game:action', { gameId, playerId, action: 'call' });
+    }
+  }
+
+  /**
+   * Raise in game
+   */
+  raise(gameId: string, playerId: string, amount: number) {
+    if (this.socket && this.socket.connected) {
+      this.socket.emit('game:action', { gameId, playerId, action: 'raise', amount });
+    }
+  }
+
+  /**
+   * All in
+   */
+  allIn(gameId: string, playerId: string) {
+    if (this.socket && this.socket.connected) {
+      this.socket.emit('game:action', { gameId, playerId, action: 'allIn' });
+    }
+  }
+
+  /**
+   * Check in game
+   */
+  check(gameId: string, playerId: string) {
+    if (this.socket && this.socket.connected) {
+      this.socket.emit('game:action', { gameId, playerId, action: 'check' });
+    }
+  }
+
+  /**
+   * Start new hand
+   */
+  startNewHand(gameId: string) {
+    if (this.socket && this.socket.connected) {
+      this.socket.emit('game:startNewHand', { gameId });
+    }
+  }
+
+  /**
+   * Deal community cards
+   */
+  dealCommunityCards(gameId: string) {
+    if (this.socket && this.socket.connected) {
+      this.socket.emit('game:dealCommunityCards', { gameId });
+    }
+  }
+
+  /**
+   * Get phase info
+   */
+  getPhaseInfo(gameId: string) {
+    if (this.socket && this.socket.connected) {
+      this.socket.emit('game:getPhaseInfo', { gameId });
+    }
+  }
+
+  /**
+   * Force complete phase
+   */
+  forceCompletePhase(gameId: string) {
+    if (this.socket && this.socket.connected) {
+      this.socket.emit('game:forceCompletePhase', { gameId });
     }
   }
 }
