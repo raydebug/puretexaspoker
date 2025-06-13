@@ -6,6 +6,14 @@ A modern, real-time Texas Hold'em poker game built with React, TypeScript, Node.
 
 ### Recent Major Features Implemented
 
+#### ✅ Anonymous Lobby Browsing (COMPLETED - June 13, 2025)
+- **Feature**: Users can browse lobby without authentication after logout
+- **UX Enhancement**: Multiple ways to dismiss login modal (button, escape key, click outside)
+- **Seamless Navigation**: Browse tables, view online users, navigate between pages anonymously
+- **Re-authentication**: Users can login at any time from anonymous state  
+- **Testing**: ✅ 4/4 E2E tests passing - Complete logout-to-anonymous flow coverage
+- **Status**: ✅ **FEATURE COMPLETE** - Professional anonymous browsing experience
+
 #### ✅ Session Data Bug Fix (COMPLETED - June 12, 2025) 
 - **Issue**: Critical "Invalid session data. Please rejoin the table." error preventing seat-taking
 - **Root Cause**: Frontend takeSeat method was creating new socket connections, wiping session data
@@ -70,6 +78,8 @@ A modern, real-time Texas Hold'em poker game built with React, TypeScript, Node.
 - **Observer Appearance**: ✅ 5/5 passing - User joining table appears in observers list
 - **Location Transition**: ✅ 1/2 passing - User location updates from lobby to table-x during join
 - **Username Duplicate**: ✅ 2/2 passing - Error handling and recovery
+- **Anonymous Browsing**: ✅ 4/4 passing - Logout to anonymous state with full lobby access
+- **Lobby Basic Functions**: ✅ 2/2 passing - Anonymous browsing and UI components
 - **API Backend**: ✅ 42/42 passing - Complete backend stability
 
 ### 🚀 Key Technical Features
@@ -128,16 +138,20 @@ npx cypress run --spec "cypress/e2e/username-validation.cy.ts"
 npx cypress run --spec "cypress/e2e/observer-flow.cy.ts"
 npx cypress run --spec "cypress/e2e/observer-appears-when-joining-test.cy.ts"
 npx cypress run --spec "cypress/e2e/user-location-transition-flow.cy.ts"
+npx cypress run --spec "cypress/e2e/logout-anonymous-browsing.cy.ts"
+npx cypress run --spec "cypress/e2e/lobby-basic.cy.ts"
 ```
 
 ## 🎮 How to Play
 
 1. **Access the Game**: Navigate to http://localhost:3000
-2. **Set Nickname**: Enter your desired nickname (duplicates prevented)
-3. **Browse Tables**: View available poker tables in the lobby
-4. **Join as Observer**: Click "Join Table" to enter as observer first
-5. **Select Seat**: Choose your preferred seat and buy-in amount
-6. **Play Poker**: Enjoy Texas Hold'em with real-time multiplayer action
+2. **Browse Anonymously** (Optional): Browse tables without logging in using "Browse Anonymously" button
+3. **Set Nickname**: Enter your desired nickname when ready to interact (duplicates prevented)
+4. **Browse Tables**: View available poker tables in the lobby
+5. **Join as Observer**: Click "Join Table" to enter as observer first
+6. **Select Seat**: Choose your preferred seat and buy-in amount
+7. **Play Poker**: Enjoy Texas Hold'em with real-time multiplayer action
+8. **Logout**: After logout, continue browsing anonymously or re-login anytime
 
 ## 🏗️ Architecture
 
