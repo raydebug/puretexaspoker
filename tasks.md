@@ -38,14 +38,23 @@
     - Login modal triggered when disabled button clicked (fallback)
     - Proper state transitions on login/logout
     - Navigation prevention for disabled buttons
+- **Observer-to-Player Test Cleanup** ✅ **COMPLETE**
+  * **Removed 5 duplicate test files** with overlapping functionality
+  * **Kept**: `cypress/e2e/observer-to-player-transition.cy.ts` (425 lines - most comprehensive)
+  * **Deleted duplicates**:
+    - `observer-to-player-online-list.cy.ts` (143 lines)
+    - `observer-to-player-session-test.cy.ts` (207 lines)
+    - `observer-to-player-transition-flow.cy.ts` (195 lines)
+    - `observer-to-player-transition-complete.cy.ts` (194 lines)
+    - `complete-observer-to-player-flow.cy.ts` (169 lines)
 
 ## 🔄 Currently Working On
 
 ### High Priority
-- **Observer to Player Transition Online List** 📝 **TESTS READY**
-  * **Test Suite**: `cypress/e2e/observer-to-player-online-list.cy.ts`
+- **Observer to Player Transition Implementation Verification**
+  * **Test Suite**: `cypress/e2e/observer-to-player-transition.cy.ts` (consolidated - 425 lines)
   * **Requirements**: User appears in observers list when joining table, then moves to players list after taking seat
-  * **Current Status**: Test needs implementation verification
+  * **Current Status**: Need to verify implementation is working correctly with consolidated test
 
 ## 🚧 Ongoing Tasks
 
