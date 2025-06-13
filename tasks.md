@@ -62,6 +62,7 @@
 - Username Duplicate: 2/2
 - API Backend: 42/42
 - Session Establishment: 3/3 ✨ NEW
+- Observer → Player Transition: 3/3 ✅ FULL FLOW
 
 ### Pending Tests
 - Location Transition: 1/2
