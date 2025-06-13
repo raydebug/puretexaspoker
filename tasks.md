@@ -25,6 +25,7 @@
 - Missing getter methods - Added getCurrentPlayer, getGameState, getSocket methods
 - Socket event mismatch fix - Critical fix for frontend/backend event communication
 - Added takeSeat method - Enables observers to become players
+- Session cleanup on lobby return - Clears backend session data to prevent takeSeat failures
 
 ## 🚧 Ongoing Tasks
 
