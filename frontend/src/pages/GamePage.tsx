@@ -191,23 +191,23 @@ const GamePage: React.FC = () => {
         }
       };
       
-      // Create mock game state with proper flop cards (3 cards)
+      // Create mock game state with no players initially (user starts as observer)
       const mockGameState: GameState = {
         id: gameId || '1',
-        players: [mockPlayer],
+        players: [], // Start with empty players array - user starts as observer
         communityCards: [
           { rank: 'A', suit: '♠' },
           { rank: 'K', suit: '♥' },
           { rank: 'Q', suit: '♦' }
         ],
         pot: 150,
-        currentPlayerId: mockPlayer.id,
-        currentPlayerPosition: 1,
+        currentPlayerId: null, // No current player since no one is seated
+        currentPlayerPosition: 0,
         dealerPosition: 0,
         smallBlindPosition: 1,
         bigBlindPosition: 2,
-        status: 'playing',
-        phase: 'flop',
+        status: 'waiting', // Change to waiting since no players
+        phase: 'waiting', // Change to waiting since no players
         minBet: 10,
         currentBet: 0,
         smallBlind: 5,
@@ -223,7 +223,7 @@ const GamePage: React.FC = () => {
       // In test mode, start as observer with option to take a seat
       setIsObserver(true);
       setObservers([testNickname]); // Use actual test nickname from localStorage
-      setAvailableSeats([0, 1, 2, 3, 4, 5, 6, 7, 8]); // All seats available for observers
+      setAvailableSeats([1, 2, 3, 4, 5, 6, 7, 8, 9]); // All seats available since no players // All seats available for observers
       return;
     }
     
