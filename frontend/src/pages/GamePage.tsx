@@ -288,21 +288,64 @@ const GamePage: React.FC = () => {
             const occupiedSeats = state.players.map(p => p.seatNumber);
             const available = Array.from({ length: 9 }, (_, i) => i + 1).filter(seat => !occupiedSeats.includes(seat));
             setAvailableSeats(available);
+            
+            // Clear the interval once we have game state
+            if (gameStateInterval) {
+              clearInterval(gameStateInterval);
+              gameStateInterval = null;
+            }
           }
         };
         
-        // Check immediately and then periodically
+        // Check immediately
         checkGameState();
-        const gameStateInterval = setInterval(checkGameState, 500);
+        
+        // Only set up interval if we don't have game state yet
+        let gameStateInterval: NodeJS.Timeout | null = null;
+        if (!socketService.getGameState()) {
+          gameStateInterval = setInterval(checkGameState, 500);
+        }
         
         // Set a timeout to show the observer view if no game state is received
         const timeoutId = setTimeout(() => {
-          console.log('DEBUG: GamePage timeout - showing observer view');
+          console.log('DEBUG: GamePage timeout - showing observer view as fallback');
+          
+          // If we still don't have game state, create a minimal one for observers
+          if (!socketService.getGameState()) {
+            console.log('DEBUG: Creating minimal game state for observer view');
+            const minimalGameState = {
+              id: gameId || 'unknown',
+              players: [],
+              communityCards: [],
+              pot: 0,
+              currentPlayerId: null,
+              currentPlayerPosition: 0,
+              dealerPosition: 1,
+              smallBlindPosition: 2,
+              bigBlindPosition: 3,
+              status: 'waiting' as const,
+              phase: 'waiting' as const,
+              minBet: 10,
+              currentBet: 0,
+              smallBlind: 5,
+              bigBlind: 10,
+              isHandComplete: false
+            };
+            setGameState(minimalGameState);
+            setAvailableSeats([1, 2, 3, 4, 5, 6, 7, 8, 9]); // All seats available
+          }
+          
           setIsLoading(false);
-        }, 5000);
+          if (gameStateInterval) {
+            clearInterval(gameStateInterval);
+            gameStateInterval = null;
+          }
+        }, 3000); // Reduced from 5000ms to 3000ms
         
         return () => {
-          clearInterval(gameStateInterval);
+          if (gameStateInterval) {
+            clearInterval(gameStateInterval);
+          }
           clearTimeout(timeoutId);
         };
         
