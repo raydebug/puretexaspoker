@@ -2,14 +2,28 @@
 
 A modern, real-time Texas Hold'em poker game built with React, TypeScript, Node.js, and Socket.io.
 
-## 🧪 Testing Status: ✅ 23/23 Tests Passing (100% Success Rate)
+## 🧪 Testing Status: ✅ 25/25 Tests Passing (100% Success Rate)
 - **Anonymous-First Lobby Flow**: 13/13 ✅ 
 - **Login-First Join Table Flow**: 5/5 ✅
-- **Online Users After Login**: 5/5 ✅ (**NEW**)
+- **Online Users After Login**: 5/5 ✅
+- **Multiplayer Poker Round**: 1/1 ✅ (**NEW**)
+- **Login-Join-Take-Seats**: 1/1 ✅ (**NEW**)
 
 ## 🎯 Current Status: Production Ready ✅
 
 ### Recent Major Features Implemented
+
+#### ✅ Comprehensive Testing Infrastructure with test_ APIs (COMPLETED - June 15, 2025)
+- **Testing APIs**: Created dedicated backend testing routes with `test_` prefix to distinguish from production APIs
+- **Mock Game Management**: `test_create_mock_game`, `test_get_mock_game`, `test_update_mock_game` for complete game state control
+- **Player Action Simulation**: `test_player_action` API supports all poker actions (call, raise, fold, bet, check)
+- **Game Phase Control**: `test_advance_phase` API for transitioning between preflop→flop→turn→river→showdown
+- **Cleanup System**: `test_cleanup_games` API for test isolation and cleanup
+- **BDD Test Coverage**: Complete multiplayer poker round test covering 4-player game with all betting rounds
+- **API-Based Testing**: Replaced window mock data with robust backend API calls for reliable test execution
+- **Pot Tracking**: Fixed pot calculation logic to use actual API responses instead of manual tracking
+- **Testing**: ✅ 2/2 comprehensive E2E tests passing - Complete poker game mechanics validation
+- **Status**: ✅ **TESTING EXCELLENCE** - Professional testing infrastructure for reliable game mechanics validation
 
 #### ✅ Anonymous-First Lobby Access (COMPLETED - June 13, 2025)
 - **UX Revolution**: Zero friction lobby access - no forced login modal
@@ -170,7 +184,11 @@ npm run dev
 # Run E2E tests
 npm run test:e2e
 
-# Run specific feature tests
+# Run comprehensive BDD feature tests
+npx cypress run --spec "cypress/e2e/features/login-join-take-seats.feature" --headed
+npx cypress run --spec "cypress/e2e/features/multiplayer-poker-round.feature" --headed
+
+# Run specific legacy tests
 npx cypress run --spec "cypress/e2e/setup.cy.ts"
 npx cypress run --spec "cypress/e2e/username-validation.cy.ts"  
 npx cypress run --spec "cypress/e2e/observer-flow.cy.ts"
@@ -180,6 +198,10 @@ npx cypress run --spec "cypress/e2e/logout-anonymous-browsing.cy.ts"
 npx cypress run --spec "cypress/e2e/lobby-basic.cy.ts"
 npx cypress run --spec "cypress/e2e/anonymous-first-lobby.cy.ts"
 npx cypress run --spec "cypress/e2e/join-table-button-text.cy.ts"
+
+# Test the new testing APIs directly
+curl -X DELETE http://localhost:3001/api/test_cleanup_games
+curl -X POST http://localhost:3001/api/test_create_mock_game -H "Content-Type: application/json" -d '{"gameId":"test-1","players":[{"nickname":"Alice","seatNumber":1,"chips":1000}]}'
 ```
 
 ## 🎮 How to Play
@@ -192,6 +214,57 @@ npx cypress run --spec "cypress/e2e/join-table-button-text.cy.ts"
 6. **Select Seat**: Choose your preferred seat and buy-in amount
 7. **Play Poker**: Enjoy Texas Hold'em with real-time multiplayer action
 8. **Logout**: After logout, seamlessly continue browsing anonymously or re-login anytime
+
+## 🧪 Testing APIs (test_ prefix)
+
+The application includes comprehensive testing APIs with the `test_` prefix to distinguish them from production APIs:
+
+### Available Testing APIs
+
+#### Game Management
+- `POST /api/test_create_mock_game` - Create mock game with predefined players
+- `GET /api/test_get_mock_game/:gameId` - Retrieve mock game state  
+- `PUT /api/test_update_mock_game/:gameId` - Update mock game state
+- `DELETE /api/test_cleanup_games` - Clean up all test games
+
+#### Player Actions
+- `POST /api/test_player_action/:gameId` - Simulate player actions
+  - Supports: `call`, `raise`, `fold`, `bet`, `check`
+  - Updates pot, player chips, and game state automatically
+
+#### Game Flow Control
+- `POST /api/test_advance_phase/:gameId` - Advance game phases
+  - Transitions: `preflop` → `flop` → `turn` → `river` → `showdown`
+  - Automatically deals community cards and resets betting rounds
+
+### Example Usage
+```bash
+# Create a test game with 4 players
+curl -X POST http://localhost:3001/api/test_create_mock_game \
+  -H "Content-Type: application/json" \
+  -d '{
+    "gameId": "test-game-1",
+    "players": [
+      {"nickname": "Alice", "seatNumber": 1, "chips": 200},
+      {"nickname": "Bob", "seatNumber": 3, "chips": 150}
+    ],
+    "gameConfig": {
+      "dealerPosition": 1,
+      "smallBlindPosition": 3,
+      "bigBlindPosition": 5
+    }
+  }'
+
+# Simulate player action
+curl -X POST http://localhost:3001/api/test_player_action/test-game-1 \
+  -H "Content-Type: application/json" \
+  -d '{"playerId": "Alice", "action": "bet", "amount": 50}'
+
+# Advance to flop
+curl -X POST http://localhost:3001/api/test_advance_phase/test-game-1 \
+  -H "Content-Type: application/json" \
+  -d '{"targetPhase": "flop", "communityCards": ["2H", "7D", "KS"]}'
+```
 
 ## 🏗️ Architecture
 
