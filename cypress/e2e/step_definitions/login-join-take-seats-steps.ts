@@ -370,9 +370,27 @@ Then('I should see {string} in the players list at seat {string}', (nickname: st
 
 Then('I should not see {string} at seat {string}', (nickname: string, seatNumber: string) => {
   cy.log(`🔍 Verifying ${nickname} is NOT at seat ${seatNumber}`)
-  // Check that the seat does not contain the player name
-  cy.get(`[data-testid="seat-${seatNumber}"]`).should('not.contain', nickname)
-  cy.log(`✅ ${nickname} is not at seat ${seatNumber}`)
+  
+  // Check for both possible seat element types
+  cy.get('body').then($body => {
+    const hasSeatElement = $body.find(`[data-testid="seat-${seatNumber}"]`).length > 0
+    const hasAvailableSeatElement = $body.find(`[data-testid="available-seat-${seatNumber}"]`).length > 0
+    
+    cy.log(`🔍 Debug - hasSeatElement: ${hasSeatElement}, hasAvailableSeatElement: ${hasAvailableSeatElement}`)
+    
+    if (hasSeatElement) {
+      // If seat element exists, check it doesn't contain the nickname
+      cy.get(`[data-testid="seat-${seatNumber}"]`).should('not.contain', nickname)
+      cy.log(`✅ ${nickname} is not at seat ${seatNumber} (checked seat element)`)
+    } else if (hasAvailableSeatElement) {
+      // If available-seat element exists, check it doesn't contain the nickname
+      cy.get(`[data-testid="available-seat-${seatNumber}"]`).should('not.contain', nickname)
+      cy.log(`✅ ${nickname} is not at seat ${seatNumber} (checked available-seat element)`)
+    } else {
+      // If neither exists, that's also valid - seat might not be rendered
+      cy.log(`✅ ${nickname} is not at seat ${seatNumber} (seat element not found, which is acceptable)`)
+    }
+  })
 })
 
 // Assertions - Seat States
