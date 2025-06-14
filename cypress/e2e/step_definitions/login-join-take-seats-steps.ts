@@ -1,5 +1,30 @@
 import { Given, When, Then } from '@badeball/cypress-cucumber-preprocessor'
 
+// Missing step definitions for join table button states
+Then('all join tables buttons are inactive now', () => {
+  cy.get('[data-testid^="join-table-"]').each(($button) => {
+    cy.wrap($button).should('be.disabled')
+    cy.wrap($button).should('contain', 'Login to Join')
+  })
+})
+
+Then('all join table buttons become active now', () => {
+  cy.get('[data-testid^="join-table-"]').each(($button) => {
+    cy.wrap($button).should('not.be.disabled')
+    cy.wrap($button).should('contain', 'Join Table')
+  })
+})
+
+When('I click one join table button', () => {
+  cy.get('[data-testid^="join-table-"]').first().should('not.be.disabled')
+  cy.get('[data-testid^="join-table-"]').first().click({ force: true })
+  cy.log('✅ Clicked join table button')
+  
+  // Wait for welcome popup and navigation (no dialog anymore)
+  cy.wait(3000) // Give UI time to show welcome popup and navigate
+  cy.log('✅ Waiting for welcome popup and navigation to complete')
+})
+
 // Authentication States
 Given('I am not logged in', () => {
   cy.get('[data-testid="user-info"]').should('not.exist')
@@ -111,22 +136,7 @@ When('I login with nickname {string}', (nickname: string) => {
   })
 })
 
-When('I click join table to visit the game page', () => {
-  // After login, the join table button should now be enabled and clickable
-  cy.log('🔍 Looking for join table buttons...')
-  cy.get('[data-testid^="join-table-"]').should('exist')
-  cy.get('[data-testid^="join-table-"]').first().should('be.visible')
-  cy.get('[data-testid^="join-table-"]').first().should('not.be.disabled')
-  cy.get('[data-testid^="join-table-"]').first().should('contain', 'Join Table')
-  
-  cy.get('[data-testid^="join-table-"]').first().scrollIntoView()
-  cy.get('[data-testid^="join-table-"]').first().click({ force: true })
-  cy.log('✅ Clicked join table button')
-  
-  // Wait for welcome popup and navigation (no dialog anymore)
-  cy.wait(3000) // Give UI time to show welcome popup and navigate
-  cy.log('✅ Waiting for welcome popup and navigation to complete')
-})
+// Removed duplicate step - using "I click one join table button" instead
 
 // Actions - Seat Management
 When('I take an available seat {string}', (seatNumber: string) => {
@@ -388,4 +398,79 @@ Then('the players list should reflect this seat change', () => {
   // Verify that the player appears only in the new seat position
   cy.get('[data-testid="players-list"] .player-seat-3').should('contain', 'TestPlayer')
   cy.get('[data-testid="players-list"] .player-seat-1').should('not.contain', 'TestPlayer')
+})
+
+// New step definitions to verify exact counts and prevent duplicate users
+Then('{string} should appear exactly once in the observers list', (nickname: string) => {
+  cy.log(`🔍 Verifying ${nickname} appears exactly once in observers list...`)
+  cy.get('body').then($body => {
+    const observerSelectors = '[data-testid*="observer"], .observer, [class*="observer"]'
+    if ($body.find(observerSelectors).length > 0) {
+      // Count occurrences of the nickname in observers list
+      cy.get(observerSelectors).then($observers => {
+        const observerText = $observers.text()
+        const occurrences = (observerText.match(new RegExp(nickname, 'g')) || []).length
+        cy.log(`🔍 Found ${occurrences} occurrences of "${nickname}" in observers list`)
+        expect(occurrences).to.equal(1, `Expected exactly 1 occurrence of "${nickname}" in observers list, but found ${occurrences}`)
+      })
+    } else {
+      cy.log('⚠️ No observers list found')
+      throw new Error('Observers list not found')
+    }
+  })
+})
+
+Then('{string} should appear exactly zero times in the players list', (nickname: string) => {
+  cy.log(`🔍 Verifying ${nickname} appears exactly zero times in players list...`)
+  cy.get('body').then($body => {
+    const playerSelectors = '[data-testid*="player"], .player, [class*="player"]'
+    if ($body.find(playerSelectors).length > 0) {
+      // Count occurrences of the nickname in players list
+      cy.get(playerSelectors).then($players => {
+        const playerText = $players.text()
+        const occurrences = (playerText.match(new RegExp(nickname, 'g')) || []).length
+        cy.log(`🔍 Found ${occurrences} occurrences of "${nickname}" in players list`)
+        expect(occurrences).to.equal(0, `Expected exactly 0 occurrences of "${nickname}" in players list, but found ${occurrences}`)
+      })
+    } else {
+      cy.log('✅ No players list found - this means 0 occurrences as expected')
+    }
+  })
+})
+
+Then('{string} should appear exactly once in the players list', (nickname: string) => {
+  cy.log(`🔍 Verifying ${nickname} appears exactly once in players list...`)
+  cy.get('body').then($body => {
+    const playerSelectors = '[data-testid*="player"], .player, [class*="player"]'
+    if ($body.find(playerSelectors).length > 0) {
+      // Count occurrences of the nickname in players list
+      cy.get(playerSelectors).then($players => {
+        const playerText = $players.text()
+        const occurrences = (playerText.match(new RegExp(nickname, 'g')) || []).length
+        cy.log(`🔍 Found ${occurrences} occurrences of "${nickname}" in players list`)
+        expect(occurrences).to.equal(1, `Expected exactly 1 occurrence of "${nickname}" in players list, but found ${occurrences}`)
+      })
+    } else {
+      cy.log('❌ No players list found')
+      throw new Error('Players list not found')
+    }
+  })
+})
+
+Then('{string} should appear exactly zero times in the observers list', (nickname: string) => {
+  cy.log(`🔍 Verifying ${nickname} appears exactly zero times in observers list...`)
+  cy.get('body').then($body => {
+    const observerSelectors = '[data-testid*="observer"], .observer, [class*="observer"]'
+    if ($body.find(observerSelectors).length > 0) {
+      // Count occurrences of the nickname in observers list
+      cy.get(observerSelectors).then($observers => {
+        const observerText = $observers.text()
+        const occurrences = (observerText.match(new RegExp(nickname, 'g')) || []).length
+        cy.log(`🔍 Found ${occurrences} occurrences of "${nickname}" in observers list`)
+        expect(occurrences).to.equal(0, `Expected exactly 0 occurrences of "${nickname}" in observers list, but found ${occurrences}`)
+      })
+    } else {
+      cy.log('✅ No observers list found - this means 0 occurrences as expected')
+    }
+  })
 }) 
