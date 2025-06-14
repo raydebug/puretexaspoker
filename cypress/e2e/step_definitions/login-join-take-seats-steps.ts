@@ -362,7 +362,7 @@ Then('I should see {string} in the players list at seat {string}', (nickname: st
   // Check that the seat contains the player name
   cy.get(`[data-testid="seat-${seatNumber}"]`).should('contain', nickname)
   // Also verify the player appears in the OnlineList players section
-  cy.get('h3:contains("Players")').parent().within(() => {
+  cy.get('h3').contains('Players').parent().within(() => {
     cy.get('li').should('contain', nickname)
   })
   cy.log(`✅ ${nickname} is seated at seat ${seatNumber}`)
@@ -443,7 +443,7 @@ Then('seat {string} should return to available state', (seatNumber: string) => {
 Then('the players list should reflect this seat change', () => {
   cy.log('🔍 Verifying seat change is reflected in players list')
   // Verify that the player appears in the OnlineList players section
-  cy.get('h3:contains("Players")').parent().within(() => {
+  cy.get('h3').contains('Players').parent().within(() => {
     cy.get('li').should('contain', 'TestPlayer')
   })
   cy.log('✅ Players list reflects the seat change')
@@ -454,10 +454,10 @@ Then('{string} should appear exactly once in the observers list', (nickname: str
   cy.log(`🔍 Verifying ${nickname} appears exactly once in observers list...`)
   // First ensure the observers section exists
   cy.get('[data-testid="online-users-list"]').should('be.visible')
-  cy.get('h3:contains("Observers")').should('be.visible')
+  cy.get('h3').contains('Observers').should('be.visible')
   
   // Check within the observers section
-  cy.get('h3:contains("Observers")').parent().within(() => {
+  cy.get('h3').contains('Observers').parent().within(() => {
     // Check if there are any list items
     cy.get('ul').then($ul => {
       const $listItems = $ul.find('li')
@@ -480,10 +480,10 @@ Then('{string} should appear exactly zero times in the players list', (nickname:
   cy.log(`🔍 Verifying ${nickname} appears exactly zero times in players list...`)
   // First check if players section exists
   cy.get('[data-testid="online-users-list"]').should('be.visible')
-  cy.get('h3:contains("Players")').should('be.visible')
+  cy.get('h3').contains('Players').should('be.visible')
   
   // Check within the players section
-  cy.get('h3:contains("Players")').parent().within(() => {
+  cy.get('h3').contains('Players').parent().within(() => {
     cy.get('ul').then($ul => {
       const $listItems = $ul.find('li')
       if ($listItems.length > 0) {
