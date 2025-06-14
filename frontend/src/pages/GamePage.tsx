@@ -253,6 +253,7 @@ const GamePage: React.FC = () => {
         // Listen for observer updates
         socketService.onOnlineUsersUpdate((players: Player[], observerList: string[]) => {
           console.log('🎯 GamePage: Observers state updated:', observerList);
+          console.log('🎯 GamePage: Players state updated:', players);
           setObservers(observerList);
           
           if (gameState) {
@@ -333,6 +334,13 @@ const GamePage: React.FC = () => {
             };
             setGameState(minimalGameState);
             setAvailableSeats([1, 2, 3, 4, 5, 6, 7, 8, 9]); // All seats available
+            
+            // If user is an observer, add them to the observers list
+            const nickname = localStorage.getItem('nickname');
+            if (nickname && isObserver) {
+              console.log('DEBUG: Adding current user to observers list:', nickname);
+              setObservers([nickname]);
+            }
           }
           
           setIsLoading(false);
