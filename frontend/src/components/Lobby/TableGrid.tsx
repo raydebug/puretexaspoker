@@ -301,6 +301,14 @@ export const TableGrid: React.FC<TableGridProps> = ({ filters, isAuthenticated =
       console.warn('🎯 LOBBY: Failed to send backend location update:', error);
     }
     
+    // **JOIN THE TABLE VIA SOCKET** - this was previously done in the dialog
+    try {
+      socketService.joinTable(table.id);
+      console.log(`🎯 LOBBY: Socket joinTable called for table ${table.id}`);
+    } catch (error) {
+      console.warn('🎯 LOBBY: Failed to join table via socket:', error);
+    }
+    
     // Show welcome popup before navigation
     setJoiningTable(table);
     setShowWelcomePopup(true); // Show welcome popup

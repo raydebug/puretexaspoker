@@ -1106,8 +1106,18 @@ export class SocketService {
    * Take a seat at the table (for observers who want to become players)
    */
   takeSeat(seatNumber: number, buyIn: number) {
-    if (!this.socket || !this.socket.connected) {
-      throw new Error('Socket not connected');
+    console.log(`🎯 SOCKET: takeSeat called - socket exists: ${!!this.socket}, connected: ${this.socket?.connected}`);
+    
+    if (!this.socket) {
+      console.error('🎯 SOCKET: Socket not initialized, attempting to reconnect...');
+      this.connect();
+      throw new Error('Socket not initialized. Reconnecting...');
+    }
+    
+    if (!this.socket.connected) {
+      console.error('🎯 SOCKET: Socket not connected, attempting to reconnect...');
+      this.connect();
+      throw new Error('Socket not connected. Reconnecting...');
     }
     
     console.log(`🎯 SOCKET: Taking seat ${seatNumber} with buy-in ${buyIn}`);

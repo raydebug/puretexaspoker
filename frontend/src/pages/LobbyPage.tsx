@@ -140,7 +140,8 @@ const LobbyPage: React.FC = () => {
 
     // Cleanup on unmount
     return () => {
-      socketService.disconnect();
+      // Don't disconnect socket here - it should persist across page navigation
+      // socketService.disconnect();
     };
   }, []);
 
