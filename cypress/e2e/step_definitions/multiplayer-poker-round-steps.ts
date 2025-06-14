@@ -22,8 +22,12 @@ let expectedPotSize = 0;
 Given('I have {int} players ready to join:', (playerCount: number, dataTable: any) => {
   cy.log(`🎯 Setting up ${playerCount} players for multiplayer test`);
   
-  const players = dataTable.hashes() as PlayerData[];
-  testPlayers = players;
+  const rawPlayers = dataTable.hashes();
+  // Convert buyIn from string to number
+  testPlayers = rawPlayers.map((player: any) => ({
+    nickname: player.nickname,
+    buyIn: parseInt(player.buyIn)
+  })) as PlayerData[];
   
   cy.log(`🎯 Players configured: ${JSON.stringify(testPlayers)}`);
   expect(testPlayers).to.have.length(playerCount);
