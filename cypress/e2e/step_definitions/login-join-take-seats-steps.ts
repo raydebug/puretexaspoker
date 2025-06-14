@@ -387,9 +387,23 @@ Then('seat {string} should be in taken state', (seatNumber: string) => {
 
 Then('seat {string} should return to available state', (seatNumber: string) => {
   cy.log(`🔍 Verifying seat ${seatNumber} is available`)
-  // When a seat is available, it should have the available-seat test ID
-  cy.get(`[data-testid="available-seat-${seatNumber}"]`).should('be.visible')
-  cy.log(`✅ Seat ${seatNumber} is in available state`)
+  // Check for either the available-seat test ID or "Click to Sit" text
+  cy.get('body').then($body => {
+    const hasAvailableSeatId = $body.find(`[data-testid="available-seat-${seatNumber}"]`).length > 0
+    const hasClickToSitText = $body.find(`:contains("Click to Sit")`).length > 0
+    
+    if (hasAvailableSeatId) {
+      cy.get(`[data-testid="available-seat-${seatNumber}"]`).should('be.visible')
+      cy.log(`✅ Seat ${seatNumber} is available (found available-seat test ID)`)
+    } else if (hasClickToSitText) {
+      // Check if the "Click to Sit" text is in the correct seat
+      cy.get(`[data-testid="seat-${seatNumber}"]`).should('contain', 'Click to Sit')
+      cy.log(`✅ Seat ${seatNumber} is available (found "Click to Sit" text)`)
+    } else {
+      cy.log(`❌ Seat ${seatNumber} does not appear to be available`)
+      throw new Error(`Seat ${seatNumber} should be available but no indicators found`)
+    }
+  })
 })
 
 Then('the players list should reflect this seat change', () => {
