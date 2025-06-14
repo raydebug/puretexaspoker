@@ -15,19 +15,11 @@ let gameState: any = null;
 let initialPotSize = 0;
 let expectedPotSize = 0;
 
-// Background steps (reuse from login-join-take-seats)
-Given('I am on the poker lobby page', () => {
-  cy.visit('/');
-  cy.get('[data-testid="lobby-container"]').should('be.visible');
-});
-
-Given('tables are loaded and visible', () => {
-  cy.get('[data-testid="table-card"]').should('have.length.greaterThan', 0);
-  cy.wait(1000); // Allow tables to fully load
-});
+// Background steps are reused from login-join-take-seats-steps.ts
+// No need to redefine them here
 
 // Player setup steps
-Given('I have {int} players ready to join:', (playerCount: number, dataTable) => {
+Given('I have {int} players ready to join:', (playerCount: number, dataTable: any) => {
   cy.log(`🎯 Setting up ${playerCount} players for multiplayer test`);
   
   const players = dataTable.hashes() as PlayerData[];
@@ -127,9 +119,9 @@ Then('each player should have their correct chip count', () => {
   cy.log('🔍 Verifying each player has correct chip count');
   
   testPlayers.forEach(player => {
-    if (player.seatNumber && player.chips) {
+    if (player.seatNumber && player.chips !== undefined) {
       cy.get(`[data-testid="seat-${player.seatNumber}"]`).within(() => {
-        cy.get('[data-testid="player-chips"]').should('contain', player.chips.toString());
+        cy.get('[data-testid="player-chips"]').should('contain', player.chips!.toString());
       });
       cy.log(`✅ ${player.nickname} has correct chip count: $${player.chips}`);
     }
