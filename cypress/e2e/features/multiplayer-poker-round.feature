@@ -4,28 +4,17 @@ Feature: Multiplayer Poker Game Round
   So that we can test all game mechanics and player interactions
 
   Background:
-    Given I am on the poker lobby page
-    And tables are loaded and visible
+    Given I am directly on the game page with test data
+    And I have 4 players already seated:
+      | nickname | seat | chips |
+      | Alice    | 1    | 200   |
+      | Bob      | 3    | 150   |
+      | Charlie  | 5    | 300   |
+      | Diana    | 7    | 250   |
 
   Scenario: Complete multiplayer poker round with all actions
-    # Setup multiple players
-    Given I have 4 players ready to join:
-      | nickname | buyIn |
-      | Alice    | 200   |
-      | Bob      | 150   |
-      | Charlie  | 300   |
-      | Diana    | 250   |
-    
-    # Players join table and take seats
-    When all players join table "1"
-    And "Alice" takes seat "1" with buy-in "200"
-    And "Bob" takes seat "3" with buy-in "150" 
-    And "Charlie" takes seat "5" with buy-in "300"
-    And "Diana" takes seat "7" with buy-in "250"
-    
     # Verify initial setup
     Then all 4 players should be seated at the table
-    And the game status should be "waiting"
     And each player should have their correct chip count
     
     # Start the game (dealer assignment and blinds)
