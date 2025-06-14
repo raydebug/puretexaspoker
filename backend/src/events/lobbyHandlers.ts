@@ -364,12 +364,17 @@ export const setupLobbyHandlers = (
         await tx.player.deleteMany({ where: { id: socket.id } });
       });
       
-      // Create a player in the database - no more unique nickname constraint
+      // Create or update a player in the database - no more unique nickname constraint
       console.log(`DEBUG: Backend creating/updating player in database...`);
       let player;
       try {
-        player = await prisma.player.create({
-          data: {
+        player = await prisma.player.upsert({
+          where: { id: socket.id },
+          update: {
+            nickname: nicknameToUse,
+            chips: buyIn || 0
+          },
+          create: {
             id: socket.id,
             nickname: nicknameToUse,
             chips: buyIn || 0
@@ -377,7 +382,7 @@ export const setupLobbyHandlers = (
         });
       } catch (dbError: any) {
         console.error(`DEBUG: Backend database error:`, dbError);
-        socket.emit('tableError', `Database error: ${dbError.message || 'Failed to create player'}`);
+        socket.emit('tableError', `Database error: ${dbError.message || 'Failed to create/update player'}`);
         return;
       }
       console.log(`DEBUG: Backend player created:`, player);
