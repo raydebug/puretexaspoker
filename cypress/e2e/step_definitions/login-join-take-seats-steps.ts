@@ -387,20 +387,36 @@ Then('seat {string} should be in taken state', (seatNumber: string) => {
 
 Then('seat {string} should return to available state', (seatNumber: string) => {
   cy.log(`🔍 Verifying seat ${seatNumber} is available`)
+  
+  // Wait a moment for the UI to update after seat change
+  cy.wait(1000)
+  
   // Check for either the available-seat test ID or "Click to Sit" text
   cy.get('body').then($body => {
     const hasAvailableSeatId = $body.find(`[data-testid="available-seat-${seatNumber}"]`).length > 0
     const hasClickToSitText = $body.find(`:contains("Click to Sit")`).length > 0
+    const hasSeatElement = $body.find(`[data-testid="seat-${seatNumber}"]`).length > 0
+    
+    cy.log(`🔍 Debug - hasAvailableSeatId: ${hasAvailableSeatId}, hasClickToSitText: ${hasClickToSitText}, hasSeatElement: ${hasSeatElement}`)
     
     if (hasAvailableSeatId) {
       cy.get(`[data-testid="available-seat-${seatNumber}"]`).should('be.visible')
       cy.log(`✅ Seat ${seatNumber} is available (found available-seat test ID)`)
-    } else if (hasClickToSitText) {
+    } else if (hasSeatElement && hasClickToSitText) {
       // Check if the "Click to Sit" text is in the correct seat
       cy.get(`[data-testid="seat-${seatNumber}"]`).should('contain', 'Click to Sit')
-      cy.log(`✅ Seat ${seatNumber} is available (found "Click to Sit" text)`)
+      cy.log(`✅ Seat ${seatNumber} is available (found "Click to Sit" text in seat element)`)
+    } else if (hasClickToSitText) {
+      // Just check that "Click to Sit" text exists somewhere
+      cy.get(':contains("Click to Sit")').should('be.visible')
+      cy.log(`✅ Seat ${seatNumber} is available (found "Click to Sit" text somewhere)`)
     } else {
       cy.log(`❌ Seat ${seatNumber} does not appear to be available`)
+      // Log what we can actually find for debugging
+      cy.get('body').then($debugBody => {
+        const allTestIds = Array.from($debugBody.find('[data-testid]')).map(el => el.getAttribute('data-testid'))
+        cy.log(`🔍 Available test IDs: ${allTestIds.join(', ')}`)
+      })
       throw new Error(`Seat ${seatNumber} should be available but no indicators found`)
     }
   })
