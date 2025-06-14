@@ -403,86 +403,101 @@ Then('the players list should reflect this seat change', () => {
 // New step definitions to verify exact counts and prevent duplicate users
 Then('{string} should appear exactly once in the observers list', (nickname: string) => {
   cy.log(`🔍 Verifying ${nickname} appears exactly once in observers list...`)
-  cy.get('body').then($body => {
-    // Look for the observers section more specifically
-    const observersSection = $body.find('[data-testid="online-users-list"]').find('h3:contains("Observers")').parent()
-    if (observersSection.length > 0) {
-      // Count occurrences of the nickname in observers section only
-      cy.get('h3:contains("Observers")').parent().within(() => {
-        cy.get('ul li').then($observers => {
+  // First ensure the observers section exists
+  cy.get('[data-testid="online-users-list"]').should('be.visible')
+  cy.get('h3:contains("Observers")').should('be.visible')
+  
+  // Check within the observers section
+  cy.get('h3:contains("Observers")').parent().within(() => {
+    // Try to find list items first, if none exist, check for empty message
+    cy.get('body').then($body => {
+      const hasListItems = $body.find('li').length > 0
+      if (hasListItems) {
+        cy.get('li').then($observers => {
           const observerText = $observers.text()
           const occurrences = (observerText.match(new RegExp(nickname, 'g')) || []).length
           cy.log(`🔍 Found ${occurrences} occurrences of "${nickname}" in observers list`)
           expect(occurrences).to.equal(1, `Expected exactly 1 occurrence of "${nickname}" in observers list, but found ${occurrences}`)
         })
-      })
-    } else {
-      cy.log('⚠️ No observers section found')
-      throw new Error('Observers section not found')
-    }
+      } else {
+        cy.log('❌ No observers list items found - list appears to be empty')
+        throw new Error(`Expected to find "${nickname}" in observers list, but observers list is empty`)
+      }
+    })
   })
 })
 
 Then('{string} should appear exactly zero times in the players list', (nickname: string) => {
   cy.log(`🔍 Verifying ${nickname} appears exactly zero times in players list...`)
-  cy.get('body').then($body => {
-    // Look for the players section more specifically
-    const playersSection = $body.find('[data-testid="online-users-list"]').find('h3:contains("Players")').parent()
-    if (playersSection.length > 0) {
-      // Count occurrences of the nickname in players section only
-      cy.get('h3:contains("Players")').parent().within(() => {
-        cy.get('ul li').then($players => {
+  // First check if players section exists
+  cy.get('[data-testid="online-users-list"]').should('be.visible')
+  cy.get('h3:contains("Players")').should('be.visible')
+  
+  // Check within the players section
+  cy.get('h3:contains("Players")').parent().within(() => {
+    cy.get('body').then($body => {
+      const hasListItems = $body.find('li').length > 0
+      if (hasListItems) {
+        cy.get('li').then($players => {
           const playerText = $players.text()
           const occurrences = (playerText.match(new RegExp(nickname, 'g')) || []).length
           cy.log(`🔍 Found ${occurrences} occurrences of "${nickname}" in players list`)
           expect(occurrences).to.equal(0, `Expected exactly 0 occurrences of "${nickname}" in players list, but found ${occurrences}`)
         })
-      })
-    } else {
-      cy.log('✅ No players section found - this means 0 occurrences as expected')
-    }
+      } else {
+        cy.log('✅ No players list items found - this means 0 occurrences as expected')
+        // This is the expected state when no players should be present
+      }
+    })
   })
 })
 
 Then('{string} should appear exactly once in the players list', (nickname: string) => {
   cy.log(`🔍 Verifying ${nickname} appears exactly once in players list...`)
-  cy.get('body').then($body => {
-    // Look for the players section more specifically
-    const playersSection = $body.find('[data-testid="online-users-list"]').find('h3:contains("Players")').parent()
-    if (playersSection.length > 0) {
-      // Count occurrences of the nickname in players section only
-      cy.get('h3:contains("Players")').parent().within(() => {
-        cy.get('ul li').then($players => {
+  // First ensure the players section exists
+  cy.get('[data-testid="online-users-list"]').should('be.visible')
+  cy.get('h3:contains("Players")').should('be.visible')
+  
+  // Check within the players section
+  cy.get('h3:contains("Players")').parent().within(() => {
+    cy.get('body').then($body => {
+      const hasListItems = $body.find('li').length > 0
+      if (hasListItems) {
+        cy.get('li').then($players => {
           const playerText = $players.text()
           const occurrences = (playerText.match(new RegExp(nickname, 'g')) || []).length
           cy.log(`🔍 Found ${occurrences} occurrences of "${nickname}" in players list`)
           expect(occurrences).to.equal(1, `Expected exactly 1 occurrence of "${nickname}" in players list, but found ${occurrences}`)
         })
-      })
-    } else {
-      cy.log('❌ No players section found')
-      throw new Error('Players section not found')
-    }
+      } else {
+        cy.log('❌ No players list items found - list appears to be empty')
+        throw new Error(`Expected to find "${nickname}" in players list, but players list is empty`)
+      }
+    })
   })
 })
 
 Then('{string} should appear exactly zero times in the observers list', (nickname: string) => {
   cy.log(`🔍 Verifying ${nickname} appears exactly zero times in observers list...`)
-  cy.get('body').then($body => {
-    // Look for the observers section more specifically
-    const observersSection = $body.find('[data-testid="online-users-list"]').find('h3:contains("Observers")').parent()
-    if (observersSection.length > 0) {
-      // Count occurrences of the nickname in observers section only
-      cy.get('h3:contains("Observers")').parent().within(() => {
-        cy.get('ul li').then($observers => {
+  // First check if observers section exists
+  cy.get('[data-testid="online-users-list"]').should('be.visible')
+  cy.get('h3:contains("Observers")').should('be.visible')
+  
+  // Check within the observers section
+  cy.get('h3:contains("Observers")').parent().within(() => {
+    cy.get('body').then($body => {
+      const hasListItems = $body.find('li').length > 0
+      if (hasListItems) {
+        cy.get('li').then($observers => {
           const observerText = $observers.text()
           const occurrences = (observerText.match(new RegExp(nickname, 'g')) || []).length
           cy.log(`🔍 Found ${occurrences} occurrences of "${nickname}" in observers list`)
           expect(occurrences).to.equal(0, `Expected exactly 0 occurrences of "${nickname}" in observers list, but found ${occurrences}`)
         })
-      })
-    } else {
-      cy.log('✅ No observers section found - this means 0 occurrences as expected')
-    }
+      } else {
+        cy.log('✅ No observers list items found - this means 0 occurrences as expected')
+        // This is the expected state when no observers should be present
+      }
+    })
   })
 }) 
