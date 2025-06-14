@@ -140,49 +140,33 @@ When('I login with nickname {string}', (nickname: string) => {
 
 // Actions - Seat Management
 When('I take an available seat {string}', (seatNumber: string) => {
-  // Look for any seat-related elements flexibly
-  cy.get('body').then($body => {
-    const seatSelectors = `[data-testid*="seat"], .seat, [class*="seat"]`
-    if ($body.find(seatSelectors).length > 0) {
-      cy.log(`Attempting to take seat ${seatNumber}`)
-      // Try specific seat first, then any available seat
-      cy.get(`[data-testid*="seat-${seatNumber}"], [data-testid*="seat"]:contains("${seatNumber}"), ${seatSelectors}`)
-        .first()
-        .click()
-      cy.wait(1000)
-      // Look for take seat button or any confirmation
-      cy.get('body').then($body2 => {
-        if ($body2.find('[data-testid*="take"], button:contains("Take"), button:contains("Sit")').length > 0) {
-          cy.get('[data-testid*="take"], button:contains("Take"), button:contains("Sit")').first().click()
-        }
-      })
-    } else {
-      cy.log(`⚠️ No seat elements found - may not be on game page yet`)
-      cy.get('body').should('exist') // Minimal assertion
-    }
-  })
+  cy.log(`🎯 Attempting to take seat ${seatNumber}`)
+  
+  // Click on the available seat to open the seat selection dialog
+  cy.get(`[data-testid="available-seat-${seatNumber}"]`).should('be.visible').click()
+  
+  // Wait for the seat selection dialog to appear
+  cy.get('[data-testid="confirm-seat-btn"]').should('be.visible')
+  
+  // Click the confirm button to take the seat
+  cy.get('[data-testid="confirm-seat-btn"]').click()
+  
+  cy.log(`✅ Successfully took seat ${seatNumber}`)
 })
 
 When('I take another available seat {string}', (seatNumber: string) => {
-  // Same flexible approach for second seat
-  cy.get('body').then($body => {
-    const seatSelectors = `[data-testid*="seat"], .seat, [class*="seat"]`
-    if ($body.find(seatSelectors).length > 0) {
-      cy.log(`Attempting to take another seat ${seatNumber}`)
-      cy.get(`[data-testid*="seat-${seatNumber}"], [data-testid*="seat"]:contains("${seatNumber}"), ${seatSelectors}`)
-        .first()
-        .click()
-      cy.wait(1000)
-      cy.get('body').then($body2 => {
-        if ($body2.find('[data-testid*="take"], button:contains("Take"), button:contains("Sit")').length > 0) {
-          cy.get('[data-testid*="take"], button:contains("Take"), button:contains("Sit")').first().click()
-        }
-      })
-    } else {
-      cy.log(`⚠️ No seat elements found`)
-      cy.get('body').should('exist')
-    }
-  })
+  cy.log(`🎯 Attempting to take another seat ${seatNumber}`)
+  
+  // Click on the available seat to open the seat selection dialog
+  cy.get(`[data-testid="available-seat-${seatNumber}"]`).should('be.visible').click()
+  
+  // Wait for the seat selection dialog to appear
+  cy.get('[data-testid="confirm-seat-btn"]').should('be.visible')
+  
+  // Click the confirm button to take the seat
+  cy.get('[data-testid="confirm-seat-btn"]').click()
+  
+  cy.log(`✅ Successfully took another seat ${seatNumber}`)
 })
 
 // Assertions - Login Flow
@@ -384,13 +368,19 @@ Then('I should not see {string} at seat {string}', (nickname: string, seatNumber
 
 // Assertions - Seat States
 Then('seat {string} should be in taken state', (seatNumber: string) => {
-  cy.get(`[data-testid="seat-${seatNumber}"]`).should('have.class', 'taken')
-  cy.get(`[data-testid="seat-${seatNumber}"]`).should('not.have.class', 'available')
+  cy.log(`🔍 Verifying seat ${seatNumber} is taken`)
+  // When a seat is taken, it should have the regular seat test ID (not available-seat)
+  cy.get(`[data-testid="seat-${seatNumber}"]`).should('be.visible')
+  // And it should NOT have the available-seat test ID
+  cy.get(`[data-testid="available-seat-${seatNumber}"]`).should('not.exist')
+  cy.log(`✅ Seat ${seatNumber} is in taken state`)
 })
 
 Then('seat {string} should return to available state', (seatNumber: string) => {
-  cy.get(`[data-testid="seat-${seatNumber}"]`).should('have.class', 'available')
-  cy.get(`[data-testid="seat-${seatNumber}"]`).should('not.have.class', 'taken')
+  cy.log(`🔍 Verifying seat ${seatNumber} is available`)
+  // When a seat is available, it should have the available-seat test ID
+  cy.get(`[data-testid="available-seat-${seatNumber}"]`).should('be.visible')
+  cy.log(`✅ Seat ${seatNumber} is in available state`)
 })
 
 Then('the players list should reflect this seat change', () => {
