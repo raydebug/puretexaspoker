@@ -49,6 +49,7 @@ export class SocketService {
   private gameState: GameState | null = null;
   private currentPlayer: Player | null = null;
   private observers: string[] = [];
+  private processedLocationUpdates: Set<string> = new Set(); // Track processed location updates
   private lobbyTables: TableData[] = [];
   private currentGameId: string | null = null;
   private retryQueue: Array<{ event: string; data: any; attempts: number }> = [];
@@ -213,17 +214,19 @@ export class SocketService {
       this.processRetryQueue();
     });
 
-    socket.on('observer:joined', (data: { observer: string }) => {
-      console.log('DEBUG: Frontend received observer:joined event:', data);
-      console.log('DEBUG: Frontend current observers before:', this.observers);
-      if (!this.observers.includes(data.observer)) {
-        this.observers.push(data.observer);
-        console.log('DEBUG: Frontend added observer, new list:', this.observers);
-        this.emitOnlineUsersUpdate();
-      } else {
-        console.log('DEBUG: Frontend observer already in list:', data.observer);
-      }
-    });
+    // NOTE: observer:joined event is no longer used - backend only emits location:updated events
+    // Keeping this commented for reference in case we need to revert
+    // socket.on('observer:joined', (data: { observer: string }) => {
+    //   console.log('DEBUG: Frontend received observer:joined event:', data);
+    //   console.log('DEBUG: Frontend current observers before:', this.observers);
+    //   if (!this.observers.includes(data.observer)) {
+    //     this.observers.push(data.observer);
+    //     console.log('DEBUG: Frontend added observer, new list:', this.observers);
+    //     this.emitOnlineUsersUpdate();
+    //   } else {
+    //     console.log('DEBUG: Frontend observer already in list:', data.observer);
+    //   }
+    // });
 
     socket.on('location:updated', (data: { playerId: string; nickname: string; location?: string; table?: number | null; seat?: number | null }) => {
       console.log('🎯 FRONTEND: Received location:updated event:', data);
@@ -617,57 +620,8 @@ export class SocketService {
       }
     }, 30000);
 
-    // Set up event listeners for observer management
-    if (this.socket) {
-      // NOTE: observer:joined and observer:left handlers are already set up in setupListeners()
-      // We don't need duplicate handlers here
-      
-      this.socket.on('playerJoined', (player: Player) => {
-        if (!this.gameState) {
-          this.gameState = null; // Initialize as null, will be set by game state events
-        }
-
-        if (this.gameState && player && player.id) {
-          const existingPlayerIndex = this.gameState.players.findIndex(p => p && p.id === player.id);
-          if (existingPlayerIndex !== -1) {
-            this.gameState.players[existingPlayerIndex] = player;
-          } else {
-            this.gameState.players = [...this.gameState.players, player];
-          }
-        }
-        
-        // Remove player from observers list when they become a player
-        if (player && player.name) {
-          this.observers = this.observers.filter(observer => observer !== player.name);
-          
-          // Emit update with the new state - send the updated player and filtered observers
-          this.emitOnlineUsersUpdate();
-        }
-      });
-
-      this.socket.on('playerLeft', (playerId: string) => {
-        if (this.gameState && playerId) {
-          const player = this.gameState.players.find(p => p && p.id === playerId);
-          if (player) {
-            // Add to observers if not already there
-            if (!this.observers.includes(player.name)) {
-              this.observers = [...this.observers, player.name];
-            }
-            
-            // Remove from players list
-            this.gameState.players = this.gameState.players.filter(p => p && p.id !== playerId);
-            
-            console.log('DEBUG: Player left and moved to observers:', player.name);
-            console.log('DEBUG: Current observers:', this.observers);
-            console.log('DEBUG: Remaining players:', this.gameState.players.length);
-            
-            // Emit update with proper current state
-            this.emitGameStateUpdate(this.gameState);
-            this.emitOnlineUsersUpdate();
-          }
-        }
-      });
-    }
+    // NOTE: All event listeners are already set up in setupListeners()
+    // We don't need duplicate handlers here to avoid processing events multiple times
   }
 
   disconnect() {
@@ -744,6 +698,20 @@ export class SocketService {
   public handleLocationUpdate(data: { playerId: string; nickname: string; location?: string; table?: number | null; seat?: number | null }) {
     const { playerId, nickname } = data;
     
+    // Create a unique key for this location update to prevent duplicate processing
+    const updateKey = `${playerId}-${nickname}-${data.table}-${data.seat}-${data.location}`;
+    if (this.processedLocationUpdates.has(updateKey)) {
+      console.log(`🎯 FRONTEND: Skipping duplicate location update for ${nickname}: ${updateKey}`);
+      return;
+    }
+    this.processedLocationUpdates.add(updateKey);
+    
+    // Clean up old processed updates (keep only last 100 to prevent memory leak)
+    if (this.processedLocationUpdates.size > 100) {
+      const entries = Array.from(this.processedLocationUpdates);
+      entries.slice(0, 50).forEach(key => this.processedLocationUpdates.delete(key));
+    }
+    
     // Use new table/seat format directly
     let table: number | null;
     let seat: number | null;
@@ -797,11 +765,12 @@ export class SocketService {
       // User is observing a table (table=X, seat=null)
       console.log(`🎯 FRONTEND: User ${nickname} is observing table ${table}`);
       console.log(`🎯 FRONTEND: Current observers before adding:`, this.observers);
+      console.log(`🎯 FRONTEND: Stack trace for debugging:`, new Error().stack);
       if (!this.observers.includes(nickname)) {
         this.observers.push(nickname);
         console.log(`✅ FRONTEND: Added ${nickname} to observers list`);
       } else {
-        console.log(`ℹ️ FRONTEND: ${nickname} already in observers list`);
+        console.log(`ℹ️ FRONTEND: ${nickname} already in observers list - DUPLICATE DETECTED!`);
       }
       console.log(`🎯 FRONTEND: Current observers after processing:`, this.observers);
       this.emitOnlineUsersUpdate();
