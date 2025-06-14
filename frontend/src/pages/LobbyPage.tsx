@@ -162,30 +162,25 @@ const LobbyPage: React.FC = () => {
   const handleLogin = useCallback(async (nickname: string) => {
     console.log('🔍 FRONTEND: Login requested for:', nickname);
     
+    // Save to cookie
+    Cookies.set('playerNickname', nickname, { expires: 7 });
+    console.log('🔍 FRONTEND: Cookie saved');
+    
+    // Update username state - this should close the modal
+    setUserName(nickname);
+    console.log('🔍 FRONTEND: Username state updated to:', nickname);
+    
+    // Socket operations (non-blocking)
     try {
-      // Save to cookie first
-      Cookies.set('playerNickname', nickname, { expires: 7 });
-      console.log('🔍 FRONTEND: Cookie saved');
-      
-      // Update username state
-      setUserName(nickname);
-      console.log('🔍 FRONTEND: Username state updated');
-      
-      // Close modal
-      setShowModal(false);
-      console.log('🔍 FRONTEND: Modal closed');
-      
-      // Socket operations
-      console.log('🔍 FRONTEND: Starting socket operations...');
       socketService.requestLobbyTables();
       socketService.emitUserLogin(nickname);
-      
-      console.log('🔍 FRONTEND: Login process completed successfully');
-      
+      console.log('🔍 FRONTEND: Socket operations completed');
     } catch (error) {
-      console.error('🔍 FRONTEND: Error during login:', error);
-      throw error; // Re-throw to let modal handle the error
+      console.error('🔍 FRONTEND: Socket error (non-critical):', error);
+      // Don't throw - login should still work even if socket fails
     }
+    
+    console.log('🔍 FRONTEND: Login process completed successfully');
   }, []);
 
   const handleCloseModal = useCallback(() => {
@@ -212,6 +207,7 @@ const LobbyPage: React.FC = () => {
   useEffect(() => {
     console.log('🔍 FRONTEND: Modal state changed to:', showModal);
     console.log('🔍 FRONTEND: Current userName:', userName);
+    console.log('🔍 FRONTEND: Modal should be open:', showModal && !userName);
   }, [showModal, userName]);
 
   return (

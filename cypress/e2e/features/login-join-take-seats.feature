@@ -13,6 +13,9 @@ Feature: Login, Join Table, and Take Seats
     When I attempt to join a table
     Then I should be prompted to login first
     
+    When I click start playing without entering nickname
+    Then I should see error message "Please enter your nickname"
+    
     When I login with nickname "TestPlayer"
     Then I should see a welcome message with "TestPlayer" on the top right
     And the online users count should be updated to reflect my login

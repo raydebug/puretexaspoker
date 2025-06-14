@@ -2,6 +2,7 @@ import { Given, When, Then } from '@badeball/cypress-cucumber-preprocessor'
 
 // Authentication-specific states
 Given('I am browsing anonymously', () => {
+  cy.visit('/')
   cy.get('[data-testid="anonymous-info"]').should('be.visible')
 })
 

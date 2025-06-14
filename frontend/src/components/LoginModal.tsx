@@ -99,9 +99,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onLogin, onClose
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Debug nickname state changes
   useEffect(() => {
+    console.log('🔍 LOGINMODAL: nickname state changed to:', `"${nickname}"`);
+  }, [nickname]);
+
+  useEffect(() => {
+    console.log('🔍 LOGINMODAL: isOpen changed to:', isOpen);
     if (isOpen) {
-      setNickname('');
+      // Only clear error and submitting state, keep nickname value
       setError('');
       setIsSubmitting(false);
     }
@@ -109,10 +115,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onLogin, onClose
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('🔍 LOGINMODAL: Form submitted with nickname:', `"${nickname}"`);
     
     if (isSubmitting) return;
     
     if (!nickname.trim()) {
+      console.log('🔍 LOGINMODAL: Nickname is empty, showing error');
       setError('Please enter your nickname');
       return;
     }
@@ -121,14 +129,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onLogin, onClose
     setError('');
 
     try {
-      // Call onLogin but don't wait for it - close modal immediately
-      onLogin(nickname.trim());
-      
-      // Force close modal immediately
-      onClose();
-      
+      await onLogin(nickname.trim());
+      // Modal will be closed by parent component after successful login
     } catch (error) {
       setError('Login failed. Please try again.');
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -165,14 +170,18 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onLogin, onClose
         <form onSubmit={handleSubmit}>
           <ModalInput
             type="text"
+            id="nickname-input"
+            name="nickname"
             value={nickname}
             onChange={e => {
+              console.log('🔍 LOGINMODAL: onChange triggered with value:', `"${e.target.value}"`);
               setNickname(e.target.value);
               setError('');
             }}
             placeholder="Your nickname"
             autoFocus
             data-testid="nickname-input"
+            data-cy="nickname-input"
           />
           {error && <ModalError data-testid="modal-error">{error}</ModalError>}
           <ModalButton type="submit" data-testid="join-button" disabled={isSubmitting}>
