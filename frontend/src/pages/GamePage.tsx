@@ -385,13 +385,16 @@ const GamePage: React.FC = () => {
     if (typeof window !== 'undefined' && (window as any).Cypress) {
       // Use startTransition to batch all state updates together
       startTransition(() => {
-        // Create a simple player for test mode
+        // Check if player is already seated (seat change) or new player
+        const isExistingPlayer = currentPlayer !== null;
+        
+        // Create or update player for test mode
         const newPlayer = {
-          id: 'test-player-' + selectedSeat,
+          id: isExistingPlayer ? currentPlayer.id : 'test-player-' + selectedSeat,
           name: nickname,
           seatNumber: selectedSeat,
           position: selectedSeat,
-          chips: buyInAmount,
+          chips: isExistingPlayer ? currentPlayer.chips : buyInAmount,
           currentBet: 0,
           isDealer: false,
           isAway: false,
@@ -406,19 +409,30 @@ const GamePage: React.FC = () => {
         // Update all state atomically
         setCurrentPlayer(newPlayer);
         
-        // Remove player from observers list
+        // Remove player from observers list (if they were observing)
         setObservers(prevObservers => prevObservers.filter(observer => observer !== nickname));
         
-        // Update gameState to include the new player
+        // Update gameState to include the new/updated player
         setGameState(prevGameState => {
           if (!prevGameState) return prevGameState;
           
+          let updatedPlayers;
+          if (isExistingPlayer) {
+            // Update existing player's seat
+            updatedPlayers = prevGameState.players.map(p => 
+              p.id === currentPlayer.id ? newPlayer : p
+            );
+          } else {
+            // Add new player
+            updatedPlayers = [...prevGameState.players, newPlayer];
+          }
+          
           const updatedGameState = {
             ...prevGameState,
-            players: [...prevGameState.players, newPlayer]
+            players: updatedPlayers
           };
           
-          console.log('DEBUG: Updated gameState with new player:', updatedGameState);
+          console.log('DEBUG: Updated gameState with player seat change:', updatedGameState);
           return updatedGameState;
         });
       });
@@ -509,6 +523,9 @@ const GamePage: React.FC = () => {
         gameState={gameState}
         currentPlayer={currentPlayer}
         onAction={handleAction}
+        isObserver={false}
+        availableSeats={availableSeats}
+        onSeatSelect={handleSeatSelection}
       />
       
       <OnlineList 
@@ -517,6 +534,16 @@ const GamePage: React.FC = () => {
         currentPlayerId={currentPlayer?.id}
         showMode="observers"
       />
+
+      {/* Seat Selection Dialog for seat changes */}
+      {showSeatDialog && selectedSeat !== null && (
+        <SeatSelectionDialog
+          table={table}
+          seatNumber={selectedSeat}
+          onClose={handleSeatDialogClose}
+          onConfirm={handleSeatConfirm}
+        />
+      )}
     </GameContainer>
   );
 };

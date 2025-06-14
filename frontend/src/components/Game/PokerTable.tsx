@@ -293,8 +293,10 @@ export const PokerTable: React.FC<PokerTableProps> = ({
   onSeatSelect 
 }) => {
   const handleSeatClick = (seatNumber: number) => {
-    // Only allow seat selection if user is observer and seat is available
-    if (isObserver && availableSeats.includes(seatNumber) && onSeatSelect) {
+    // Allow seat selection if:
+    // 1. User is observer and seat is available, OR
+    // 2. User is a player and seat is available (for seat changes)
+    if (availableSeats.includes(seatNumber) && onSeatSelect) {
       onSeatSelect(seatNumber);
     }
   };
@@ -304,7 +306,7 @@ export const PokerTable: React.FC<PokerTableProps> = ({
     const isEmpty = !player;
     const positionName = POSITION_NAMES[seatNumber - 1];
     const isButton = player?.isDealer || false; // Button position
-    const isAvailable = isObserver && isEmpty && availableSeats.includes(seatNumber);
+    const isAvailable = isEmpty && availableSeats.includes(seatNumber);
     
     return (
       <PlayerSeat
