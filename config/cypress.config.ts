@@ -22,8 +22,8 @@ export default defineConfig({
     viewportWidth: 1280,
     viewportHeight: 720,
     retries: {
-      runMode: 2,
-      openMode: 1
+      runMode: 0,
+      openMode: 0
     },
     experimentalStudio: true,
     async setupNodeEvents(on, config) {

@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import styled from 'styled-components';
-import { JoinDialog } from './JoinDialog';
 import { WelcomePopup } from '../common/WelcomePopup';
 import { socketService } from '../../services/socketService';
 import { TableData } from '../../types/table';
@@ -192,8 +191,6 @@ export const TableGrid: React.FC<TableGridProps> = ({ filters, isAuthenticated =
   const [tables, setTables] = useState<TableData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedTable, setSelectedTable] = useState<TableData | null>(null);
-  const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [showWelcomePopup, setShowWelcomePopup] = useState(false);
   const [joiningTable, setJoiningTable] = useState<TableData | null>(null);
   const navigate = useNavigate();
@@ -270,49 +267,43 @@ export const TableGrid: React.FC<TableGridProps> = ({ filters, isAuthenticated =
       return;
     }
     
-    setSelectedTable(table);
-    setShowJoinDialog(true);
+    // Directly join the table without showing dialog
+    handleJoinTable(table);
   };
 
-  const handleJoinDialogClose = () => {
-    setShowJoinDialog(false);
-    setSelectedTable(null);
-  };
-
-  const handleJoinTable = (nickname: string) => {
-    console.log('TableGrid: handleJoinTable called with', { nickname, selectedTable: selectedTable?.id });
-    if (selectedTable) {
-      // Save nickname for future use
-      localStorage.setItem('nickname', nickname);
-      
-      // Update location immediately when user chooses to join table in lobby
-      const targetLocation = `table-${selectedTable.id}`;
-      console.log(`🎯 LOBBY: Immediately updating user location to: ${targetLocation} when joining table ${selectedTable.id}`);
-      
-      // Update the socketService location immediately (frontend)
-      try {
-        // Set the location directly in socketService
-        (socketService as any).currentUserLocation = targetLocation;
-        console.log(`🎯 LOBBY: SocketService location updated to: ${targetLocation}`);
-      } catch (error) {
-        console.warn('🎯 LOBBY: Failed to update socketService location:', error);
-      }
-      
-      // **IMMEDIATELY UPDATE BACKEND LOCATION** when join button is clicked
-      try {
-        socketService.updateUserLocationImmediate(selectedTable.id, nickname);
-        console.log(`🎯 LOBBY: Backend location update request sent for table ${selectedTable.id}`);
-      } catch (error) {
-        console.warn('🎯 LOBBY: Failed to send backend location update:', error);
-      }
-      
-      // Show welcome popup before navigation
-      setJoiningTable(selectedTable);
-      setShowJoinDialog(false); // Close join dialog
-      setShowWelcomePopup(true); // Show welcome popup
-    } else {
-      console.log('TableGrid: No selected table found');
+  const handleJoinTable = (table: TableData) => {
+    console.log('TableGrid: handleJoinTable called with table:', table.id);
+    
+    // Get nickname from localStorage or use default
+    const nickname = localStorage.getItem('nickname') || 'TestPlayer';
+    
+    // Save nickname for future use
+    localStorage.setItem('nickname', nickname);
+    
+    // Update location immediately when user chooses to join table in lobby
+    const targetLocation = `table-${table.id}`;
+    console.log(`🎯 LOBBY: Immediately updating user location to: ${targetLocation} when joining table ${table.id}`);
+    
+    // Update the socketService location immediately (frontend)
+    try {
+      // Set the location directly in socketService
+      (socketService as any).currentUserLocation = targetLocation;
+      console.log(`🎯 LOBBY: SocketService location updated to: ${targetLocation}`);
+    } catch (error) {
+      console.warn('🎯 LOBBY: Failed to update socketService location:', error);
     }
+    
+    // **IMMEDIATELY UPDATE BACKEND LOCATION** when join button is clicked
+    try {
+      socketService.updateUserLocationImmediate(table.id, nickname);
+      console.log(`🎯 LOBBY: Backend location update request sent for table ${table.id}`);
+    } catch (error) {
+      console.warn('🎯 LOBBY: Failed to send backend location update:', error);
+    }
+    
+    // Show welcome popup before navigation
+    setJoiningTable(table);
+    setShowWelcomePopup(true); // Show welcome popup
   };
 
   const handleWelcomeComplete = () => {
@@ -329,7 +320,6 @@ export const TableGrid: React.FC<TableGridProps> = ({ filters, isAuthenticated =
       // Reset state
       setShowWelcomePopup(false);
       setJoiningTable(null);
-      setSelectedTable(null);
     }
   };
 
@@ -477,14 +467,6 @@ export const TableGrid: React.FC<TableGridProps> = ({ filters, isAuthenticated =
           </Grid>
         </StakesSection>
       ))}
-
-      {showJoinDialog && selectedTable && (
-        <JoinDialog
-          table={selectedTable}
-          onClose={handleJoinDialogClose}
-          onJoin={handleJoinTable}
-        />
-      )}
 
       {joiningTable && (
         <WelcomePopup

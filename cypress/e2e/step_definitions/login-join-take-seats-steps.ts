@@ -7,14 +7,7 @@ Given('I am not logged in', () => {
 })
 
 // Actions - Login Flow
-When('I attempt to join a table', () => {
-  // For anonymous users, we need to click the Login button to open the modal
-  // The join table buttons are disabled for anonymous users
-  cy.get('[data-testid="login-button"]').should('be.visible')
-  cy.get('[data-testid="login-button"]').click()
-  cy.wait(1000) // Wait for modal to appear
-  cy.log('✅ Clicked login button to open modal')
-})
+// Removed - using authentication-steps.ts "I click the login button" instead
 
 When('I click start playing without entering nickname', () => {
   // First ensure the modal is open and visible
@@ -120,27 +113,19 @@ When('I login with nickname {string}', (nickname: string) => {
 
 When('I click join table to visit the game page', () => {
   // After login, the join table button should now be enabled and clickable
+  cy.log('🔍 Looking for join table buttons...')
+  cy.get('[data-testid^="join-table-"]').should('exist')
+  cy.get('[data-testid^="join-table-"]').first().should('be.visible')
   cy.get('[data-testid^="join-table-"]').first().should('not.be.disabled')
+  cy.get('[data-testid^="join-table-"]').first().should('contain', 'Join Table')
+  
   cy.get('[data-testid^="join-table-"]').first().scrollIntoView()
   cy.get('[data-testid^="join-table-"]').first().click({ force: true })
   cy.log('✅ Clicked join table button')
   
-  // Wait for UI response - either dialog or navigation
-  cy.wait(2000) // Give UI time to respond
-  
-  // Check what actually happened in the UI
-  cy.get('body').then($body => {
-    const hasDialog = $body.find('[data-testid*="dialog"], [class*="dialog"], [role="dialog"]').length > 0
-    const hasJoinElements = $body.find('button:contains("Join"), button:contains("Confirm")').length > 0
-    
-    if (hasDialog || hasJoinElements) {
-      cy.log('Dialog detected - handling join confirmation')
-      cy.get('button:contains("Join"), button:contains("Confirm"), [data-testid*="join"], [data-testid*="confirm"]')
-        .first()
-        .click({ force: true })
-      cy.wait(3000) // Wait for navigation after confirmation
-    }
-  })
+  // Wait for welcome popup and navigation (no dialog anymore)
+  cy.wait(3000) // Give UI time to show welcome popup and navigate
+  cy.log('✅ Waiting for welcome popup and navigation to complete')
 })
 
 // Actions - Seat Management
@@ -218,11 +203,14 @@ Then('I should be prompted to login first', () => {
 
 Then('I should see a welcome message with {string} on the top right', (nickname: string) => {
   // Check for user info in various possible locations
+  cy.log(`🔍 Looking for welcome message with ${nickname}...`)
   cy.get('body').then($body => {
     const hasUserInfo = $body.find('[data-testid="user-info"]').length > 0
     const hasUserName = $body.find('[data-testid="user-name"]').length > 0
     const hasWelcomeText = $body.find(':contains("Welcome")').length > 0
     const hasNicknameText = $body.find(`:contains("${nickname}")`).length > 0
+    
+    cy.log(`🔍 hasUserInfo: ${hasUserInfo}, hasUserName: ${hasUserName}, hasWelcomeText: ${hasWelcomeText}, hasNicknameText: ${hasNicknameText}`)
     
     if (hasUserInfo && hasUserName) {
       cy.log('✅ User info found with expected elements')
@@ -234,9 +222,21 @@ Then('I should see a welcome message with {string} on the top right', (nickname:
       cy.get(':contains("Welcome")').should('contain', nickname)
     } else if (hasNicknameText) {
       cy.log('✅ Nickname found in UI (may not have welcome prefix)')
-      cy.get(`:contains("${nickname}")`).should('be.visible')
+      // Be more specific about which element we're checking
+      cy.get(`:contains("${nickname}")`).first().invoke('text').then(text => {
+        cy.log(`🔍 First element with nickname text: "${text}"`)
+      })
+      cy.get(`:contains("${nickname}")`).first().should('be.visible')
     } else {
-      cy.log('⚠️ No user info found - login may not have completed or uses different UI elements')
+      cy.log('⚠️ No user info found - login may not have completed')
+      // Check what's actually in the user info area
+      cy.get('[data-testid="user-info"], [data-testid="anonymous-info"]').then($el => {
+        if ($el.length > 0) {
+          cy.wrap($el).invoke('text').then(text => {
+            cy.log(`🔍 User info area text: "${text}"`)
+          })
+        }
+      })
       cy.get('body').should('exist') // Minimal assertion
     }
   })
@@ -294,13 +294,29 @@ Then('I should be on the game page', () => {
 // Assertions - Observers List
 Then('I should see {string} in the observers list', (nickname: string) => {
   // Look for observers list with flexible selectors
+  cy.log(`🔍 Looking for ${nickname} in observers list...`)
   cy.get('body').then($body => {
     const observerSelectors = '[data-testid*="observer"], .observer, [class*="observer"]'
-    if ($body.find(observerSelectors).length > 0) {
+    const foundObservers = $body.find(observerSelectors).length
+    cy.log(`🔍 Found ${foundObservers} observer elements`)
+    
+    if (foundObservers > 0) {
+      cy.get(observerSelectors).first().invoke('text').then(text => {
+        cy.log(`🔍 Observer element text: "${text}"`)
+      })
       cy.get(observerSelectors).should('contain', nickname)
       cy.log(`✅ Found ${nickname} in observers list`)
     } else {
-      cy.log(`⚠️ No observers list found - may be expected behavior`)
+      cy.log(`⚠️ No observers list found - checking all elements containing ${nickname}`)
+      cy.get('body').then($body2 => {
+        const allWithNickname = $body2.find(`:contains("${nickname}")`).length
+        cy.log(`🔍 Found ${allWithNickname} elements containing "${nickname}"`)
+        if (allWithNickname > 0) {
+          cy.get(`:contains("${nickname}")`).first().invoke('text').then(text => {
+            cy.log(`🔍 First element with nickname text: "${text}"`)
+          })
+        }
+      })
       cy.get('body').should('exist') // Minimal assertion
     }
   })

@@ -10,7 +10,7 @@ Feature: Login, Join Table, and Take Seats
   Scenario: Complete flow from anonymous visitor to seated player
     Given I am browsing anonymously
     And I am not logged in
-    When I attempt to join a table
+    When I click the login button
     Then I should be prompted to login first
     
     When I click start playing without entering nickname
