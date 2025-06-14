@@ -335,14 +335,8 @@ export const setupLobbyHandlers = (
         console.log(`DEBUG: Updated authenticated user ${nickname} location to table ${tableId}`);
       }
 
-      // Emit location update event to notify all clients
-      io.emit('location:updated', { 
-        playerId: socket.id,
-        nickname: nickname,
-        table: tableId,
-        seat: null
-      });
-      console.log(`🎯 BACKEND: Broadcasted immediate location:updated event for ${nickname}`);
+      // NOTE: location:updated event will be emitted by the joinTable handler instead
+      console.log(`🎯 BACKEND: Skipping location:updated emission here - will be handled by joinTable handler for ${nickname}`);
 
     } catch (error: any) {
       console.error('🎯 BACKEND: Error in immediate location update:', error);
