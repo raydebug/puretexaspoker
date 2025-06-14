@@ -409,10 +409,10 @@ Then('{string} should appear exactly once in the observers list', (nickname: str
   
   // Check within the observers section
   cy.get('h3:contains("Observers")').parent().within(() => {
-    // Try to find list items first, if none exist, check for empty message
-    cy.get('body').then($body => {
-      const hasListItems = $body.find('li').length > 0
-      if (hasListItems) {
+    // Check if there are any list items
+    cy.get('ul').then($ul => {
+      const $listItems = $ul.find('li')
+      if ($listItems.length > 0) {
         cy.get('li').then($observers => {
           const observerText = $observers.text()
           const occurrences = (observerText.match(new RegExp(nickname, 'g')) || []).length
@@ -435,9 +435,9 @@ Then('{string} should appear exactly zero times in the players list', (nickname:
   
   // Check within the players section
   cy.get('h3:contains("Players")').parent().within(() => {
-    cy.get('body').then($body => {
-      const hasListItems = $body.find('li').length > 0
-      if (hasListItems) {
+    cy.get('ul').then($ul => {
+      const $listItems = $ul.find('li')
+      if ($listItems.length > 0) {
         cy.get('li').then($players => {
           const playerText = $players.text()
           const occurrences = (playerText.match(new RegExp(nickname, 'g')) || []).length
@@ -460,9 +460,9 @@ Then('{string} should appear exactly once in the players list', (nickname: strin
   
   // Check within the players section
   cy.get('h3:contains("Players")').parent().within(() => {
-    cy.get('body').then($body => {
-      const hasListItems = $body.find('li').length > 0
-      if (hasListItems) {
+    cy.get('ul').then($ul => {
+      const $listItems = $ul.find('li')
+      if ($listItems.length > 0) {
         cy.get('li').then($players => {
           const playerText = $players.text()
           const occurrences = (playerText.match(new RegExp(nickname, 'g')) || []).length
@@ -485,9 +485,9 @@ Then('{string} should appear exactly zero times in the observers list', (nicknam
   
   // Check within the observers section
   cy.get('h3:contains("Observers")').parent().within(() => {
-    cy.get('body').then($body => {
-      const hasListItems = $body.find('li').length > 0
-      if (hasListItems) {
+    cy.get('ul').then($ul => {
+      const $listItems = $ul.find('li')
+      if ($listItems.length > 0) {
         cy.get('li').then($observers => {
           const observerText = $observers.text()
           const occurrences = (observerText.match(new RegExp(nickname, 'g')) || []).length
