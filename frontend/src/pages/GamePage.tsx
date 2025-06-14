@@ -433,6 +433,13 @@ const GamePage: React.FC = () => {
           };
           
           console.log('DEBUG: Updated gameState with player seat change:', updatedGameState);
+          
+          // Recalculate available seats after state update
+          const occupiedSeats = updatedPlayers.map(p => p.seatNumber);
+          const available = Array.from({ length: 9 }, (_, i) => i + 1).filter(seat => !occupiedSeats.includes(seat));
+          setAvailableSeats(available);
+          console.log('DEBUG: Updated available seats:', available);
+          
           return updatedGameState;
         });
       });
