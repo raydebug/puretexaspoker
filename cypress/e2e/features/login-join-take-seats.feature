@@ -45,4 +45,12 @@ Feature: Login, Join Table, and Take Seats
     And I should not see "TestPlayer" at seat "1"
     And "TestPlayer" should appear exactly once in the players list
     And "TestPlayer" should appear exactly zero times in the observers list
-    And the players list should reflect this seat change 
+    And the players list should reflect this seat change
+    
+    When I take another available seat "1"
+    Then seat "3" should return to available state
+    And seat "1" should be in taken state
+    And I should see "TestPlayer" in the players list at seat "1"
+    And I should not see "TestPlayer" at seat "3"
+    And "TestPlayer" should appear exactly once in the players list
+    And "TestPlayer" should appear exactly zero times in the observers list 
