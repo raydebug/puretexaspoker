@@ -3,8 +3,8 @@ import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import dotenv from 'dotenv';
-import { registerSeatHandlers } from './socketHandlers/seatHandler';
-import { setupLobbyHandlers } from './events/lobbyHandlers';
+import { registerConsolidatedHandlers } from './socketHandlers/consolidatedHandler';
+import { errorHandler } from './middleware/errorHandler';
 import errorRoutes from './routes/errorRoutes';
 
 // Load environment variables
@@ -44,29 +44,10 @@ app.get('/api/test', (req, res) => {
   res.json({ status: 'ok', message: 'Backend server is running' });
 });
 
-// Socket connections
-io.on('connection', (socket) => {
-  console.log(`Client connected: ${socket.id}`);
-  
-  // Common socket setup
-  socket.on('disconnect', (reason) => {
-    console.log(`Client disconnected: ${socket.id}, reason: ${reason}`);
-  });
-  
-  // Register event handlers
-  // registerSeatHandlers(io); // DISABLED: Legacy global seat handler conflicts with room-based system
-  setupLobbyHandlers(io, socket);
+// Use consolidated WebSocket handler (single entry point, gameManager as source of truth)
+registerConsolidatedHandlers(io);
 
-  // Add a ping handler
-  socket.on('ping', () => {
-    socket.emit('pong');
-  });
-});
-
-// Error handling middleware
-app.use((err: any, req: any, res: any, next: any) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'An unexpected error occurred' });
-});
+// Standardized error handling middleware
+app.use(errorHandler);
 
 export { app, httpServer, io };

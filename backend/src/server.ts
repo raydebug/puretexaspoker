@@ -9,9 +9,8 @@ import playerRoutes from './routes/players';
 import tableRoutes from './routes/tables';
 import chatRoutes from './routes/chat';
 import gameRoutes from './routes/games';
-import { registerSeatHandlers } from './socketHandlers/seatHandler';
-import { registerGameHandlers } from './socketHandlers/gameHandler';
-import { setupLobbyHandlers } from './events/lobbyHandlers';
+import { registerConsolidatedHandlers } from './socketHandlers/consolidatedHandler';
+import { errorHandler } from './middleware/errorHandler';
 import { prisma } from './db';
 import { tableManager } from './services/TableManager';
 import { locationManager } from './services/LocationManager';
@@ -97,19 +96,11 @@ app.get('/api/lobby-tables', (req, res) => {
   }
 });
 
-// Socket handlers
-registerSeatHandlers(io);
-registerGameHandlers(io);
+// Use consolidated WebSocket handler (single entry point, gameManager as source of truth)
+registerConsolidatedHandlers(io);
 
-// Register lobby handlers for each connection
-io.on('connection', (socket) => {
-  console.log('Client connected to game handler:', socket.id);
-  setupLobbyHandlers(io, socket);
-  
-  socket.on('disconnect', () => {
-    console.log('Game client disconnected:', socket.id);
-  });
-});
+// Standardized error handling middleware
+app.use(errorHandler);
 
 // Initialize default tables and start server
 createDefaultTables().then(async () => {
@@ -118,6 +109,7 @@ createDefaultTables().then(async () => {
   
   httpServer.listen(port, () => {
     console.log(`Server is running on port ${port}`);
+    console.log('Using consolidated WebSocket handler system');
   });
 }).catch(error => {
   console.error('Failed to initialize server:', error);
