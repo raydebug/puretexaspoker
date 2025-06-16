@@ -267,44 +267,36 @@ const GamePage: React.FC = () => {
           setAvailableSeats(available);
         });
         
-        // Check for existing player and game state periodically
-        const checkGameState = () => {
-          const player = socketService.getCurrentPlayer();
-          const state = socketService.getGameState();
+        // Set up event-driven listeners for game state instead of polling
+        const gameStateUnsubscriber = socketService.onGameState((state: GameState) => {
+          console.log('DEBUG: GamePage received game state update via WebSocket:', state);
+          setGameState(state);
+          setIsLoading(false);
           
-          console.log('DEBUG: GamePage checkPlayer - player:', !!player);
-          if (player) {
-            console.log('DEBUG: GamePage checkPlayer found player:', player);
-            setCurrentPlayer(player);
-            setIsObserver(false); // User has a seat, no longer observer
-          }
+          // Calculate available seats (1-9, excluding occupied seats)
+          const occupiedSeats = state.players.map(p => p.seatNumber);
+          const available = Array.from({ length: 9 }, (_, i) => i + 1).filter(seat => !occupiedSeats.includes(seat));
+          setAvailableSeats(available);
+        });
+        
+        // Check for existing state immediately (no polling)
+        const existingPlayer = socketService.getCurrentPlayer();
+        const existingState = socketService.getGameState();
+        
+        if (existingPlayer) {
+          console.log('DEBUG: GamePage found existing player:', existingPlayer);
+          setCurrentPlayer(existingPlayer);
+          setIsObserver(false);
+        }
+        
+        if (existingState) {
+          console.log('DEBUG: GamePage found existing state:', existingState);
+          setGameState(existingState);
+          setIsLoading(false);
           
-          console.log('DEBUG: GamePage checkGameState - state:', !!state);
-          if (state) {
-            console.log('DEBUG: GamePage checkGameState found state:', state);
-            setGameState(state);
-            setIsLoading(false);
-            
-            // Calculate available seats (1-9, excluding occupied seats)
-            const occupiedSeats = state.players.map(p => p.seatNumber);
-            const available = Array.from({ length: 9 }, (_, i) => i + 1).filter(seat => !occupiedSeats.includes(seat));
-            setAvailableSeats(available);
-            
-            // Clear the interval once we have game state
-            if (gameStateInterval) {
-              clearInterval(gameStateInterval);
-              gameStateInterval = null;
-            }
-          }
-        };
-        
-        // Check immediately
-        checkGameState();
-        
-        // Only set up interval if we don't have game state yet
-        let gameStateInterval: NodeJS.Timeout | null = null;
-        if (!socketService.getGameState()) {
-          gameStateInterval = setInterval(checkGameState, 500);
+          const occupiedSeats = existingState.players.map(p => p.seatNumber);
+          const available = Array.from({ length: 9 }, (_, i) => i + 1).filter(seat => !occupiedSeats.includes(seat));
+          setAvailableSeats(available);
         }
         
         // Set a timeout to show the observer view if no game state is received
@@ -344,16 +336,10 @@ const GamePage: React.FC = () => {
           }
           
           setIsLoading(false);
-          if (gameStateInterval) {
-            clearInterval(gameStateInterval);
-            gameStateInterval = null;
-          }
-        }, 3000); // Reduced from 5000ms to 3000ms
+        }, 3000); // Keep timeout as fallback for connection issues
         
         return () => {
-          if (gameStateInterval) {
-            clearInterval(gameStateInterval);
-          }
+          gameStateUnsubscriber();
           clearTimeout(timeoutId);
         };
         

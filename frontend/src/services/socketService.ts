@@ -1177,7 +1177,7 @@ export class SocketService {
    */
   placeBet(gameId: string, playerId: string, amount: number) {
     if (this.socket && this.socket.connected) {
-      this.socket.emit('game:action', { gameId, playerId, action: 'bet', amount });
+      this.socket.emit('game:bet', { gameId, playerId, amount });
     }
   }
 
@@ -1186,7 +1186,7 @@ export class SocketService {
    */
   fold(gameId: string, playerId: string) {
     if (this.socket && this.socket.connected) {
-      this.socket.emit('game:action', { gameId, playerId, action: 'fold' });
+      this.socket.emit('game:fold', { gameId, playerId });
     }
   }
 
@@ -1197,13 +1197,32 @@ export class SocketService {
     if (this.socket && this.socket.connected && this.gameState) {
       const data: any = { 
         gameId: this.gameState.id, 
-        playerId: this.currentPlayer?.id, 
-        action 
+        playerId: this.currentPlayer?.id
       };
       if (amount !== undefined) {
         data.amount = amount;
       }
-      this.socket.emit('game:action', data);
+      
+      // Emit specific event based on action type
+      switch (action) {
+        case 'bet':
+          this.socket.emit('game:bet', data);
+          break;
+        case 'call':
+          this.socket.emit('game:call', data);
+          break;
+        case 'check':
+          this.socket.emit('game:check', data);
+          break;
+        case 'fold':
+          this.socket.emit('game:fold', data);
+          break;
+        case 'raise':
+          this.socket.emit('game:raise', { ...data, totalAmount: amount });
+          break;
+        default:
+          console.warn('Unknown action type:', action);
+      }
     }
   }
 
@@ -1230,7 +1249,7 @@ export class SocketService {
    */
   call(gameId: string, playerId: string, amount?: number) {
     if (this.socket && this.socket.connected) {
-      this.socket.emit('game:action', { gameId, playerId, action: 'call', amount });
+      this.socket.emit('game:call', { gameId, playerId, amount });
     }
   }
 
@@ -1239,7 +1258,7 @@ export class SocketService {
    */
   raise(gameId: string, playerId: string, amount: number) {
     if (this.socket && this.socket.connected) {
-      this.socket.emit('game:action', { gameId, playerId, action: 'raise', amount });
+      this.socket.emit('game:raise', { gameId, playerId, totalAmount: amount });
     }
   }
 
@@ -1248,7 +1267,11 @@ export class SocketService {
    */
   allIn(gameId: string, playerId: string) {
     if (this.socket && this.socket.connected) {
-      this.socket.emit('game:action', { gameId, playerId, action: 'allIn' });
+      // Get current player's chips and emit as a bet
+      const currentPlayer = this.getCurrentPlayer();
+      if (currentPlayer) {
+        this.socket.emit('game:bet', { gameId, playerId, amount: currentPlayer.chips });
+      }
     }
   }
 
@@ -1257,7 +1280,7 @@ export class SocketService {
    */
   check(gameId: string, playerId: string) {
     if (this.socket && this.socket.connected) {
-      this.socket.emit('game:action', { gameId, playerId, action: 'check' });
+      this.socket.emit('game:check', { gameId, playerId });
     }
   }
 

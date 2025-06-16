@@ -323,7 +323,7 @@ describe('SocketService', () => {
       const betAmount = 100;
 
       socketService.placeBet(gameId, playerId, betAmount);
-      expect(mockEmit).toHaveBeenCalledWith('placeBet', { gameId, playerId, amount: betAmount });
+      expect(mockEmit).toHaveBeenCalledWith('game:bet', { gameId, playerId, amount: betAmount });
     });
 
     it('should handle player folding', () => {
@@ -331,7 +331,7 @@ describe('SocketService', () => {
       const playerId = 'player1';
 
       socketService.fold(gameId, playerId);
-      expect(mockEmit).toHaveBeenCalledWith('fold', { gameId, playerId });
+      expect(mockEmit).toHaveBeenCalledWith('game:fold', { gameId, playerId });
     });
   });
 

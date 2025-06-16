@@ -295,6 +295,44 @@ export function registerGameHandlers(io: Server) {
       }
     });
 
+    // Backwards compatibility handler for generic game:action event
+    socket.on('game:action', async ({ gameId, playerId, action, amount, totalAmount }) => {
+      console.log('DEBUG: Received generic game:action event:', { gameId, playerId, action, amount, totalAmount });
+      
+      try {
+        // Route to specific handlers based on action type
+        switch (action) {
+          case 'bet':
+            if (!amount) throw new Error('Amount required for bet action');
+            await gameManager.placeBet(gameId, playerId, amount);
+            socket.emit('game:actionSuccess', { action: 'bet', gameId, amount });
+            break;
+          case 'call':
+            await gameManager.call(gameId, playerId);
+            socket.emit('game:actionSuccess', { action: 'call', gameId });
+            break;
+          case 'check':
+            await gameManager.check(gameId, playerId);
+            socket.emit('game:actionSuccess', { action: 'check', gameId });
+            break;
+          case 'fold':
+            await gameManager.fold(gameId, playerId);
+            socket.emit('game:actionSuccess', { action: 'fold', gameId });
+            break;
+          case 'raise':
+            const raiseAmount = totalAmount || amount;
+            if (!raiseAmount) throw new Error('Amount required for raise action');
+            await gameManager.raise(gameId, playerId, raiseAmount);
+            socket.emit('game:actionSuccess', { action: 'raise', gameId, totalAmount: raiseAmount });
+            break;
+          default:
+            throw new Error(`Unknown action type: ${action}`);
+        }
+      } catch (error) {
+        handleGameError(socket, error as Error, `action:${action}`);
+      }
+    });
+
     // Force complete phase (testing/admin feature)
     socket.on('game:forceCompletePhase', async ({ gameId }) => {
       try {

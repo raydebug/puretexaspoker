@@ -5,6 +5,8 @@ export type { Card, Player, GameState, Hand, Avatar, SidePot, ShowdownResult };
 export interface GameAction {
   type: 'bet' | 'call' | 'raise' | 'fold' | 'check';
   amount?: number;
+  playerId: string;
+  timestamp: number;
 }
 
 export interface GameSettings {
