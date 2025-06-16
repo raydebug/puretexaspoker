@@ -26,6 +26,9 @@ interface PlayerConnectionState {
 const disconnectedPlayers = new Map<string, PlayerConnectionState>();
 const DISCONNECT_TIMEOUT_MS = 5000; // 5 seconds
 
+// Track authenticated users (both in lobby and at tables) - GLOBAL ACROSS ALL CONNECTIONS
+const authenticatedUsers = new Map<string, { nickname: string; socketId: string; location: 'lobby' | number }>();
+
 export function registerConsolidatedHandlers(io: Server) {
   // Global error handler with consistent format
   const handleError = (socket: Socket, error: Error, context: string, data?: any) => {
@@ -50,6 +53,14 @@ export function registerConsolidatedHandlers(io: Server) {
   const broadcastTables = () => {
     const tables = tableManager.getAllTables();
     io.emit('tablesUpdate', tables);
+  };
+
+  // Broadcast online users count update to all connected clients
+  const broadcastOnlineUsersUpdate = () => {
+    const totalOnlineUsers = authenticatedUsers.size;
+    console.log(`[CONSOLIDATED] Broadcasting online users update - Total: ${totalOnlineUsers}`);
+    console.log(`[CONSOLIDATED] Current authenticated users:`, Array.from(authenticatedUsers.keys()));
+    io.emit('onlineUsers:update', { total: totalOnlineUsers });
   };
 
   // Handle player reconnection
@@ -124,12 +135,16 @@ export function registerConsolidatedHandlers(io: Server) {
 
   io.on('connection', (socket: Socket) => {
     console.log(`[CONSOLIDATED] Client connected: ${socket.id}`);
+    console.log(`[CONSOLIDATED] Current authenticated users: ${authenticatedUsers.size}`);
 
     // === LOBBY HANDLERS ===
     
     socket.on('getLobbyTables', () => {
       try {
-        broadcastTables();
+        console.log('[CONSOLIDATED] getLobbyTables request received');
+        const tables = tableManager.getAllTables();
+        console.log(`[CONSOLIDATED] Sending ${tables.length} tables to client`);
+        socket.emit('tablesUpdate', tables);
       } catch (error) {
         handleError(socket, error as Error, 'getLobbyTables');
       }
@@ -140,6 +155,28 @@ export function registerConsolidatedHandlers(io: Server) {
         if (!nickname || typeof nickname !== 'string') {
           throw new Error('Invalid nickname');
         }
+
+        console.log(`[CONSOLIDATED] User login event - ${nickname} (socket: ${socket.id})`);
+        console.log(`[CONSOLIDATED] Authenticated users before login:`, Array.from(authenticatedUsers.keys()));
+        
+        // Remove any existing entry for this socket (in case of re-login)
+        for (const [key, user] of authenticatedUsers.entries()) {
+          if (user.socketId === socket.id) {
+            authenticatedUsers.delete(key);
+            console.log(`[CONSOLIDATED] Removed existing entry for socket ${socket.id}`);
+            break;
+          }
+        }
+        
+        // Add or update user in authenticated users map
+        authenticatedUsers.set(nickname, {
+          nickname,
+          socketId: socket.id,
+          location: 'lobby'
+        });
+        
+        console.log(`[CONSOLIDATED] Added authenticated user ${nickname} to lobby tracking`);
+        console.log(`[CONSOLIDATED] Authenticated users after login:`, Array.from(authenticatedUsers.keys()));
 
         // Create or update player record
         await prisma.player.upsert({
@@ -153,6 +190,7 @@ export function registerConsolidatedHandlers(io: Server) {
 
         socket.emit('loginSuccess', { playerId: socket.id, nickname });
         broadcastTables();
+        broadcastOnlineUsersUpdate();
       } catch (error) {
         handleError(socket, error as Error, 'userLogin', { nickname });
       }
@@ -160,8 +198,20 @@ export function registerConsolidatedHandlers(io: Server) {
 
     socket.on('userLogout', async () => {
       try {
+        console.log(`[CONSOLIDATED] User logout event (socket: ${socket.id})`);
+        
+        // Remove user from authenticated users map
+        for (const [key, user] of authenticatedUsers.entries()) {
+          if (user.socketId === socket.id) {
+            authenticatedUsers.delete(key);
+            console.log(`[CONSOLIDATED] Removed authenticated user ${user.nickname} from tracking`);
+            break;
+          }
+        }
+
         await locationManager.removeUser(socket.id);
         broadcastTables();
+        broadcastOnlineUsersUpdate();
       } catch (error) {
         handleError(socket, error as Error, 'userLogout');
       }
@@ -190,6 +240,14 @@ export function registerConsolidatedHandlers(io: Server) {
 
         // Move to table as observer
         await locationManager.moveToTableObserver(socket.id, nickname, tableId);
+
+        // Update authenticated user location if they're tracked
+        if (authenticatedUsers.has(nickname)) {
+          const user = authenticatedUsers.get(nickname)!;
+          user.location = tableId;
+          authenticatedUsers.set(nickname, user);
+          console.log(`[CONSOLIDATED] Updated authenticated user ${nickname} location to table ${tableId}`);
+        }
 
         // Create or find database table
         const dbTableName = `${lobbyTable.name} (ID: ${tableId})`;
@@ -523,6 +581,16 @@ export function registerConsolidatedHandlers(io: Server) {
       try {
         console.log(`[CONSOLIDATED] Client disconnected: ${socket.id}, reason: ${reason}`);
         
+        // Remove user from authenticated users tracking
+        for (const [key, user] of authenticatedUsers.entries()) {
+          if (user.socketId === socket.id) {
+            authenticatedUsers.delete(key);
+            console.log(`[CONSOLIDATED] Removed disconnected user ${user.nickname} from authenticated users tracking`);
+            break;
+          }
+        }
+        broadcastOnlineUsersUpdate();
+        
         const { gameId, nickname, tableId, dbTableId } = socket.data;
 
         if (gameId && nickname && tableId && dbTableId) {
@@ -601,6 +669,12 @@ export function registerConsolidatedHandlers(io: Server) {
     // Send initial state
     try {
       broadcastTables();
+      // Send current online users count to the new connection
+      const totalOnlineUsers = authenticatedUsers.size;
+      socket.emit('onlineUsers:update', { total: totalOnlineUsers });
+      console.log(`[CONSOLIDATED] Sent initial online users count to new connection: ${totalOnlineUsers}`);
+      // Also broadcast to all to ensure consistency
+      broadcastOnlineUsersUpdate();
     } catch (error) {
       console.error('[CONSOLIDATED] Error sending initial state:', error);
     }

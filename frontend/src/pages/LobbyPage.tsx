@@ -193,10 +193,7 @@ const LobbyPage: React.FC = () => {
       try {
         await socketService.connect();
         socketService.requestLobbyTables();
-        socketService.onOnlineUsersUpdate((total: number) => {
-          console.log(`🔍 FRONTEND: Received online users update (anonymous): ${total}`);
-          setOnlineUsers(total);
-        });
+        // Don't set up the callback again - it's already set up in the main useEffect
       } catch (error) {
         console.error('Failed to connect socket anonymously:', error);
       }
