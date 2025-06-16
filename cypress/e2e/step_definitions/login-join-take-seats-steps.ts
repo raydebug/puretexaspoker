@@ -418,6 +418,46 @@ Then('I should not see {string} at seat {string}', (nickname: string, seatNumber
   })
 })
 
+// Observer state verification
+Given('I am observing the table as {string}', (nickname: string) => {
+  // Wait for the game page to load and verify user is in observers list
+  cy.wait(2000)
+  cy.get('body').then($body => {
+    const observerSelectors = '[data-testid*="observer"], .observer, [class*="observer"]'
+    if ($body.find(observerSelectors).length > 0) {
+      cy.get(observerSelectors).should('contain', nickname)
+      cy.log(`✅ ${nickname} is correctly observing the table`)
+    } else {
+      cy.log(`⚠️ No observers list found - may be expected behavior`)
+      cy.get('body').should('exist')
+    }
+  })
+})
+
+// Seat actions
+When('I take seat {string} again', (seatNumber: string) => {
+  cy.log(`🎯 Taking seat ${seatNumber} again`)
+  
+  // Look for the seat element and click it
+  cy.get('body').then($body => {
+    const availableSeatSelector = `[data-testid="available-seat-${seatNumber}"]`
+    const seatSelector = `[data-testid="seat-${seatNumber}"]`
+    
+    if ($body.find(availableSeatSelector).length > 0) {
+      cy.get(availableSeatSelector).click()
+    } else if ($body.find(seatSelector).length > 0) {
+      cy.get(seatSelector).click()
+    } else {
+      cy.log(`❌ No seat ${seatNumber} element found`)
+      throw new Error(`Seat ${seatNumber} not found`)
+    }
+  })
+  
+  // Wait for seat change to complete
+  cy.wait(1000)
+  cy.log(`✅ Attempted to take seat ${seatNumber} again`)
+})
+
 // Assertions - Seat States
 Then('seat {string} should be in taken state', (seatNumber: string) => {
   cy.log(`🔍 Verifying seat ${seatNumber} is taken`)

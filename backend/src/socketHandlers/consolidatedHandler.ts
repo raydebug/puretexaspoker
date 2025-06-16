@@ -359,14 +359,22 @@ export function registerConsolidatedHandlers(io: Server) {
           throw new Error(`Buy-in must be between ${lobbyTable.minBuyIn} and ${lobbyTable.maxBuyIn}`);
         }
 
-        // Check seat availability
+        // Check seat availability - but ignore if it's the same player
         const existingPlayerTable = await prisma.playerTable.findFirst({
           where: { tableId: dbTableId, seatNumber }
         });
 
-        if (existingPlayerTable) {
+        if (existingPlayerTable && existingPlayerTable.playerId !== playerId) {
           throw new Error(`Seat ${seatNumber} is already taken`);
         }
+
+        // Clean up any existing seat for this player at this table
+        await prisma.playerTable.deleteMany({
+          where: { 
+            playerId,
+            tableId: dbTableId 
+          }
+        });
 
         // Get game service (gameManager is source of truth)
         const gameService = gameManager.getGame(gameId);
