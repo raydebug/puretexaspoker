@@ -39,6 +39,7 @@ Feature: Multiplayer Poker Game Round
     And "TestPlayer2" chip count should decrease to "120"
     And the current bet should be "30"
     And the turn should move to "TestPlayer3"
+    And the chip count change should be visible in the UI
     
     When "TestPlayer3" performs a "fold" action
     Then "TestPlayer3" should be marked as folded
@@ -55,6 +56,7 @@ Feature: Multiplayer Poker Game Round
     When "TestPlayer1" performs a "call" action with amount "20"
     Then "TestPlayer1" chip count should decrease to "180"
     And the preflop betting round should be complete
+    And the total pot should reflect all player contributions
     
     # Test flop phase with community cards
     When the flop is dealt with 3 community cards

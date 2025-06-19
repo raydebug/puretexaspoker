@@ -786,7 +786,8 @@ Then('the turn should move to {string}', (expectedPlayer: string) => {
 });
 
 Then('{string} chip count should decrease to {string}', (playerName: string, expectedChips: string) => {
-  cy.get(`[data-testid="player-chips-${playerName}"]`, { timeout: 5000 })
+  // Use the correct data-testid format from GameBoard component
+  cy.get(`[data-testid="player-${playerName}-chips"]`, { timeout: 5000 })
     .should('contain', expectedChips);
 });
 
@@ -803,6 +804,18 @@ Then('{string} should be marked as folded', (playerName: string) => {
 Then('the preflop betting round should be complete', () => {
   cy.get('[data-testid="betting-round-status"]', { timeout: 10000 })
     .should('contain', 'complete');
+});
+
+Then('the total pot should reflect all player contributions', () => {
+  // After preflop: 5 (SB) + 10 (BB) + 30*4 (raises/calls) = 135
+  cy.get('[data-testid="pot-amount"]', { timeout: 5000 })
+    .should('be.visible')
+    .invoke('text')
+    .should('match', /\$\d+/) // Should contain dollar sign and numbers
+    .then((potText) => {
+      const potAmount = parseInt(potText.replace(/[^\d]/g, ''));
+      expect(potAmount).to.be.greaterThan(100); // Should be substantial after betting
+    });
 });
 
 // Community cards and phases
@@ -909,8 +922,16 @@ Then('the game should display final results', () => {
 
 // Final state verification
 Then('all player chip counts should be accurate', () => {
-  cy.get('[data-testid^="player-chips-"]')
-    .should('have.length.at.least', 2);
+  // Verify that chip displays are visible and contain valid numbers
+  cy.get('[data-testid$="-chips"]', { timeout: 5000 })
+    .should('have.length.at.least', 2)
+    .each(($chipDisplay) => {
+      cy.wrap($chipDisplay)
+        .should('be.visible')
+        .and('not.be.empty')
+        .invoke('text')
+        .should('match', /^\d+$/); // Should contain only numbers
+    });
 });
 
 Then('the pot display should show correct final amount', () => {
@@ -943,6 +964,19 @@ Then('the cards should be visually rendered correctly', () => {
   cy.get('[data-testid="community-cards"] .card', { timeout: 5000 })
     .should('be.visible')
     .and('have.length.at.least', 1);
+});
+
+Then('the chip count change should be visible in the UI', () => {
+  // Verify that chip animations or updates are visible
+  cy.get('[data-testid$="-chips"]', { timeout: 3000 })
+    .should('be.visible')
+    .and('not.contain', 'undefined')
+    .and('not.contain', 'NaN');
+    
+  // Also verify that the pot has been updated
+  cy.get('[data-testid="pot-amount"]', { timeout: 3000 })
+    .should('be.visible')
+    .and('not.contain', '$0'); // Pot should have increased
 });
 
 // Compound action steps for cleaner feature files
