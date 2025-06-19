@@ -41,7 +41,7 @@ Given('I am directly on the game page with test data', () => {
 });
 
 Given('I have {int} players already seated:', (playerCount: number, dataTable: any) => {
-  cy.log(`🎯 Injecting REAL ${playerCount} players into the ACTUAL game UI is viewing`);
+  cy.log(`🎯 Creating REAL ${playerCount} players via backend test API`);
   
   const rawPlayers = dataTable.hashes();
   testPlayers = rawPlayers.map((player: any) => ({
@@ -50,141 +50,149 @@ Given('I have {int} players already seated:', (playerCount: number, dataTable: a
     chips: parseInt(player.chips)
   })) as PlayerData[];
   
-  // Instead of creating a separate test game, inject players into the frontend's current game session
-  cy.window().then((win) => {
-    // Get the real gameId that the frontend is connected to (if available)
-    if ((win as any).location.pathname.includes('/game/')) {
-      const pathGameId = (win as any).location.pathname.split('/game/')[1];
-      testGameId = pathGameId;
-      cy.log(`✅ Using frontend's actual gameId: ${testGameId}`);
+  // Get the current game ID from the URL
+  cy.url().then((url) => {
+    const gameIdMatch = url.match(/\/game\/([^\/]+)/);
+    if (gameIdMatch) {
+      testGameId = gameIdMatch[1];
+      cy.log(`✅ Using gameId from URL: ${testGameId}`);
     } else {
-      // Fallback to current timestamp-based ID
       testGameId = `test-game-${Date.now()}`;
       cy.log(`⚠️ Using fallback testGameId: ${testGameId}`);
     }
     
-    // Inject real players directly into the frontend's current game state
-    if ((win as any).socketService) {
-      cy.log('🎯 Injecting players via frontend socketService...');
-      
-      // Create mock players data that matches the backend format
-      const mockPlayers = testPlayers.map(player => ({
-        id: `test-player-${player.seatNumber}`,
-        name: player.nickname,
-        seatNumber: player.seatNumber,
-        position: player.seatNumber,
-        chips: player.chips,
-        currentBet: 0,
-        isDealer: player.seatNumber === 1,
-        isAway: false,
-        isActive: true,
-        cards: [],
-        avatar: {
-          type: 'default',
-          color: '#007bff'
-        }
-      }));
-      
-      // Get current game state from frontend
-      const currentGameState = (win as any).socketService.getGameState();
-      if (currentGameState) {
-        // Inject players into existing game state
-        const updatedGameState = {
-          ...currentGameState,
-          players: mockPlayers,
-          status: 'active',
-          phase: 'preflop',
-          pot: 150, // Set initial pot
-          currentPlayerId: mockPlayers[0].id,
-          currentPlayerPosition: 1
-        };
-        
-        // Force update the frontend's game state directly
-        (win as any).socketService.gameState = updatedGameState;
-        
-        // Trigger UI updates by emitting the events the frontend expects
-        if ((win as any).socketService.gameStateListeners) {
-          (win as any).socketService.gameStateListeners.forEach((listener: any) => {
-            listener(updatedGameState);
-          });
-        }
-        
-        // Update online users as well
-        if ((win as any).socketService.onlineUsersCallback) {
-          (win as any).socketService.onlineUsersCallback(mockPlayers, ['TestPlayer']);
-        }
-        
-        cy.log('✅ Successfully injected players into frontend game state');
-        cy.log(`✅ Game now has ${mockPlayers.length} players visible in UI`);
-      } else {
-        cy.log('⚠️ No existing game state found, creating new one...');
-        
-        // Create a complete game state from scratch
-        const newGameState = {
-          id: testGameId,
-          players: mockPlayers,
-          communityCards: [
-            { rank: 'A', suit: '♠' },
-            { rank: 'K', suit: '♥' },
-            { rank: 'Q', suit: '♦' }
-          ],
-          pot: 150,
-          currentPlayerId: mockPlayers[0].id,
-          currentPlayerPosition: 1,
+    // Create the mock game with all players using the existing test API
+    cy.request({
+      method: 'POST',
+      url: 'http://localhost:3001/api/test_create_mock_game',
+      body: {
+        gameId: testGameId,
+        players: testPlayers.map(player => ({
+          id: `test-player-${player.seatNumber}`,
+          nickname: player.nickname,
+          seatNumber: player.seatNumber,
+          chips: player.chips
+        })),
+        gameConfig: {
           dealerPosition: 1,
           smallBlindPosition: 2,
           bigBlindPosition: 3,
-          status: 'active',
-          phase: 'preflop',
           minBet: 10,
-          currentBet: 0,
           smallBlind: 5,
-          bigBlind: 10,
-          handEvaluation: undefined,
-          winner: undefined,
-          isHandComplete: false
-        };
-        
-        // Set the new game state
-        (win as any).socketService.gameState = newGameState;
-        
-        // Trigger UI updates
-        if ((win as any).socketService.gameStateListeners) {
-          (win as any).socketService.gameStateListeners.forEach((listener: any) => {
-            listener(newGameState);
-          });
+          bigBlind: 10
         }
+      },
+      failOnStatusCode: false
+    }).then((response) => {
+      if (response.status === 200) {
+        cy.log(`✅ Successfully created mock game with ${playerCount} players`);
+        cy.log(`✅ Game ID: ${testGameId}`);
         
-        if ((win as any).socketService.onlineUsersCallback) {
-          (win as any).socketService.onlineUsersCallback(mockPlayers, ['TestPlayer']);
-        }
-        
-        cy.log('✅ Created and injected new game state into frontend');
+        // Now inject this game state into the frontend
+        cy.window().then((win) => {
+          if ((win as any).socketService) {
+            // Update the frontend's game state with our test data
+            (win as any).socketService.gameState = response.body.gameState;
+            
+            // Trigger UI updates
+            if ((win as any).socketService.gameStateListeners) {
+              (win as any).socketService.gameStateListeners.forEach((listener: any) => {
+                listener(response.body.gameState);
+              });
+            }
+            
+            // Update online users to include our test players
+            const playerNames = testPlayers.map(p => p.nickname);
+            if ((win as any).socketService.onlineUsersCallback) {
+              (win as any).socketService.onlineUsersCallback(
+                response.body.gameState.players,
+                ['TestPlayer', ...playerNames]
+              );
+            }
+            
+            cy.log('✅ Frontend game state updated with test players');
+          }
+        });
+      } else {
+        cy.log(`⚠️ Failed to create mock game: ${response.status} - ${JSON.stringify(response.body)}`);
       }
-    } else {
-      cy.log('⚠️ socketService not available, using React state injection...');
-      
-      // Alternative: inject via React state if socketService isn't available
-      // This would require accessing React components directly
-    }
+    });
   });
   
-  // Wait for UI to update with injected data
+  // Wait for all operations to complete
   cy.wait(2000);
-  
-  cy.log(`✅ Real player injection completed - UI should now show ${playerCount} players`);
+  cy.log(`✅ ${playerCount} players setup completed`);
 });
 
 // UI-based verification steps
 Then('all {int} players should be seated at the table', (playerCount: number) => {
   cy.log(`🔍 Verifying ${playerCount} REAL players are visible in UI`);
   
+  // Create countdown popup overlay
+  cy.window().then((win) => {
+    // Create countdown popup in top left
+    const overlay = win.document.createElement('div');
+    overlay.id = 'countdown-overlay';
+    overlay.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      width: 300px;
+      height: 150px;
+      background: rgba(0,0,0,0.9);
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 16px;
+      font-weight: bold;
+      z-index: 10000;
+      text-align: center;
+      border-radius: 8px;
+      border: 2px solid #ff6b6b;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    `;
+    
+    const content = win.document.createElement('div');
+    content.innerHTML = `
+      <div style="font-size: 14px; margin-bottom: 10px;">
+        About to verify ${playerCount} players
+      </div>
+      <div style="font-size: 32px; color: #ff6b6b;" id="countdown-number">5</div>
+      <div style="font-size: 12px; margin-top: 5px;">
+        Inspect UI now!
+      </div>
+    `;
+    
+    overlay.appendChild(content);
+    win.document.body.appendChild(overlay);
+    
+    // Start countdown
+    let count = 5;
+    const countdownEl = win.document.getElementById('countdown-number');
+    
+    const interval = setInterval(() => {
+      count--;
+      if (countdownEl) {
+        countdownEl.textContent = count.toString();
+        if (count <= 0) {
+          countdownEl.textContent = 'GO!';
+          setTimeout(() => {
+            overlay.remove();
+          }, 500);
+          clearInterval(interval);
+        }
+      }
+    }, 1000);
+  });
+  
+  // Wait for countdown to complete
+  cy.wait(5500);
+  cy.log(`🔔 Countdown complete - proceeding with verification...`);
+  
   // First verify we're on the game page
   cy.get('body').should('exist');
   cy.url().should('include', '/game/');
-  
-  // Wait for UI to load real game state
-  cy.wait(2000);
   
   // Check for real players in poker table seats using actual data-testid attributes
   cy.get('[data-testid="poker-table"]', { timeout: 10000 }).should('be.visible');
