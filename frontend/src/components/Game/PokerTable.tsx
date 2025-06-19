@@ -75,16 +75,21 @@ const PlayerSeat = styled.div.withConfig({
   border-radius: 50%;
   background: ${props => {
     if (props.isEmpty && props.isAvailable) {
-      return 'linear-gradient(145deg, #4a6741, #3a5735)';
+      // Available seat - bright green with subtle glow
+      return 'linear-gradient(145deg, #4CAF50, #388E3C)';
     }
-    return props.isEmpty ? 
-      'linear-gradient(145deg, #2a3f35, #1a2f25)' : 
-      'linear-gradient(145deg, #ffd700, #ffed4e)';
+    if (props.isEmpty) {
+      // Empty unavailable seat - dark muted
+      return 'linear-gradient(145deg, #37474F, #263238)';
+    }
+    // Occupied seat - golden with rich gradient
+    return 'linear-gradient(145deg, #FFD700, #F57C00)';
   }};
-  border: 3px solid ${props => {
-    if (props.isButton) return '#ff6b35';
-    if (props.isEmpty && props.isAvailable) return '#6a8761';
-    return props.isEmpty ? '#4a6741' : '#ffb347';
+  border: ${props => {
+    if (props.isButton) return '3px solid #ff6b35';
+    if (props.isEmpty && props.isAvailable) return '3px solid #66BB6A';
+    if (props.isEmpty) return '3px solid #546E7A';
+    return '3px solid #FFB74D';
   }};
   display: flex;
   flex-direction: column;
@@ -92,7 +97,35 @@ const PlayerSeat = styled.div.withConfig({
   justify-content: center;
   cursor: ${props => (props.isEmpty && props.isAvailable) ? 'pointer' : 'default'};
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+     box-shadow: ${props => {
+     if (props.isEmpty && props.isAvailable) {
+       // Available seats get a bright glow effect
+       return '0 4px 20px rgba(76, 175, 80, 0.4), 0 0 10px rgba(102, 187, 106, 0.3)';
+     }
+     if (props.isEmpty) {
+       // Empty seats get subtle shadow
+       return '0 2px 8px rgba(0,0,0,0.5)';
+     }
+     // Occupied seats get warm golden glow
+     return '0 4px 20px rgba(255, 215, 0, 0.3), 0 0 8px rgba(255, 183, 77, 0.2)';
+   }};
+   
+   ${props => props.isEmpty && props.isAvailable && `
+     animation: breathe-${props.position} 3s ease-in-out infinite;
+     
+     @keyframes breathe-${props.position} {
+       0%, 100% { 
+         transform: ${props.position === 2 || props.position === 8 ? 'translateY(-50%) scale(1)' : 
+           props.position === 5 ? 'translateX(-50%) scale(1)' : 'scale(1)'};
+         box-shadow: 0 4px 20px rgba(76, 175, 80, 0.4), 0 0 10px rgba(102, 187, 106, 0.3);
+       }
+       50% { 
+         transform: ${props.position === 2 || props.position === 8 ? 'translateY(-50%) scale(1.02)' : 
+           props.position === 5 ? 'translateX(-50%) scale(1.02)' : 'scale(1.02)'};
+         box-shadow: 0 6px 25px rgba(76, 175, 80, 0.6), 0 0 15px rgba(102, 187, 106, 0.5);
+       }
+     }
+   `}
 
   // Position 9 player seats around the oval table
   ${props => {
@@ -119,14 +152,29 @@ const PlayerSeat = styled.div.withConfig({
   }}
 
   &:hover {
-    ${props => props.isEmpty && props.isAvailable && `
-      background: linear-gradient(145deg, #5a7751, #4a6741);
-      border-color: #7a9771;
-      transform: ${props.position <= 4 ? props.position === 1 || props.position === 4 ? 'scale(1.05)' : 
-        props.position === 2 ? 'translateY(-50%) scale(1.05)' : 'scale(1.05)' :
-        props.position === 5 ? 'translateX(-50%) scale(1.05)' : 
-        props.position === 8 ? 'translateY(-50%) scale(1.05)' : 'scale(1.05)'};
-    `}
+    ${props => {
+      if (props.isEmpty && props.isAvailable) {
+        return `
+          background: linear-gradient(145deg, #66BB6A, #43A047);
+          border-color: #81C784;
+          box-shadow: 0 6px 25px rgba(76, 175, 80, 0.6), 0 0 15px rgba(102, 187, 106, 0.5);
+          transform: ${props.position <= 4 ? props.position === 1 || props.position === 4 ? 'scale(1.1)' : 
+            props.position === 2 ? 'translateY(-50%) scale(1.1)' : 'scale(1.1)' :
+            props.position === 5 ? 'translateX(-50%) scale(1.1)' : 
+            props.position === 8 ? 'translateY(-50%) scale(1.1)' : 'scale(1.1)'};
+        `;
+      }
+      if (!props.isEmpty) {
+        return `
+          box-shadow: 0 6px 25px rgba(255, 215, 0, 0.5), 0 0 12px rgba(255, 183, 77, 0.4);
+          transform: ${props.position <= 4 ? props.position === 1 || props.position === 4 ? 'scale(1.05)' : 
+            props.position === 2 ? 'translateY(-50%) scale(1.05)' : 'scale(1.05)' :
+            props.position === 5 ? 'translateX(-50%) scale(1.05)' : 
+            props.position === 8 ? 'translateY(-50%) scale(1.05)' : 'scale(1.05)'};
+        `;
+      }
+      return '';
+    }}
   }
 `;
 
@@ -169,24 +217,51 @@ const ButtonIndicator = styled.div`
 const PlayerName = styled.div`
   font-size: 10px;
   font-weight: bold;
-  color: #333;
+  color: #1A1A1A;
   text-align: center;
   margin-bottom: 2px;
+  text-shadow: 0 1px 1px rgba(255,255,255,0.3);
+  letter-spacing: 0.3px;
 `;
 
 const PlayerChips = styled.div`
   font-size: 8px;
-  color: #666;
+  color: #2E2E2E;
   text-align: center;
+  font-weight: 600;
+  text-shadow: 0 1px 1px rgba(255,255,255,0.2);
+  background: rgba(0,0,0,0.1);
+  padding: 1px 4px;
+  border-radius: 8px;
+  border: 1px solid rgba(0,0,0,0.2);
 `;
 
 const EmptySeatText = styled.div.withConfig({
   shouldForwardProp: (prop) => prop !== 'isAvailable',
 })<{ isAvailable?: boolean }>`
-  font-size: 8px;
-  color: ${props => props.isAvailable ? '#7a9771' : '#888'};
+  font-size: ${props => props.isAvailable ? '9px' : '7px'};
+  color: ${props => props.isAvailable ? '#FFFFFF' : '#90A4AE'};
   text-align: center;
   font-weight: ${props => props.isAvailable ? 'bold' : 'normal'};
+  text-shadow: ${props => props.isAvailable ? '0 1px 2px rgba(0,0,0,0.5)' : 'none'};
+  text-transform: ${props => props.isAvailable ? 'uppercase' : 'none'};
+  letter-spacing: ${props => props.isAvailable ? '0.5px' : 'normal'};
+  line-height: 1.2;
+  
+  ${props => props.isAvailable && `
+    animation: pulseGlow 2s ease-in-out infinite;
+    
+    @keyframes pulseGlow {
+      0%, 100% { 
+        opacity: 1;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+      }
+      50% { 
+        opacity: 0.8;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.5), 0 0 8px rgba(255,255,255,0.3);
+      }
+    }
+  `}
 `;
 
 const CommunityCardsArea = styled.div`
