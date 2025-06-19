@@ -23,49 +23,91 @@ Feature: Multiplayer Poker Game Round
     Then I should see the poker table with all UI elements
     And I should see my player information displayed correctly
     
-    # Test betting controls availability
-    When the betting controls become available
+    # Test preflop betting round with all players
+    When the game starts and preflop betting begins
     Then the current player should have betting options available
     And I should be able to interact with betting buttons
     
-    # Test basic poker actions via UI
-    When I perform a "call" action
+    # Simulate a realistic preflop betting round
+    When "TestPlayer1" performs a "call" action
     Then the action should be reflected in the UI
-    And the pot amount should update
+    And the pot amount should update to "15"
+    And the turn should move to "TestPlayer2"
     
-    When I perform a "raise" action with amount "20"
+    When "TestPlayer2" performs a "raise" action with amount "30"
     Then the raise should be processed via UI
-    And my chip count should decrease appropriately
+    And "TestPlayer2" chip count should decrease to "120"
+    And the current bet should be "30"
+    And the turn should move to "TestPlayer3"
     
-    When I perform a "check" action
-    Then the check action should be confirmed in UI
+    When "TestPlayer3" performs a "fold" action
+    Then "TestPlayer3" should be marked as folded
+    And the turn should move to "TestPlayer4"
     
-    # Test community cards display
-    When community cards are dealt
-    Then I should see community cards displayed
+    When "TestPlayer4" performs a "call" action with amount "30"
+    Then "TestPlayer4" chip count should decrease to "220"
+    And the turn should move to "TestPlayer5"
+    
+    When "TestPlayer5" performs a "call" action with amount "30"
+    Then "TestPlayer5" chip count should decrease to "150"
+    And the turn should move back to "TestPlayer1"
+    
+    When "TestPlayer1" performs a "call" action with amount "20"
+    Then "TestPlayer1" chip count should decrease to "180"
+    And the preflop betting round should be complete
+    
+    # Test flop phase with community cards
+    When the flop is dealt with 3 community cards
+    Then I should see 3 community cards displayed
     And the cards should be visually rendered correctly
+    And the phase indicator should show "flop"
     
-    # Test different game phases
-    When the game progresses through phases
-    Then I should see phase indicators in the UI
-    And the game status should update accordingly
+    # Flop betting round with remaining players
+    When the flop betting round begins
+    Then "TestPlayer1" should be first to act
     
-    # Test pot and chip management
-    When betting actions affect the pot
-    Then the pot display should update in real-time
-    And player chip counts should reflect changes
+    When "TestPlayer1" performs a "check" action
+    And "TestPlayer2" performs a "bet" action with amount "20"
+    And "TestPlayer4" performs a "call" action with amount "20"
+    And "TestPlayer5" performs a "fold" action
+    And "TestPlayer1" performs a "call" action with amount "20"
+    Then the flop betting round should be complete
+    And 3 players should remain active
     
-    # Test game controls and interactions
-    When I interact with various game controls
-    Then all controls should respond appropriately
-    And the UI should provide proper feedback
+    # Test turn phase
+    When the turn card is dealt
+    Then I should see 4 community cards displayed
+    And the phase indicator should show "turn"
     
-    # Test game state persistence
-    When the game state changes
-    Then the UI should maintain consistency
-    And all player information should remain accurate
+    # Turn betting round
+    When the turn betting round begins
+    And "TestPlayer1" performs a "check" action
+    And "TestPlayer2" performs a "check" action
+    And "TestPlayer4" performs a "check" action
+    Then the turn betting round should be complete
     
-    # Test responsive UI elements
-    When I view different parts of the game interface
-    Then all elements should be properly displayed
-    And the layout should be functional and clear 
+    # Test river phase
+    When the river card is dealt
+    Then I should see 5 community cards displayed
+    And the phase indicator should show "river"
+    
+    # Final betting round
+    When the river betting round begins
+    And "TestPlayer1" performs a "check" action
+    And "TestPlayer2" performs a "bet" action with amount "40"
+    And "TestPlayer4" performs a "fold" action
+    And "TestPlayer1" performs a "call" action with amount "40"
+    Then the river betting round should be complete
+    
+    # Test showdown and winner determination
+    When the showdown phase begins
+    Then the remaining players' cards should be revealed
+    And the winner should be determined
+    And the pot should be awarded to the winner
+    And the game should display final results
+    
+    # Test UI state consistency throughout
+    Then all player chip counts should be accurate
+    And the pot display should show correct final amount
+    And the game controls should be properly disabled
+    And the winner celebration should be displayed 

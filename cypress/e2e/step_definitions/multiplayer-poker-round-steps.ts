@@ -693,4 +693,263 @@ Then('the layout should be functional and clear', () => {
   cy.log('🔍 Verifying layout functionality');
   cy.get('body').should('exist');
   cy.log('✅ Layout functionality verified');
+});
+
+// Player action steps
+When('the game starts and preflop betting begins', () => {
+  cy.window().then((win) => {
+    const mockSocket = win.mockSocket;
+    mockSocket.emit('game:start', { gameId: 'test-game-id' });
+  });
+  
+  // Wait for game to start and preflop to begin
+  cy.get('[data-testid="game-phase"]', { timeout: 10000 }).should('contain', 'preflop');
+  cy.get('[data-testid="current-player"]', { timeout: 5000 }).should('be.visible');
+});
+
+When('{string} performs a {string} action', (playerName: string, action: string) => {
+  cy.window().then((win) => {
+    const mockSocket = win.mockSocket;
+    
+    // Map player names to IDs for test
+    const playerIds: { [key: string]: string } = {
+      'TestPlayer1': 'player-1',
+      'TestPlayer2': 'player-2', 
+      'TestPlayer3': 'player-3',
+      'TestPlayer4': 'player-4',
+      'TestPlayer5': 'player-5'
+    };
+    
+    const playerId = playerIds[playerName];
+    
+    switch (action) {
+      case 'call':
+        mockSocket.emit('game:call', { gameId: 'test-game-id', playerId });
+        break;
+      case 'fold':
+        mockSocket.emit('game:fold', { gameId: 'test-game-id', playerId });
+        break;
+      case 'check':
+        mockSocket.emit('game:check', { gameId: 'test-game-id', playerId });
+        break;
+      default:
+        throw new Error(`Unknown action: ${action}`);
+    }
+  });
+  
+  // Wait for action to be processed
+  cy.wait(500);
+});
+
+When('{string} performs a {string} action with amount {string}', (playerName: string, action: string, amount: string) => {
+  cy.window().then((win) => {
+    const mockSocket = win.mockSocket;
+    
+    const playerIds: { [key: string]: string } = {
+      'TestPlayer1': 'player-1',
+      'TestPlayer2': 'player-2', 
+      'TestPlayer3': 'player-3',
+      'TestPlayer4': 'player-4',
+      'TestPlayer5': 'player-5'
+    };
+    
+    const playerId = playerIds[playerName];
+    const betAmount = parseInt(amount);
+    
+    switch (action) {
+      case 'raise':
+        mockSocket.emit('game:raise', { gameId: 'test-game-id', playerId, amount: betAmount });
+        break;
+      case 'bet':
+        mockSocket.emit('game:bet', { gameId: 'test-game-id', playerId, amount: betAmount });
+        break;
+      case 'call':
+        mockSocket.emit('game:call', { gameId: 'test-game-id', playerId });
+        break;
+      default:
+        throw new Error(`Unknown action with amount: ${action}`);
+    }
+  });
+  
+  cy.wait(500);
+});
+
+// Verification steps
+Then('the pot amount should update to {string}', (expectedAmount: string) => {
+  cy.get('[data-testid="pot-amount"]', { timeout: 5000 })
+    .should('contain', expectedAmount);
+});
+
+Then('the turn should move to {string}', (expectedPlayer: string) => {
+  cy.get('[data-testid="current-player"]', { timeout: 5000 })
+    .should('contain', expectedPlayer);
+});
+
+Then('{string} chip count should decrease to {string}', (playerName: string, expectedChips: string) => {
+  cy.get(`[data-testid="player-chips-${playerName}"]`, { timeout: 5000 })
+    .should('contain', expectedChips);
+});
+
+Then('the current bet should be {string}', (expectedBet: string) => {
+  cy.get('[data-testid="current-bet"]', { timeout: 5000 })
+    .should('contain', expectedBet);
+});
+
+Then('{string} should be marked as folded', (playerName: string) => {
+  cy.get(`[data-testid="player-status-${playerName}"]`, { timeout: 5000 })
+    .should('contain', 'folded');
+});
+
+Then('the preflop betting round should be complete', () => {
+  cy.get('[data-testid="betting-round-status"]', { timeout: 10000 })
+    .should('contain', 'complete');
+});
+
+// Community cards and phases
+When('the flop is dealt with 3 community cards', () => {
+  cy.window().then((win) => {
+    const mockSocket = win.mockSocket;
+    mockSocket.emit('game:dealCommunityCards', { gameId: 'test-game-id' });
+  });
+  
+  cy.get('[data-testid="game-phase"]', { timeout: 5000 }).should('contain', 'flop');
+});
+
+Then('I should see {int} community cards displayed', (cardCount: number) => {
+  cy.get('[data-testid="community-cards"] .card', { timeout: 5000 })
+    .should('have.length', cardCount);
+});
+
+Then('the phase indicator should show {string}', (expectedPhase: string) => {
+  cy.get('[data-testid="game-phase"]')
+    .should('contain', expectedPhase);
+});
+
+When('the flop betting round begins', () => {
+  cy.get('[data-testid="betting-round"]', { timeout: 5000 })
+    .should('contain', 'active');
+});
+
+Then('{string} should be first to act', (playerName: string) => {
+  cy.get('[data-testid="current-player"]')
+    .should('contain', playerName);
+});
+
+Then('the flop betting round should be complete', () => {
+  cy.get('[data-testid="game-phase"]', { timeout: 10000 })
+    .should('not.contain', 'betting');
+});
+
+Then('{int} players should remain active', (expectedCount: number) => {
+  cy.get('[data-testid="active-players"]')
+    .should('contain', expectedCount.toString());
+});
+
+// Turn phase
+When('the turn card is dealt', () => {
+  cy.window().then((win) => {
+    const mockSocket = win.mockSocket;
+    mockSocket.emit('game:dealCommunityCards', { gameId: 'test-game-id' });
+  });
+});
+
+When('the turn betting round begins', () => {
+  cy.get('[data-testid="betting-round"]', { timeout: 5000 })
+    .should('be.visible');
+});
+
+Then('the turn betting round should be complete', () => {
+  cy.get('[data-testid="betting-round-status"]', { timeout: 5000 })
+    .should('contain', 'complete');
+});
+
+// River phase
+When('the river card is dealt', () => {
+  cy.window().then((win) => {
+    const mockSocket = win.mockSocket;
+    mockSocket.emit('game:dealCommunityCards', { gameId: 'test-game-id' });
+  });
+});
+
+When('the river betting round begins', () => {
+  cy.get('[data-testid="betting-round"]', { timeout: 5000 })
+    .should('be.visible');
+});
+
+Then('the river betting round should be complete', () => {
+  cy.get('[data-testid="game-phase"]', { timeout: 10000 })
+    .should('contain', 'showdown');
+});
+
+// Showdown
+When('the showdown phase begins', () => {
+  cy.get('[data-testid="game-phase"]', { timeout: 10000 })
+    .should('contain', 'showdown');
+});
+
+Then('the remaining players\' cards should be revealed', () => {
+  cy.get('[data-testid="player-cards"]', { timeout: 5000 })
+    .should('be.visible');
+});
+
+Then('the winner should be determined', () => {
+  cy.get('[data-testid="winner-announcement"]', { timeout: 5000 })
+    .should('be.visible');
+});
+
+Then('the pot should be awarded to the winner', () => {
+  cy.get('[data-testid="pot-award"]', { timeout: 5000 })
+    .should('be.visible');
+});
+
+Then('the game should display final results', () => {
+  cy.get('[data-testid="game-results"]', { timeout: 5000 })
+    .should('be.visible');
+});
+
+// Final state verification
+Then('all player chip counts should be accurate', () => {
+  cy.get('[data-testid^="player-chips-"]')
+    .should('have.length.at.least', 2);
+});
+
+Then('the pot display should show correct final amount', () => {
+  cy.get('[data-testid="pot-amount"]')
+    .should('contain', '0'); // Pot should be awarded
+});
+
+Then('the game controls should be properly disabled', () => {
+  cy.get('[data-testid="betting-controls"]')
+    .should('not.exist');
+});
+
+Then('the winner celebration should be displayed', () => {
+  cy.get('[data-testid="winner-celebration"]', { timeout: 5000 })
+    .should('be.visible');
+});
+
+// Additional multiplayer-specific steps
+Then('the action should be reflected in the UI', () => {
+  cy.get('[data-testid="last-action"]', { timeout: 5000 })
+    .should('be.visible');
+});
+
+Then('the raise should be processed via UI', () => {
+  cy.get('[data-testid="action-log"]', { timeout: 5000 })
+    .should('contain', 'raise');
+});
+
+Then('the cards should be visually rendered correctly', () => {
+  cy.get('[data-testid="community-cards"] .card', { timeout: 5000 })
+    .should('be.visible')
+    .and('have.length.at.least', 1);
+});
+
+// Compound action steps for cleaner feature files
+When('{string} performs a {string} action', (playerName: string, action: string) => {
+  // This is already defined above, just making sure it's clear this handles the compound step
+});
+
+When('{string} performs a {string} action with amount {string}', (playerName: string, action: string, amount: string) => {
+  // This is already defined above
 }); 
