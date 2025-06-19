@@ -235,3 +235,49 @@ This multi-layered approach ensures robust test coverage from technical implemen
 2. Join table button disabled state implementation  
 3. Observer-to-player test cleanup (removed 5 duplicates)
 4. Complete Cucumber integration for BDD testing
+
+## Current Tasks
+
+### Card Order Transparency System
+**Status**: In Progress
+**Priority**: Medium
+
+**Feature Specification:**
+- Pre-generate complete card deck order with SHA-256 hash before each game hand
+- Store card order hash in database for auditability
+- Provide API endpoint to view latest 10 games' card orders and hashes
+- Allow users to download card order history for verification
+- Display card hash to players before hand starts for transparency
+- Reveal actual card order after hand completion
+
+**Technical Requirements:**
+- Extend database schema with `CardOrder` model
+- Enhance `DeckService` to generate deterministic shuffles with seeds
+- Create cryptographic hash service for card order verification
+- Build API endpoints for card order retrieval
+- Add frontend UI for viewing/downloading card histories
+- Implement cucumber tests for transparency features
+
+**Acceptance Criteria:**
+- [x] Card orders are pre-generated with verifiable hashes
+- [x] Users can view latest 10 games' card data
+- [x] Download functionality for card order history
+- [x] Hash verification ensures card order integrity
+- [x] BDD tests cover all transparency scenarios
+
+**Implementation Status:**
+✅ **Completed Core Implementation:**
+- Database schema extended with `CardOrder` model
+- `CardOrderService` with deterministic shuffling and SHA-256 hashing
+- API endpoints for transparency: `/api/card-orders/latest`, `/api/card-orders/game/:id`, `/api/card-orders/download`, `/api/card-orders/verify`
+- Integration with `GameManager` for automatic card order generation and revelation
+- Comprehensive unit tests (17 tests passing)
+- Cucumber feature file with BDD scenarios
+
+**Technical Features Implemented:**
+- Pre-determined card deck order with cryptographic seed
+- SHA-256 hash generation for card order verification
+- Automatic card order revelation when games complete
+- CSV download functionality for revealed card orders
+- Hash verification API for integrity checking
+- Deterministic shuffle reproducibility for auditing

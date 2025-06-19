@@ -5,13 +5,17 @@ Feature: Multiplayer Poker Game Round
 
   Background:
     Given I am directly on the game page with test data
-    And I have 1 players already seated:
-      | nickname   | seat | chips |
-      | TestPlayer | 1    | 200   |
+    And I have 5 players already seated:
+      | nickname    | seat | chips |
+      | TestPlayer1 | 1    | 200   |
+      | TestPlayer2 | 2    | 150   |
+      | TestPlayer3 | 3    | 300   |
+      | TestPlayer4 | 5    | 250   |
+      | TestPlayer5 | 6    | 180   |
 
   Scenario: Complete poker game flow from UI perspective
     # Verify initial setup
-    Then all 1 players should be seated at the table
+    Then all 5 players should be seated at the table
     And each player should have their correct chip count
     
     # Wait for game elements to be available

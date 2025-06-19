@@ -2,13 +2,16 @@ import { GameService } from './gameService';
 import { GameState, Player } from '../types/shared';
 import { prisma } from '../db';
 import { Server } from 'socket.io';
+import { CardOrderService } from './cardOrderService';
 
 export class GameManager {
   private games: Map<string, GameService> = new Map();
   private io: Server | null = null;
   private static instance: GameManager;
+  private cardOrderService: CardOrderService;
 
   private constructor() {
+    this.cardOrderService = new CardOrderService();
     // Initialize with default game for testing
     const testGame = new GameService('test-game-id');
     this.games.set('test-game-id', testGame);
@@ -55,6 +58,20 @@ export class GameManager {
       throw new Error('Game not found');
     }
 
+    // Generate card order before starting the game
+    const cardOrderData = this.cardOrderService.generateCardOrder(gameId);
+
+    // Create card order record in database
+    await prisma.cardOrder.create({
+      data: {
+        gameId,
+        seed: cardOrderData.seed,
+        cardOrder: JSON.stringify(cardOrderData.cardOrder),
+        hash: cardOrderData.hash,
+        isRevealed: false
+      }
+    });
+
     // Start the game (deals cards, posts blinds, etc.)
     gameService.startGame();
 
@@ -66,11 +83,15 @@ export class GameManager {
       }
     });
 
-    // Emit real-time updates
-    this.emitGameUpdate(gameId, 'gameStarted', { gameId });
+    // Emit real-time updates including card order hash
+    this.emitGameUpdate(gameId, 'gameStarted', { 
+      gameId,
+      cardOrderHash: cardOrderData.hash
+    });
     this.emitGameUpdate(gameId, 'cardsDealt', { 
       phase: 'preflop',
-      message: 'Hole cards dealt to all players'
+      message: 'Hole cards dealt to all players',
+      cardOrderHash: cardOrderData.hash
     });
 
     return gameService.getGameState();
@@ -262,6 +283,11 @@ export class GameManager {
       handEvaluation: gameState.handEvaluation
     });
 
+    // If game is finished, reveal the card order
+    if (gameState.phase === 'finished' || gameState.isHandComplete) {
+      await this.revealCardOrder(gameId);
+    }
+
     return gameState;
   }
 
@@ -400,6 +426,23 @@ export class GameManager {
     });
 
     return gameState;
+  }
+
+  private async revealCardOrder(gameId: string): Promise<void> {
+    try {
+      await prisma.cardOrder.update({
+        where: { gameId },
+        data: { isRevealed: true }
+      });
+
+      // Emit event that card order has been revealed
+      this.emitGameUpdate(gameId, 'cardOrderRevealed', {
+        gameId,
+        message: 'Card order has been revealed for transparency'
+      });
+    } catch (error) {
+      console.error('Error revealing card order:', error);
+    }
   }
 }
 

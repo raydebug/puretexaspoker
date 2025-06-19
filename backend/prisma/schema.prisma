@@ -82,6 +82,7 @@ model Game {
   updatedAt DateTime    @updatedAt
   table     Table       @relation(fields: [tableId], references: [id])
   actions   GameAction[]
+  cardOrder CardOrder?
 }
 
 model GameAction {
@@ -101,4 +102,15 @@ model Message {
   playerId  String
   createdAt DateTime @default(now())
   player    Player   @relation(fields: [playerId], references: [id])
+}
+
+model CardOrder {
+  id           String   @id @default(uuid())
+  gameId       String   @unique
+  seed         String   // Random seed used for shuffling
+  cardOrder    String   // JSON string of complete 52-card order
+  hash         String   // SHA-256 hash of card order
+  isRevealed   Boolean  @default(false) // Whether order is publicly revealed
+  createdAt    DateTime @default(now())
+  game         Game     @relation(fields: [gameId], references: [id])
 } 

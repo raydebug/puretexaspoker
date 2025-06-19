@@ -3,6 +3,7 @@ import { DeckService } from './deckService';
 import { HandEvaluator, DetailedHand } from './handEvaluator';
 import { SeatManager } from './seatManager';
 import { SidePotManager, PotDistribution } from './sidePotManager';
+import { CardOrderService } from './cardOrderService';
 
 export class GameService {
   private gameState: GameState;
@@ -10,10 +11,12 @@ export class GameService {
   private handEvaluator: HandEvaluator;
   private seatManager: SeatManager;
   private sidePotManager: SidePotManager;
+  private cardOrderService: CardOrderService;
   private deck: Card[];
   private readonly MAX_PLAYERS = 9;
   private playersActedThisRound: Set<string> = new Set();
   private gameId: string;
+  private cardOrderHash?: string;
 
   constructor(gameId: string) {
     this.gameId = gameId;
@@ -21,6 +24,7 @@ export class GameService {
     this.handEvaluator = new HandEvaluator();
     this.seatManager = new SeatManager(this.MAX_PLAYERS);
     this.sidePotManager = new SidePotManager();
+    this.cardOrderService = new CardOrderService();
     this.deck = [];
     this.gameState = this.initializeGameState();
   }
@@ -86,8 +90,14 @@ export class GameService {
     // Update positions using seat manager
     this.updatePositionsWithSeatManager();
 
-    // Shuffle and deal cards only to active players
-    this.deckService.shuffle(this.deck);
+    // Generate pre-determined card order with hash for transparency
+    const cardOrderData = this.cardOrderService.generateCardOrder(this.gameId);
+    this.cardOrderHash = cardOrderData.hash;
+    
+    // Use the pre-determined deck order
+    this.deck = [...cardOrderData.cardOrder];
+    
+    // Deal cards to active players from pre-determined order
     activePlayers.forEach(player => {
       player.cards = this.deckService.dealCards(2, this.deck);
     });
@@ -840,6 +850,10 @@ export class GameService {
   }
 
   // Method to get detailed phase information
+  public getCardOrderHash(): string | undefined {
+    return this.cardOrderHash;
+  }
+
   public getPhaseInfo(): {
     phase: string;
     description: string;
