@@ -167,10 +167,10 @@ const PlayerSeat = styled.div.withConfig({
       if (!props.isEmpty) {
         return `
           box-shadow: 0 6px 25px rgba(255, 215, 0, 0.5), 0 0 12px rgba(255, 183, 77, 0.4);
-          transform: ${props.position <= 4 ? props.position === 1 || props.position === 4 ? 'scale(1.05)' : 
-            props.position === 2 ? 'translateY(-50%) scale(1.05)' : 'scale(1.05)' :
-            props.position === 5 ? 'translateX(-50%) scale(1.05)' : 
-            props.position === 8 ? 'translateY(-50%) scale(1.05)' : 'scale(1.05)'};
+      transform: ${props.position <= 4 ? props.position === 1 || props.position === 4 ? 'scale(1.05)' : 
+        props.position === 2 ? 'translateY(-50%) scale(1.05)' : 'scale(1.05)' :
+        props.position === 5 ? 'translateX(-50%) scale(1.05)' : 
+        props.position === 8 ? 'translateY(-50%) scale(1.05)' : 'scale(1.05)'};
         `;
       }
       return '';
