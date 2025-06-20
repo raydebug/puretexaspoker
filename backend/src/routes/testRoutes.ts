@@ -472,11 +472,11 @@ router.post('/test_deal_flop', async (req, res) => {
     
     const gameState = testGames.get(gameId);
     
-    // Add 3 community cards for flop
+    // Add 3 community cards for flop (avoid duplicating hole cards)
     gameState.communityCards = [
-      { rank: 'A', suit: '♠' },
-      { rank: 'K', suit: '♥' },
-      { rank: 'Q', suit: '♦' }
+      { rank: '2', suit: '♠' },
+      { rank: '3', suit: '♥' },
+      { rank: '4', suit: '♦' }
     ];
     gameState.phase = 'flop';
     
@@ -536,8 +536,8 @@ router.post('/test_deal_turn', async (req, res) => {
     
     const gameState = testGames.get(gameId);
     
-    // Add turn card
-    gameState.communityCards.push({ rank: 'J', suit: '♣' });
+    // Add turn card (avoid duplicating hole cards)
+    gameState.communityCards.push({ rank: '5', suit: '♣' });
     gameState.phase = 'turn';
     
     // Reset current bets for new betting round
@@ -596,8 +596,8 @@ router.post('/test_deal_river', async (req, res) => {
     
     const gameState = testGames.get(gameId);
     
-    // Add river card
-    gameState.communityCards.push({ rank: '10', suit: '♠' });
+    // Add river card (avoid duplicating hole cards)  
+    gameState.communityCards.push({ rank: '6', suit: '♦' });
     gameState.phase = 'river';
     
     // Reset current bets for new betting round
@@ -659,22 +659,9 @@ router.post('/test_trigger_showdown', async (req, res) => {
     // Set showdown phase
     gameState.phase = 'showdown';
     
-    // Assign sample cards to active players for UI display
-    const sampleCards = [
-      [{ rank: 'A', suit: '♠' }, { rank: 'K', suit: '♥' }],
-      [{ rank: 'Q', suit: '♦' }, { rank: 'J', suit: '♣' }],
-      [{ rank: '10', suit: '♠' }, { rank: '9', suit: '♥' }],
-      [{ rank: '8', suit: '♦' }, { rank: '7', suit: '♣' }],
-      [{ rank: '6', suit: '♠' }, { rank: '5', suit: '♥' }]
-    ];
-    
-    let cardIndex = 0;
-    gameState.players.forEach((player: any) => {
-      if (player.isActive && cardIndex < sampleCards.length) {
-        player.cards = sampleCards[cardIndex];
-        cardIndex++;
-      }
-    });
+    // Keep the existing hole cards that were already dealt (don't override them)
+    // The showdown just reveals the cards that were already dealt to players
+    // No need to assign new cards - they were already dealt via test_deal_hole_cards
     
     // Determine winner (simplified - first active player wins)
     const activePlayer = gameState.players.find((p: any) => p.isActive);
