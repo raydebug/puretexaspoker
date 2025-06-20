@@ -580,8 +580,10 @@ export class SocketService {
       if (this.onlineUsersCallback) {
         // Check if callback expects two parameters (players, observers)
         if (this.onlineUsersCallback.length === 2) {
-          const players = this.gameState?.players || [];
-          (this.onlineUsersCallback as any)(players, this.observers);
+          // Ensure both players and observers are always arrays
+          const players = Array.isArray(this.gameState?.players) ? this.gameState.players : [];
+          const observers = Array.isArray(this.observers) ? this.observers : [];
+          (this.onlineUsersCallback as any)(players, observers);
         } else {
           // Single parameter callback (total count)
           (this.onlineUsersCallback as any)(count);
@@ -677,13 +679,15 @@ export class SocketService {
   }
 
   private emitOnlineUsersUpdate() {
-    const players = this.gameState?.players || [];
-    const totalUsers = players.length + this.observers.length;
+    // Ensure both players and observers are always arrays
+    const players = Array.isArray(this.gameState?.players) ? this.gameState.players : [];
+    const observers = Array.isArray(this.observers) ? this.observers : [];
+    const totalUsers = players.length + observers.length;
     
     if (this.onlineUsersCallback) {
       // Check if callback expects two parameters (players, observers)
       if (this.onlineUsersCallback.length === 2) {
-        (this.onlineUsersCallback as any)(players, this.observers);
+        (this.onlineUsersCallback as any)(players, observers);
       } else {
         // Single parameter callback (total count)
         (this.onlineUsersCallback as any)(totalUsers);
