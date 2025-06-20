@@ -51,27 +51,33 @@
 ## ✅ Recently Completed
 
 ### High Priority
-- **Enhanced Player Hole Cards Display** ✅ **COMPLETE** 
+- **Enhanced Player Hole Cards Display with Visibility Fix** ✅ **COMPLETE** 
   * **Issue**: Players could not see their hole cards during gameplay, and red heart/diamond cards were not displaying in red color
   * **Root Cause**: 
     - Current player object not properly populated with cards from game state
     - Missing hole cards API for test mode to deal cards at game start
     - Color detection logic not handling both text names and symbol characters
     - Players only receiving cards during showdown in test scenarios
+    - Restrictive `isObserver` flag preventing card display when users take seats
   * **Solution**: 
     - **Enhanced Frontend Logic**: Modified PokerTable to extract current user's cards from gameState.players instead of relying on separate currentPlayer object
     - **Improved Color Handling**: Enhanced getCardColor() to detect both text names ('hearts', 'diamonds') and symbols (♥, ♦) for red color
     - **New Backend API**: Added `/api/test_deal_hole_cards` endpoint to deal cards to all players at game start for testing
     - **Test Integration**: Updated Selenium tests to call hole cards API after creating mock game for immediate card visibility
+    - **Enhanced Card Visibility Logic**: Replaced restrictive `isObserver`-based logic with multiple fallback detection methods:
+      1. Match by `currentPlayer.id` (primary method)
+      2. Match by `localStorage.nickname` (fallback for session issues)
+      3. Show any player with cards if not observer (testing mode)
     - **Enhanced Debugging**: Added comprehensive logging to track currentUserPlayer and card data flow
   * **Result**: 
     - ✅ Players now see their 2 hole cards throughout the entire game (not just showdown)
     - ✅ Red hearts ♥ and diamonds ♦ display in proper red color (#d40000)
     - ✅ Black spades ♠ and clubs ♣ display in black color (#000)
+    - ✅ Robust card visibility even when session data is incomplete
     - ✅ Test validation: Found 15 revealed cards during showdown (up from 6) confirming proper card dealing
     - ✅ All 74 test steps passing in 1m09s
   * **Files Enhanced**: 
-    - `frontend/src/components/Game/PokerTable.tsx` - Enhanced card display logic and color handling
+    - `frontend/src/components/Game/PokerTable.tsx` - Enhanced card display logic, color handling, and multiple fallback detection methods
     - `backend/src/routes/testRoutes.ts` - Added hole cards dealing API endpoint
     - `selenium/step_definitions/multiplayer-poker-round-steps.js` - Integrated hole cards dealing in tests
 
