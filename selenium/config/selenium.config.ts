@@ -13,6 +13,8 @@ export interface SeleniumConfig {
     width: number
     height: number
   }
+  stepTimeout: number
+  pageLoadTimeout: number
 }
 
 export class SeleniumManager {
@@ -29,7 +31,9 @@ export class SeleniumManager {
       windowSize: {
         width: parseInt(process.env.WINDOW_WIDTH || '1280'),
         height: parseInt(process.env.WINDOW_HEIGHT || '720')
-      }
+      },
+      stepTimeout: 30000,
+      pageLoadTimeout: 15000
     }
   }
 

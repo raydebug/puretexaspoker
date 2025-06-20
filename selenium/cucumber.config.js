@@ -1,27 +1,28 @@
 module.exports = {
   default: {
+    // Timeout for each step (30 seconds)
+    timeout: 30000,
+    
+    // Feature paths
+    paths: ['selenium/features/**/*.feature'],
+    
+    // Step definition paths
     require: [
-      'selenium/step_definitions/**/*.ts'
+      'selenium/step_definitions/**/*.js'
     ],
+    
+    // Formatters
     format: [
-      '@cucumber/pretty-formatter',
-      'json:selenium/reports/cucumber-report.json'
+      '@cucumber/pretty-formatter'
     ],
-    requireModule: [
-      'ts-node/register'
-    ],
-    formatOptions: {
-      snippetInterface: 'async-await'
-    },
-    publishQuiet: true,
-    dryRun: false,
-    failFast: false,
-    strict: true,
-    worldParameters: {
-      browser: process.env.BROWSER || 'chrome',
-      headless: process.env.HEADLESS === 'true',
-      baseUrl: process.env.BASE_URL || 'http://localhost:3000',
-      apiUrl: process.env.API_URL || 'http://localhost:3001'
-    }
+    
+    // Retry failed scenarios
+    retry: 0,
+    
+    // Parallel execution (set to 1 for debugging)
+    parallel: 1,
+    
+    // Tag filters
+    tags: 'not @skip'
   }
-} 
+}; 
