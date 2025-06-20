@@ -559,6 +559,42 @@ export const PokerTable: React.FC<PokerTableProps> = ({
             >
               ${player.chips}
             </PlayerChips>
+            
+            {/* Show face-down cards for other players during active gameplay */}
+            {gameState.phase !== 'waiting' && gameState.phase !== 'finished' && !(gameState.phase as string).includes('showdown') && player.isActive && (
+              <div className="player-hole-cards-back" style={{
+                display: 'flex',
+                gap: '2px',
+                marginTop: '2px',
+                justifyContent: 'center'
+              }}>
+                <div style={{
+                  width: '12px',
+                  height: '16px',
+                  background: '#2c3e50',
+                  border: '1px solid #34495e',
+                  borderRadius: '2px',
+                  fontSize: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#7f8c8d'
+                }}>🂠</div>
+                <div style={{
+                  width: '12px',
+                  height: '16px',
+                  background: '#2c3e50',
+                  border: '1px solid #34495e',
+                  borderRadius: '2px',
+                  fontSize: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#7f8c8d'
+                }}>🂠</div>
+              </div>
+            )}
+            
             {/* Show player cards during showdown */}
             {(gameState.phase as string).includes('showdown') && player.cards && player.cards.length > 0 && (
               <div className="player-cards" data-testid={`player-${player.id}-cards`}>
@@ -568,16 +604,18 @@ export const PokerTable: React.FC<PokerTableProps> = ({
                     className="player-card" 
                     data-testid={`player-card-${index}`}
                     style={{ 
-                      fontSize: '6px', 
+                      fontSize: '8px', 
                       background: 'white', 
-                      color: 'black',
-                      padding: '1px 2px',
+                      color: getCardColor(card.suit),
+                      padding: '2px 3px',
                       margin: '1px',
-                      borderRadius: '2px',
-                      display: 'inline-block'
+                      borderRadius: '3px',
+                      display: 'inline-block',
+                      border: '1px solid #333',
+                      fontWeight: 'bold'
                     }}
                   >
-                    {card.rank}{card.suit}
+                    {card.rank}{getSuitSymbol(card.suit)}
                   </div>
                 ))}
               </div>
