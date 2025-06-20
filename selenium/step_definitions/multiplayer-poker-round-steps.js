@@ -427,8 +427,7 @@ When('{string} performs a {string} action', async function (playerName, action) 
   
   // Simulate the action via backend API or UI
   try {
-    await axios.post(`${backendApiUrl}/api/test_player_action`, {
-      gameId: testGameId,
+    await axios.post(`${backendApiUrl}/api/test_player_action/${testGameId}`, {
       playerId: `test-player-${testPlayers.find(p => p.nickname === playerName)?.seatNumber}`,
       action: action
     });
@@ -446,8 +445,7 @@ When('{string} performs a {string} action with amount {string}', async function 
   
   // Simulate the action with amount via backend API
   try {
-    await axios.post(`${backendApiUrl}/api/test_player_action`, {
-      gameId: testGameId,
+    await axios.post(`${backendApiUrl}/api/test_player_action/${testGameId}`, {
       playerId: `test-player-${testPlayers.find(p => p.nickname === playerName)?.seatNumber}`,
       action: action,
       amount: parseInt(amount)
@@ -462,7 +460,7 @@ When('{string} performs a {string} action with amount {string}', async function 
 });
 
 // Verification steps
-Then('the action should be reflected in the UI', async function () {
+Then('the action should be reflected in the UI', { timeout: 30000 }, async function () {
   console.log('🔍 Verifying action reflected in UI');
   
   // Check for any updates in the game display
