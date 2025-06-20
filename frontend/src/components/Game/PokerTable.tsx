@@ -480,21 +480,6 @@ export const PokerTable: React.FC<PokerTableProps> = ({
   availableSeats = [], 
   onSeatSelect 
 }) => {
-  // Debug logging for game state changes
-  React.useEffect(() => {
-    console.log('🎮 FRONTEND: PokerTable received game state update:', {
-      phase: gameState.phase,
-      status: gameState.status,
-      currentBet: gameState.currentBet,
-      pot: gameState.pot,
-      communityCards: gameState.communityCards.length,
-      activePlayers: gameState.players.filter(p => p.isActive).length,
-      winner: gameState.winner,
-      currentPlayer: currentPlayer?.name,
-      isObserver: isObserver
-    });
-  }, [gameState, currentPlayer, isObserver]);
-
   // Helper function to get suit symbol
   const getSuitSymbol = (suit: string) => {
     switch (suit.toLowerCase()) {
@@ -509,8 +494,38 @@ export const PokerTable: React.FC<PokerTableProps> = ({
   // Helper function to get card color
   const getCardColor = (suit: string) => {
     const suitLower = suit.toLowerCase();
-    return suitLower === 'hearts' || suitLower === 'diamonds' ? '#d40000' : '#000';
+    return suitLower === 'hearts' || suitLower === 'diamonds' || suit === '♥' || suit === '♦' ? '#d40000' : '#000';
   };
+
+  // Get the current user's player data from game state
+  const getCurrentUserPlayer = () => {
+    if (!currentPlayer) return null;
+    return gameState.players.find(p => p.id === currentPlayer.id);
+  };
+
+  const currentUserPlayer = getCurrentUserPlayer();
+
+  // Debug logging for game state changes
+  React.useEffect(() => {
+    console.log('🎮 FRONTEND: PokerTable received game state update:', {
+      phase: gameState.phase,
+      status: gameState.status,
+      currentBet: gameState.currentBet,
+      pot: gameState.pot,
+      communityCards: gameState.communityCards.length,
+      activePlayers: gameState.players.filter(p => p.isActive).length,
+      winner: gameState.winner,
+      currentPlayer: currentPlayer?.name,
+      currentUserPlayer: currentUserPlayer?.name,
+      currentUserCards: currentUserPlayer?.cards?.length || 0,
+      isObserver: isObserver
+    });
+    
+    // Debug current user player cards
+    if (currentUserPlayer && currentUserPlayer.cards && currentUserPlayer.cards.length > 0) {
+      console.log('🃏 FRONTEND: Current user hole cards:', currentUserPlayer.cards);
+    }
+  }, [gameState, currentPlayer, currentUserPlayer, isObserver]);
 
   const handleSeatClick = (seatNumber: number) => {
     // Allow seat selection if seat is empty and callback is provided
@@ -677,11 +692,11 @@ export const PokerTable: React.FC<PokerTableProps> = ({
         </CommunityCardsArea>
 
         {/* Player Hole Cards - Only show for current player when not observer */}
-        {!isObserver && currentPlayer && currentPlayer.cards && currentPlayer.cards.length === 2 && (
+        {!isObserver && currentUserPlayer && currentUserPlayer.cards && currentUserPlayer.cards.length === 2 && (
           <>
             <HoleCardsLabel>Your Cards</HoleCardsLabel>
             <PlayerHoleCards data-testid="player-hole-cards">
-              {currentPlayer.cards.map((card, index) => (
+              {currentUserPlayer.cards.map((card, index) => (
                 <HoleCard 
                   key={index} 
                   data-testid={`hole-card-${index}`}
