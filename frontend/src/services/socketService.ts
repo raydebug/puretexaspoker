@@ -1119,6 +1119,19 @@ export class SocketService {
   }
 
   /**
+   * Join a WebSocket room
+   */
+  joinRoom(roomName: string): void {
+    if (!this.socket || !this.socket.connected) {
+      console.error('Socket not connected - cannot join room');
+      return;
+    }
+    
+    console.log(`[SOCKET] Joining room: ${roomName}`);
+    this.socket.emit('joinRoom', roomName);
+  }
+
+  /**
    * Join a table as observer or player
    */
   joinTable(tableId: number, buyIn?: number) {

@@ -91,7 +91,7 @@ export const OnlineList: React.FC<OnlineListProps> = ({
   
   if (shouldShowDetailedView) {
     return (
-      <ListContainer data-testid="online-users-list">
+      <ListContainer data-testid="online-list">
         <Section>
           <SectionTitle>Players ({playersArray.length})</SectionTitle>
           <UsersList>
@@ -142,7 +142,7 @@ export const OnlineList: React.FC<OnlineListProps> = ({
     : playersArray.length + observersArray.length;
 
   return (
-    <ListContainer data-testid="online-users-list">
+    <ListContainer data-testid="online-list">
       <SectionTitle>Online Users: {totalUsers}</SectionTitle>
     </ListContainer>
   );

@@ -167,63 +167,114 @@ const GamePage: React.FC = () => {
     socketService.resetConnectionState();
     
     // In test mode, create mock data and skip socket connection
-    if (typeof window !== 'undefined' && (window as any).Cypress) {
-      console.log('GamePage: Test mode detected - creating mock game state');
+    // Support both Cypress and Selenium test environments
+    const isTestMode = (typeof window !== 'undefined' && (window as any).Cypress) || 
+                       (typeof navigator !== 'undefined' && navigator.webdriver);
+    
+    if (isTestMode) {
+      console.log('GamePage: Test mode detected - setting up for test environment');
       
       // Get the actual nickname from localStorage for test mode
       const testNickname = localStorage.getItem('nickname') || 'TestPlayer';
       
-      // Create mock player
-      const mockPlayer: Player = {
-        id: 'test-player-1',
-        name: 'TestPlayer',
-        seatNumber: 1,
-        position: 1,
-        chips: 1000,
-        currentBet: 0,
-        isDealer: false,
-        isAway: false,
-        isActive: true,
-        cards: [],
-        avatar: {
-          type: 'default',
-          color: '#ffd700'
+      // In test mode, we still want to listen for WebSocket updates
+      // but initialize with basic state first
+      setIsObserver(true);
+      setObservers([testNickname]); // Initialize with test user as observer
+      setIsLoading(false);
+      
+      // Set up WebSocket connection for test mode to receive test API updates
+      const setupTestMode = async () => {
+        try {
+          await socketService.connect();
+          
+          // CRITICAL FIX: Join the game room to receive targeted broadcasts
+          if (gameId) {
+            console.log(`🧪 GamePage TEST MODE: Joining room game:${gameId}`);
+            // Wait a bit for connection to be established
+            setTimeout(() => {
+              socketService.joinRoom(`game:${gameId}`);
+            }, 500);
+          }
+          
+          // Listen for test game state updates from backend API
+          const gameStateUnsubscriber = socketService.onGameState((state: GameState) => {
+            console.log('🧪 GamePage TEST MODE: Received game state from backend API:', state);
+            console.log('🧪 GamePage TEST MODE: Game state players:', state.players);
+            setGameState(state);
+            
+            // Calculate available seats
+            const occupiedSeats = state.players.map(p => p.seatNumber);
+            const available = Array.from({ length: 9 }, (_, i) => i + 1).filter(seat => !occupiedSeats.includes(seat));
+            setAvailableSeats(available);
+            
+            // Update observers to include test players if any
+            const testPlayers = state.players.map(p => p.name);
+            setObservers([testNickname, ...testPlayers]);
+            console.log('🧪 GamePage TEST MODE: Updated observers:', [testNickname, ...testPlayers]);
+            console.log('🧪 GamePage TEST MODE: Updated game state with', state.players.length, 'players');
+          });
+          
+          // Create initial minimal game state for UI
+          const initialGameState: GameState = {
+            id: gameId || '1',
+            players: [], // Will be populated by backend test API
+            communityCards: [],
+            pot: 0,
+            currentPlayerId: null,
+            currentPlayerPosition: 0,
+            dealerPosition: 0,
+            smallBlindPosition: 1,
+            bigBlindPosition: 2,
+            status: 'waiting',
+            phase: 'waiting',
+            minBet: 10,
+            currentBet: 0,
+            smallBlind: 5,
+            bigBlind: 10,
+            handEvaluation: undefined,
+            winner: undefined,
+            isHandComplete: false
+          };
+          
+          setGameState(initialGameState);
+          setAvailableSeats([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+          
+          // Clean up function
+          return () => {
+            gameStateUnsubscriber();
+          };
+        } catch (err) {
+          console.error('Test mode WebSocket setup failed:', err);
+          // Still set basic state for UI
+          const fallbackGameState: GameState = {
+            id: gameId || '1',
+            players: [],
+            communityCards: [],
+            pot: 0,
+            currentPlayerId: null,
+            currentPlayerPosition: 0,
+            dealerPosition: 0,
+            smallBlindPosition: 1,
+            bigBlindPosition: 2,
+            status: 'waiting',
+            phase: 'waiting',
+            minBet: 10,
+            currentBet: 0,
+            smallBlind: 5,
+            bigBlind: 10,
+            handEvaluation: undefined,
+            winner: undefined,
+            isHandComplete: false
+          };
+          setGameState(fallbackGameState);
+          setAvailableSeats([1, 2, 3, 4, 5, 6, 7, 8, 9]);
         }
       };
       
-      // Create mock game state with no players initially (user starts as observer)
-      const mockGameState: GameState = {
-        id: gameId || '1',
-        players: [], // Start with empty players array - user starts as observer
-        communityCards: [
-          { rank: 'A', suit: '♠' },
-          { rank: 'K', suit: '♥' },
-          { rank: 'Q', suit: '♦' }
-        ],
-        pot: 150,
-        currentPlayerId: null, // No current player since no one is seated
-        currentPlayerPosition: 0,
-        dealerPosition: 0,
-        smallBlindPosition: 1,
-        bigBlindPosition: 2,
-        status: 'waiting', // Change to waiting since no players
-        phase: 'waiting', // Change to waiting since no players
-        minBet: 10,
-        currentBet: 0,
-        smallBlind: 5,
-        bigBlind: 10,
-        handEvaluation: undefined,
-        winner: undefined,
-        isHandComplete: false
-      };
+      // Call the async setup function
+      setupTestMode();
       
-      setGameState(mockGameState);
-      setCurrentPlayer(null); // Start as observer, no player seat yet
-      setIsLoading(false);
-      // In test mode, start as observer with option to take a seat
-      setIsObserver(true);
-      setObservers([testNickname]); // Use actual test nickname from localStorage
-      setAvailableSeats([1, 2, 3, 4, 5, 6, 7, 8, 9]); // All seats available since no players // All seats available for observers
       return;
     }
     
@@ -419,7 +470,10 @@ const GamePage: React.FC = () => {
     socketService.takeSeat(selectedSeat, buyInAmount);
     
     // In test mode, simulate taking the seat
-    if (typeof window !== 'undefined' && (window as any).Cypress) {
+    const isTestMode = (typeof window !== 'undefined' && (window as any).Cypress) || 
+                       (typeof navigator !== 'undefined' && navigator.webdriver);
+    
+    if (isTestMode) {
       // Use startTransition to batch all state updates together
       startTransition(() => {
         // Check if player is already seated (seat change) or new player

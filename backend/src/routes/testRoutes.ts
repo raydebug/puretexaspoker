@@ -38,17 +38,17 @@ router.post('/test_create_mock_game', async (req, res) => {
       })),
       communityCards: [],
       pot: 0,
-      currentPlayerId: null,
+      currentPlayerId: players.length > 0 ? `test-player-${players[0].seatNumber}` : null,
       currentPlayerPosition: 0,
       dealerPosition: gameConfig?.dealerPosition || 1,
       smallBlindPosition: gameConfig?.smallBlindPosition || 2,
       bigBlindPosition: gameConfig?.bigBlindPosition || 3,
       status: 'active',
       phase: 'preflop',
-      minBet: gameConfig?.minBet || 15,
+      minBet: gameConfig?.minBet || 10,
       currentBet: 0, // Start with no current bet - first action will set it
       smallBlind: gameConfig?.smallBlind || 5,
-      bigBlind: gameConfig?.bigBlind || 15,
+      bigBlind: gameConfig?.bigBlind || 10,
       handEvaluation: undefined,
       winner: undefined,
       isHandComplete: false
@@ -203,6 +203,15 @@ router.post('/test_player_action/:gameId', async (req, res) => {
     // CRITICAL FIX: Correct poker action logic
     console.log(`🔍 BEFORE ACTION: ${player.name} has ${player.chips} chips, currentBet: ${player.currentBet}, gameCurrentBet: ${gameState.currentBet}, pot: ${gameState.pot}`);
     
+    // Set current player if not set
+    if (!gameState.currentPlayerId && gameState.players.length > 0) {
+      const firstActivePlayer = gameState.players.find((p: any) => p.isActive);
+      if (firstActivePlayer) {
+        gameState.currentPlayerId = firstActivePlayer.id;
+        console.log(`🎯 Setting initial current player to: ${firstActivePlayer.name} (${firstActivePlayer.id})`);
+      }
+    }
+    
     switch (action) {
       case 'call':
         // Call means match the current bet
@@ -253,6 +262,29 @@ router.post('/test_player_action/:gameId', async (req, res) => {
           gameState.currentBet = betAmount;
         }
         break;
+    }
+    
+    // CRITICAL FIX: Advance turn to next active player
+    const advanceToNextPlayer = () => {
+      const activePlayers = gameState.players.filter((p: any) => p.isActive);
+      if (activePlayers.length <= 1) {
+        console.log(`🎯 Only ${activePlayers.length} active players remaining, not advancing turn`);
+        return;
+      }
+      
+      const currentPlayerIndex = activePlayers.findIndex((p: any) => p.id === gameState.currentPlayerId);
+      const nextPlayerIndex = (currentPlayerIndex + 1) % activePlayers.length;
+      const nextPlayer = activePlayers[nextPlayerIndex];
+      
+      if (nextPlayer) {
+        gameState.currentPlayerId = nextPlayer.id;
+        console.log(`🎯 Turn advanced to: ${nextPlayer.name} (${nextPlayer.id})`);
+      }
+    };
+    
+    // Only advance turn for actions that end the player's turn
+    if (['call', 'raise', 'fold', 'check', 'bet'].includes(action)) {
+      advanceToNextPlayer();
     }
     
     // Force update the game state in the map
