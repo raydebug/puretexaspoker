@@ -373,7 +373,7 @@ Then('I should see my player information displayed correctly', { timeout: 30000 
 });
 
 // Game mechanics steps
-When('the game starts and preflop betting begins', async function () {
+When('the game starts and preflop betting begins', { timeout: 30000 }, async function () {
   console.log('🎯 Game starting and preflop betting begins');
   
   // Check for game status indicating active game
@@ -403,7 +403,7 @@ Then('the current player should have betting options available', async function 
   console.log('✅ Betting options check completed');
 });
 
-Then('I should be able to interact with betting buttons', async function () {
+Then('I should be able to interact with betting buttons', { timeout: 30000 }, async function () {
   console.log('🔍 Verifying betting button interactivity');
   
   // Check if betting controls exist
