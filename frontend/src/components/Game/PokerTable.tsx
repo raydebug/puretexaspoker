@@ -368,10 +368,11 @@ export const PokerTable: React.FC<PokerTableProps> = ({
   onSeatSelect 
 }) => {
   const handleSeatClick = (seatNumber: number) => {
-    // Allow seat selection if:
-    // 1. User is observer and seat is available, OR
-    // 2. User is a player and seat is available (for seat changes)
-    if (availableSeats.includes(seatNumber) && onSeatSelect) {
+    // Allow seat selection if seat is empty and callback is provided
+    const player = gameState.players.find(p => p.seatNumber === seatNumber);
+    const isEmpty = !player;
+    
+    if (isEmpty && onSeatSelect) {
       onSeatSelect(seatNumber);
     }
   };
@@ -381,7 +382,7 @@ export const PokerTable: React.FC<PokerTableProps> = ({
     const isEmpty = !player;
     const positionName = POSITION_NAMES[seatNumber - 1];
     const isButton = player?.isDealer || false; // Button position
-    const isAvailable = isEmpty && availableSeats.includes(seatNumber);
+    const isAvailable = isEmpty; // Empty seats are always available to sit in
     
     return (
       <PlayerSeat
@@ -391,13 +392,13 @@ export const PokerTable: React.FC<PokerTableProps> = ({
         isButton={isButton}
         isAvailable={isAvailable}
         onClick={() => handleSeatClick(seatNumber)}
-        data-testid={isAvailable ? `available-seat-${seatNumber}` : `seat-${seatNumber}`}
+        data-testid={isEmpty ? `available-seat-${seatNumber}` : `seat-${seatNumber}`}
       >
         <PositionLabel isButton={isButton}>{positionName}</PositionLabel>
         {isButton && <ButtonIndicator>D</ButtonIndicator>}
         {isEmpty ? (
-          <EmptySeatText isAvailable={isAvailable}>
-            {isAvailable ? 'Click to Sit' : 'Empty Seat'}
+          <EmptySeatText isAvailable={true}>
+            Click to Sit
           </EmptySeatText>
         ) : (
           <>

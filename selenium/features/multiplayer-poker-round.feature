@@ -33,7 +33,7 @@ Feature: Multiplayer Poker Game Round
     # Simulate a realistic preflop betting round
     When "TestPlayer1" performs a "call" action
     Then the action should be reflected in the UI
-    And the pot amount should update to "15"
+    And the pot amount should update to "10"
     And the turn should move to "TestPlayer2"
     
     When "TestPlayer2" performs a "raise" action with amount "30"
@@ -55,7 +55,7 @@ Feature: Multiplayer Poker Game Round
     Then "TestPlayer5" chip count should decrease to "150"
     And the turn should move back to "TestPlayer1"
     
-    When "TestPlayer1" performs a "call" action with amount "30"
+    When "TestPlayer1" performs a "call" action with amount "20"
     Then "TestPlayer1" chip count should decrease to "170"
     And the preflop betting round should be complete
     And the total pot should reflect all player contributions

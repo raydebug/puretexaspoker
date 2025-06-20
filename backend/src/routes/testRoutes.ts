@@ -41,14 +41,14 @@ router.post('/test_create_mock_game', async (req, res) => {
       currentPlayerId: null,
       currentPlayerPosition: 0,
       dealerPosition: gameConfig?.dealerPosition || 1,
-      smallBlindPosition: gameConfig?.smallBlindPosition || 3,
-      bigBlindPosition: gameConfig?.bigBlindPosition || 5,
-      status: 'waiting',
-      phase: 'waiting',
-      minBet: gameConfig?.minBet || 10,
-      currentBet: 0,
+      smallBlindPosition: gameConfig?.smallBlindPosition || 2,
+      bigBlindPosition: gameConfig?.bigBlindPosition || 3,
+      status: 'active',
+      phase: 'preflop',
+      minBet: gameConfig?.minBet || 15,
+      currentBet: 0, // Start with no current bet - first action will set it
       smallBlind: gameConfig?.smallBlind || 5,
-      bigBlind: gameConfig?.bigBlind || 10,
+      bigBlind: gameConfig?.bigBlind || 15,
       handEvaluation: undefined,
       winner: undefined,
       isHandComplete: false
@@ -206,7 +206,16 @@ router.post('/test_player_action/:gameId', async (req, res) => {
     switch (action) {
       case 'call':
         // Call means match the current bet
-        const callAmount = Math.max(0, gameState.currentBet - player.currentBet);
+        let callAmount = Math.max(0, gameState.currentBet - player.currentBet);
+        
+        // Special case: if no current bet exists, call acts as minimum bet
+        if (gameState.currentBet === 0) {
+          console.log(`🔍 CALL DEBUG: minBet=${gameState.minBet}, bigBlind=${gameState.bigBlind}`);
+          callAmount = gameState.minBet;
+          gameState.currentBet = gameState.minBet;
+          console.log(`🔍 CALL DEBUG: callAmount set to ${callAmount}, gameCurrentBet set to ${gameState.currentBet}`);
+        }
+        
         if (callAmount > 0) {
           player.chips -= callAmount;
           player.currentBet += callAmount;
