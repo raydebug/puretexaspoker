@@ -46,10 +46,37 @@ After(async function(scenario) {
   
   // Clear browser state but keep driver alive for next scenario
   if (this.driver) {
-    // Clear cookies and localStorage
-    await this.driver.manage().deleteAllCookies()
-    await this.driver.executeScript('window.localStorage.clear()')
-    await this.driver.executeScript('window.sessionStorage.clear()')
+    try {
+      // Set shorter timeout for cleanup operations
+      await this.driver.manage().setTimeouts({ implicit: 2000, script: 2000 });
+      
+      // Clear cookies and localStorage with timeout protection
+      await Promise.race([
+        this.driver.manage().deleteAllCookies(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout clearing cookies')), 3000))
+      ]);
+      
+      await Promise.race([
+        this.driver.executeScript('window.localStorage.clear()'),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout clearing localStorage')), 3000))
+      ]);
+      
+      await Promise.race([
+        this.driver.executeScript('window.sessionStorage.clear()'),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout clearing sessionStorage')), 3000))
+      ]);
+      
+      console.log('✅ Browser state cleared successfully');
+    } catch (error) {
+      console.log(`⚠️ Could not clear browser state: ${error.message}, continuing...`);
+    } finally {
+      // Reset timeouts
+      try {
+        await this.driver.manage().setTimeouts({ implicit: 10000, script: 30000 });
+      } catch (resetError) {
+        console.log(`⚠️ Could not reset timeouts: ${resetError.message}`);
+      }
+    }
   }
 })
 
