@@ -433,43 +433,90 @@ const POSITION_NAMES = [
   'BU',    // 9. Button - Top left
 ];
 
-// Add player hole cards display
-const PlayerHoleCards = styled.div`
+// Add player hole cards display positioned near player's seat
+const PlayerHoleCards = styled.div<{ seatPosition?: number }>`
   position: absolute;
-  bottom: 120px;
-  left: 50%;
-  transform: translateX(-50%);
   display: flex;
   gap: 8px;
   z-index: 10;
+  
+  ${props => {
+    // Position hole cards between the seat and center of table (not overlapping seat)
+    switch (props.seatPosition) {
+      case 1: // Small Blind - Top right → position towards center
+        return `top: 120px; right: 180px;`;
+      case 2: // Big Blind - Right → position towards center
+        return `top: 50%; right: 120px; transform: translateY(-50%);`;
+      case 3: // UTG - Bottom right → position towards center
+        return `bottom: 120px; right: 180px;`;
+      case 4: // UTG+1 - Bottom middle right → position towards center
+        return `bottom: 80px; right: 300px;`;
+      case 5: // MP - Bottom middle → position towards center
+        return `bottom: 80px; left: 50%; transform: translateX(-50%);`;
+      case 6: // LJ - Bottom middle left → position towards center
+        return `bottom: 80px; left: 300px;`;
+      case 7: // HJ - Bottom left → position towards center
+        return `bottom: 120px; left: 180px;`;
+      case 8: // CO - Left → position towards center
+        return `top: 50%; left: 120px; transform: translateY(-50%);`;
+      case 9: // BU - Top left → position towards center
+        return `top: 120px; left: 180px;`;
+      default: // Fallback to bottom center
+        return `bottom: 80px; left: 50%; transform: translateX(-50%);`;
+    }
+  }}
 `;
 
 const HoleCard = styled.div<{ color?: string }>`
-  width: 50px;
-  height: 70px;
+  width: 40px;
+  height: 56px;
   background: white;
   border: 2px solid #333;
-  border-radius: 8px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 14px;
   font-weight: bold;
   box-shadow: 0 4px 12px rgba(0,0,0,0.4);
   color: ${props => props.color || 'black'};
 `;
 
-const HoleCardsLabel = styled.div`
+const HoleCardsLabel = styled.div<{ seatPosition?: number }>`
   position: absolute;
-  bottom: 200px;
-  left: 50%;
-  transform: translateX(-50%);
   background: rgba(0,0,0,0.8);
   color: #ffd700;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 10px;
   font-weight: bold;
+  white-space: nowrap;
+  
+  ${props => {
+    // Position label above the hole cards (between seat and center)
+    switch (props.seatPosition) {
+      case 1: // Small Blind - Top right → label above cards
+        return `top: 90px; right: 180px;`;
+      case 2: // Big Blind - Right → label above cards
+        return `top: 50%; right: 170px; transform: translateY(-50%);`;
+      case 3: // UTG - Bottom right → label above cards
+        return `bottom: 180px; right: 180px;`;
+      case 4: // UTG+1 - Bottom middle right → label above cards
+        return `bottom: 140px; right: 300px;`;
+      case 5: // MP - Bottom middle → label above cards
+        return `bottom: 140px; left: 50%; transform: translateX(-50%);`;
+      case 6: // LJ - Bottom middle left → label above cards
+        return `bottom: 140px; left: 300px;`;
+      case 7: // HJ - Bottom left → label above cards
+        return `bottom: 180px; left: 180px;`;
+      case 8: // CO - Left → label above cards
+        return `top: 50%; left: 170px; transform: translateY(-50%);`;
+      case 9: // BU - Top left → label above cards
+        return `top: 90px; left: 180px;`;
+      default: // Fallback to above center cards
+        return `bottom: 140px; left: 50%; transform: translateX(-50%);`;
+    }
+  }}
 `;
 
 export const PokerTable: React.FC<PokerTableProps> = ({ 
@@ -753,10 +800,10 @@ export const PokerTable: React.FC<PokerTableProps> = ({
         {/* Player Hole Cards - Enhanced logic to show cards */}
         {shouldShowUserHoleCards() && playerWithCards && playerWithCards.cards && playerWithCards.cards.length === 2 && (
           <>
-            <HoleCardsLabel>
+            <HoleCardsLabel seatPosition={playerWithCards.seatNumber}>
               {playerWithCards.name === localStorage.getItem('nickname') ? 'Your Cards' : `${playerWithCards.name}'s Cards`}
             </HoleCardsLabel>
-            <PlayerHoleCards data-testid="player-hole-cards">
+            <PlayerHoleCards data-testid="player-hole-cards" seatPosition={playerWithCards.seatNumber}>
               {playerWithCards.cards.map((card, index) => (
                 <HoleCard 
                   key={index} 
