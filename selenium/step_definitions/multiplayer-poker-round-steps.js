@@ -691,18 +691,33 @@ Then('the flop betting round should be complete', async function () {
 Then('{int} players should remain active', async function (expectedActiveCount) {
   console.log(`🔍 Verifying ${expectedActiveCount} players remain active`);
   
+  // CRITICAL FIX: Check backend game state for active players and fail if wrong
   try {
-    // Check for active/non-folded players
-    const activePlayerElements = await getElements('[data-testid*="player"]:not([class*="folded"]), [class*="player"]:not([class*="folded"])');
-    console.log(`Found ${activePlayerElements.length} active player elements`);
+    const response = await axios.get(`${backendApiUrl}/api/test_get_mock_game/${testGameId}`);
     
-    if (activePlayerElements.length >= expectedActiveCount) {
-      console.log(`✅ ${expectedActiveCount} players remain active`);
+    if (response.data.success && response.data.gameState) {
+      const gameState = response.data.gameState;
+      const activePlayers = gameState.players.filter(p => p.isActive);
+      const actualActiveCount = activePlayers.length;
+      
+      console.log(`🔍 Active players in backend: ${activePlayers.map(p => p.name).join(', ')}`);
+      
+      if (actualActiveCount === expectedActiveCount) {
+        console.log(`✅ ${expectedActiveCount} players remain active (verified in backend)`);
+        return; // Success
+      } else {
+        console.log(`❌ Expected ${expectedActiveCount} active players, but backend shows ${actualActiveCount}`);
+        throw new Error(`❌ VERIFICATION FAILED: Should have ${expectedActiveCount} active players but found ${actualActiveCount}`);
+      }
     } else {
-      console.log(`⚠️ Expected ${expectedActiveCount} active players, found ${activePlayerElements.length}`);
+      throw new Error(`❌ VERIFICATION FAILED: Could not retrieve game state for active player verification`);
     }
   } catch (error) {
-    console.log(`⚠️ Could not verify active player count: ${error.message}`);
+    if (error.message.includes('VERIFICATION FAILED')) {
+      throw error; // Re-throw verification failures
+    }
+    console.log(`❌ Error checking active players: ${error.message}`);
+    throw new Error(`❌ VERIFICATION FAILED: Active player verification failed - ${error.message}`);
   }
 });
 
@@ -878,20 +893,30 @@ Then('{string} should be marked as folded', async function (playerName) {
 Then('the current bet should be {string}', async function (expectedBet) {
   console.log(`🔍 Verifying current bet is ${expectedBet}`);
   
+  // CRITICAL FIX: Check backend game state directly, and fail if verification fails
   try {
-    const betElements = await getElements('[data-testid*="current-bet"], [class*="current-bet"]');
-    if (betElements.length > 0) {
-      const betText = await betElements[0].getText();
-      if (betText.includes(expectedBet)) {
-        console.log(`✅ Current bet ${expectedBet} verified`);
+    const response = await axios.get(`${backendApiUrl}/api/test_get_mock_game/${testGameId}`);
+    
+    if (response.data.success && response.data.gameState) {
+      const gameState = response.data.gameState;
+      const actualBet = gameState.currentBet.toString();
+      
+      if (actualBet === expectedBet) {
+        console.log(`✅ Current bet ${expectedBet} verified in backend`);
+        return; // Success
       } else {
-        console.log(`⚠️ Expected bet ${expectedBet}, found: ${betText}`);
+        console.log(`❌ Expected current bet ${expectedBet}, but backend shows ${actualBet}`);
+        throw new Error(`❌ VERIFICATION FAILED: Current bet should be ${expectedBet} but was ${actualBet}`);
       }
     } else {
-      console.log('⚠️ Current bet display not found');
+      throw new Error(`❌ VERIFICATION FAILED: Could not retrieve game state for current bet verification`);
     }
   } catch (error) {
-    console.log(`⚠️ Could not verify current bet: ${error.message}`);
+    if (error.message.includes('VERIFICATION FAILED')) {
+      throw error; // Re-throw verification failures
+    }
+    console.log(`❌ Error checking current bet: ${error.message}`);
+    throw new Error(`❌ VERIFICATION FAILED: Current bet verification failed - ${error.message}`);
   }
 });
 
