@@ -124,7 +124,7 @@ Given('I have {int} players already seated:', { timeout: 30000 }, async function
       
       // Step 2: Re-navigate to the game page with TestPlayer1 identity (this applies the new localStorage)
       console.log('🔄 Re-navigating to apply TestPlayer1 identity...');
-      const gameUrl = `${baseUrl}/game/${testGameId}`;
+      const gameUrl = `http://localhost:3000/game/${testGameId}`;
       await this.driver.get(gameUrl);
       await this.driver.sleep(3000);
       
