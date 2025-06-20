@@ -1,9 +1,9 @@
 import { Given, When, Then } from '@cucumber/cucumber'
-import { WebDriverHelpers } from '../utils/webdriverHelpers'
+const { WebDriverHelpers } = require('../utils/webdriverHelpers')
 
 // Authentication states
 Given('I am not logged in', async function() {
-  const helpers: WebDriverHelpers = this.helpers
+  const helpers: any = this.helpers
   
   // Verify user is not logged in by checking for anonymous info
   await helpers.shouldNotExist('[data-testid="user-info"]')
