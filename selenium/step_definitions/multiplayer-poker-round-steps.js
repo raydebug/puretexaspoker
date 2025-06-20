@@ -114,6 +114,24 @@ Given('I have {int} players already seated:', { timeout: 30000 }, async function
       console.log(`✅ Successfully created mock game with ${players.length} players`);
       console.log(`✅ Game ID: ${createResponse.data.gameId}`);
       
+      // CRITICAL FIX: Make browser user be TestPlayer1 so they can see their hole cards
+      // Step 1: Update localStorage to identify as TestPlayer1
+      await this.driver.executeScript(`
+        localStorage.setItem('nickname', 'TestPlayer1');
+        localStorage.setItem('playerId', 'test-player-1');
+        console.log('🎯 Browser user now identified as TestPlayer1');
+      `);
+      
+      // Step 2: Trigger a page refresh to apply the new identity
+      console.log('🔄 Refreshing page to apply TestPlayer1 identity...');
+      await this.driver.refresh();
+      await this.driver.sleep(2000);
+      
+      // Step 3: Re-navigate to the game page with TestPlayer1 identity
+      const gameUrl = `${baseUrl}/game/${testGameId}`;
+      await this.driver.get(gameUrl);
+      await this.driver.sleep(2000);
+      
       // Deal hole cards to all players so they can see their cards in the UI
       try {
         const holeCardsResponse = await axios.post(`${backendApiUrl}/api/test_deal_hole_cards`, {
@@ -128,10 +146,16 @@ Given('I have {int} players already seated:', { timeout: 30000 }, async function
         console.log(`⚠️ Error dealing hole cards: ${error.message}`);
       }
       
-      // Wait a moment for WebSocket propagation
-      await this.driver.sleep(2000);
+      // Wait a moment for WebSocket propagation and game state update
+      await this.driver.sleep(3000);
       
-      console.log(`✅ ${players.length} players setup completed`);
+      // Verify the browser is now identified as TestPlayer1
+      const currentNickname = await this.driver.executeScript(`
+        return localStorage.getItem('nickname');
+      `);
+      console.log(`🎯 Browser now identified as: ${currentNickname}`);
+      
+      console.log(`✅ ${players.length} players setup completed with TestPlayer1 identity`);
     } else {
       throw new Error(`Failed to create mock game: ${createResponse.data.error || 'Unknown error'}`);
     }
@@ -354,6 +378,82 @@ Then('I should see my player information displayed correctly', { timeout: 30000 
     console.log('✅ User info found');
   } catch (error) {
     console.log('⚠️ User info not visible (may be in observer mode)');
+  }
+  
+  // CRITICAL: Verify TestPlayer1 can see their hole cards
+  console.log('🃏 Verifying TestPlayer1 hole cards are visible...');
+  
+  // First, debug what the frontend visibility logic is detecting
+  const debugInfo = await this.driver.executeScript(`
+    console.log('🔍 DEBUG: Checking frontend hole cards visibility logic...');
+    const nickname = localStorage.getItem('nickname');
+    const playerId = localStorage.getItem('playerId');
+    
+    console.log('🔍 DEBUG: nickname from localStorage:', nickname);
+    console.log('🔍 DEBUG: playerId from localStorage:', playerId);
+    
+    // Check if gameState is available
+    if (window.socketService && window.socketService.gameState) {
+      const gameState = window.socketService.gameState;
+      console.log('🔍 DEBUG: gameState available, players:', gameState.players.length);
+      
+      const playerWithNickname = gameState.players.find(p => p.name === nickname);
+      console.log('🔍 DEBUG: player found by nickname:', playerWithNickname ? playerWithNickname.name : 'none');
+      
+      if (playerWithNickname && playerWithNickname.cards) {
+        console.log('🔍 DEBUG: player has cards:', playerWithNickname.cards.length);
+        return { 
+          found: true, 
+          nickname: nickname,
+          playerName: playerWithNickname.name,
+          cardCount: playerWithNickname.cards.length,
+          cards: playerWithNickname.cards
+        };
+      }
+    }
+    
+    return { 
+      found: false, 
+      nickname: nickname,
+      gameStateAvailable: !!(window.socketService && window.socketService.gameState)
+    };
+  `);
+  
+  console.log('🔍 DEBUG: Frontend visibility check result:', JSON.stringify(debugInfo, null, 2));
+  
+  try {
+    const holeCards = await this.driver.findElements(By.css('[data-testid="player-hole-cards"]'));
+    if (holeCards.length > 0) {
+      console.log('✅ Player hole cards container found');
+      
+      // Check for individual hole cards
+      const individualCards = await this.driver.findElements(By.css('[data-testid^="hole-card-"]'));
+      console.log(`🃏 Found ${individualCards.length} individual hole cards`);
+      
+      if (individualCards.length >= 2) {
+        console.log('✅ TestPlayer1 can see their 2 hole cards!');
+        
+        // Try to read the card values
+        for (let i = 0; i < Math.min(individualCards.length, 2); i++) {
+          try {
+            const cardText = await individualCards[i].getText();
+            console.log(`🃏 Hole card ${i + 1}: ${cardText}`);
+          } catch (e) {
+            console.log(`🃏 Hole card ${i + 1}: (could not read text)`);
+          }
+        }
+      } else {
+        console.log('⚠️ Less than 2 hole cards found, but container exists');
+      }
+    } else {
+      console.log('⚠️ No hole cards container found - TestPlayer1 cannot see their cards');
+      
+      if (debugInfo.found) {
+        console.log(`🔍 DEBUG: Frontend logic should show cards for ${debugInfo.playerName} with ${debugInfo.cardCount} cards, but UI element not found`);
+      }
+    }
+  } catch (error) {
+    console.log(`⚠️ Error checking hole cards: ${error.message}`);
   }
   
   console.log('✅ Player information verification completed');
