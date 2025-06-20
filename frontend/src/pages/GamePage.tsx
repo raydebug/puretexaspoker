@@ -595,9 +595,7 @@ const GamePage: React.FC = () => {
           </ObserverControls>
           
           <OnlineList 
-            players={gameState?.players || []} 
             observers={observers}
-            currentPlayerId={currentPlayer?.id}
             showMode="observers"
           />
 
@@ -627,9 +625,7 @@ const GamePage: React.FC = () => {
       />
       
       <OnlineList 
-        players={gameState?.players || []} 
         observers={observers}
-        currentPlayerId={currentPlayer?.id}
         showMode="observers"
       />
 

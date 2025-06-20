@@ -360,9 +360,9 @@ Then('each player should have their correct chip count', () => {
   cy.log(`✅ Chip count verification completed`);
 });
 
-// Additional verification step for players in seats and lists
-Then('players should be visible in their seats and in the players list', () => {
-  cy.log('🔍 Comprehensive player verification - seats and lists');
+// Additional verification step for players in seats (removed players list reference)
+Then('players should be visible in their seats', () => {
+  cy.log('🔍 Player verification - seats only');
   
   cy.get('body').then(($body) => {
     // 1. Check for players in poker table seats
@@ -380,21 +380,7 @@ Then('players should be visible in their seats and in the players list', () => {
       });
     }
     
-    // 2. Check for online players list
-    const onlineListElements = $body.find('[data-testid="online-list"], [class*="online-users"], [class*="players-list"]');
-    if (onlineListElements.length > 0) {
-      cy.get('[data-testid="online-list"], [class*="online-users"], [class*="players-list"]')
-        .should('be.visible')
-        .within(() => {
-          // Should contain player entries
-          cy.get('[class*="player"], [class*="user"]').should('have.length.at.least', 1);
-        });
-      cy.log('✅ Online players list verified');
-    } else {
-      cy.log('⚠️ No online players list found');
-    }
-    
-    // 3. Check for observer list (since we're in observer mode)
+    // 2. Check for observer list (since we're in observer mode)
     const observerElements = $body.find('[data-testid*="observer"], [class*="observer"]');
     if (observerElements.length > 0) {
       cy.get('[data-testid*="observer"], [class*="observer"]').should('be.visible');
@@ -402,7 +388,7 @@ Then('players should be visible in their seats and in the players list', () => {
     }
   });
   
-  cy.log('✅ Comprehensive player verification completed');
+  cy.log('✅ Player verification completed');
 });
 
 // Game start steps using UI

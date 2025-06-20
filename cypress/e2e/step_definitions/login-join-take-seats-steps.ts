@@ -341,19 +341,7 @@ Then('I should see {string} in the observers list', (nickname: string) => {
   })
 })
 
-Then('I should not see {string} in the players list', (nickname: string) => {
-  // Look for players list with flexible selectors
-  cy.get('body').then($body => {
-    const playerSelectors = '[data-testid*="player"], .player, [class*="player"]'
-    if ($body.find(playerSelectors).length > 0) {
-      cy.get(playerSelectors).should('not.contain', nickname)
-      cy.log(`✅ Confirmed ${nickname} not in players list`)
-    } else {
-      cy.log(`⚠️ No players list found - may be expected behavior`)
-      cy.get('body').should('exist') // Minimal assertion
-    }
-  })
-})
+// Removed players list step - only checking observers list now
 
 Then('I should be removed from the observers list', () => {
   cy.get('body').then($body => {
@@ -381,15 +369,11 @@ Then('I should not see {string} in the observers list', (nickname: string) => {
   })
 })
 
-// Assertions - Players List
-Then('I should see {string} in the players list at seat {string}', (nickname: string, seatNumber: string) => {
+// Assertions - Seat Management (removed players list verification)
+Then('I should see {string} in seat {string}', (nickname: string, seatNumber: string) => {
   cy.log(`🔍 Verifying ${nickname} is seated at seat ${seatNumber}`)
   // Check that the seat contains the player name
   cy.get(`[data-testid="seat-${seatNumber}"]`).should('contain', nickname)
-  // Also verify the player appears in the OnlineList players section
-  cy.get('h3').contains('Players').parent().within(() => {
-    cy.get('li').should('contain', nickname)
-  })
   cy.log(`✅ ${nickname} is seated at seat ${seatNumber}`)
 })
 
@@ -466,14 +450,7 @@ Then('seat {string} should return to available state', (seatNumber: string) => {
   })
 })
 
-Then('the players list should reflect this seat change', () => {
-  cy.log('🔍 Verifying seat change is reflected in players list')
-  // Verify that the player appears in the OnlineList players section
-  cy.get('h3').contains('Players').parent().within(() => {
-    cy.get('li').should('contain', 'TestPlayer')
-  })
-  cy.log('✅ Players list reflects the seat change')
-})
+// Removed players list reflection step - focusing on seat verification only
 
 // New step definitions to verify exact counts and prevent duplicate users
 Then('{string} should appear exactly once in the observers list', (nickname: string) => {
@@ -502,55 +479,9 @@ Then('{string} should appear exactly once in the observers list', (nickname: str
   })
 })
 
-Then('{string} should appear exactly zero times in the players list', (nickname: string) => {
-  cy.log(`🔍 Verifying ${nickname} appears exactly zero times in players list...`)
-  // First check if players section exists
-  cy.get('[data-testid="online-users-list"]').should('be.visible')
-  cy.get('h3').contains('Players').should('be.visible')
-  
-  // Check within the players section
-  cy.get('h3').contains('Players').parent().within(() => {
-    cy.get('ul').then($ul => {
-      const $listItems = $ul.find('li')
-      if ($listItems.length > 0) {
-        cy.get('li').then($players => {
-          const playerText = $players.text()
-          const occurrences = (playerText.match(new RegExp(nickname, 'g')) || []).length
-          cy.log(`🔍 Found ${occurrences} occurrences of "${nickname}" in players list`)
-          expect(occurrences).to.equal(0, `Expected exactly 0 occurrences of "${nickname}" in players list, but found ${occurrences}`)
-        })
-      } else {
-        cy.log('✅ No players list items found - this means 0 occurrences as expected')
-        // This is the expected state when no players should be present
-      }
-    })
-  })
-})
+// Removed players list count verification - focusing only on observers
 
-Then('{string} should appear exactly once in the players list', (nickname: string) => {
-  cy.log(`🔍 Verifying ${nickname} appears exactly once in players list...`)
-  // First ensure the players section exists
-  cy.get('[data-testid="online-users-list"]').should('be.visible')
-  cy.get('h3:contains("Players")').should('be.visible')
-  
-  // Check within the players section
-  cy.get('h3:contains("Players")').parent().within(() => {
-    cy.get('ul').then($ul => {
-      const $listItems = $ul.find('li')
-      if ($listItems.length > 0) {
-        cy.get('li').then($players => {
-          const playerText = $players.text()
-          const occurrences = (playerText.match(new RegExp(nickname, 'g')) || []).length
-          cy.log(`🔍 Found ${occurrences} occurrences of "${nickname}" in players list`)
-          expect(occurrences).to.equal(1, `Expected exactly 1 occurrence of "${nickname}" in players list, but found ${occurrences}`)
-        })
-      } else {
-        cy.log('❌ No players list items found - list appears to be empty')
-        throw new Error(`Expected to find "${nickname}" in players list, but players list is empty`)
-      }
-    })
-  })
-})
+// Removed players list count verification - no longer needed
 
 Then('{string} should appear exactly zero times in the observers list', (nickname: string) => {
   cy.log(`🔍 Verifying ${nickname} appears exactly zero times in observers list...`)

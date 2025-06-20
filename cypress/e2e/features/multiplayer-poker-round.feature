@@ -17,7 +17,7 @@ Feature: Multiplayer Poker Game Round
     # Verify initial setup
     Then all 5 players should be seated at the table
     And each player should have their correct chip count
-    And players should be visible in their seats and in the players list
+    And players should be visible in their seats
     And each player should be verified in their correct seat with proper order
     
     # Wait for game elements to be available
