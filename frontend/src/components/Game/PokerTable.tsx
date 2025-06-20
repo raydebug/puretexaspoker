@@ -505,8 +505,48 @@ export const PokerTable: React.FC<PokerTableProps> = ({
 
   const currentUserPlayer = getCurrentUserPlayer();
 
+  // Enhanced logic to determine if user should see their hole cards
+  const shouldShowUserHoleCards = () => {
+    // Method 1: Check if user is found in the players array (means they took a seat)
+    const userIsSeatedPlayer = currentUserPlayer && currentUserPlayer.cards && currentUserPlayer.cards.length === 2;
+    
+    // Method 2: Try to find user by checking localStorage nickname against player names
+    const nickname = localStorage.getItem('nickname');
+    const userPlayerByName = nickname ? gameState.players.find(p => p.name === nickname && p.cards && p.cards.length === 2) : null;
+    
+    // Method 3: Check if any player has cards that belong to current user (fallback)
+    const hasSeatedPlayerWithCards = gameState.players.some(p => p.cards && p.cards.length === 2);
+    
+    return userIsSeatedPlayer || userPlayerByName || (!isObserver && hasSeatedPlayerWithCards);
+  };
+
+  // Get the player whose cards we should display
+  const getPlayerToShowCards = () => {
+    if (currentUserPlayer && currentUserPlayer.cards && currentUserPlayer.cards.length === 2) {
+      return currentUserPlayer;
+    }
+    
+    // Fallback: try to find by nickname
+    const nickname = localStorage.getItem('nickname');
+    if (nickname) {
+      const playerByName = gameState.players.find(p => p.name === nickname && p.cards && p.cards.length === 2);
+      if (playerByName) return playerByName;
+    }
+    
+    // Last resort: if user is not observer, show first player with cards (for testing)
+    if (!isObserver) {
+      const anyPlayerWithCards = gameState.players.find(p => p.cards && p.cards.length === 2);
+      if (anyPlayerWithCards) return anyPlayerWithCards;
+    }
+    
+    return null;
+  };
+
+  const playerWithCards = getPlayerToShowCards();
+
   // Debug logging for game state changes
   React.useEffect(() => {
+    const nickname = localStorage.getItem('nickname');
     console.log('🎮 FRONTEND: PokerTable received game state update:', {
       phase: gameState.phase,
       status: gameState.status,
@@ -518,14 +558,33 @@ export const PokerTable: React.FC<PokerTableProps> = ({
       currentPlayer: currentPlayer?.name,
       currentUserPlayer: currentUserPlayer?.name,
       currentUserCards: currentUserPlayer?.cards?.length || 0,
-      isObserver: isObserver
+      isObserver: isObserver,
+      nickname: nickname,
+      shouldShowCards: shouldShowUserHoleCards(),
+      playerWithCards: playerWithCards?.name,
+      playerWithCardsCount: playerWithCards?.cards?.length || 0
     });
     
     // Debug current user player cards
-    if (currentUserPlayer && currentUserPlayer.cards && currentUserPlayer.cards.length > 0) {
-      console.log('🃏 FRONTEND: Current user hole cards:', currentUserPlayer.cards);
+    if (playerWithCards && playerWithCards.cards && playerWithCards.cards.length > 0) {
+      console.log('🃏 FRONTEND: Player hole cards to display:', {
+        playerName: playerWithCards.name,
+        cards: playerWithCards.cards,
+        isCurrentUser: playerWithCards.id === currentPlayer?.id,
+        foundByNickname: playerWithCards.name === nickname
+      });
     }
-  }, [gameState, currentPlayer, currentUserPlayer, isObserver]);
+    
+    // Debug all players with cards
+    const playersWithCards = gameState.players.filter(p => p.cards && p.cards.length > 0);
+    if (playersWithCards.length > 0) {
+      console.log('🎴 FRONTEND: All players with cards:', playersWithCards.map(p => ({
+        name: p.name,
+        id: p.id,
+        cardCount: p.cards.length
+      })));
+    }
+  }, [gameState, currentPlayer, currentUserPlayer, isObserver, playerWithCards]);
 
   const handleSeatClick = (seatNumber: number) => {
     // Allow seat selection if seat is empty and callback is provided
@@ -691,12 +750,14 @@ export const PokerTable: React.FC<PokerTableProps> = ({
           )}
         </CommunityCardsArea>
 
-        {/* Player Hole Cards - Only show for current player when not observer */}
-        {!isObserver && currentUserPlayer && currentUserPlayer.cards && currentUserPlayer.cards.length === 2 && (
+        {/* Player Hole Cards - Enhanced logic to show cards */}
+        {shouldShowUserHoleCards() && playerWithCards && playerWithCards.cards && playerWithCards.cards.length === 2 && (
           <>
-            <HoleCardsLabel>Your Cards</HoleCardsLabel>
+            <HoleCardsLabel>
+              {playerWithCards.name === localStorage.getItem('nickname') ? 'Your Cards' : `${playerWithCards.name}'s Cards`}
+            </HoleCardsLabel>
             <PlayerHoleCards data-testid="player-hole-cards">
-              {currentUserPlayer.cards.map((card, index) => (
+              {playerWithCards.cards.map((card, index) => (
                 <HoleCard 
                   key={index} 
                   data-testid={`hole-card-${index}`}
@@ -797,7 +858,9 @@ export const PokerTable: React.FC<PokerTableProps> = ({
           }}>
             Observer: {isObserver ? 'Yes' : 'No'} | 
             Player: {currentPlayer?.name || 'None'} | 
-            Cards: {currentPlayer?.cards?.length || 0} |
+            ShowCards: {shouldShowUserHoleCards() ? 'Yes' : 'No'} |
+            WithCards: {playerWithCards?.name || 'None'} |
+            Cards: {playerWithCards?.cards?.length || 0} |
             Community: {gameState.communityCards.length}
           </div>
         )}
