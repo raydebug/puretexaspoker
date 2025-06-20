@@ -563,8 +563,8 @@ Then('{string} chip count should decrease to {string}', { timeout: 30000 }, asyn
     console.log(`⚠️ Error verifying ${playerName} chips: ${error.message}`);
   }
   
-  // For now, just mark as completed since we're verifying the game state logic works
-  console.log(`✅ Chip count verification completed (may be in observer mode)`);
+  // CRITICAL: If verification fails, the test should fail
+  throw new Error(`❌ VERIFICATION FAILED: ${playerName} chip count should be ${expectedChips} but verification failed`);
 });
 
 // Community cards steps
@@ -605,7 +605,7 @@ Then('the cards should be visually rendered correctly', async function () {
   console.log('🔍 Verifying cards are visually rendered');
   
   try {
-    const cardElements = await getElements('[data-testid*="card"], [class*="card"]');
+    const cardElements = await this.driver.findElements(By.css('[data-testid*="card"], [class*="card"]'));
     console.log(`Found ${cardElements.length} card elements`);
     
     if (cardElements.length > 0) {

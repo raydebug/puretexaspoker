@@ -200,21 +200,30 @@ router.post('/test_player_action/:gameId', async (req, res) => {
       });
     }
     
-    // Simulate player action
+    // CRITICAL FIX: Correct poker action logic
+    console.log(`🔍 BEFORE ACTION: ${player.name} has ${player.chips} chips, currentBet: ${player.currentBet}, gameCurrentBet: ${gameState.currentBet}, pot: ${gameState.pot}`);
+    
     switch (action) {
       case 'call':
-        const callAmount = gameState.currentBet - player.currentBet;
-        player.currentBet = gameState.currentBet;
-        player.chips -= callAmount;
-        gameState.pot += callAmount;
+        // Call means match the current bet
+        const callAmount = Math.max(0, gameState.currentBet - player.currentBet);
+        if (callAmount > 0) {
+          player.chips -= callAmount;
+          player.currentBet += callAmount;
+          gameState.pot += callAmount;
+        }
         break;
         
       case 'raise':
-        const raiseAmount = amount - player.currentBet;
-        player.currentBet = amount;
-        player.chips -= raiseAmount;
-        gameState.pot += raiseAmount;
-        gameState.currentBet = amount;
+        // Raise means set current bet to new amount, pay the difference
+        const totalRaiseAmount = amount;
+        const additionalChips = totalRaiseAmount - player.currentBet;
+        if (additionalChips > 0) {
+          player.chips -= additionalChips;
+          player.currentBet = totalRaiseAmount;
+          gameState.pot += additionalChips;
+          gameState.currentBet = totalRaiseAmount;
+        }
         break;
         
       case 'fold':
@@ -222,16 +231,25 @@ router.post('/test_player_action/:gameId', async (req, res) => {
         break;
         
       case 'check':
-        // No chips change for check
+        // No chips change for check (only valid if no bet to call)
         break;
         
       case 'bet':
-        player.currentBet = amount;
-        player.chips -= amount;
-        gameState.pot += amount;
-        gameState.currentBet = amount;
+        // Bet means put chips in (usually first bet of a round)
+        const betAmount = amount;
+        if (betAmount > 0) {
+          player.chips -= betAmount;
+          player.currentBet = betAmount;
+          gameState.pot += betAmount;
+          gameState.currentBet = betAmount;
+        }
         break;
     }
+    
+    // Force update the game state in the map
+    (gameManager as any).testGames.set(gameId, gameState);
+    
+    console.log(`🔍 AFTER ACTION: ${player.name} has ${player.chips} chips, currentBet: ${player.currentBet}, gameCurrentBet: ${gameState.currentBet}, pot: ${gameState.pot}`);
     
     console.log(`🧪 TEST API: Player ${playerId} performed ${action} in game ${gameId}`);
     
@@ -322,6 +340,252 @@ router.post('/test_advance_phase/:gameId', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to advance game phase'
+    });
+  }
+});
+
+/**
+ * TEST API: Deal flop (3 community cards)
+ * POST /api/test_deal_flop
+ */
+router.post('/test_deal_flop', async (req, res) => {
+  try {
+    const { gameId } = req.body;
+    
+    const gameManager = GameManager.getInstance();
+    const testGames = (gameManager as any).testGames;
+    
+    if (!testGames || !testGames.has(gameId)) {
+      return res.status(404).json({
+        success: false,
+        error: 'Mock game not found'
+      });
+    }
+    
+    const gameState = testGames.get(gameId);
+    
+    // Add 3 community cards for flop
+    gameState.communityCards = [
+      { rank: 'A', suit: '♠' },
+      { rank: 'K', suit: '♥' },
+      { rank: 'Q', suit: '♦' }
+    ];
+    gameState.phase = 'flop';
+    
+    // Reset current bets for new betting round
+    gameState.players.forEach((player: any) => {
+      player.currentBet = 0;
+    });
+    gameState.currentBet = 0;
+    
+    // Force update the game state
+    testGames.set(gameId, gameState);
+    
+    console.log(`🧪 TEST API: Dealt flop for game ${gameId}`);
+    
+    // Broadcast update
+    const io = (global as any).socketIO;
+    if (io) {
+      io.to(`game:${gameId}`).emit('gameState', gameState);
+      io.emit('testGameStateUpdate', {
+        gameId,
+        gameState: gameState,
+        message: 'Flop dealt'
+      });
+    }
+    
+    res.json({
+      success: true,
+      gameState,
+      message: 'Flop dealt'
+    });
+  } catch (error) {
+    console.error('❌ TEST API: Error dealing flop:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to deal flop'
+    });
+  }
+});
+
+/**
+ * TEST API: Deal turn (4th community card)
+ * POST /api/test_deal_turn
+ */
+router.post('/test_deal_turn', async (req, res) => {
+  try {
+    const { gameId } = req.body;
+    
+    const gameManager = GameManager.getInstance();
+    const testGames = (gameManager as any).testGames;
+    
+    if (!testGames || !testGames.has(gameId)) {
+      return res.status(404).json({
+        success: false,
+        error: 'Mock game not found'
+      });
+    }
+    
+    const gameState = testGames.get(gameId);
+    
+    // Add turn card
+    gameState.communityCards.push({ rank: 'J', suit: '♣' });
+    gameState.phase = 'turn';
+    
+    // Reset current bets for new betting round
+    gameState.players.forEach((player: any) => {
+      player.currentBet = 0;
+    });
+    gameState.currentBet = 0;
+    
+    // Force update the game state
+    testGames.set(gameId, gameState);
+    
+    console.log(`🧪 TEST API: Dealt turn for game ${gameId}`);
+    
+    // Broadcast update
+    const io = (global as any).socketIO;
+    if (io) {
+      io.to(`game:${gameId}`).emit('gameState', gameState);
+      io.emit('testGameStateUpdate', {
+        gameId,
+        gameState: gameState,
+        message: 'Turn dealt'
+      });
+    }
+    
+    res.json({
+      success: true,
+      gameState,
+      message: 'Turn dealt'
+    });
+  } catch (error) {
+    console.error('❌ TEST API: Error dealing turn:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to deal turn'
+    });
+  }
+});
+
+/**
+ * TEST API: Deal river (5th community card)
+ * POST /api/test_deal_river
+ */
+router.post('/test_deal_river', async (req, res) => {
+  try {
+    const { gameId } = req.body;
+    
+    const gameManager = GameManager.getInstance();
+    const testGames = (gameManager as any).testGames;
+    
+    if (!testGames || !testGames.has(gameId)) {
+      return res.status(404).json({
+        success: false,
+        error: 'Mock game not found'
+      });
+    }
+    
+    const gameState = testGames.get(gameId);
+    
+    // Add river card
+    gameState.communityCards.push({ rank: '10', suit: '♠' });
+    gameState.phase = 'river';
+    
+    // Reset current bets for new betting round
+    gameState.players.forEach((player: any) => {
+      player.currentBet = 0;
+    });
+    gameState.currentBet = 0;
+    
+    // Force update the game state
+    testGames.set(gameId, gameState);
+    
+    console.log(`🧪 TEST API: Dealt river for game ${gameId}`);
+    
+    // Broadcast update
+    const io = (global as any).socketIO;
+    if (io) {
+      io.to(`game:${gameId}`).emit('gameState', gameState);
+      io.emit('testGameStateUpdate', {
+        gameId,
+        gameState: gameState,
+        message: 'River dealt'
+      });
+    }
+    
+    res.json({
+      success: true,
+      gameState,
+      message: 'River dealt'
+    });
+  } catch (error) {
+    console.error('❌ TEST API: Error dealing river:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to deal river'
+    });
+  }
+});
+
+/**
+ * TEST API: Trigger showdown
+ * POST /api/test_trigger_showdown
+ */
+router.post('/test_trigger_showdown', async (req, res) => {
+  try {
+    const { gameId } = req.body;
+    
+    const gameManager = GameManager.getInstance();
+    const testGames = (gameManager as any).testGames;
+    
+    if (!testGames || !testGames.has(gameId)) {
+      return res.status(404).json({
+        success: false,
+        error: 'Mock game not found'
+      });
+    }
+    
+    const gameState = testGames.get(gameId);
+    
+    // Set showdown phase
+    gameState.phase = 'showdown';
+    
+    // Determine winner (simplified - first active player wins)
+    const activePlayer = gameState.players.find((p: any) => p.isActive);
+    if (activePlayer) {
+      gameState.winner = activePlayer.id;
+      // Award pot to winner
+      activePlayer.chips += gameState.pot;
+      gameState.pot = 0;
+    }
+    
+    // Force update the game state
+    testGames.set(gameId, gameState);
+    
+    console.log(`🧪 TEST API: Triggered showdown for game ${gameId}`);
+    
+    // Broadcast update
+    const io = (global as any).socketIO;
+    if (io) {
+      io.to(`game:${gameId}`).emit('gameState', gameState);
+      io.emit('testGameStateUpdate', {
+        gameId,
+        gameState: gameState,
+        message: 'Showdown phase'
+      });
+    }
+    
+    res.json({
+      success: true,
+      gameState,
+      message: 'Showdown triggered'
+    });
+  } catch (error) {
+    console.error('❌ TEST API: Error triggering showdown:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to trigger showdown'
     });
   }
 });
