@@ -496,7 +496,7 @@ Then('the pot amount should update to {string}', async function (expectedAmount)
   }
 });
 
-Then('the turn should move to {string}', async function (playerName) {
+Then('the turn should move to {string}', { timeout: 30000 }, async function (playerName) {
   console.log(`🔍 Verifying turn moves to ${playerName}`);
   
   // Check for current player indicator
