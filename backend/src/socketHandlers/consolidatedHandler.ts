@@ -137,6 +137,30 @@ export function registerConsolidatedHandlers(io: Server) {
     console.log(`[CONSOLIDATED] Client connected: ${socket.id}`);
     console.log(`[CONSOLIDATED] Current authenticated users: ${authenticatedUsers.size}`);
 
+    // === ROOM HANDLERS ===
+    
+    socket.on('joinRoom', (roomName: string) => {
+      try {
+        console.log(`[CONSOLIDATED] Client ${socket.id} joining room: ${roomName}`);
+        socket.join(roomName);
+        socket.emit('roomJoined', { room: roomName });
+      } catch (error) {
+        console.error(`[CONSOLIDATED] Error joining room ${roomName}:`, error);
+        handleError(socket, error as Error, 'joinRoom', { roomName });
+      }
+    });
+
+    socket.on('leaveRoom', (roomName: string) => {
+      try {
+        console.log(`[CONSOLIDATED] Client ${socket.id} leaving room: ${roomName}`);
+        socket.leave(roomName);
+        socket.emit('roomLeft', { room: roomName });
+      } catch (error) {
+        console.error(`[CONSOLIDATED] Error leaving room ${roomName}:`, error);
+        handleError(socket, error as Error, 'leaveRoom', { roomName });
+      }
+    });
+
     // === LOBBY HANDLERS ===
     
     socket.on('getLobbyTables', () => {

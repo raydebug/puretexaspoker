@@ -317,11 +317,7 @@ export class SocketService {
       this.emitError({ message: error, context: 'seat:error' });
     });
 
-    socket.on('gameState', (gameState: GameState) => {
-      console.log('DEBUG: Frontend received gameState event:', gameState);
-      this.gameState = gameState;
-      this.emitGameStateUpdate(gameState);
-    });
+
 
     socket.on('playerJoined', (data: { player: Player }) => {
       try {
@@ -408,6 +404,8 @@ export class SocketService {
     socket.on('testGameStateUpdate', (data: { gameId: string; gameState: GameState; message?: string }) => {
       console.log('🧪 FRONTEND: Received testGameStateUpdate event:', data);
       console.log('🧪 FRONTEND: Test game state data:', data.gameState);
+      console.log('🧪 FRONTEND: Current gameId:', this.currentGameId);
+      console.log('🧪 FRONTEND: Socket connected:', socket.connected);
       
       if (data.gameState) {
         // Update local game state
@@ -434,7 +432,35 @@ export class SocketService {
         }
         
         console.log('🧪 FRONTEND: Test game state injection completed');
+        
+        // Force a page refresh of component state
+        if (typeof window !== 'undefined' && (window as any).location) {
+          console.log('🧪 FRONTEND: Triggering component re-render via storage event');
+          window.dispatchEvent(new Event('testGameStateUpdate'));
+        }
       }
+    });
+
+    // Also handle direct gameState events for better coverage
+    socket.on('gameState', (gameState: GameState) => {
+      console.log('🎮 FRONTEND: Received gameState event:', {
+        id: gameState.id,
+        phase: gameState.phase,
+        pot: gameState.pot,
+        playersCount: gameState.players?.length || 0,
+        communityCards: gameState.communityCards?.length || 0
+      });
+      this.gameState = gameState;
+      this.emitGameStateUpdate(gameState);
+    });
+
+    // Handle room join confirmations
+    socket.on('roomJoined', (data: { room: string }) => {
+      console.log(`🔌 FRONTEND: Successfully joined room: ${data.room}`);
+    });
+
+    socket.on('roomLeft', (data: { room: string }) => {
+      console.log(`🔌 FRONTEND: Successfully left room: ${data.room}`);
     });
 
     // Handle table joining results
@@ -461,6 +487,10 @@ export class SocketService {
         // Store the game ID for this session
         this.currentGameId = data.gameId;
         console.log('DEBUG: Frontend stored gameId:', this.currentGameId);
+        
+        // CRITICAL FIX: Join the game room for WebSocket events
+        console.log(`🔌 FRONTEND: Joining WebSocket room game:${this.currentGameId}`);
+        socket.emit('joinRoom', `game:${this.currentGameId}`);
       }
       
       this.logCurrentUserStatus();
@@ -482,6 +512,10 @@ export class SocketService {
       
       this.currentGameId = data.gameId;
       this.gameState = data.gameState;
+      
+      // CRITICAL FIX: Join the game room for WebSocket events
+      console.log(`🔌 FRONTEND: Joining WebSocket room game:${this.currentGameId} in gameJoined`);
+      socket.emit('joinRoom', `game:${this.currentGameId}`);
       
       // Set the current player
       // Check if user is joining as an observer or as a player

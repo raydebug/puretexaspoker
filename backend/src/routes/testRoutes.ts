@@ -560,6 +560,23 @@ router.post('/test_trigger_showdown', async (req, res) => {
     // Set showdown phase
     gameState.phase = 'showdown';
     
+    // Assign sample cards to active players for UI display
+    const sampleCards = [
+      [{ rank: 'A', suit: '♠' }, { rank: 'K', suit: '♥' }],
+      [{ rank: 'Q', suit: '♦' }, { rank: 'J', suit: '♣' }],
+      [{ rank: '10', suit: '♠' }, { rank: '9', suit: '♥' }],
+      [{ rank: '8', suit: '♦' }, { rank: '7', suit: '♣' }],
+      [{ rank: '6', suit: '♠' }, { rank: '5', suit: '♥' }]
+    ];
+    
+    let cardIndex = 0;
+    gameState.players.forEach((player: any) => {
+      if (player.isActive && cardIndex < sampleCards.length) {
+        player.cards = sampleCards[cardIndex];
+        cardIndex++;
+      }
+    });
+    
     // Determine winner (simplified - first active player wins)
     const activePlayer = gameState.players.find((p: any) => p.isActive);
     if (activePlayer) {

@@ -346,6 +346,79 @@ const ActionButton = styled.button<{ variant: 'fold' | 'call' | 'raise' }>`
   }}
 `;
 
+const GameStatusDisplay = styled.div`
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(0,0,0,0.8);
+  color: #ffd700;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: bold;
+`;
+
+const CurrentBetDisplay = styled.div`
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0,0,0,0.8);
+  color: #ffd700;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: bold;
+`;
+
+const WinnerCelebration = styled.div`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 215, 0, 0.95);
+  color: #000;
+  padding: 20px 40px;
+  border-radius: 15px;
+  font-size: 18px;
+  font-weight: bold;
+  text-align: center;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+  z-index: 20;
+  border: 3px solid #ff6b35;
+`;
+
+const PlayerSeatExtended = styled(PlayerSeat).withConfig({
+  shouldForwardProp: (prop) => !['position', 'isEmpty', 'isButton', 'isAvailable', 'isCurrentPlayer', 'isFolded'].includes(prop),
+})<{ 
+  position: number; 
+  isEmpty: boolean; 
+  isButton: boolean; 
+  isAvailable?: boolean;
+  isCurrentPlayer?: boolean;
+  isFolded?: boolean;
+}>`
+  ${props => props.isCurrentPlayer && `
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.8), 0 0 40px rgba(0, 255, 0, 0.4);
+    border: 3px solid #00ff00;
+    animation: currentPlayerPulse 2s ease-in-out infinite;
+    
+    @keyframes currentPlayerPulse {
+      0%, 100% { 
+        transform: scale(1);
+      }
+      50% { 
+        transform: scale(1.05);
+      }
+    }
+  `}
+  
+  ${props => props.isFolded && `
+    opacity: 0.5;
+    filter: grayscale(100%);
+    border: 3px solid #666;
+  `}
+`;
+
 // Texas Hold'em position names for 9 player seats (excluding dealer)
 const POSITION_NAMES = [
   'SB',    // 1. Small Blind - Top right
@@ -367,6 +440,18 @@ export const PokerTable: React.FC<PokerTableProps> = ({
   availableSeats = [], 
   onSeatSelect 
 }) => {
+  // Debug logging for game state changes
+  React.useEffect(() => {
+    console.log('🎮 FRONTEND: PokerTable received game state update:', {
+      phase: gameState.phase,
+      status: gameState.status,
+      currentBet: gameState.currentBet,
+      pot: gameState.pot,
+      communityCards: gameState.communityCards.length,
+      activePlayers: gameState.players.filter(p => p.isActive).length,
+      winner: gameState.winner
+    });
+  }, [gameState]);
   const handleSeatClick = (seatNumber: number) => {
     // Allow seat selection if seat is empty and callback is provided
     const player = gameState.players.find(p => p.seatNumber === seatNumber);
@@ -383,16 +468,21 @@ export const PokerTable: React.FC<PokerTableProps> = ({
     const positionName = POSITION_NAMES[seatNumber - 1];
     const isButton = player?.isDealer || false; // Button position
     const isAvailable = isEmpty; // Empty seats are always available to sit in
+    const isCurrentPlayer = !isEmpty && gameState.currentPlayerId === player?.id;
+    const isFolded = !isEmpty && !player?.isActive;
     
     return (
-      <PlayerSeat
+      <PlayerSeatExtended
         key={seatNumber}
         position={seatNumber}
         isEmpty={isEmpty}
         isButton={isButton}
         isAvailable={isAvailable}
+        isCurrentPlayer={isCurrentPlayer}
+        isFolded={isFolded}
         onClick={() => handleSeatClick(seatNumber)}
         data-testid={isEmpty ? `available-seat-${seatNumber}` : `seat-${seatNumber}`}
+        className={`${isCurrentPlayer ? 'current-player active-player' : ''} ${isFolded ? 'folded-player' : ''}`}
       >
         <PositionLabel isButton={isButton}>{positionName}</PositionLabel>
         {isButton && <ButtonIndicator>D</ButtonIndicator>}
@@ -403,16 +493,60 @@ export const PokerTable: React.FC<PokerTableProps> = ({
         ) : (
           <>
             <PlayerName>{player.name}</PlayerName>
-            <PlayerChips>${player.chips}</PlayerChips>
+            <PlayerChips 
+              data-testid={`player-${player.id}-chips`}
+              className="chips player-chips"
+            >
+              ${player.chips}
+            </PlayerChips>
+            {/* Show player cards during showdown */}
+            {(gameState.phase as string).includes('showdown') && player.cards && player.cards.length > 0 && (
+              <div className="player-cards" data-testid={`player-${player.id}-cards`}>
+                {player.cards.map((card, index) => (
+                  <div 
+                    key={index} 
+                    className="player-card" 
+                    data-testid={`player-card-${index}`}
+                    style={{ 
+                      fontSize: '6px', 
+                      background: 'white', 
+                      color: 'black',
+                      padding: '1px 2px',
+                      margin: '1px',
+                      borderRadius: '2px',
+                      display: 'inline-block'
+                    }}
+                  >
+                    {card.rank}{card.suit}
+                  </div>
+                ))}
+              </div>
+            )}
           </>
         )}
-      </PlayerSeat>
+      </PlayerSeatExtended>
     );
   };
 
   return (
     <TableContainer data-testid="poker-table">
       <PokerTableSurface>
+        {/* Game Status Display */}
+        <GameStatusDisplay data-testid="game-status">
+          {gameState.phase && gameState.phase !== 'waiting' ? (
+            <span data-testid="game-phase">{gameState.phase}</span>
+          ) : (
+            'WAITING'
+          )}
+        </GameStatusDisplay>
+
+        {/* Current Bet Display */}
+        {gameState.currentBet !== undefined && gameState.currentBet > 0 && (
+          <CurrentBetDisplay data-testid="current-bet">
+            Current Bet: ${gameState.currentBet}
+          </CurrentBetDisplay>
+        )}
+
         {/* Dealer Position (non-player) */}
         <DealerPosition>
           <div>🎴 DEALER</div>
@@ -433,26 +567,83 @@ export const PokerTable: React.FC<PokerTableProps> = ({
             <div style={{ color: '#888', fontSize: '12px' }}>Community Cards</div>
           ) : (
             gameState.communityCards.map((card, index) => (
-              <CommunityCard key={index}>
+              <CommunityCard key={index} data-testid={`community-card-${index}`}>
                 {card.rank}{card.suit}
               </CommunityCard>
             ))
           )}
         </CommunityCardsArea>
 
+        {/* Winner Celebration */}
+        {gameState.winner && (gameState.phase as string).includes('showdown') && (
+          <WinnerCelebration 
+            data-testid="winner-celebration"
+            className="celebration winner"
+          >
+            🎉 {gameState.winner} WINS! 🎉
+            <div 
+              style={{ fontSize: '14px', marginTop: '8px' }}
+              data-testid="game-over"
+              className="result final-results"
+            >
+              Final Results
+            </div>
+          </WinnerCelebration>
+        )}
+
         {/* Action Buttons */}
-        {currentPlayer && gameState.status === 'playing' && (
-          <ActionButtons>
-            <ActionButton variant="fold" onClick={() => onAction('fold')}>
+        {currentPlayer && gameState.status === 'playing' && gameState.phase !== 'finished' && !(gameState.phase as string).includes('showdown') && (
+          <ActionButtons 
+            data-testid="betting-controls"
+            className="betting-controls action-buttons"
+          >
+            <ActionButton 
+              variant="fold" 
+              onClick={() => onAction('fold')}
+              data-testid="fold-button"
+              disabled={(gameState.phase as string).includes('showdown')}
+            >
               FOLD
             </ActionButton>
-            <ActionButton variant="call" onClick={() => onAction('call')}>
+            <ActionButton 
+              variant="call" 
+              onClick={() => onAction('call')}
+              data-testid="call-button"
+              disabled={(gameState.phase as string).includes('showdown')}
+            >
               CALL
             </ActionButton>
-            <ActionButton variant="raise" onClick={() => onAction('raise', 20)}>
+            <ActionButton 
+              variant="raise" 
+              onClick={() => onAction('raise', 20)}
+              data-testid="raise-button"
+              disabled={(gameState.phase as string).includes('showdown')}
+            >
               RAISE
             </ActionButton>
           </ActionButtons>
+        )}
+
+        {/* Current Player Indicator */}
+        {gameState.currentPlayerId && !(gameState.phase as string).includes('showdown') && (
+          <div 
+            style={{
+              position: 'absolute',
+              bottom: '80px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: 'rgba(0, 255, 0, 0.8)',
+              color: 'black',
+              padding: '4px 8px',
+              borderRadius: '8px',
+              fontSize: '12px',
+              fontWeight: 'bold'
+            }}
+            data-testid="current-player-indicator"
+            className="current-player-indicator"
+          >
+            Current Player: {gameState.players.find(p => p.id === gameState.currentPlayerId)?.name || 'Unknown'}
+          </div>
         )}
       </PokerTableSurface>
     </TableContainer>

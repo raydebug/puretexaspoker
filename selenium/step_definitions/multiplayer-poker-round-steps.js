@@ -231,7 +231,7 @@ Then('all {int} players should be seated at the table', { timeout: 30000 }, asyn
     const listItems = await onlineList.findElements(By.css('li, [class*="player"], [class*="user"]'));
     console.log(`🔍 Found ${listItems.length} items in online players list`);
   } catch (error) {
-    console.log('⚠️ Online players list not found');
+    throw new Error('❌ VERIFICATION FAILED: Online players list not found - UI should display connected players');
   }
   
   console.log(`✅ Real player verification completed`);
@@ -248,7 +248,7 @@ Then('each player should have their correct chip count', { timeout: 30000 }, asy
     if (chipElements.length > 0) {
       console.log('✅ Chip displays found in UI');
     } else {
-      console.log('⚠️ No chip displays found - may be in observer mode');
+      throw new Error('❌ VERIFICATION FAILED: No chip displays found - players should show chip counts in UI');
     }
   } catch (error) {
     console.log(`⚠️ Error during chip verification: ${error.message}`);
@@ -274,7 +274,7 @@ Then('players should be visible in their seats and in the players list', { timeo
     if (onlineList.length > 0) {
       console.log('✅ Online players list found');
     } else {
-      console.log('⚠️ No online players list found');
+      throw new Error('❌ VERIFICATION FAILED: No online players list found - UI should display connected players');
     }
     
   } catch (error) {
@@ -470,7 +470,7 @@ Then('the action should be reflected in the UI', { timeout: 30000 }, async funct
       console.log('✅ Game status still visible after action');
     }
   } catch (error) {
-    console.log('⚠️ Could not verify action reflection');
+    throw new Error('❌ VERIFICATION FAILED: Could not verify action reflection in UI');
   }
   
   console.log('✅ Action reflection verification completed');
@@ -518,7 +518,7 @@ Then('the turn should move to {string}', { timeout: 30000 }, async function (pla
       console.log(`✅ Found current player indicators`);
     }
   } catch (error) {
-    console.log(`⚠️ Could not verify turn for ${playerName}`);
+    throw new Error(`❌ VERIFICATION FAILED: Could not verify turn moved to ${playerName} - UI should show current player indicator`);
   }
   
   console.log(`✅ Turn verification for ${playerName} completed`);
@@ -677,7 +677,7 @@ Then('the preflop betting round should be complete', async function () {
     await shouldContainText('[data-testid="game-status"], [data-testid="game-phase"]', 'flop', 10000);
     console.log('✅ Preflop betting round completed - moved to flop');
   } catch (error) {
-    console.log('⚠️ Could not verify preflop completion, proceeding...');
+    throw new Error('❌ VERIFICATION FAILED: Could not verify preflop betting round completion - UI should show flop phase');
   }
 });
 
@@ -1073,7 +1073,7 @@ Then('the turn should move back to {string}', async function (playerName) {
       console.log(`✅ Turn moved back to ${playerName}`);
     }
   } catch (error) {
-    console.log(`⚠️ Could not verify turn for ${playerName}`);
+    throw new Error(`❌ VERIFICATION FAILED: Could not verify turn moved to ${playerName} in UI`);
   }
 });
 
