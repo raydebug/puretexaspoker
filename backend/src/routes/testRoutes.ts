@@ -386,6 +386,73 @@ router.post('/test_advance_phase/:gameId', async (req, res) => {
 });
 
 /**
+ * TEST API: Deal hole cards to all players
+ * POST /api/test_deal_hole_cards
+ */
+router.post('/test_deal_hole_cards', async (req, res) => {
+  try {
+    const { gameId } = req.body;
+    
+    const gameManager = GameManager.getInstance();
+    const testGames = (gameManager as any).testGames;
+    
+    if (!testGames || !testGames.has(gameId)) {
+      return res.status(404).json({
+        success: false,
+        error: 'Mock game not found'
+      });
+    }
+    
+    const gameState = testGames.get(gameId);
+    
+    // Deal 2 hole cards to each active player
+    const holeCards = [
+      [{ rank: 'A', suit: 'spades' }, { rank: 'K', suit: 'hearts' }],
+      [{ rank: 'Q', suit: 'diamonds' }, { rank: 'J', suit: 'clubs' }], 
+      [{ rank: '10', suit: 'spades' }, { rank: '9', suit: 'hearts' }],
+      [{ rank: '8', suit: 'diamonds' }, { rank: '7', suit: 'clubs' }],
+      [{ rank: '6', suit: 'spades' }, { rank: '5', suit: 'hearts' }]
+    ];
+    
+    let cardIndex = 0;
+    gameState.players.forEach((player: any) => {
+      if (player.isActive && cardIndex < holeCards.length) {
+        player.cards = holeCards[cardIndex];
+        cardIndex++;
+      }
+    });
+    
+    // Force update the game state
+    testGames.set(gameId, gameState);
+    
+    console.log(`🧪 TEST API: Dealt hole cards to players in game ${gameId}`);
+    
+    // Broadcast update
+    const io = (global as any).socketIO;
+    if (io) {
+      io.to(`game:${gameId}`).emit('gameState', gameState);
+      io.emit('testGameStateUpdate', {
+        gameId,
+        gameState: gameState,
+        message: 'Hole cards dealt'
+      });
+    }
+    
+    res.json({
+      success: true,
+      gameState,
+      message: 'Hole cards dealt to all players'
+    });
+  } catch (error) {
+    console.error('❌ TEST API: Error dealing hole cards:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to deal hole cards'
+    });
+  }
+});
+
+/**
  * TEST API: Deal flop (3 community cards)
  * POST /api/test_deal_flop
  */

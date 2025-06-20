@@ -114,6 +114,20 @@ Given('I have {int} players already seated:', { timeout: 30000 }, async function
       console.log(`✅ Successfully created mock game with ${players.length} players`);
       console.log(`✅ Game ID: ${createResponse.data.gameId}`);
       
+      // Deal hole cards to all players so they can see their cards in the UI
+      try {
+        const holeCardsResponse = await axios.post(`${backendApiUrl}/api/test_deal_hole_cards`, {
+          gameId: testGameId
+        });
+        if (holeCardsResponse.data.success) {
+          console.log(`✅ Hole cards dealt to all players`);
+        } else {
+          console.log(`⚠️ Could not deal hole cards: ${holeCardsResponse.data.error}`);
+        }
+      } catch (error) {
+        console.log(`⚠️ Error dealing hole cards: ${error.message}`);
+      }
+      
       // Wait a moment for WebSocket propagation
       await this.driver.sleep(2000);
       
