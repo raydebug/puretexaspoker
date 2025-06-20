@@ -122,15 +122,11 @@ Given('I have {int} players already seated:', { timeout: 30000 }, async function
         console.log('🎯 Browser user now identified as TestPlayer1');
       `);
       
-      // Step 2: Trigger a page refresh to apply the new identity
-      console.log('🔄 Refreshing page to apply TestPlayer1 identity...');
-      await this.driver.refresh();
-      await this.driver.sleep(2000);
-      
-      // Step 3: Re-navigate to the game page with TestPlayer1 identity
+      // Step 2: Re-navigate to the game page with TestPlayer1 identity (this applies the new localStorage)
+      console.log('🔄 Re-navigating to apply TestPlayer1 identity...');
       const gameUrl = `${baseUrl}/game/${testGameId}`;
       await this.driver.get(gameUrl);
-      await this.driver.sleep(2000);
+      await this.driver.sleep(3000);
       
       // Deal hole cards to all players so they can see their cards in the UI
       try {
