@@ -515,56 +515,42 @@ Then('the turn should move to {string}', { timeout: 30000 }, async function (pla
 Then('{string} chip count should decrease to {string}', { timeout: 30000 }, async function (playerName, expectedChips) {
   console.log(`🔍 Verifying ${playerName} chip count decreases to ${expectedChips}`);
   
-  // First check the game state to see current chip counts
-  const gameState = await this.driver.executeScript(`
-    if (window.socketService && window.socketService.gameState) {
-      return window.socketService.gameState;
-    }
-    return null;
-  `);
-  
-  if (gameState && gameState.players) {
-    console.log(`🔍 Current chip counts in game state:`);
-    gameState.players.forEach(player => {
-      console.log(`  - ${player.name}: ${player.chips} chips`);
-    });
+  // CRITICAL FIX: Check backend game state directly via API instead of unreliable frontend state
+  try {
+    const response = await axios.get(`${backendApiUrl}/api/test_get_mock_game/${testGameId}`);
     
-    // Find the specific player
-    const player = gameState.players.find(p => p.name === playerName);
-    if (player) {
-      const actualChips = player.chips.toString();
-      if (actualChips === expectedChips) {
-        console.log(`✅ ${playerName} chip count ${expectedChips} verified in game state`);
-        return;
+    if (response.data.success && response.data.gameState) {
+      const gameState = response.data.gameState;
+      console.log('🔍 Current chip counts from backend:');
+      gameState.players.forEach(player => {
+        console.log(`  - ${player.name}: ${player.chips} chips, currentBet: ${player.currentBet}`);
+      });
+      
+      const player = gameState.players.find(p => p.name === playerName);
+      if (player) {
+        const actualChips = player.chips.toString();
+        if (actualChips === expectedChips) {
+          console.log(`✅ ${playerName} chip count ${expectedChips} verified in backend`);
+          return; // Success - test passes
+        } else {
+          console.log(`❌ ${playerName} expected ${expectedChips} chips, but backend shows ${actualChips}`);
+          throw new Error(`❌ BACKEND VERIFICATION FAILED: ${playerName} should have ${expectedChips} chips but has ${actualChips}`);
+        }
       } else {
-        console.log(`⚠️ ${playerName} expected ${expectedChips} chips, but has ${actualChips} in game state`);
+        console.log(`❌ ${playerName} not found in backend game state`);
+        throw new Error(`❌ BACKEND VERIFICATION FAILED: ${playerName} not found in game state`);
       }
     } else {
-      console.log(`⚠️ ${playerName} not found in game state`);
+      console.log(`❌ Could not retrieve backend game state`);
+      throw new Error(`❌ BACKEND VERIFICATION FAILED: Could not retrieve game state`);
     }
-  }
-  
-  // Check chip count in UI as fallback
-  try {
-    // Look for player-specific chip displays
-    const chipElements = await this.driver.findElements(By.css(`[data-testid*="${playerName}"] [data-testid*="chips"], [data-testid*="player-chips"]`));
-    if (chipElements.length > 0) {
-      for (const element of chipElements) {
-        const text = await element.getText();
-        console.log(`🔍 Found chip element text: "${text}"`);
-        if (text.includes(expectedChips)) {
-          console.log(`✅ ${playerName} chip count ${expectedChips} verified in UI`);
-          return;
-        }
-      }
-    }
-    console.log(`⚠️ Could not verify ${playerName} chip count ${expectedChips} in UI`);
   } catch (error) {
-    console.log(`⚠️ Error verifying ${playerName} chips: ${error.message}`);
+    if (error.message.includes('BACKEND VERIFICATION FAILED')) {
+      throw error; // Re-throw verification failures
+    }
+    console.log(`❌ Error checking backend: ${error.message}`);
+    throw new Error(`❌ BACKEND VERIFICATION FAILED: ${error.message}`);
   }
-  
-  // CRITICAL: If verification fails, the test should fail
-  throw new Error(`❌ VERIFICATION FAILED: ${playerName} chip count should be ${expectedChips} but verification failed`);
 });
 
 // Community cards steps
