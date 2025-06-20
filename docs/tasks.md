@@ -107,9 +107,27 @@
   * **Result**: All 74 test steps now pass successfully in 1m09s
   * **Files Fixed**: `selenium/step_definitions/multiplayer-poker-round-steps.js`, `selenium/step_definitions/hooks.js`
 
+## ✅ Recently Completed
+
+### High Priority  
+- **TestPlayer1 Hole Cards Visibility in Tests** ✅ **COMPLETE**
+  * **Issue**: In Selenium tests, TestPlayer1 (representing current player) could not see their hole cards face up during gameplay
+  * **Root Cause**: Browser session was not properly associated with TestPlayer1 - backend created TestPlayer1 but frontend didn't know browser user was TestPlayer1
+  * **Solution**: 
+    - Modified test to set `localStorage.setItem('nickname', 'TestPlayer1')` to identify browser as TestPlayer1
+    - Re-navigate to game page to apply localStorage identity 
+    - Enhanced debugging to verify frontend visibility logic is working
+    - Now browser user is properly linked to TestPlayer1 game data
+  * **Result**: 
+    - ✅ TestPlayer1 can see their 2 hole cards face up (A♠ K♥) throughout entire game
+    - ✅ Enhanced visibility logic successfully detects TestPlayer1 by nickname
+    - ✅ All 74 test steps pass with proper card display functionality
+    - ✅ Complete poker round verification: preflop → flop → turn → river → showdown
+  * **Files Enhanced**: `selenium/step_definitions/multiplayer-poker-round-steps.js` - Added TestPlayer1 identity application logic
+
 ## 🔄 Currently Working On
 
-### High Priority
+### Medium Priority
 - **Observer to Player Transition Implementation Verification**
   * **Test Suite**: `cypress/e2e/observer-to-player-transition.cy.ts` (consolidated - 425 lines)
   * **Requirements**: User appears in observers list when joining table, then moves to players list after taking seat
