@@ -99,18 +99,19 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({ card, delay, isVisib
     return null;
   }
 
-  const getCardColor = (suit: string) => {
-    return suit === 'hearts' || suit === 'diamonds' ? 'red' : 'black';
-  };
-
   const getSuitSymbol = (suit: string) => {
-    switch (suit) {
+    switch (suit.toLowerCase()) {
       case 'hearts': return '♥';
       case 'diamonds': return '♦';
       case 'clubs': return '♣';
       case 'spades': return '♠';
-      default: return '';
+      default: return suit; // fallback to original if already a symbol
     }
+  };
+
+  const getCardColor = (suit: string) => {
+    const suitLower = suit.toLowerCase();
+    return suitLower === 'hearts' || suitLower === 'diamonds' || suit === '♥' || suit === '♦' ? 'red' : 'black';
   };
 
   return (

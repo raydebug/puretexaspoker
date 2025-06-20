@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Display Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px;
+            background: #1b4d3e;
+            color: white;
+        }
+        .card-test {
+            background: white;
+            color: black;
+            border: 2px solid #333;
+            border-radius: 8px;
+            width: 50px;
+            height: 70px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 5px;
+            font-size: 18px;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        .red { color: #d40000; }
+        .black { color: #000; }
+        .community-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            width: 40px;
+            height: 56px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #555;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Card Display Test</h1>
+    
+    <div class="section">
+        <h2>Player Hole Cards (Your Cards)</h2>
+        <p>These are the 2 cards you should see as a player:</p>
+        <div class="card-test red">A♥</div>
+        <div class="card-test black">K♠</div>
+    </div>
+    
+    <div class="section">
+        <h2>Community Cards</h2>
+        <p>These are the cards in the center of the table:</p>
+        <div class="community-card red">Q♦</div>
+        <div class="community-card black">J♣</div>
+        <div class="community-card red">10♥</div>
+        <div class="community-card black">9♠</div>
+        <div class="community-card red">8♦</div>
+    </div>
+    
+    <div class="section">
+        <h2>Original vs Fixed Format</h2>
+        <h3>Before Fix (what you were seeing):</h3>
+        <div class="community-card">hearts</div>
+        <div class="community-card">spades</div>
+        <div class="community-card">[blank]</div>
+        
+        <h3>After Fix (what you should see now):</h3>
+        <div class="community-card red">A♥</div>
+        <div class="community-card black">K♠</div>
+        <div class="community-card red">Q♦</div>
+    </div>
+    
+    <div class="section">
+        <h2>Debug Info</h2>
+        <p>If you're still having issues, check:</p>
+        <ul>
+            <li>Are you in observer mode? (Hole cards only show for players)</li>
+            <li>Check browser console for debug messages</li>
+            <li>Verify you can take a seat at the table</li>
+            <li>Community cards should show suit symbols (♠♥♦♣)</li>
+        </ul>
+    </div>
+    
+    <script>
+        console.log('Card Display Test - Check that:');
+        console.log('1. Player hole cards appear at bottom of poker table');
+        console.log('2. Community cards show proper suit symbols');
+        console.log('3. Red cards are red (hearts/diamonds)');
+        console.log('4. Black cards are black (spades/clubs)');
+    </script>
+</body>
+</html> 

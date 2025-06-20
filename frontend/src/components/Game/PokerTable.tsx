@@ -287,6 +287,7 @@ const CommunityCard = styled.div`
   font-size: 16px;
   font-weight: bold;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  color: ${props => props.color || 'black'};
 `;
 
 const PotDisplay = styled.div`
@@ -432,6 +433,45 @@ const POSITION_NAMES = [
   'BU',    // 9. Button - Top left
 ];
 
+// Add player hole cards display
+const PlayerHoleCards = styled.div`
+  position: absolute;
+  bottom: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+`;
+
+const HoleCard = styled.div<{ color?: string }>`
+  width: 50px;
+  height: 70px;
+  background: white;
+  border: 2px solid #333;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: bold;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  color: ${props => props.color || 'black'};
+`;
+
+const HoleCardsLabel = styled.div`
+  position: absolute;
+  bottom: 200px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.8);
+  color: #ffd700;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+`;
+
 export const PokerTable: React.FC<PokerTableProps> = ({ 
   gameState, 
   currentPlayer, 
@@ -449,9 +489,29 @@ export const PokerTable: React.FC<PokerTableProps> = ({
       pot: gameState.pot,
       communityCards: gameState.communityCards.length,
       activePlayers: gameState.players.filter(p => p.isActive).length,
-      winner: gameState.winner
+      winner: gameState.winner,
+      currentPlayer: currentPlayer?.name,
+      isObserver: isObserver
     });
-  }, [gameState]);
+  }, [gameState, currentPlayer, isObserver]);
+
+  // Helper function to get suit symbol
+  const getSuitSymbol = (suit: string) => {
+    switch (suit.toLowerCase()) {
+      case 'hearts': return '♥';
+      case 'diamonds': return '♦';
+      case 'clubs': return '♣';
+      case 'spades': return '♠';
+      default: return suit; // fallback to original
+    }
+  };
+
+  // Helper function to get card color
+  const getCardColor = (suit: string) => {
+    const suitLower = suit.toLowerCase();
+    return suitLower === 'hearts' || suitLower === 'diamonds' ? '#d40000' : '#000';
+  };
+
   const handleSeatClick = (seatNumber: number) => {
     // Allow seat selection if seat is empty and callback is provided
     const player = gameState.players.find(p => p.seatNumber === seatNumber);
@@ -567,12 +627,34 @@ export const PokerTable: React.FC<PokerTableProps> = ({
             <div style={{ color: '#888', fontSize: '12px' }}>Community Cards</div>
           ) : (
             gameState.communityCards.map((card, index) => (
-              <CommunityCard key={index} data-testid={`community-card-${index}`}>
-                {card.rank}{card.suit}
+              <CommunityCard 
+                key={index} 
+                data-testid={`community-card-${index}`}
+                color={getCardColor(card.suit)}
+              >
+                {card.rank}{getSuitSymbol(card.suit)}
               </CommunityCard>
             ))
           )}
         </CommunityCardsArea>
+
+        {/* Player Hole Cards - Only show for current player when not observer */}
+        {!isObserver && currentPlayer && currentPlayer.cards && currentPlayer.cards.length === 2 && (
+          <>
+            <HoleCardsLabel>Your Cards</HoleCardsLabel>
+            <PlayerHoleCards data-testid="player-hole-cards">
+              {currentPlayer.cards.map((card, index) => (
+                <HoleCard 
+                  key={index} 
+                  data-testid={`hole-card-${index}`}
+                  color={getCardColor(card.suit)}
+                >
+                  {card.rank}{getSuitSymbol(card.suit)}
+                </HoleCard>
+              ))}
+            </PlayerHoleCards>
+          </>
+        )}
 
         {/* Winner Celebration */}
         {gameState.winner && (gameState.phase as string).includes('showdown') && (
@@ -643,6 +725,27 @@ export const PokerTable: React.FC<PokerTableProps> = ({
             className="current-player-indicator"
           >
             Current Player: {gameState.players.find(p => p.id === gameState.currentPlayerId)?.name || 'Unknown'}
+          </div>
+        )}
+
+        {/* Debug info for troubleshooting */}
+        {process.env.NODE_ENV === 'development' && (
+          <div style={{
+            position: 'absolute',
+            top: '10px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(0,0,0,0.8)',
+            color: 'white',
+            padding: '8px',
+            borderRadius: '4px',
+            fontSize: '10px',
+            zIndex: 20
+          }}>
+            Observer: {isObserver ? 'Yes' : 'No'} | 
+            Player: {currentPlayer?.name || 'None'} | 
+            Cards: {currentPlayer?.cards?.length || 0} |
+            Community: {gameState.communityCards.length}
           </div>
         )}
       </PokerTableSurface>

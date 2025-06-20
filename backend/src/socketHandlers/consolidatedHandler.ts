@@ -364,8 +364,72 @@ export function registerConsolidatedHandlers(io: Server) {
         
         // Validate session data
         const { gameId, tableId, dbTableId, nickname, playerId } = socket.data;
+        console.log(`[CONSOLIDATED] Session data check:`, {
+          gameId: !!gameId,
+          tableId: !!tableId, 
+          dbTableId: !!dbTableId,
+          nickname: !!nickname,
+          playerId: !!playerId,
+          socketId: socket.id
+        });
+        
         if (!gameId || !tableId || !dbTableId || !nickname || !playerId) {
-          throw new Error('Invalid session data. Please rejoin the table.');
+          console.log(`[CONSOLIDATED] Missing session data, attempting to recover...`);
+          
+          // Try to recover session data from authenticated users
+          let recoveredNickname = null;
+          for (const [nick, user] of authenticatedUsers.entries()) {
+            if (user.socketId === socket.id) {
+              recoveredNickname = nick;
+              break;
+            }
+          }
+          
+          if (recoveredNickname) {
+            console.log(`[CONSOLIDATED] Found authenticated user: ${recoveredNickname}, attempting session recovery`);
+            
+            // Try to find active table/game for this user
+            const userLocation = await locationManager.getUserLocation(socket.id);
+            if (userLocation && userLocation.table) {
+              // Reconstruct session data
+              const lobbyTable = tableManager.getTable(userLocation.table);
+              if (lobbyTable) {
+                // Find database table
+                const dbTableName = `${lobbyTable.name} (ID: ${userLocation.table})`;
+                const dbTable = await prisma.table.findFirst({
+                  where: { name: dbTableName }
+                });
+                
+                if (dbTable) {
+                  // Find active game
+                  const existingGame = await prisma.game.findFirst({
+                    where: {
+                      tableId: dbTable.id,
+                      status: { in: ['waiting', 'active'] }
+                    }
+                  });
+                  
+                  if (existingGame) {
+                    // Restore session data
+                    socket.data.buyIn = buyIn || 200;
+                    socket.data.gameId = existingGame.id;
+                    socket.data.tableId = userLocation.table;
+                    socket.data.dbTableId = dbTable.id;
+                    socket.data.nickname = recoveredNickname;
+                    socket.data.playerId = socket.id;
+                    
+                    console.log(`[CONSOLIDATED] Session data recovered successfully for ${recoveredNickname}`);
+                  }
+                }
+              }
+            }
+          }
+          
+          // Final validation after recovery attempt
+          const { gameId: finalGameId, tableId: finalTableId, dbTableId: finalDbTableId, nickname: finalNickname, playerId: finalPlayerId } = socket.data;
+          if (!finalGameId || !finalTableId || !finalDbTableId || !finalNickname || !finalPlayerId) {
+            throw new Error('Invalid session data. Please rejoin the table.');
+          }
         }
 
         // Validate inputs
@@ -374,7 +438,7 @@ export function registerConsolidatedHandlers(io: Server) {
         }
 
         // Get table for buy-in validation
-        const lobbyTable = tableManager.getTable(tableId);
+        const lobbyTable = tableManager.getTable(socket.data.tableId);
         if (!lobbyTable) {
           throw new Error('Table not found');
         }
@@ -385,31 +449,31 @@ export function registerConsolidatedHandlers(io: Server) {
 
         // Check seat availability - but ignore if it's the same player
         const existingPlayerTable = await prisma.playerTable.findFirst({
-          where: { tableId: dbTableId, seatNumber }
+          where: { tableId: socket.data.dbTableId, seatNumber }
         });
 
-        if (existingPlayerTable && existingPlayerTable.playerId !== playerId) {
+        if (existingPlayerTable && existingPlayerTable.playerId !== socket.data.playerId) {
           throw new Error(`Seat ${seatNumber} is already taken`);
         }
 
         // Clean up any existing seat for this player at this table
         await prisma.playerTable.deleteMany({
           where: { 
-            playerId,
-            tableId: dbTableId 
+            playerId: socket.data.playerId,
+            tableId: socket.data.dbTableId 
           }
         });
 
         // Get game service (gameManager is source of truth)
-        const gameService = gameManager.getGame(gameId);
+        const gameService = gameManager.getGame(socket.data.gameId);
         if (!gameService) {
           throw new Error('Game not found');
         }
 
         // Create player data
         const playerData = {
-          id: playerId,
-          name: nickname,
+          id: socket.data.playerId,
+          name: socket.data.nickname,
           chips: buyIn,
           isActive: true,
           isDealer: false,
@@ -430,8 +494,8 @@ export function registerConsolidatedHandlers(io: Server) {
         // Create database record
         await prisma.playerTable.create({
           data: {
-            playerId,
-            tableId: dbTableId,
+            playerId: socket.data.playerId,
+            tableId: socket.data.dbTableId,
             seatNumber,
             buyIn
           }
@@ -441,29 +505,29 @@ export function registerConsolidatedHandlers(io: Server) {
         socket.data.buyIn = buyIn;
 
         // Update location from observer to seated player
-        await locationManager.moveToTableSeat(socket.id, nickname, tableId, seatNumber);
+        await locationManager.moveToTableSeat(socket.id, socket.data.nickname, socket.data.tableId, seatNumber);
 
         // Handle reconnection
-        handlePlayerReconnection(playerId, nickname, gameId);
+        handlePlayerReconnection(socket.data.playerId, socket.data.nickname, socket.data.gameId);
 
         // Get updated game state from gameManager (source of truth)
         const gameState = gameService.getGameState();
 
         // Emit success events
-        socket.emit('seatTaken', { seatNumber, playerId, gameState });
-        socket.emit('tableJoined', { tableId, role: 'player', buyIn, gameId });
-        socket.emit('gameJoined', { gameId, playerId, gameState });
+        socket.emit('seatTaken', { seatNumber, playerId: socket.data.playerId, gameState });
+        socket.emit('tableJoined', { tableId: socket.data.tableId, role: 'player', buyIn, gameId: socket.data.gameId });
+        socket.emit('gameJoined', { gameId: socket.data.gameId, playerId: socket.data.playerId, gameState });
 
         // Broadcast updates
-        io.to(`game:${gameId}`).emit('gameState', gameState);
-        io.to(`game:${gameId}`).emit('location:updated', {
+        io.to(`game:${socket.data.gameId}`).emit('gameState', gameState);
+        io.to(`game:${socket.data.gameId}`).emit('location:updated', {
           playerId: socket.id,
-          nickname,
-          table: tableId,
+          nickname: socket.data.nickname,
+          table: socket.data.tableId,
           seat: seatNumber
         });
 
-        console.log(`[CONSOLIDATED] Successfully seated ${nickname} at seat ${seatNumber}`);
+        console.log(`[CONSOLIDATED] Successfully seated ${socket.data.nickname} at seat ${seatNumber}`);
         
       } catch (error) {
         handleError(socket, error as Error, 'takeSeat', { seatNumber, buyIn });
