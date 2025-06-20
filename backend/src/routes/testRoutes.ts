@@ -59,6 +59,27 @@ router.post('/test_create_mock_game', async (req, res) => {
     (gameManager as any).testGames = (gameManager as any).testGames || new Map();
     (gameManager as any).testGames.set(gameId, mockGameState);
     
+    // CRITICAL FIX: Broadcast the game state to all connected clients in the game room
+    // This makes the mock data visible to the frontend immediately
+    const io = (global as any).socketIO;
+    if (io) {
+      console.log(`🔄 TEST API: Broadcasting mock game state to room game:${gameId}`);
+      
+      // Broadcast to all clients in the game room
+      io.to(`game:${gameId}`).emit('gameState', mockGameState);
+      
+      // Also broadcast to all clients (for debugging/fallback)
+      io.emit('testGameStateUpdate', {
+        gameId,
+        gameState: mockGameState,
+        message: 'Test game state created'
+      });
+      
+      console.log(`📡 TEST API: Mock game state broadcasted to WebSocket clients`);
+    } else {
+      console.log(`⚠️ TEST API: Socket.IO instance not available for broadcasting`);
+    }
+    
     console.log(`✅ TEST API: Mock game ${gameId} created successfully`);
     
     res.json({

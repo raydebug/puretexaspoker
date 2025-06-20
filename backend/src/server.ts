@@ -72,6 +72,9 @@ const io = new Server(httpServer, {
   }
 });
 
+// Make Socket.IO instance available globally for test APIs
+(global as any).socketIO = io;
+
 app.use(cors());
 app.use(express.json());
 

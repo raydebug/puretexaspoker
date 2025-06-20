@@ -404,6 +404,39 @@ export class SocketService {
       }
     });
 
+    // CRITICAL FIX: Handle test game state updates from Selenium tests
+    socket.on('testGameStateUpdate', (data: { gameId: string; gameState: GameState; message?: string }) => {
+      console.log('🧪 FRONTEND: Received testGameStateUpdate event:', data);
+      console.log('🧪 FRONTEND: Test game state data:', data.gameState);
+      
+      if (data.gameState) {
+        // Update local game state
+        this.gameState = data.gameState;
+        this.currentGameId = data.gameId;
+        
+        // Clear current player if we're setting up test data
+        this.currentPlayer = null;
+        
+        // Emit the game state update to all listeners
+        this.emitGameStateUpdate(data.gameState);
+        
+        // Log for debugging
+        console.log(`🧪 FRONTEND: Updated game state with ${data.gameState.players.length} test players`);
+        
+        // Force update online users with test players
+        if (data.gameState.players && data.gameState.players.length > 0) {
+          const playerNames = data.gameState.players.map(p => p.name);
+          console.log('🧪 FRONTEND: Test player names:', playerNames);
+          
+          // Update observers with test players
+          this.observers = [...playerNames, 'TestPlayer'];
+          this.emitOnlineUsersUpdate();
+        }
+        
+        console.log('🧪 FRONTEND: Test game state injection completed');
+      }
+    });
+
     // Handle table joining results
     socket.on('tableJoined', (data: { tableId: number; role: 'player' | 'observer'; buyIn: number; gameId?: string }) => {
       console.log('DEBUG: Frontend received tableJoined event:', data);

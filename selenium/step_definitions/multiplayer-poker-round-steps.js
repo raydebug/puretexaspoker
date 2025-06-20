@@ -306,12 +306,16 @@ Then('each player should be verified in their correct seat with proper order', a
       { nickname: 'TestPlayer5', seat: 6 }
     ];
     
+    console.log('🔍 Available players in game state:', gameState.players.map(p => `${p.name || p.nickname} (seat ${p.seatNumber})`));
+    
     expectedSeating.forEach(expected => {
-      const gamePlayer = gameState.players.find(p => p.nickname === expected.nickname);
+      // Try both 'name' and 'nickname' properties since test API uses 'name'
+      const gamePlayer = gameState.players.find(p => p.name === expected.nickname || p.nickname === expected.nickname);
       if (gamePlayer) {
-        console.log(`✅ ${expected.nickname} → Seat ${gamePlayer.seatNumber} ${gamePlayer.seatNumber === expected.seat ? '(CORRECT)' : '(Expected: ' + expected.seat + ')'}`);
+        console.log(`✅ ${expected.nickname} → Found at seat ${gamePlayer.seatNumber} ${gamePlayer.seatNumber === expected.seat ? '(CORRECT)' : '(Expected: ' + expected.seat + ')'}`);
       } else {
         console.log(`⚠️ ${expected.nickname} → NOT FOUND in game state`);
+        console.log(`🔍 Available player names: [${gameState.players.map(p => p.name || p.nickname).join(', ')}]`);
       }
     });
   } else {
@@ -553,7 +557,7 @@ Then('I should see {int} community cards displayed', async function (cardCount) 
   console.log(`🔍 Verifying ${cardCount} community cards displayed`);
   
   try {
-    const communityCards = await getElements('[data-testid*="community-card"], [class*="community-card"]');
+    const communityCards = await this.driver.findElements(By.css('[data-testid*="community-card"], [class*="community-card"]'));
     console.log(`Found ${communityCards.length} community card elements`);
     
     if (communityCards.length >= cardCount) {
@@ -698,7 +702,7 @@ When('the turn card is dealt', async function () {
     console.log(`⚠️ Could not deal turn: ${error.message}`);
   }
   
-  await getDriver().sleep(2000);
+  await this.driver.sleep(2000);
 });
 
 When('the turn betting round begins', async function () {
@@ -736,7 +740,7 @@ When('the river card is dealt', async function () {
     console.log(`⚠️ Could not deal river: ${error.message}`);
   }
   
-  await getDriver().sleep(2000);
+  await this.driver.sleep(2000);
 });
 
 When('the river betting round begins', async function () {
@@ -774,7 +778,7 @@ When('the showdown phase begins', async function () {
     console.log(`⚠️ Could not trigger showdown: ${error.message}`);
   }
   
-  await getDriver().sleep(3000);
+  await this.driver.sleep(3000);
 });
 
 Then('the remaining players\' cards should be revealed', async function () {
