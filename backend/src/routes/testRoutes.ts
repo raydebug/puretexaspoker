@@ -235,6 +235,26 @@ router.post('/test_player_action/:gameId', async (req, res) => {
     
     console.log(`🧪 TEST API: Player ${playerId} performed ${action} in game ${gameId}`);
     
+    // CRITICAL FIX: Broadcast the updated game state to all connected clients
+    const io = (global as any).socketIO;
+    if (io) {
+      console.log(`🔄 TEST API: Broadcasting updated game state after ${action} by ${playerId}`);
+      
+      // Broadcast to all clients in the game room
+      io.to(`game:${gameId}`).emit('gameState', gameState);
+      
+      // Also broadcast test game state update
+      io.emit('testGameStateUpdate', {
+        gameId,
+        gameState: gameState,
+        message: `Player ${playerId} performed ${action}${amount ? ` with amount ${amount}` : ''}`
+      });
+      
+      console.log(`📡 TEST API: Updated game state broadcasted after player action`);
+    } else {
+      console.log(`⚠️ TEST API: Socket.IO instance not available for broadcasting`);
+    }
+    
     res.json({
       success: true,
       gameState,
