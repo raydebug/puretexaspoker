@@ -91,26 +91,58 @@ Given('I have {int} players already seated:', (playerCount: number, dataTable: a
         // Now inject this game state into the frontend
         cy.window().then((win) => {
           if ((win as any).socketService) {
+            cy.log('🔧 DEBUGGING: About to inject game state into frontend');
+            cy.log('🔧 Game state from API:', JSON.stringify(response.body.gameState, null, 2));
+            
             // Update the frontend's game state with our test data
             (win as any).socketService.gameState = response.body.gameState;
             
-            // Trigger UI updates
+            // FORCE MULTIPLE UI UPDATE METHODS
+            // Method 1: gameStateListeners
             if ((win as any).socketService.gameStateListeners) {
+              cy.log('🔧 Triggering gameStateListeners');
               (win as any).socketService.gameStateListeners.forEach((listener: any) => {
                 listener(response.body.gameState);
               });
             }
             
+            // Method 2: Direct React state update if available
+            if ((win as any).React && (win as any).forceUpdate) {
+              cy.log('🔧 Forcing React update');
+              (win as any).forceUpdate();
+            }
+            
+            // Method 3: Emit socketService events manually
+            if ((win as any).socketService.emit) {
+              cy.log('🔧 Emitting socket events');
+              (win as any).socketService.emit('gameStateUpdate', response.body.gameState);
+              (win as any).socketService.emit('playersUpdate', response.body.gameState.players);
+            }
+            
+            // Method 4: Update any global game state variables
+            if ((win as any).gameState) {
+              (win as any).gameState = response.body.gameState;
+            }
+            
+            // Method 5: Trigger window events for UI refresh
+            const gameUpdateEvent = new CustomEvent('gameStateUpdate', { 
+              detail: response.body.gameState 
+            });
+            win.dispatchEvent(gameUpdateEvent);
+            
             // Update online users to include our test players
             const playerNames = testPlayers.map(p => p.nickname);
             if ((win as any).socketService.onlineUsersCallback) {
+              cy.log('🔧 Updating online users callback');
               (win as any).socketService.onlineUsersCallback(
                 response.body.gameState.players,
                 ['TestPlayer', ...playerNames]
               );
             }
             
-            cy.log('✅ Frontend game state updated with test players');
+            cy.log('✅ Frontend game state injection completed with multiple update methods');
+          } else {
+            cy.log('❌ socketService not found in window');
           }
         });
       } else {
@@ -119,14 +151,79 @@ Given('I have {int} players already seated:', (playerCount: number, dataTable: a
     });
   });
   
-  // Wait for all operations to complete
-  cy.wait(2000);
+  // Wait for all operations to complete and UI to update
+  cy.wait(5000);
   cy.log(`✅ ${playerCount} players setup completed`);
+  
+  // FINAL VERIFICATION: Force UI refresh and check if players are visible
+  cy.window().then((win) => {
+    // Try to find React components and force re-render
+    const reactRoot = win.document.querySelector('#root');
+    if (reactRoot && (reactRoot as any)._reactInternalFiber) {
+      cy.log('🔧 Found React root, attempting to trigger update');
+      // Trigger a React update by dispatching a custom event
+      const reactUpdateEvent = new CustomEvent('forceUpdate');
+      reactRoot.dispatchEvent(reactUpdateEvent);
+    }
+    
+    // Force browser repaint
+    win.document.body.style.display = 'none';
+    win.document.body.offsetHeight; // Trigger reflow
+    win.document.body.style.display = '';
+    
+    cy.log('🔧 Forced browser repaint completed');
+  });
 });
 
 // UI-based verification steps
 Then('all {int} players should be seated at the table', (playerCount: number) => {
   cy.log(`🔍 Verifying ${playerCount} REAL players are visible in UI`);
+  
+  // LOG CURRENT PLAYER SEATING STATUS BEFORE COUNTDOWN
+  cy.window().then((win) => {
+    if ((win as any).socketService) {
+      const currentGameState = (win as any).socketService.getGameState();
+      if (currentGameState && currentGameState.players) {
+        cy.log(`\n📊 PRE-COUNTDOWN SEATING STATUS:`);
+        cy.log(`   Found ${currentGameState.players.length} players in game state`);
+        
+        const expectedSeating = [
+          { nickname: 'TestPlayer1', seat: 1 },
+          { nickname: 'TestPlayer2', seat: 2 },
+          { nickname: 'TestPlayer3', seat: 3 },
+          { nickname: 'TestPlayer4', seat: 5 },
+          { nickname: 'TestPlayer5', seat: 6 }
+        ];
+        
+        const playerIds: { [key: string]: string } = {
+          'TestPlayer1': 'test-player-1',
+          'TestPlayer2': 'test-player-2',
+          'TestPlayer3': 'test-player-3',
+          'TestPlayer4': 'test-player-5',
+          'TestPlayer5': 'test-player-6'
+        };
+        
+        expectedSeating.forEach(expected => {
+          const playerId = playerIds[expected.nickname];
+          const gamePlayer = currentGameState.players.find((p: any) => p.id === playerId);
+          
+          if (gamePlayer) {
+            if (gamePlayer.seatNumber === expected.seat) {
+              cy.log(`   ✅ ${expected.nickname} → Seat ${gamePlayer.seatNumber} (CORRECT)`);
+            } else {
+              cy.log(`   ❌ ${expected.nickname} → Seat ${gamePlayer.seatNumber} (Expected: ${expected.seat})`);
+            }
+          } else {
+            cy.log(`   ⚠️ ${expected.nickname} → NOT FOUND in game state`);
+          }
+        });
+        
+        cy.log(`\n🕐 Starting 60-second manual inspection countdown...`);
+      } else {
+        cy.log(`\n⚠️ No game state available before countdown`);
+      }
+    }
+  });
   
   // Create countdown popup overlay
   cy.window().then((win) => {
@@ -158,7 +255,7 @@ Then('all {int} players should be seated at the table', (playerCount: number) =>
       <div style="font-size: 14px; margin-bottom: 10px;">
         About to verify ${playerCount} players
       </div>
-      <div style="font-size: 32px; color: #ff6b6b;" id="countdown-number">5</div>
+      <div style="font-size: 32px; color: #ff6b6b;" id="countdown-number">60</div>
       <div style="font-size: 12px; margin-top: 5px;">
         Inspect UI now!
       </div>
@@ -168,7 +265,7 @@ Then('all {int} players should be seated at the table', (playerCount: number) =>
     win.document.body.appendChild(overlay);
     
     // Start countdown
-    let count = 5;
+    let count = 60;
     const countdownEl = win.document.getElementById('countdown-number');
     
     const interval = setInterval(() => {
@@ -187,7 +284,7 @@ Then('all {int} players should be seated at the table', (playerCount: number) =>
   });
   
   // Wait for countdown to complete
-  cy.wait(5500);
+  cy.wait(60500);
   cy.log(`🔔 Countdown complete - proceeding with verification...`);
   
   // First verify we're on the game page
