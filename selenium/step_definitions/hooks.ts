@@ -1,8 +1,8 @@
 import { Before, After, BeforeAll, AfterAll, Status } from '@cucumber/cucumber'
-import { seleniumManager } from '../config/selenium.config'
-import { WebDriverHelpers } from '../utils/webdriverHelpers'
+const { seleniumManager } = require('../config/selenium.config')
+const { WebDriverHelpers } = require('../utils/webdriverHelpers')
 
-let helpers: WebDriverHelpers
+let helpers: any
 
 // Global setup - runs once before all scenarios
 BeforeAll(async function() {

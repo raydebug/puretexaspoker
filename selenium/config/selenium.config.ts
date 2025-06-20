@@ -140,4 +140,7 @@ export class SeleniumManager {
 }
 
 // Global instance
-export const seleniumManager = new SeleniumManager() 
+export const seleniumManager = new SeleniumManager()
+
+// CommonJS exports for compatibility
+module.exports = { SeleniumManager, seleniumManager } 

@@ -220,4 +220,7 @@ export class WebDriverHelpers {
   async getPageTitle(): Promise<string> {
     return await this.driver.getTitle()
   }
-} 
+}
+
+// CommonJS exports for compatibility
+module.exports = { WebDriverHelpers } 

@@ -1,9 +1,12 @@
 import { Given, When, Then } from '@cucumber/cucumber'
-import { WebDriverHelpers } from '../utils/webdriverHelpers'
+const { WebDriverHelpers } = require('../utils/webdriverHelpers')
+
+// Type alias for cleaner code
+type Helpers = any
 
 // Background steps
 Given('I am on the poker lobby page', async function() {
-  const helpers: WebDriverHelpers = this.helpers
+  const helpers: any = this.helpers
   await helpers.navigateTo('/')
   console.log('✅ Navigated to poker lobby page')
 })
