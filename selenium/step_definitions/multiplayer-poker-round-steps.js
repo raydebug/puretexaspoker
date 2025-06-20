@@ -479,20 +479,32 @@ Then('the action should be reflected in the UI', { timeout: 30000 }, async funct
 Then('the pot amount should update to {string}', async function (expectedAmount) {
   console.log(`🔍 Verifying pot amount updates to ${expectedAmount}`);
   
+  // CRITICAL FIX: Check backend game state for pot amount and fail if wrong
   try {
-    const potElements = await this.driver.findElements(By.css('[data-testid="pot-amount"], [class*="pot"]'));
-    if (potElements.length > 0) {
-      const potText = await potElements[0].getText();
-      if (potText.includes(expectedAmount)) {
-        console.log(`✅ Pot amount ${expectedAmount} verified`);
+    const response = await axios.get(`${backendApiUrl}/api/test_get_mock_game/${testGameId}`);
+    
+    if (response.data.success && response.data.gameState) {
+      const gameState = response.data.gameState;
+      const actualPot = gameState.pot.toString();
+      
+      console.log(`🔍 Backend pot: ${actualPot}, expected: ${expectedAmount}`);
+      
+      if (actualPot === expectedAmount) {
+        console.log(`✅ Pot amount ${expectedAmount} verified in backend`);
+        return; // Success
       } else {
-        console.log(`⚠️ Expected pot ${expectedAmount}, found: ${potText}`);
+        console.log(`❌ Expected pot ${expectedAmount}, but backend shows ${actualPot}`);
+        throw new Error(`❌ VERIFICATION FAILED: Pot should be ${expectedAmount} but was ${actualPot}`);
       }
     } else {
-      console.log(`⚠️ No pot display found`);
+      throw new Error(`❌ VERIFICATION FAILED: Could not retrieve game state for pot verification`);
     }
   } catch (error) {
-    console.log(`⚠️ Could not verify pot amount ${expectedAmount}`);
+    if (error.message.includes('VERIFICATION FAILED')) {
+      throw error; // Re-throw verification failures
+    }
+    console.log(`❌ Error checking pot: ${error.message}`);
+    throw new Error(`❌ VERIFICATION FAILED: Pot verification failed - ${error.message}`);
   }
 });
 
@@ -573,17 +585,33 @@ When('the flop is dealt with {int} community cards', async function (cardCount) 
 Then('I should see {int} community cards displayed', async function (cardCount) {
   console.log(`🔍 Verifying ${cardCount} community cards displayed`);
   
+  // CRITICAL FIX: Check backend game state for community cards and fail if wrong
   try {
-    const communityCards = await this.driver.findElements(By.css('[data-testid*="community-card"], [class*="community-card"]'));
-    console.log(`Found ${communityCards.length} community card elements`);
+    const response = await axios.get(`${backendApiUrl}/api/test_get_mock_game/${testGameId}`);
     
-    if (communityCards.length >= cardCount) {
-      console.log(`✅ ${cardCount} community cards verified`);
+    if (response.data.success && response.data.gameState) {
+      const gameState = response.data.gameState;
+      const actualCardCount = gameState.communityCards.length;
+      
+      console.log(`🔍 Backend community cards: ${actualCardCount}, expected: ${cardCount}`);
+      console.log(`🔍 Community cards in backend:`, gameState.communityCards);
+      
+      if (actualCardCount >= cardCount) {
+        console.log(`✅ ${cardCount} community cards verified in backend`);
+        return; // Success
+      } else {
+        console.log(`❌ Expected ${cardCount} community cards, but backend shows ${actualCardCount}`);
+        throw new Error(`❌ VERIFICATION FAILED: Should have ${cardCount} community cards but backend has ${actualCardCount}`);
+      }
     } else {
-      console.log(`⚠️ Expected ${cardCount} cards, found ${communityCards.length}`);
+      throw new Error(`❌ VERIFICATION FAILED: Could not retrieve game state for community cards verification`);
     }
   } catch (error) {
-    console.log(`⚠️ Could not verify community cards: ${error.message}`);
+    if (error.message.includes('VERIFICATION FAILED')) {
+      throw error; // Re-throw verification failures
+    }
+    console.log(`❌ Error checking community cards: ${error.message}`);
+    throw new Error(`❌ VERIFICATION FAILED: Community cards verification failed - ${error.message}`);
   }
 });
 
@@ -607,11 +635,32 @@ Then('the cards should be visually rendered correctly', async function () {
 Then('the phase indicator should show {string}', async function (expectedPhase) {
   console.log(`🔍 Verifying phase indicator shows ${expectedPhase}`);
   
+  // CRITICAL FIX: Check backend game state for phase and fail if wrong
   try {
-    await shouldContainText('[data-testid="game-phase"], [data-testid="game-status"]', expectedPhase, 5000);
-    console.log(`✅ Phase ${expectedPhase} verified`);
+    const response = await axios.get(`${backendApiUrl}/api/test_get_mock_game/${testGameId}`);
+    
+    if (response.data.success && response.data.gameState) {
+      const gameState = response.data.gameState;
+      const actualPhase = gameState.phase;
+      
+      console.log(`🔍 Backend phase: "${actualPhase}", expected: "${expectedPhase}"`);
+      
+      if (actualPhase === expectedPhase) {
+        console.log(`✅ Phase ${expectedPhase} verified in backend`);
+        return; // Success
+      } else {
+        console.log(`❌ Expected phase "${expectedPhase}", but backend shows "${actualPhase}"`);
+        throw new Error(`❌ VERIFICATION FAILED: Phase should be "${expectedPhase}" but was "${actualPhase}"`);
+      }
+    } else {
+      throw new Error(`❌ VERIFICATION FAILED: Could not retrieve game state for phase verification`);
+    }
   } catch (error) {
-    console.log(`⚠️ Could not verify phase ${expectedPhase}`);
+    if (error.message.includes('VERIFICATION FAILED')) {
+      throw error; // Re-throw verification failures
+    }
+    console.log(`❌ Error checking phase: ${error.message}`);
+    throw new Error(`❌ VERIFICATION FAILED: Phase verification failed - ${error.message}`);
   }
 });
 
@@ -635,20 +684,33 @@ Then('the preflop betting round should be complete', async function () {
 Then('the total pot should reflect all player contributions', async function () {
   console.log('🔍 Verifying total pot reflects player contributions');
   
+  // CRITICAL FIX: Check backend game state for pot contributions and fail if wrong
   try {
-    const potElements = await getElements('[data-testid="pot-amount"], [class*="pot"]');
-    if (potElements.length > 0) {
-      const potText = await potElements[0].getText();
-      const potAmount = parseInt(potText.replace(/[^0-9]/g, ''));
-      console.log(`✅ Pot amount: ${potAmount}`);
+    const response = await axios.get(`${backendApiUrl}/api/test_get_mock_game/${testGameId}`);
+    
+    if (response.data.success && response.data.gameState) {
+      const gameState = response.data.gameState;
+      const potAmount = gameState.pot;
       
-      // Basic validation that pot > 0
-      assert(potAmount > 0, 'Pot should have contributions');
+      console.log(`🔍 Backend pot amount: ${potAmount}`);
+      
+      // Basic validation that pot > 0 (since players have contributed)
+      if (potAmount > 0) {
+        console.log(`✅ Pot reflects contributions: ${potAmount}`);
+        return; // Success
+      } else {
+        console.log(`❌ Pot should have contributions but shows ${potAmount}`);
+        throw new Error(`❌ VERIFICATION FAILED: Pot should have contributions but backend shows ${potAmount}`);
+      }
     } else {
-      console.log('⚠️ No pot display found');
+      throw new Error(`❌ VERIFICATION FAILED: Could not retrieve game state for pot contributions verification`);
     }
   } catch (error) {
-    console.log('⚠️ Could not verify pot amount');
+    if (error.message.includes('VERIFICATION FAILED')) {
+      throw error; // Re-throw verification failures
+    }
+    console.log(`❌ Error checking pot contributions: ${error.message}`);
+    throw new Error(`❌ VERIFICATION FAILED: Pot contributions verification failed - ${error.message}`);
   }
 });
 
@@ -831,31 +893,66 @@ Then('the remaining players\' cards should be revealed', async function () {
 Then('the winner should be determined', async function () {
   console.log('🔍 Verifying winner determination');
   
+  // CRITICAL FIX: Check backend game state for winner and fail if not determined
   try {
-    const winnerElements = await getElements('[data-testid*="winner"], [class*="winner"]');
-    if (winnerElements.length > 0) {
-      console.log('✅ Winner indication found');
+    const response = await axios.get(`${backendApiUrl}/api/test_get_mock_game/${testGameId}`);
+    
+    if (response.data.success && response.data.gameState) {
+      const gameState = response.data.gameState;
+      const winner = gameState.winner;
+      
+      console.log(`🔍 Backend winner: ${winner}, phase: ${gameState.phase}`);
+      
+      if (winner) {
+        console.log(`✅ Winner determined in backend: ${winner}`);
+        return; // Success
+      } else {
+        console.log(`❌ No winner determined in backend game state`);
+        throw new Error(`❌ VERIFICATION FAILED: Winner should be determined but backend shows no winner`);
+      }
     } else {
-      console.log('⚠️ Winner indication not found');
+      throw new Error(`❌ VERIFICATION FAILED: Could not retrieve game state for winner verification`);
     }
   } catch (error) {
-    console.log('⚠️ Could not verify winner determination');
+    if (error.message.includes('VERIFICATION FAILED')) {
+      throw error; // Re-throw verification failures
+    }
+    console.log(`❌ Error checking winner: ${error.message}`);
+    throw new Error(`❌ VERIFICATION FAILED: Winner verification failed - ${error.message}`);
   }
 });
 
 Then('the pot should be awarded to the winner', async function () {
   console.log('🔍 Verifying pot is awarded to winner');
   
+  // CRITICAL FIX: Check backend game state for pot award and fail if not awarded
   try {
-    // Check for pot award animation or updated chip counts
-    const potElements = await getElements('[data-testid="pot-amount"], [class*="pot"]');
-    if (potElements.length > 0) {
-      const potText = await potElements[0].getText();
-      console.log(`Current pot display: ${potText}`);
+    const response = await axios.get(`${backendApiUrl}/api/test_get_mock_game/${testGameId}`);
+    
+    if (response.data.success && response.data.gameState) {
+      const gameState = response.data.gameState;
+      const currentPot = gameState.pot;
+      const winner = gameState.winner;
+      
+      console.log(`🔍 Backend pot: ${currentPot}, winner: ${winner}, phase: ${gameState.phase}`);
+      
+      // After showdown, pot should be 0 (awarded to winner) or winner should be determined
+      if (currentPot === 0 || winner) {
+        console.log(`✅ Pot award verified in backend (pot: ${currentPot}, winner: ${winner})`);
+        return; // Success
+      } else {
+        console.log(`❌ Pot not awarded - pot: ${currentPot}, no winner determined`);
+        throw new Error(`❌ VERIFICATION FAILED: Pot should be awarded but backend shows pot: ${currentPot}, winner: ${winner}`);
+      }
+    } else {
+      throw new Error(`❌ VERIFICATION FAILED: Could not retrieve game state for pot award verification`);
     }
-    console.log('✅ Pot award verification completed');
   } catch (error) {
-    console.log('⚠️ Could not verify pot award');
+    if (error.message.includes('VERIFICATION FAILED')) {
+      throw error; // Re-throw verification failures
+    }
+    console.log(`❌ Error checking pot award: ${error.message}`);
+    throw new Error(`❌ VERIFICATION FAILED: Pot award verification failed - ${error.message}`);
   }
 });
 
@@ -878,15 +975,38 @@ Then('the game should display final results', async function () {
 Then('{string} should be marked as folded', async function (playerName) {
   console.log(`🔍 Verifying ${playerName} is marked as folded`);
   
+  // CRITICAL FIX: Check backend game state for folded status and fail if wrong
   try {
-    const foldedElements = await getElements(`[data-testid*="${playerName}"][class*="folded"], [class*="folded"][data-testid*="${playerName}"]`);
-    if (foldedElements.length > 0) {
-      console.log(`✅ ${playerName} is marked as folded`);
+    const response = await axios.get(`${backendApiUrl}/api/test_get_mock_game/${testGameId}`);
+    
+    if (response.data.success && response.data.gameState) {
+      const gameState = response.data.gameState;
+      const player = gameState.players.find(p => p.name === playerName);
+      
+      if (player) {
+        const isActive = player.isActive;
+        console.log(`🔍 Backend ${playerName} isActive: ${isActive}`);
+        
+        // Player should be inactive (folded)
+        if (!isActive) {
+          console.log(`✅ ${playerName} is marked as folded in backend`);
+          return; // Success
+        } else {
+          console.log(`❌ ${playerName} should be folded but backend shows active: ${isActive}`);
+          throw new Error(`❌ VERIFICATION FAILED: ${playerName} should be folded but is still active`);
+        }
+      } else {
+        throw new Error(`❌ VERIFICATION FAILED: ${playerName} not found in game state`);
+      }
     } else {
-      console.log(`⚠️ ${playerName} fold status not clearly indicated`);
+      throw new Error(`❌ VERIFICATION FAILED: Could not retrieve game state for fold verification`);
     }
   } catch (error) {
-    console.log(`⚠️ Could not verify ${playerName} fold status`);
+    if (error.message.includes('VERIFICATION FAILED')) {
+      throw error; // Re-throw verification failures
+    }
+    console.log(`❌ Error checking fold status: ${error.message}`);
+    throw new Error(`❌ VERIFICATION FAILED: Fold verification failed - ${error.message}`);
   }
 });
 
