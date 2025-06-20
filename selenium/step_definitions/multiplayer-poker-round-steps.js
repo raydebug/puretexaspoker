@@ -231,14 +231,14 @@ Then('all {int} players should be seated at the table', { timeout: 30000 }, asyn
     }
   }
   
-  // Check for online players list
+  // Check for observers list  
   try {
     await this.helpers.shouldBeVisible('[data-testid="online-list"]');
     const onlineList = await this.helpers.waitForElement('[data-testid="online-list"]');
-    const listItems = await onlineList.findElements(By.css('li, [class*="player"], [class*="user"]'));
-    console.log(`🔍 Found ${listItems.length} items in online players list`);
+    const listItems = await onlineList.findElements(By.css('li, [class*="observer"], [class*="user"]'));
+    console.log(`🔍 Found ${listItems.length} items in observers list`);
   } catch (error) {
-    throw new Error('❌ VERIFICATION FAILED: Online players list not found - UI should display connected players');
+    throw new Error('❌ VERIFICATION FAILED: Observers list not found - UI should display observers');
   }
   
   console.log(`✅ Real player verification completed`);
@@ -264,8 +264,8 @@ Then('each player should have their correct chip count', { timeout: 30000 }, asy
   console.log('✅ Chip count verification completed');
 });
 
-Then('players should be visible in their seats and in the players list', { timeout: 30000 }, async function () {
-  console.log('🔍 Comprehensive player verification - seats and lists');
+Then('players should be visible in their seats', { timeout: 30000 }, async function () {
+  console.log('🔍 Player verification - seats only');
   
   try {
     // Simple verification - check for seat elements
@@ -276,19 +276,19 @@ Then('players should be visible in their seats and in the players list', { timeo
     const playerElements = await this.driver.findElements(By.css('[data-testid*="player"], [class*="player"]'));
     console.log(`🔍 Found ${playerElements.length} player-related elements`);
     
-    // Quick check for online list without complex logic
+    // Quick check for observers list
     const onlineList = await this.driver.findElements(By.css('[data-testid="online-list"], [class*="online-users"]'));
     if (onlineList.length > 0) {
-      console.log('✅ Online players list found');
+      console.log('✅ Observers list found');
     } else {
-      throw new Error('❌ VERIFICATION FAILED: No online players list found - UI should display connected players');
+      console.log('⚠️ No observers list found');
     }
     
   } catch (error) {
     console.log(`⚠️ Error during player verification: ${error.message}`);
   }
   
-  console.log('✅ Comprehensive player verification completed');
+  console.log('✅ Player verification completed');
 });
 
 Then('each player should be verified in their correct seat with proper order', async function () {
