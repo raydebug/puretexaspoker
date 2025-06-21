@@ -3,6 +3,7 @@ import { GameManager } from '../services/gameManager';
 import { tableManager } from '../services/TableManager';
 import { authService } from '../services/authService';
 import { roleManager } from '../services/roleManager';
+import { gamePersistenceManager } from '../services/gamePersistenceManager';
 import { prisma } from '../db';
 
 const router = express.Router();
@@ -2002,6 +2003,373 @@ router.delete('/test_cleanup_games', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to clean up test games'
+    });
+  }
+});
+
+/**
+ * TEST API: Game Persistence - Initialize Persistence System
+ * POST /api/test/initialize_persistence
+ */
+router.post('/test/initialize_persistence', async (req, res) => {
+  try {
+    console.log('💾 TEST: Initializing game persistence system');
+    
+    // The persistence system is initialized when the service is imported
+    // This endpoint confirms it's ready
+    
+    res.json({
+      success: true,
+      message: 'Game persistence system initialized'
+    });
+    
+  } catch (error) {
+    console.error('Error initializing persistence:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message
+    });
+  }
+});
+
+/**
+ * TEST API: Game Persistence - Create Persistent Game
+ * POST /api/test/create_persistent_game
+ */
+router.post('/test/create_persistent_game', async (req, res) => {
+  try {
+    const { gameId, players, tableId, enableAutoSave } = req.body;
+    
+    console.log(`🎮 TEST: Creating persistent game ${gameId}`);
+    
+    // Create mock game state for testing
+    const gameState = {
+      id: gameId,
+      players: players.map((player: any) => ({
+        ...player,
+        currentBet: 0,
+        cards: [],
+        isActive: true,
+        isAway: false
+      })),
+      communityCards: [],
+      burnedCards: [],
+      pot: 0,
+      currentPlayerId: players[0]?.id || null,
+      currentPlayerPosition: 0,
+      dealerPosition: 0,
+      smallBlindPosition: 1,
+      bigBlindPosition: 2,
+      phase: 'waiting' as const,
+      status: 'waiting' as const,
+      currentBet: 0,
+      minBet: 10,
+      smallBlind: 5,
+      bigBlind: 10,
+      handEvaluation: undefined,
+      winner: undefined,
+      isHandComplete: false
+    };
+    
+    // Save game state using persistence manager
+    await gamePersistenceManager.saveGameState(gameId, gameState, tableId, 'game_created');
+    
+    // Start auto-save if requested
+    if (enableAutoSave) {
+      gamePersistenceManager.startAutoSave(gameId, () => gameState, tableId);
+    }
+    
+    res.json({
+      success: true,
+      gameId,
+      gameState,
+      message: 'Persistent game created successfully'
+    });
+    
+  } catch (error) {
+    console.error('Error creating persistent game:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message
+    });
+  }
+});
+
+/**
+ * TEST API: Game Persistence - Execute Player Action
+ * POST /api/test/execute_player_action
+ */
+router.post('/test/execute_player_action', async (req, res) => {
+  try {
+    const { gameId, playerId, action, amount } = req.body;
+    
+    console.log(`⚡ TEST: Executing ${action} by ${playerId} in game ${gameId}`);
+    
+    // Get current game state
+    const gameState = await gamePersistenceManager.restoreGameState(gameId);
+    if (!gameState) {
+      return res.status(404).json({
+        success: false,
+        error: 'Game not found'
+      });
+    }
+    
+    // Find the player
+    const player = gameState.players.find(p => p.id === playerId || p.name === playerId);
+    if (!player) {
+      return res.status(404).json({
+        success: false,
+        error: 'Player not found'
+      });
+    }
+    
+    // Simulate action execution
+    switch (action) {
+      case 'bet':
+        player.chips -= amount;
+        player.currentBet += amount;
+        gameState.pot += amount;
+        gameState.currentBet = Math.max(gameState.currentBet, player.currentBet);
+        break;
+      case 'call':
+        const callAmount = gameState.currentBet - player.currentBet;
+        player.chips -= callAmount;
+        player.currentBet += callAmount;
+        gameState.pot += callAmount;
+        break;
+      case 'raise':
+        const raiseAmount = amount - player.currentBet;
+        player.chips -= raiseAmount;
+        player.currentBet = amount;
+        gameState.pot += raiseAmount;
+        gameState.currentBet = amount;
+        break;
+      case 'fold':
+        player.isActive = false;
+        break;
+    }
+    
+    // Record the action
+    await gamePersistenceManager.recordGameAction(
+      gameId,
+      player.id,
+      player.name || player.id,
+      action,
+      amount,
+      gameState.phase
+    );
+    
+    // Save updated game state
+    await gamePersistenceManager.saveGameState(gameId, gameState, 'test-table-1', action);
+    
+    res.json({
+      success: true,
+      gameState,
+      action: { playerId, action, amount }
+    });
+    
+  } catch (error) {
+    console.error('Error executing player action:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message
+    });
+  }
+});
+
+/**
+ * TEST API: Game Persistence - Check Game Persistence
+ * POST /api/test/check_game_persistence
+ */
+router.post('/test/check_game_persistence', async (req, res) => {
+  try {
+    const { gameId } = req.body;
+    
+    console.log(`💾 TEST: Checking persistence for game ${gameId}`);
+    
+    const gameSession = await prisma.gameSession.findUnique({
+      where: { gameId }
+    });
+    
+    res.json({
+      success: true,
+      gameSession,
+      isPersisted: !!gameSession
+    });
+    
+  } catch (error) {
+    console.error('Error checking game persistence:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message
+    });
+  }
+});
+
+/**
+ * TEST API: Game Persistence - Get Saved Game State
+ * POST /api/test/get_saved_game_state
+ */
+router.post('/test/get_saved_game_state', async (req, res) => {
+  try {
+    const { gameId } = req.body;
+    
+    console.log(`🔄 TEST: Getting saved game state for ${gameId}`);
+    
+    const gameState = await gamePersistenceManager.restoreGameState(gameId);
+    
+    if (!gameState) {
+      return res.status(404).json({
+        success: false,
+        error: 'No saved game state found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      gameState
+    });
+    
+  } catch (error) {
+    console.error('Error getting saved game state:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message
+    });
+  }
+});
+
+/**
+ * TEST API: Game Persistence - Create User for Testing
+ * POST /api/test/create_user
+ */
+router.post('/test/create_user', async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+    
+    console.log(`👤 TEST: Creating user ${username}`);
+    
+    const authResponse = await authService.register({
+      username,
+      email,
+      password,
+      displayName: username
+    });
+    
+    res.json({
+      success: true,
+      user: authResponse.user,
+      tokens: authResponse.tokens
+    });
+    
+  } catch (error) {
+    console.error('Error creating user:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message
+    });
+  }
+});
+
+/**
+ * TEST API: Game Persistence - Join Game with Session
+ * POST /api/test/join_game_with_session
+ */
+router.post('/test/join_game_with_session', async (req, res) => {
+  try {
+    const { userId, gameId, playerName, createSession } = req.body;
+    
+    console.log(`🎮 TEST: User ${userId} joining game ${gameId} as ${playerName}`);
+    
+    const playerId = `player-${Date.now()}`;
+    
+    if (createSession) {
+      const sessionInfo = await gamePersistenceManager.createPlayerSession(
+        userId,
+        gameId,
+        playerId,
+        'test-socket-id'
+      );
+      
+      res.json({
+        success: true,
+        playerId,
+        sessionToken: sessionInfo.reconnectToken
+      });
+    } else {
+      res.json({
+        success: true,
+        playerId
+      });
+    }
+    
+  } catch (error) {
+    console.error('Error joining game with session:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message
+    });
+  }
+});
+
+/**
+ * TEST API: Game Persistence - Check Player Session
+ * POST /api/test/check_player_session
+ */
+router.post('/test/check_player_session', async (req, res) => {
+  try {
+    const { userId, gameId } = req.body;
+    
+    console.log(`👤 TEST: Checking player session for user ${userId} in game ${gameId}`);
+    
+    const session = await prisma.playerSession.findUnique({
+      where: { userId_gameId: { userId, gameId } }
+    });
+    
+    res.json({
+      success: true,
+      session
+    });
+    
+  } catch (error) {
+    console.error('Error checking player session:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message
+    });
+  }
+});
+
+/**
+ * TEST API: Game Persistence - Check Connection Log
+ * POST /api/test/check_connection_log
+ */
+router.post('/test/check_connection_log', async (req, res) => {
+  try {
+    const { userId, gameId, action } = req.body;
+    
+    console.log(`📝 TEST: Checking connection log for user ${userId}`);
+    
+    const logEntries = await prisma.connectionLog.findMany({
+      where: {
+        userId,
+        gameId,
+        action
+      },
+      orderBy: { timestamp: 'desc' },
+      take: 5
+    });
+    
+    res.json({
+      success: true,
+      logEntries
+    });
+    
+  } catch (error) {
+    console.error('Error checking connection log:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message
     });
   }
 });

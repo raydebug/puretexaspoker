@@ -40,6 +40,10 @@ model User {
   // USER ROLE MANAGEMENT: Administrative actions
   moderatedBy ModerationAction[] @relation("ModeratedUser")
   moderatorActions ModerationAction[] @relation("ModeratorUser")
+  
+  // GAME PERSISTENCE: Session and connection tracking
+  playerSessions PlayerSession[]
+  connectionLogs ConnectionLog[]
 }
 
 // USER ROLE MANAGEMENT: Role definitions with hierarchical permissions
@@ -136,6 +140,9 @@ model Table {
   
   playerTables PlayerTable[]
   games       Game[]
+  
+  // GAME PERSISTENCE: Active game sessions at this table
+  gameSessions GameSession[]
 }
 
 model PlayerTable {
@@ -194,4 +201,88 @@ model CardOrder {
   isRevealed   Boolean  @default(false) // Whether order is publicly revealed
   createdAt    DateTime @default(now())
   game         Game     @relation(fields: [gameId], references: [id])
+}
+
+// GAME PERSISTENCE: Session management for reconnection
+model PlayerSession {
+  id           String   @id @default(uuid())
+  userId       String   
+  gameId       String   
+  playerId     String   // Player ID within the game
+  socketId     String?  // Current WebSocket connection ID
+  isConnected  Boolean  @default(true)
+  lastSeen     DateTime @default(now())
+  joinedAt     DateTime @default(now())
+  leftAt       DateTime?
+  isActive     Boolean  @default(true) // Still in game vs left permanently
+  reconnectToken String?  // Secure token for reconnection
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  user         User     @relation(fields: [userId], references: [id])
+  gameSession  GameSession @relation(fields: [gameId], references: [gameId])
+  
+  @@unique([userId, gameId])
+  @@index([gameId])
+  @@index([socketId])
+}
+
+// GAME PERSISTENCE: Persistent game state storage
+model GameSession {
+  id                String   @id @default(uuid())
+  gameId            String   @unique
+  tableId           String   
+  gameState         String   // JSON serialized GameState
+  lastAction        String?  // Last action performed
+  lastActionTime    DateTime @default(now())
+  currentPhase      String   @default("waiting")
+  isActive          Boolean  @default(true)
+  isPaused          Boolean  @default(false)
+  pauseReason       String?
+  pausedAt          DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  table            Table    @relation(fields: [tableId], references: [id])
+  playerSessions   PlayerSession[]
+  gameActions      GameActionHistory[]
+}
+
+// GAME PERSISTENCE: Comprehensive action history for replay and audit
+model GameActionHistory {
+  id             String   @id @default(uuid())
+  gameId         String
+  playerId       String
+  playerName     String   // Store name for history even if player leaves
+  action         String   // bet, call, raise, fold, check, allIn
+  amount         Int?     // Amount for betting actions
+  phase          String   // preflop, flop, turn, river, showdown
+  handNumber     Int      @default(1) // Hand number within the game
+  actionSequence Int      // Sequence number within the hand
+  timestamp      DateTime @default(now())
+  gameStateBefore String? // Game state before action (compressed)
+  gameStateAfter String?  // Game state after action (compressed)
+  
+  gameSession    GameSession @relation(fields: [gameId], references: [gameId])
+  
+  @@index([gameId, handNumber, actionSequence])
+  @@index([gameId, timestamp])
+}
+
+// GAME PERSISTENCE: Connection tracking for WebSocket management
+model ConnectionLog {
+  id           String   @id @default(uuid())
+  userId       String   
+  socketId     String   
+  gameId       String?  
+  action       String   // connect, disconnect, reconnect, timeout
+  timestamp    DateTime @default(now())
+  userAgent    String?
+  ipAddress    String?
+  reason       String?  // Reason for disconnect or timeout
+  
+  user         User     @relation(fields: [userId], references: [id])
+  
+  @@index([userId, timestamp])
+  @@index([gameId, timestamp])
 } 
