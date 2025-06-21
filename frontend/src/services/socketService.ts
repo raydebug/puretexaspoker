@@ -463,6 +463,49 @@ export class SocketService {
       console.log(`🔌 FRONTEND: Successfully left room: ${data.room}`);
     });
 
+    // PROFESSIONAL TURN ORDER ENFORCEMENT - Handle turn order violations
+    socket.on('game:turnOrderViolation', (data: { 
+      action: string; 
+      error: string; 
+      gameId: string; 
+      playerId: string; 
+      timestamp: number; 
+      amount?: number; 
+      totalAmount?: number; 
+    }) => {
+      console.log('❌ FRONTEND: Turn order violation received:', data);
+      
+      // Show immediate error feedback to the user
+      this.emitError({ 
+        message: `Turn Order Violation: ${data.error}`,
+        context: 'turn_order_violation'
+      });
+      
+      // Log the violation for debugging
+      console.log(`🚫 TURN ORDER VIOLATION: Player ${data.playerId} attempted ${data.action} - ${data.error}`);
+      
+      // Emit system message for in-game chat
+      this.emitSystemMessage(`Turn Order Violation: ${data.error}`);
+      
+      // Track turn violations for analytics (if needed)
+      if (typeof window !== 'undefined' && (window as any).gameAnalytics) {
+        (window as any).gameAnalytics.trackTurnViolation({
+          action: data.action,
+          playerId: data.playerId,
+          gameId: data.gameId,
+          timestamp: data.timestamp
+        });
+      }
+    });
+
+    // Handle game action success confirmations
+    socket.on('game:actionSuccess', (data: { action: string; gameId: string; amount?: number; totalAmount?: number }) => {
+      console.log('✅ FRONTEND: Game action successful:', data);
+      
+      // Provide positive feedback for successful actions
+      this.emitSystemMessage(`Action ${data.action} completed successfully${data.amount ? ` for ${data.amount}` : ''}${data.totalAmount ? ` (total: ${data.totalAmount})` : ''}`);
+    });
+
     // Handle table joining results
     socket.on('tableJoined', (data: { tableId: number; role: 'player' | 'observer'; buyIn: number; gameId?: string }) => {
       console.log('DEBUG: Frontend received tableJoined event:', data);

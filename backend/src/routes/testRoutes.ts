@@ -216,6 +216,71 @@ router.post('/test_player_action/:gameId', async (req, res) => {
       }
     }
     
+    // PROFESSIONAL TURN ORDER VALIDATION - Reject out-of-turn actions
+    const validateTurnOrder = () => {
+      // Check if game is in a playable state
+      if (gameState.status !== 'active' && gameState.status !== 'playing') {
+        return { isValid: false, error: `Cannot perform ${action}: game is not active (status: ${gameState.status})` };
+      }
+
+      // Check if it's a valid phase for actions
+      if (gameState.phase === 'finished' || gameState.phase === 'showdown') {
+        return { isValid: false, error: `Cannot perform ${action}: hand is ${gameState.phase}` };
+      }
+
+      // Check if player is active (not folded)
+      if (!player.isActive) {
+        return { isValid: false, error: `Cannot perform ${action}: you have folded and are no longer active in this hand` };
+      }
+
+      // Check if it's the player's turn (CRITICAL ENFORCEMENT)
+      if (gameState.currentPlayerId !== player.id && gameState.currentPlayerId !== player.name) {
+        const currentPlayer = gameState.players.find((p: any) => p.id === gameState.currentPlayerId);
+        const currentPlayerName = currentPlayer ? currentPlayer.name : 'Unknown';
+        
+        return { 
+          isValid: false, 
+          error: `OUT OF TURN: It is currently ${currentPlayerName}'s turn to act. Please wait for your turn. (Attempted: ${action})` 
+        };
+      }
+
+      // Additional action-specific validations
+      if (action === 'check') {
+        if (gameState.currentBet > player.currentBet) {
+          return { 
+            isValid: false, 
+            error: `Cannot check: there is a bet of ${gameState.currentBet - player.currentBet} to call` 
+          };
+        }
+      }
+
+      if (action === 'call') {
+        const callAmount = gameState.currentBet - player.currentBet;
+        if (callAmount <= 0) {
+          return { 
+            isValid: false, 
+            error: `Cannot call: no bet to call. Use check instead.` 
+          };
+        }
+      }
+
+      return { isValid: true };
+    };
+    
+    // VALIDATE TURN ORDER BEFORE PROCESSING ACTION
+    const turnValidation = validateTurnOrder();
+    if (!turnValidation.isValid) {
+      console.log(`❌ TURN ORDER VIOLATION: ${player.name} attempted ${action} - ${turnValidation.error}`);
+      return res.status(400).json({
+        success: false,
+        error: turnValidation.error,
+        violation: 'TURN_ORDER_VIOLATION',
+        currentPlayer: gameState.currentPlayerId,
+        attemptedPlayer: player.name,
+        attemptedAction: action
+      });
+    }
+    
     // Validate action amount for betting actions
     const validateBetAmount = (betAmount: number) => {
       if (betAmount < gameState.minBet && betAmount !== player.chips) {
@@ -414,6 +479,333 @@ router.post('/test_player_action/:gameId', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to simulate player action'
+    });
+  }
+});
+
+/**
+ * TEST API: Professional Turn Order Validation
+ * POST /api/test/validate_turn_order
+ */
+router.post('/test/validate_turn_order', async (req, res) => {
+  try {
+    const { gameId, playerId, action } = req.body;
+    
+    const gameManager = GameManager.getInstance();
+    const testGames = (gameManager as any).testGames;
+    
+    if (!testGames || !testGames.has(gameId)) {
+      return res.status(404).json({
+        success: false,
+        error: 'Game not found'
+      });
+    }
+    
+    const gameState = testGames.get(gameId);
+    
+    // Professional Turn Order Validation Logic
+    const validateTurnOrder = () => {
+      // Check if game is in a playable state
+      if (gameState.status !== 'active' && gameState.status !== 'playing') {
+        return { isValid: false, error: `Cannot perform ${action}: game is not active (status: ${gameState.status})` };
+      }
+
+      // Check if it's a valid phase for actions
+      if (gameState.phase === 'finished' || gameState.phase === 'showdown') {
+        return { isValid: false, error: `Cannot perform ${action}: hand is ${gameState.phase}` };
+      }
+
+      // Get the player
+      const player = gameState.players.find((p: any) => p.id === playerId || p.name === playerId);
+      if (!player) {
+        return { isValid: false, error: 'Player not found in game' };
+      }
+
+      // Check if player is active (not folded)
+      if (!player.isActive) {
+        return { isValid: false, error: `Cannot perform ${action}: you have folded and are no longer active in this hand` };
+      }
+
+      // Check if it's the player's turn (CRITICAL ENFORCEMENT)
+      if (gameState.currentPlayerId !== playerId && gameState.currentPlayerId !== player.name) {
+        const currentPlayer = gameState.players.find((p: any) => p.id === gameState.currentPlayerId);
+        const currentPlayerName = currentPlayer ? currentPlayer.name : 'Unknown';
+        
+        return { 
+          isValid: false, 
+          error: `OUT OF TURN: It is currently ${currentPlayerName}'s turn to act. Please wait for your turn. (Attempted: ${action})` 
+        };
+      }
+
+      // Additional action-specific validations
+      if (action === 'check') {
+        if (gameState.currentBet > player.currentBet) {
+          return { 
+            isValid: false, 
+            error: `Cannot check: there is a bet of ${gameState.currentBet - player.currentBet} to call` 
+          };
+        }
+      }
+
+      if (action === 'call') {
+        const callAmount = gameState.currentBet - player.currentBet;
+        if (callAmount <= 0) {
+          return { 
+            isValid: false, 
+            error: `Cannot call: no bet to call. Use check instead.` 
+          };
+        }
+      }
+
+      return { isValid: true };
+    };
+    
+    const validation = validateTurnOrder();
+    
+    console.log(`🔍 TURN ORDER VALIDATION: ${playerId} attempting ${action} - ${validation.isValid ? 'VALID' : 'INVALID'}`);
+    if (!validation.isValid) {
+      console.log(`❌ TURN ORDER VIOLATION: ${validation.error}`);
+    }
+    
+    res.json({
+      success: true,
+      isValid: validation.isValid,
+      error: validation.error,
+      gameState: {
+        currentPlayerId: gameState.currentPlayerId,
+        phase: gameState.phase,
+        status: gameState.status
+      }
+    });
+  } catch (error) {
+    console.error('❌ TEST API: Error validating turn order:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to validate turn order'
+    });
+  }
+});
+
+/**
+ * TEST API: Get current game state for validation
+ * POST /api/test/get_game_state
+ */
+router.post('/test/get_game_state', async (req, res) => {
+  try {
+    const { gameId } = req.body;
+    
+    const gameManager = GameManager.getInstance();
+    
+    // Check test games first
+    const testGames = (gameManager as any).testGames;
+    if (testGames && testGames.has(gameId)) {
+      const gameState = testGames.get(gameId);
+      return res.json({
+        success: true,
+        gameState,
+        source: 'test'
+      });
+    }
+    
+    // Then check real games
+    const realGame = gameManager.getGame(gameId);
+    if (realGame) {
+      const gameState = realGame.getGameState();
+      return res.json({
+        success: true,
+        gameState,
+        source: 'real'
+      });
+    }
+    
+    res.status(404).json({
+      success: false,
+      error: 'Game not found'
+    });
+  } catch (error) {
+    console.error('❌ TEST API: Error getting game state:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get game state'
+    });
+  }
+});
+
+/**
+ * TEST API: Complete betting round for testing
+ * POST /api/test/complete_betting_round
+ */
+router.post('/test/complete_betting_round', async (req, res) => {
+  try {
+    const { gameId, phase } = req.body;
+    
+    const gameManager = GameManager.getInstance();
+    const testGames = (gameManager as any).testGames;
+    
+    if (!testGames || !testGames.has(gameId)) {
+      return res.status(404).json({
+        success: false,
+        error: 'Game not found'
+      });
+    }
+    
+    const gameState = testGames.get(gameId);
+    
+    console.log(`🎰 TEST API: Completing ${phase} betting round...`);
+    
+    // Reset all player bets for new round
+    gameState.players.forEach((player: any) => {
+      if (player.isActive) {
+        player.currentBet = 0;
+      }
+    });
+    
+    // Advance to next phase
+    switch (phase) {
+      case 'preflop':
+        gameState.phase = 'flop';
+        gameState.communityCards = [
+          { suit: 'hearts', rank: '7' },
+          { suit: 'diamonds', rank: '8' },
+          { suit: 'clubs', rank: 'K' }
+        ];
+        break;
+      case 'flop':
+        gameState.phase = 'turn';
+        gameState.communityCards.push({ suit: 'spades', rank: 'Q' });
+        break;
+      case 'turn':
+        gameState.phase = 'river';
+        gameState.communityCards.push({ suit: 'hearts', rank: 'A' });
+        break;
+      case 'river':
+        gameState.phase = 'showdown';
+        break;
+      default:
+        throw new Error(`Invalid phase for completion: ${phase}`);
+    }
+    
+    // Reset current bet for new round
+    gameState.currentBet = 0;
+    
+    // Set first player for new betting round (left of dealer)
+    const activePlayers = gameState.players.filter((p: any) => p.isActive);
+    if (activePlayers.length > 0) {
+      // Find player left of dealer for post-flop betting
+      const dealerIndex = activePlayers.findIndex((p: any) => p.isDealer);
+      const firstToActIndex = (dealerIndex + 1) % activePlayers.length;
+      const firstToAct = activePlayers[firstToActIndex];
+      
+      if (firstToAct) {
+        gameState.currentPlayerId = firstToAct.id;
+        console.log(`🎯 First to act in ${gameState.phase}: ${firstToAct.name}`);
+      }
+    }
+    
+    // Update in map
+    testGames.set(gameId, gameState);
+    
+    // Broadcast updated state
+    const io = (global as any).socketIO;
+    if (io) {
+      io.to(`game:${gameId}`).emit('gameState', gameState);
+    }
+    
+    console.log(`✅ TEST API: ${phase} betting round completed, advanced to ${gameState.phase}`);
+    
+    res.json({
+      success: true,
+      gameState,
+      message: `${phase} betting round completed`
+    });
+  } catch (error) {
+    console.error('❌ TEST API: Error completing betting round:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to complete betting round'
+    });
+  }
+});
+
+/**
+ * TEST API: Start game for testing
+ * POST /api/test/start_game
+ */
+router.post('/test/start_game', async (req, res) => {
+  try {
+    const { gameId } = req.body;
+    
+    const gameManager = GameManager.getInstance();
+    const testGames = (gameManager as any).testGames;
+    
+    if (!testGames || !testGames.has(gameId)) {
+      return res.status(404).json({
+        success: false,
+        error: 'Game not found'
+      });
+    }
+    
+    const gameState = testGames.get(gameId);
+    
+    // Start the game
+    gameState.status = 'playing';
+    gameState.phase = 'preflop';
+    
+    // Post blinds
+    const activePlayers = gameState.players.filter((p: any) => p.isActive);
+    if (activePlayers.length >= 2) {
+      const smallBlindPlayer = activePlayers[gameState.smallBlindPosition - 1] || activePlayers[0];
+      const bigBlindPlayer = activePlayers[gameState.bigBlindPosition - 1] || activePlayers[1];
+      
+      // Post small blind
+      if (smallBlindPlayer) {
+        const smallBlindAmount = Math.min(gameState.smallBlind, smallBlindPlayer.chips);
+        smallBlindPlayer.chips -= smallBlindAmount;
+        smallBlindPlayer.currentBet = smallBlindAmount;
+        gameState.pot += smallBlindAmount;
+      }
+      
+      // Post big blind
+      if (bigBlindPlayer) {
+        const bigBlindAmount = Math.min(gameState.bigBlind, bigBlindPlayer.chips);
+        bigBlindPlayer.chips -= bigBlindAmount;
+        bigBlindPlayer.currentBet = bigBlindAmount;
+        gameState.pot += bigBlindAmount;
+        gameState.currentBet = bigBlindAmount;
+      }
+      
+      // Set first to act (left of big blind)
+      const bigBlindIndex = activePlayers.findIndex((p: any) => p === bigBlindPlayer);
+      const firstToActIndex = (bigBlindIndex + 1) % activePlayers.length;
+      const firstToAct = activePlayers[firstToActIndex];
+      
+      if (firstToAct) {
+        gameState.currentPlayerId = firstToAct.id;
+        console.log(`🎯 First to act preflop: ${firstToAct.name}`);
+      }
+    }
+    
+    // Update in map
+    testGames.set(gameId, gameState);
+    
+    // Broadcast updated state
+    const io = (global as any).socketIO;
+    if (io) {
+      io.to(`game:${gameId}`).emit('gameState', gameState);
+    }
+    
+    console.log(`✅ TEST API: Game ${gameId} started`);
+    
+    res.json({
+      success: true,
+      gameState,
+      message: 'Game started'
+    });
+  } catch (error) {
+    console.error('❌ TEST API: Error starting game:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to start game'
     });
   }
 });

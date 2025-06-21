@@ -49,6 +49,77 @@ export function registerConsolidatedHandlers(io: Server) {
     });
   };
 
+  // Professional Turn Order Enforcement
+  const validateTurnOrder = (gameId: string, playerId: string, action: string): { isValid: boolean; error?: string } => {
+    try {
+      const gameService = gameManager.getGame(gameId);
+      if (!gameService) {
+        return { isValid: false, error: 'Game not found' };
+      }
+
+      const gameState = gameService.getGameState();
+      
+      // Check if game is in a playable state
+      if (gameState.status !== 'playing') {
+        return { isValid: false, error: `Cannot perform ${action}: game is not active (status: ${gameState.status})` };
+      }
+
+      // Check if it's a valid phase for actions
+      if (gameState.phase === 'finished' || gameState.phase === 'showdown') {
+        return { isValid: false, error: `Cannot perform ${action}: hand is ${gameState.phase}` };
+      }
+
+      // Get the player
+      const player = gameState.players.find(p => p.id === playerId);
+      if (!player) {
+        return { isValid: false, error: 'Player not found in game' };
+      }
+
+      // Check if player is active (not folded)
+      if (!player.isActive) {
+        return { isValid: false, error: `Cannot perform ${action}: you have folded and are no longer active in this hand` };
+      }
+
+      // Check if it's the player's turn (CRITICAL ENFORCEMENT)
+      if (gameState.currentPlayerId !== playerId) {
+        const currentPlayer = gameState.players.find(p => p.id === gameState.currentPlayerId);
+        const currentPlayerName = currentPlayer ? currentPlayer.name : 'Unknown';
+        
+        return { 
+          isValid: false, 
+          error: `OUT OF TURN: It is currently ${currentPlayerName}'s turn to act. Please wait for your turn. (Attempted: ${action})` 
+        };
+      }
+
+      // Additional action-specific validations
+      if (action === 'check') {
+        if (gameState.currentBet > player.currentBet) {
+          return { 
+            isValid: false, 
+            error: `Cannot check: there is a bet of ${gameState.currentBet - player.currentBet} to call` 
+          };
+        }
+      }
+
+      if (action === 'call') {
+        const callAmount = gameState.currentBet - player.currentBet;
+        if (callAmount <= 0) {
+          return { 
+            isValid: false, 
+            error: `Cannot call: no bet to call. Use check instead.` 
+          };
+        }
+      }
+
+      return { isValid: true };
+    } catch (error) {
+      return { 
+        isValid: false, 
+        error: `Turn validation error: ${(error as Error).message}` 
+      };
+    }
+  };
+
   // Broadcast tables update to all clients
   const broadcastTables = () => {
     const tables = tableManager.getAllTables();
@@ -535,12 +606,25 @@ export function registerConsolidatedHandlers(io: Server) {
       }
     });
 
-    // === GAME ACTION HANDLERS === (gameManager is source of truth)
+    // === GAME ACTION HANDLERS === (gameManager is source of truth + Professional Turn Order Enforcement)
     
     socket.on('game:bet', async ({ gameId, playerId, amount }) => {
       try {
         if (!gameId || !playerId || typeof amount !== 'number' || amount <= 0) {
           throw new Error('Invalid bet parameters');
+        }
+
+        // PROFESSIONAL TURN ORDER ENFORCEMENT
+        const turnValidation = validateTurnOrder(gameId, playerId, 'bet');
+        if (!turnValidation.isValid) {
+          socket.emit('game:turnOrderViolation', { 
+            action: 'bet', 
+            error: turnValidation.error,
+            gameId,
+            playerId,
+            timestamp: Date.now()
+          });
+          return;
         }
 
         await gameManager.placeBet(gameId, playerId, amount);
@@ -556,6 +640,19 @@ export function registerConsolidatedHandlers(io: Server) {
           throw new Error('Invalid call parameters');
         }
 
+        // PROFESSIONAL TURN ORDER ENFORCEMENT
+        const turnValidation = validateTurnOrder(gameId, playerId, 'call');
+        if (!turnValidation.isValid) {
+          socket.emit('game:turnOrderViolation', { 
+            action: 'call', 
+            error: turnValidation.error,
+            gameId,
+            playerId,
+            timestamp: Date.now()
+          });
+          return;
+        }
+
         await gameManager.call(gameId, playerId);
         socket.emit('game:actionSuccess', { action: 'call', gameId });
       } catch (error) {
@@ -567,6 +664,19 @@ export function registerConsolidatedHandlers(io: Server) {
       try {
         if (!gameId || !playerId) {
           throw new Error('Invalid check parameters');
+        }
+
+        // PROFESSIONAL TURN ORDER ENFORCEMENT
+        const turnValidation = validateTurnOrder(gameId, playerId, 'check');
+        if (!turnValidation.isValid) {
+          socket.emit('game:turnOrderViolation', { 
+            action: 'check', 
+            error: turnValidation.error,
+            gameId,
+            playerId,
+            timestamp: Date.now()
+          });
+          return;
         }
 
         await gameManager.check(gameId, playerId);
@@ -582,6 +692,19 @@ export function registerConsolidatedHandlers(io: Server) {
           throw new Error('Invalid fold parameters');
         }
 
+        // PROFESSIONAL TURN ORDER ENFORCEMENT
+        const turnValidation = validateTurnOrder(gameId, playerId, 'fold');
+        if (!turnValidation.isValid) {
+          socket.emit('game:turnOrderViolation', { 
+            action: 'fold', 
+            error: turnValidation.error,
+            gameId,
+            playerId,
+            timestamp: Date.now()
+          });
+          return;
+        }
+
         await gameManager.fold(gameId, playerId);
         socket.emit('game:actionSuccess', { action: 'fold', gameId });
       } catch (error) {
@@ -593,6 +716,20 @@ export function registerConsolidatedHandlers(io: Server) {
       try {
         if (!gameId || !playerId || typeof totalAmount !== 'number' || totalAmount <= 0) {
           throw new Error('Invalid raise parameters');
+        }
+
+        // PROFESSIONAL TURN ORDER ENFORCEMENT
+        const turnValidation = validateTurnOrder(gameId, playerId, 'raise');
+        if (!turnValidation.isValid) {
+          socket.emit('game:turnOrderViolation', { 
+            action: 'raise', 
+            error: turnValidation.error,
+            gameId,
+            playerId,
+            totalAmount,
+            timestamp: Date.now()
+          });
+          return;
         }
 
         await gameManager.raise(gameId, playerId, totalAmount);
@@ -608,6 +745,19 @@ export function registerConsolidatedHandlers(io: Server) {
           throw new Error('Invalid all-in parameters');
         }
 
+        // PROFESSIONAL TURN ORDER ENFORCEMENT
+        const turnValidation = validateTurnOrder(gameId, playerId, 'allIn');
+        if (!turnValidation.isValid) {
+          socket.emit('game:turnOrderViolation', { 
+            action: 'allIn', 
+            error: turnValidation.error,
+            gameId,
+            playerId,
+            timestamp: Date.now()
+          });
+          return;
+        }
+
         await gameManager.allIn(gameId, playerId);
         socket.emit('game:actionSuccess', { action: 'allIn', gameId });
       } catch (error) {
@@ -615,10 +765,25 @@ export function registerConsolidatedHandlers(io: Server) {
       }
     });
 
-    // Backwards compatibility for generic game:action
+    // Backwards compatibility for generic game:action (with Professional Turn Order Enforcement)
     socket.on('game:action', async ({ gameId, playerId, action, amount, totalAmount }) => {
       try {
         console.log(`[CONSOLIDATED] Generic game action: ${action}`);
+        
+        // PROFESSIONAL TURN ORDER ENFORCEMENT for all actions
+        const turnValidation = validateTurnOrder(gameId, playerId, action);
+        if (!turnValidation.isValid) {
+          socket.emit('game:turnOrderViolation', { 
+            action, 
+            error: turnValidation.error,
+            gameId,
+            playerId,
+            amount,
+            totalAmount,
+            timestamp: Date.now()
+          });
+          return;
+        }
         
         switch (action) {
           case 'bet':
