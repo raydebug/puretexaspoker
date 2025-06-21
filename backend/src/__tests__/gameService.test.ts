@@ -7,7 +7,7 @@ describe('GameService', () => {
   let defaultPlayer: Player;
 
   beforeEach(() => {
-    gameService = new GameService();
+    gameService = new GameService('test-game-id');
     defaultPlayer = {
       id: 'player1',
       name: 'Player 1',

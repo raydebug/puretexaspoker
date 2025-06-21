@@ -1,4 +1,5 @@
 import { gameManager } from '../services/gameManager';
+import { cleanupDatabase, initializeTestDatabase, createTestTable, createTestPlayer } from './testUtils';
 import { prisma } from '../db';
 
 describe('Card Dealing Integration', () => {
@@ -8,11 +9,8 @@ describe('Card Dealing Integration', () => {
 
   beforeEach(async () => {
     // Clean up any existing data
-    await prisma.gameAction.deleteMany();
-    await prisma.game.deleteMany();
-    await prisma.playerTable.deleteMany();
-    await prisma.player.deleteMany();
-    await prisma.table.deleteMany();
+    await cleanupDatabase();
+    await initializeTestDatabase();
 
     // Create players
     const player1 = await prisma.player.create({
@@ -68,11 +66,7 @@ describe('Card Dealing Integration', () => {
 
   afterEach(async () => {
     // Clean up
-    await prisma.gameAction.deleteMany();
-    await prisma.game.deleteMany();
-    await prisma.playerTable.deleteMany();
-    await prisma.player.deleteMany();
-    await prisma.table.deleteMany();
+    await cleanupDatabase();
   });
 
   it('should deal cards to players when game starts', async () => {
