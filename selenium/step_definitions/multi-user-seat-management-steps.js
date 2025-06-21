@@ -29,10 +29,21 @@ let tableId = 'MultiUserTable';
 
 // Browser management utilities
 async function createBrowserInstance(instanceId, headless = process.env.HEADLESS !== 'false') {
-  const options = require('../config/selenium.config').getDriverOptions('chrome', headless);
+  const chrome = require('selenium-webdriver/chrome');
+  const chromeOptions = new chrome.Options();
+  
+  if (headless) {
+    chromeOptions.addArguments('--headless=new');
+  }
+  chromeOptions.addArguments('--no-sandbox');
+  chromeOptions.addArguments('--disable-dev-shm-usage');
+  chromeOptions.addArguments('--disable-web-security');
+  chromeOptions.addArguments('--allow-running-insecure-content');
+  chromeOptions.addArguments('--window-size=1280,720');
+  
   const driver = await new Builder()
     .forBrowser('chrome')
-    .setChromeOptions(options)
+    .setChromeOptions(chromeOptions)
     .build();
   
   browserInstances[instanceId] = driver;
