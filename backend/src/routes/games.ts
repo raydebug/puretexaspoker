@@ -235,6 +235,24 @@ router.post('/:gameId/raise', async (req, res) => {
   }
 });
 
+// All-in
+router.post('/:gameId/allIn', async (req, res) => {
+  try {
+    const { gameId } = req.params;
+    const { playerId } = req.body;
+
+    if (!playerId) {
+      return res.status(400).json({ error: 'Player ID is required' });
+    }
+
+    const gameState = await gameManager.allIn(gameId, playerId);
+    res.json(gameState);
+  } catch (error) {
+    console.error('Error going all-in:', error);
+    res.status(400).json({ error: (error as Error).message || 'Failed to go all-in' });
+  }
+});
+
 // Get phase information
 router.get('/:gameId/phase', async (req, res) => {
   try {
@@ -310,6 +328,9 @@ router.post('/:gameId/actions', async (req, res) => {
           return res.status(400).json({ error: 'Amount required for raise action' });
         }
         result = await gameManager.raise(gameId, playerId, amount);
+        break;
+      case 'allIn':
+        result = await gameManager.allIn(gameId, playerId);
         break;
       default:
         return res.status(400).json({ error: 'Invalid action type' });

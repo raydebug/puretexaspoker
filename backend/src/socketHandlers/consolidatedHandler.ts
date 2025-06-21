@@ -602,6 +602,19 @@ export function registerConsolidatedHandlers(io: Server) {
       }
     });
 
+    socket.on('game:allIn', async ({ gameId, playerId }) => {
+      try {
+        if (!gameId || !playerId) {
+          throw new Error('Invalid all-in parameters');
+        }
+
+        await gameManager.allIn(gameId, playerId);
+        socket.emit('game:actionSuccess', { action: 'allIn', gameId });
+      } catch (error) {
+        handleError(socket, error as Error, 'game:allIn', { gameId, playerId });
+      }
+    });
+
     // Backwards compatibility for generic game:action
     socket.on('game:action', async ({ gameId, playerId, action, amount, totalAmount }) => {
       try {
@@ -630,6 +643,10 @@ export function registerConsolidatedHandlers(io: Server) {
             if (!raiseAmount) throw new Error('Amount required for raise');
             await gameManager.raise(gameId, playerId, raiseAmount);
             socket.emit('game:actionSuccess', { action: 'raise', gameId, totalAmount: raiseAmount });
+            break;
+          case 'allIn':
+            await gameManager.allIn(gameId, playerId);
+            socket.emit('game:actionSuccess', { action: 'allIn', gameId });
             break;
           default:
             throw new Error(`Unknown action: ${action}`);

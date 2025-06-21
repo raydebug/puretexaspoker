@@ -428,6 +428,50 @@ export class GameManager {
     return gameState;
   }
 
+  public async allIn(gameId: string, playerId: string): Promise<GameState> {
+    const gameService = this.games.get(gameId);
+    if (!gameService) {
+      throw new Error('Game not found');
+    }
+
+    // Get player's chips before the all-in
+    const player = gameService.getPlayer(playerId);
+    if (!player) {
+      throw new Error('Player not found');
+    }
+
+    const allInAmount = player.chips;
+    gameService.allIn(playerId);
+
+    // Record the action in database
+    await prisma.gameAction.create({
+      data: {
+        gameId,
+        playerId,
+        type: 'bet' as any, // All-in is recorded as a bet action
+        amount: allInAmount
+      }
+    });
+
+    const gameState = gameService.getGameState();
+    await prisma.game.update({
+      where: { id: gameId },
+      data: {
+        pot: gameState.pot
+      }
+    });
+
+    // Emit real-time update
+    this.emitGameUpdate(gameId, 'playerAction', {
+      playerId,
+      action: 'allIn',
+      amount: allInAmount,
+      pot: gameState.pot
+    });
+
+    return gameState;
+  }
+
   private async revealCardOrder(gameId: string): Promise<void> {
     try {
       await prisma.cardOrder.update({

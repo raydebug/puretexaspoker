@@ -242,30 +242,51 @@ export class GameService {
       throw new Error('Bet amount must be positive');
     }
 
-    if (amount > player.chips) {
-      throw new Error('Insufficient chips');
-    }
-
     const currentPlayerBet = player.currentBet;
     const minCallAmount = this.gameState.currentBet - currentPlayerBet;
     
-    if (amount < minCallAmount) {
-      throw new Error(`Must call or raise. Minimum call amount: ${minCallAmount}`);
-    }
-
-    // Check if this is a raise
-    if (amount > minCallAmount) {
-      const raiseAmount = amount - minCallAmount;
-      if (raiseAmount < this.gameState.minBet) {
-        throw new Error(`Minimum raise amount is ${this.gameState.minBet}. Total bet must be at least ${minCallAmount + this.gameState.minBet}`);
+    // Enhanced All-In Logic: Allow all-in even if insufficient chips
+    if (amount > player.chips) {
+      // All-in scenario: player bets all remaining chips
+      const allInAmount = player.chips;
+      
+      if (allInAmount < minCallAmount) {
+        // All-in with less than call amount - only allowed if all chips are being bet
+        if (allInAmount !== player.chips) {
+          throw new Error(`Must call ${minCallAmount} or go all-in with ${player.chips}`);
+        }
+        // All-in with less than call is allowed - creates side pot
+        console.log(`🎰 Player ${player.name} going all-in for ${allInAmount} (less than call of ${minCallAmount})`);
+      } else if (allInAmount < minCallAmount + this.gameState.minBet && allInAmount > minCallAmount) {
+        // All-in with more than call but less than minimum raise - allowed as all-in
+        console.log(`🎰 Player ${player.name} going all-in for ${allInAmount} (less than full raise)`);
       }
-    }
+      
+      // Apply all-in bet
+      player.chips = 0;
+      player.currentBet += allInAmount;
+      this.gameState.pot += allInAmount;
+      this.gameState.currentBet = Math.max(this.gameState.currentBet, player.currentBet);
+    } else {
+      // Normal betting with sufficient chips
+      if (amount < minCallAmount) {
+        throw new Error(`Must call or raise. Minimum call amount: ${minCallAmount}`);
+      }
 
-    // Apply the bet
-    player.chips -= amount;
-    player.currentBet += amount;
-    this.gameState.pot += amount;
-    this.gameState.currentBet = Math.max(this.gameState.currentBet, player.currentBet);
+      // Check if this is a raise (and validate minimum raise)
+      if (amount > minCallAmount) {
+        const raiseAmount = amount - minCallAmount;
+        if (raiseAmount < this.gameState.minBet) {
+          throw new Error(`Minimum raise amount is ${this.gameState.minBet}. Total bet must be at least ${minCallAmount + this.gameState.minBet}`);
+        }
+      }
+
+      // Apply the normal bet
+      player.chips -= amount;
+      player.currentBet += amount;
+      this.gameState.pot += amount;
+      this.gameState.currentBet = Math.max(this.gameState.currentBet, player.currentBet);
+    }
     
     // Track that this player has acted
     this.playersActedThisRound.add(playerId);
@@ -289,27 +310,49 @@ export class GameService {
 
     const currentPlayerBet = player.currentBet;
     const minCallAmount = this.gameState.currentBet - currentPlayerBet;
-    const totalBetAmount = totalAmount;
+    const betAmount = totalAmount - currentPlayerBet;
     
-    if (totalBetAmount <= this.gameState.currentBet) {
-      throw new Error(`Must raise above current bet of ${this.gameState.currentBet}`);
-    }
-
-    const actualRaiseAmount = totalBetAmount - this.gameState.currentBet;
-    if (actualRaiseAmount < this.gameState.minBet) {
-      throw new Error(`Minimum raise is ${this.gameState.minBet}. Total bet must be at least ${this.gameState.currentBet + this.gameState.minBet}`);
-    }
-
-    const betAmount = totalBetAmount - currentPlayerBet;
+    // Enhanced All-In Raise Logic
     if (betAmount > player.chips) {
-      throw new Error('Insufficient chips for this raise');
-    }
+      // All-in scenario: player raises with all remaining chips
+      const allInAmount = player.chips;
+      const newTotalBet = currentPlayerBet + allInAmount;
+      
+      if (newTotalBet <= this.gameState.currentBet) {
+        throw new Error(`All-in amount of ${allInAmount} would not raise above current bet of ${this.gameState.currentBet}`);
+      }
+      
+      // Check if all-in raise meets minimum raise requirement
+      const actualRaise = newTotalBet - this.gameState.currentBet;
+      if (actualRaise < this.gameState.minBet && allInAmount !== player.chips) {
+        throw new Error(`Minimum raise is ${this.gameState.minBet}. All-in raise of ${actualRaise} is insufficient`);
+      }
+      
+      // All-in raise is allowed even if less than minimum raise
+      console.log(`🎰 Player ${player.name} going all-in with raise to ${newTotalBet} (${actualRaise} raise)`);
+      
+      // Apply all-in raise
+      player.chips = 0;
+      player.currentBet = newTotalBet;
+      this.gameState.pot += allInAmount;
+      this.gameState.currentBet = newTotalBet;
+    } else {
+      // Normal raise with sufficient chips
+      if (totalAmount <= this.gameState.currentBet) {
+        throw new Error(`Must raise above current bet of ${this.gameState.currentBet}`);
+      }
 
-    // Apply the raise
-    player.chips -= betAmount;
-    player.currentBet = totalBetAmount;
-    this.gameState.pot += betAmount;
-    this.gameState.currentBet = totalBetAmount;
+      const actualRaiseAmount = totalAmount - this.gameState.currentBet;
+      if (actualRaiseAmount < this.gameState.minBet) {
+        throw new Error(`Minimum raise is ${this.gameState.minBet}. Total bet must be at least ${this.gameState.currentBet + this.gameState.minBet}`);
+      }
+
+      // Apply the normal raise
+      player.chips -= betAmount;
+      player.currentBet = totalAmount;
+      this.gameState.pot += betAmount;
+      this.gameState.currentBet = totalAmount;
+    }
     
     // Track that this player has acted
     this.playersActedThisRound.add(playerId);
@@ -765,17 +808,62 @@ export class GameService {
     }
 
     if (callAmount > player.chips) {
-      // All-in scenario
+      // All-in call scenario: player calls with all remaining chips
       const allInAmount = player.chips;
+      console.log(`🎰 Player ${player.name} calling all-in for ${allInAmount} (call amount was ${callAmount})`);
+      
       player.currentBet += allInAmount;
       this.gameState.pot += allInAmount;
       player.chips = 0;
-      // Note: In a full implementation, we'd handle side pots here
+      
+      // Note: Side pots will be handled automatically during showdown
     } else {
-      // Normal call
+      // Normal call with sufficient chips
       player.chips -= callAmount;
       player.currentBet += callAmount;
       this.gameState.pot += callAmount;
+    }
+
+    // Track that this player has acted
+    this.playersActedThisRound.add(playerId);
+
+    this.moveToNextPlayer();
+  }
+
+  public allIn(playerId: string): void {
+    const player = this.getPlayer(playerId);
+    if (!player) {
+      throw new Error('Player not found');
+    }
+
+    if (!player.isActive) {
+      throw new Error('Player is not active in the game');
+    }
+
+    if (player.id !== this.gameState.currentPlayerId) {
+      throw new Error('Not player\'s turn');
+    }
+
+    if (player.chips <= 0) {
+      throw new Error('Player has no chips to go all-in');
+    }
+
+    const allInAmount = player.chips;
+    const currentPlayerBet = player.currentBet;
+    const newTotalBet = currentPlayerBet + allInAmount;
+    const minCallAmount = this.gameState.currentBet - currentPlayerBet;
+
+    console.log(`🎰 Player ${player.name} going ALL-IN with ${allInAmount} chips (total bet: ${newTotalBet})`);
+
+    // Apply all-in bet regardless of call/raise requirements
+    player.chips = 0;
+    player.currentBet = newTotalBet;
+    this.gameState.pot += allInAmount;
+    
+    // Update current bet if this all-in raises it
+    if (newTotalBet > this.gameState.currentBet) {
+      this.gameState.currentBet = newTotalBet;
+      console.log(`🎰 All-in raised current bet to ${this.gameState.currentBet}`);
     }
 
     // Track that this player has acted

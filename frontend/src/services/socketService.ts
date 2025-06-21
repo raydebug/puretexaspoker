@@ -1351,11 +1351,7 @@ export class SocketService {
    */
   allIn(gameId: string, playerId: string) {
     if (this.socket && this.socket.connected) {
-      // Get current player's chips and emit as a bet
-      const currentPlayer = this.getCurrentPlayer();
-      if (currentPlayer) {
-        this.socket.emit('game:bet', { gameId, playerId, amount: currentPlayer.chips });
-      }
+      this.socket.emit('game:allIn', { gameId, playerId });
     }
   }
 
