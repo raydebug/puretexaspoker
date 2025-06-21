@@ -396,7 +396,16 @@ export class SocketService {
     socket.on('onlineUsers:update', (data: { total: number }) => {
       console.log('DEBUG: Received onlineUsers:update event with total:', data.total);
       if (this.onlineUsersCallback) {
-        (this.onlineUsersCallback as any)(data.total);
+        // Always ensure we call the callback properly based on its expected signature
+        if (this.onlineUsersCallback.length === 2) {
+          // Callback expects (players, observers) - provide arrays
+          const players = Array.isArray(this.gameState?.players) ? this.gameState.players : [];
+          const observers = Array.isArray(this.observers) ? this.observers : [];
+          (this.onlineUsersCallback as any)(players, observers);
+        } else {
+          // Callback expects single parameter (total count)
+          (this.onlineUsersCallback as any)(data.total);
+        }
       }
     });
 
@@ -867,19 +876,29 @@ export class SocketService {
   }
 
   private emitOnlineUsersUpdate() {
-    // Ensure both players and observers are always arrays
-    const players = Array.isArray(this.gameState?.players) ? this.gameState.players : [];
-    const observers = Array.isArray(this.observers) ? this.observers : [];
-    const totalUsers = players.length + observers.length;
-    
-    if (this.onlineUsersCallback) {
-      // Check if callback expects two parameters (players, observers)
-      if (this.onlineUsersCallback.length === 2) {
-        (this.onlineUsersCallback as any)(players, observers);
-      } else {
-        // Single parameter callback (total count)
-        (this.onlineUsersCallback as any)(totalUsers);
+    try {
+      // Ensure both players and observers are always arrays
+      const players = Array.isArray(this.gameState?.players) ? this.gameState.players : [];
+      const observers = Array.isArray(this.observers) ? this.observers : [];
+      const totalUsers = players.length + observers.length;
+      
+      if (this.onlineUsersCallback) {
+        // Check if callback expects two parameters (players, observers)
+        if (this.onlineUsersCallback.length === 2) {
+          console.log('DEBUG: Calling onlineUsersCallback with players array:', players, 'and observers array:', observers);
+          (this.onlineUsersCallback as any)(players, observers);
+        } else {
+          // Single parameter callback (total count)
+          console.log('DEBUG: Calling onlineUsersCallback with total count:', totalUsers);
+          (this.onlineUsersCallback as any)(totalUsers);
+        }
       }
+    } catch (error) {
+      console.error('Error in emitOnlineUsersUpdate:', error);
+      console.error('GameState players:', this.gameState?.players);
+      console.error('Observers:', this.observers);
+      console.error('Callback type:', typeof this.onlineUsersCallback);
+      console.error('Callback length:', this.onlineUsersCallback?.length);
     }
   }
 

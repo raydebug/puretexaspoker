@@ -307,8 +307,17 @@ export const GameLobby: React.FC<GameLobbyProps> = ({ onJoinGame }) => {
 
     // Connect socket and listen for online users updates
     socketService.connect();
-    socketService.onOnlineUsersUpdate((players, observers) => {
-      setOnlineUsers(players.length + observers.length);
+    socketService.onOnlineUsersUpdate((playersOrTotal: any, observers?: any) => {
+      // Handle different callback signatures safely
+      if (typeof playersOrTotal === 'number') {
+        // Single parameter callback - total count
+        setOnlineUsers(playersOrTotal);
+      } else {
+        // Two parameter callback - players and observers arrays
+        const playersCount = Array.isArray(playersOrTotal) ? playersOrTotal.length : 0;
+        const observersCount = Array.isArray(observers) ? observers.length : 0;
+        setOnlineUsers(playersCount + observersCount);
+      }
     });
 
     return () => {

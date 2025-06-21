@@ -302,20 +302,36 @@ const GamePage: React.FC = () => {
         socketService.onError(errorHandler);
         
         // Listen for observer updates
-        socketService.onOnlineUsersUpdate((players: Player[], observerList: string[]) => {
-          console.log('🎯 GamePage: Observers state updated:', observerList);
+        socketService.onOnlineUsersUpdate((playersOrTotal: Player[] | number, observerList?: string[]) => {
+          console.log('🎯 GamePage: Received online users update:', { playersOrTotal, observerList });
+          
+          // Handle different callback signatures safely
+          if (typeof playersOrTotal === 'number') {
+            // Single parameter callback - total count only
+            console.log('🎯 GamePage: Received total user count:', playersOrTotal);
+            return;
+          }
+          
+          // Two parameter callback - players array and observers array
+          const players = Array.isArray(playersOrTotal) ? playersOrTotal : [];
+          const observers = Array.isArray(observerList) ? observerList : [];
+          
+          console.log('🎯 GamePage: Observers state updated:', observers);
           console.log('🎯 GamePage: Players state updated:', players);
-          setObservers(observerList);
+          
+          setObservers(observers);
           
           if (gameState) {
             const newGameState = { ...gameState, players };
             setGameState(newGameState);
           }
           
-          // Calculate available seats (1-9, excluding occupied seats)
-          const occupiedSeats = players.map(p => p.seatNumber);
-          const available = Array.from({ length: 9 }, (_, i) => i + 1).filter(seat => !occupiedSeats.includes(seat));
-          setAvailableSeats(available);
+          // Calculate available seats (1-9, excluding occupied seats) - only if players is an array
+          if (Array.isArray(players)) {
+            const occupiedSeats = players.map(p => p.seatNumber).filter(seat => typeof seat === 'number');
+            const available = Array.from({ length: 9 }, (_, i) => i + 1).filter(seat => !occupiedSeats.includes(seat));
+            setAvailableSeats(available);
+          }
         });
         
         // Set up event-driven listeners for game state instead of polling
