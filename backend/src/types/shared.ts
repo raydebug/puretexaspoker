@@ -16,6 +16,11 @@ export interface Player {
   isActive: boolean;
   cards: Card[];
   avatar: Avatar;
+  // ENHANCED BLIND SYSTEM: Late entry and dead blind tracking
+  handsPlayed?: number;
+  missedBlinds?: number;
+  hasPostedDeadBlind?: boolean;
+  joinedHandNumber?: number;
 }
 
 export interface SidePot {
@@ -34,6 +39,34 @@ export interface ShowdownResult {
   winAmount: number;
   potType: 'main' | 'side';
   potId?: string;
+}
+
+// ENHANCED BLIND SYSTEM: Blind schedule configuration for tournaments
+export interface BlindLevel {
+  level: number;
+  smallBlind: number;
+  bigBlind: number;
+  ante?: number;
+  duration: number; // Duration in minutes
+}
+
+export interface BlindSchedule {
+  id: string;
+  name: string;
+  type: 'tournament' | 'cash' | 'sit-and-go';
+  levels: BlindLevel[];
+  startingLevel: number;
+  isBreakAfterLevel?: number[];
+  breakDuration?: number; // Break duration in minutes
+}
+
+// ENHANCED BLIND SYSTEM: Dead blind tracking and late entry rules
+export interface DeadBlindInfo {
+  playerId: string;
+  blindType: 'small' | 'big' | 'both';
+  amount: number;
+  handNumber: number;
+  reason: 'seat_change' | 'missed_blind' | 'late_entry';
 }
 
 export interface GameState {
@@ -59,6 +92,17 @@ export interface GameState {
   winners?: string[]; // For split pots
   showdownResults?: ShowdownResult[];
   isHandComplete?: boolean;
+  
+  // ENHANCED BLIND SYSTEM: Advanced blind management
+  blindSchedule?: BlindSchedule;
+  currentBlindLevel?: number;
+  blindLevelStartTime?: number;
+  handNumber?: number;
+  deadBlinds?: DeadBlindInfo[];
+  ante?: number;
+  isOnBreak?: boolean;
+  breakEndTime?: number;
+  lateEntryDeadline?: number;
 }
 
 export interface Hand {

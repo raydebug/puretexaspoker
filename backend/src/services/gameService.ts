@@ -1,9 +1,10 @@
-import { GameState, Player, Card, Hand, ShowdownResult, SidePot } from '../types/shared';
+import { GameState, Player, Card, Hand, ShowdownResult, SidePot, BlindSchedule } from '../types/shared';
 import { DeckService } from './deckService';
 import { HandEvaluator, DetailedHand } from './handEvaluator';
 import { SeatManager } from './seatManager';
 import { SidePotManager, PotDistribution } from './sidePotManager';
 import { CardOrderService } from './cardOrderService';
+import { EnhancedBlindManager } from './enhancedBlindManager';
 
 export class GameService {
   private gameState: GameState;
@@ -12,6 +13,7 @@ export class GameService {
   private seatManager: SeatManager;
   private sidePotManager: SidePotManager;
   private cardOrderService: CardOrderService;
+  private enhancedBlindManager: EnhancedBlindManager;
   private deck: Card[];
   private readonly MAX_PLAYERS = 9;
   private playersActedThisRound: Set<string> = new Set();
@@ -30,6 +32,9 @@ export class GameService {
     this.cardOrderService = new CardOrderService();
     this.deck = [];
     this.gameState = this.initializeGameState();
+    
+    // ENHANCED BLIND SYSTEM: Initialize enhanced blind manager
+    this.enhancedBlindManager = new EnhancedBlindManager(this.gameState);
   }
 
   // ENHANCED AUTOMATION: Set callback for automatic phase transitions
@@ -146,12 +151,37 @@ export class GameService {
       throw new Error('Not enough players for blinds');
     }
 
+    // ENHANCED BLIND SYSTEM: Check for blind level increases (tournaments)
+    if (this.enhancedBlindManager.checkBlindLevelIncrease()) {
+      console.log(`⬆️ BLIND SYSTEM: Blinds increased to ${this.gameState.smallBlind}/${this.gameState.bigBlind}`);
+    }
+
+    // ENHANCED BLIND SYSTEM: Check if break has ended
+    if (this.enhancedBlindManager.checkBreakEnd()) {
+      console.log(`🎮 BLIND SYSTEM: Tournament break ended, blinds increased`);
+    }
+
+    // ENHANCED BLIND SYSTEM: Increment hand number for statistics
+    this.enhancedBlindManager.incrementHandNumber();
+
+    // ENHANCED BLIND SYSTEM: Post antes first if applicable
+    this.enhancedBlindManager.postAntes();
+
+    // ENHANCED BLIND SYSTEM: Handle dead blinds for players with pending obligations
+    this.gameState.players.forEach(player => {
+      if (player.isActive && this.gameState.deadBlinds?.some(db => db.playerId === player.id)) {
+        this.enhancedBlindManager.postDeadBlinds(player.id);
+      }
+    });
+
     const smallBlindPlayer = activePlayers[this.gameState.smallBlindPosition];
     const bigBlindPlayer = activePlayers[this.gameState.bigBlindPosition];
 
     if (!smallBlindPlayer || !bigBlindPlayer) {
       throw new Error('Could not identify blind players');
     }
+
+    console.log(`💰 BLIND SYSTEM: Posting blinds - SB: ${smallBlindPlayer.name} (${this.gameState.smallBlind}), BB: ${bigBlindPlayer.name} (${this.gameState.bigBlind})`);
 
     // Post small blind
     const smallBlindAmount = Math.min(this.gameState.smallBlind, smallBlindPlayer.chips);
@@ -167,6 +197,8 @@ export class GameService {
 
     this.gameState.currentBet = bigBlindAmount;
     this.gameState.minBet = this.gameState.bigBlind;
+
+    console.log(`✅ BLIND SYSTEM: Blinds posted successfully, pot: ${this.gameState.pot}`);
   }
 
   public dealCommunityCards(): void {
@@ -1077,5 +1109,44 @@ export class GameService {
           canDeal: false
         };
     }
+  }
+
+  // ENHANCED BLIND SYSTEM: Tournament and cash game management methods
+
+  public initializeBlindSchedule(schedule: BlindSchedule): void {
+    this.enhancedBlindManager.initializeBlindSchedule(schedule);
+    console.log(`🏆 BLIND SYSTEM: Initialized ${schedule.type} with ${schedule.levels.length} blind levels`);
+  }
+
+  public handleSeatChange(playerId: string, oldSeat: number, newSeat: number): void {
+    this.enhancedBlindManager.handleSeatChange(playerId, oldSeat, newSeat);
+  }
+
+  public handleLateEntry(playerId: string): void {
+    this.enhancedBlindManager.handleLateEntry(playerId);
+  }
+
+  public getBlindScheduleSummary(): any {
+    return this.enhancedBlindManager.getBlindScheduleSummary();
+  }
+
+  public getEnhancedBlindManager(): EnhancedBlindManager {
+    return this.enhancedBlindManager;
+  }
+
+  // ENHANCED BLIND SYSTEM: Set late entry deadline for tournaments
+  public setLateEntryDeadline(deadline: number): void {
+    this.gameState.lateEntryDeadline = deadline;
+    console.log(`⏰ BLIND SYSTEM: Late entry deadline set to ${new Date(deadline).toLocaleString()}`);
+  }
+
+  // ENHANCED BLIND SYSTEM: Check if player has pending dead blinds
+  public hasDeadBlinds(playerId: string): boolean {
+    return this.gameState.deadBlinds?.some(db => db.playerId === playerId) || false;
+  }
+
+  // ENHANCED BLIND SYSTEM: Force post dead blinds for a player
+  public forcePostDeadBlinds(playerId: string): boolean {
+    return this.enhancedBlindManager.postDeadBlinds(playerId);
   }
 } 

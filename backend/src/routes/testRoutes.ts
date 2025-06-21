@@ -551,6 +551,289 @@ router.post('/test/complete_betting_round', async (req, res) => {
 });
 
 /**
+ * TEST API: Enhanced Blind System - Initialize Blind Schedule
+ * POST /api/test/initialize_blind_schedule
+ */
+router.post('/test/initialize_blind_schedule', async (req, res) => {
+  try {
+    const { gameId, schedule } = req.body;
+    
+    const gameManager = GameManager.getInstance();
+    const gameService = gameManager.getGame(gameId);
+    
+    if (!gameService) {
+      return res.status(404).json({
+        success: false,
+        error: 'Game not found'
+      });
+    }
+    
+    // Initialize the blind schedule
+    gameService.initializeBlindSchedule(schedule);
+    
+    console.log(`🏆 TEST: Initialized blind schedule for game ${gameId}`);
+    
+    res.json({
+      success: true,
+      message: 'Blind schedule initialized successfully',
+      schedule: schedule
+    });
+    
+  } catch (error) {
+    console.error('Error initializing blind schedule:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message
+    });
+  }
+});
+
+/**
+ * TEST API: Enhanced Blind System - Get Blind Schedule Summary
+ * POST /api/test/get_blind_summary
+ */
+router.post('/test/get_blind_summary', async (req, res) => {
+  try {
+    const { gameId } = req.body;
+    
+    const gameManager = GameManager.getInstance();
+    const gameService = gameManager.getGame(gameId);
+    
+    if (!gameService) {
+      return res.status(404).json({
+        success: false,
+        error: 'Game not found'
+      });
+    }
+    
+    const blindSummary = gameService.getBlindScheduleSummary();
+    
+    res.json({
+      success: true,
+      blindSummary: blindSummary
+    });
+    
+  } catch (error) {
+    console.error('Error getting blind summary:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message
+    });
+  }
+});
+
+/**
+ * TEST API: Enhanced Blind System - Handle Seat Change
+ * POST /api/test/change_seat
+ */
+router.post('/test/change_seat', async (req, res) => {
+  try {
+    const { gameId, playerName, oldSeat, newSeat } = req.body;
+    
+    const gameManager = GameManager.getInstance();
+    const gameService = gameManager.getGame(gameId);
+    
+    if (!gameService) {
+      return res.status(404).json({
+        success: false,
+        error: 'Game not found'
+      });
+    }
+    
+    // Find player by name
+    const gameState = gameService.getGameState();
+    const player = gameState.players.find(p => p.name === playerName);
+    
+    if (!player) {
+      return res.status(404).json({
+        success: false,
+        error: 'Player not found'
+      });
+    }
+    
+    // Handle seat change with dead blind logic
+    gameService.handleSeatChange(player.id, oldSeat, newSeat);
+    
+    console.log(`🔄 TEST: Player ${playerName} changed from seat ${oldSeat} to ${newSeat}`);
+    
+    res.json({
+      success: true,
+      message: 'Seat change processed successfully'
+    });
+    
+  } catch (error) {
+    console.error('Error handling seat change:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message
+    });
+  }
+});
+
+/**
+ * TEST API: Enhanced Blind System - Get Dead Blinds
+ * POST /api/test/get_dead_blinds
+ */
+router.post('/test/get_dead_blinds', async (req, res) => {
+  try {
+    const { gameId } = req.body;
+    
+    const gameManager = GameManager.getInstance();
+    const gameService = gameManager.getGame(gameId);
+    
+    if (!gameService) {
+      return res.status(404).json({
+        success: false,
+        error: 'Game not found'
+      });
+    }
+    
+    const gameState = gameService.getGameState();
+    const deadBlinds = gameState.deadBlinds || [];
+    
+    // Enhance with player names for easier testing
+    const enhancedDeadBlinds = deadBlinds.map(db => {
+      const player = gameState.players.find(p => p.id === db.playerId);
+      return {
+        ...db,
+        playerName: player?.name || 'Unknown'
+      };
+    });
+    
+    res.json({
+      success: true,
+      deadBlinds: enhancedDeadBlinds
+    });
+    
+  } catch (error) {
+    console.error('Error getting dead blinds:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message
+    });
+  }
+});
+
+/**
+ * TEST API: Enhanced Blind System - Simulate Time Elapsed
+ * POST /api/test/simulate_time_elapsed
+ */
+router.post('/test/simulate_time_elapsed', async (req, res) => {
+  try {
+    const { gameId, minutes } = req.body;
+    
+    const gameManager = GameManager.getInstance();
+    const gameService = gameManager.getGame(gameId);
+    
+    if (!gameService) {
+      return res.status(404).json({
+        success: false,
+        error: 'Game not found'
+      });
+    }
+    
+    const gameState = gameService.getGameState();
+    const blindManager = gameService.getEnhancedBlindManager();
+    
+    // Simulate time passage by adjusting blind level start time
+    if (gameState.blindLevelStartTime) {
+      gameState.blindLevelStartTime = gameState.blindLevelStartTime - (minutes * 60 * 1000);
+    }
+    
+    console.log(`⏰ TEST: Simulated ${minutes} minutes elapsed for game ${gameId}`);
+    
+    res.json({
+      success: true,
+      message: `Simulated ${minutes} minutes elapsed`
+    });
+    
+  } catch (error) {
+    console.error('Error simulating time elapsed:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message
+    });
+  }
+});
+
+/**
+ * TEST API: Enhanced Blind System - Check Blind Level Increase
+ * POST /api/test/check_blind_increase
+ */
+router.post('/test/check_blind_increase', async (req, res) => {
+  try {
+    const { gameId } = req.body;
+    
+    const gameManager = GameManager.getInstance();
+    const gameService = gameManager.getGame(gameId);
+    
+    if (!gameService) {
+      return res.status(404).json({
+        success: false,
+        error: 'Game not found'
+      });
+    }
+    
+    const blindManager = gameService.getEnhancedBlindManager();
+    const increased = blindManager.checkBlindLevelIncrease();
+    
+    console.log(`📈 TEST: Blind level increase check - ${increased ? 'Increased' : 'No change'}`);
+    
+    res.json({
+      success: true,
+      increased: increased,
+      message: increased ? 'Blind level increased' : 'No blind level change'
+    });
+    
+  } catch (error) {
+    console.error('Error checking blind increase:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message
+    });
+  }
+});
+
+/**
+ * TEST API: Enhanced Blind System - Setup Cash Game
+ * POST /api/test/setup_cash_game
+ */
+router.post('/test/setup_cash_game', async (req, res) => {
+  try {
+    const { gameId, smallBlind, bigBlind } = req.body;
+    
+    const gameManager = GameManager.getInstance();
+    const gameService = gameManager.getGame(gameId);
+    
+    if (!gameService) {
+      return res.status(404).json({
+        success: false,
+        error: 'Game not found'
+      });
+    }
+    
+    const gameState = gameService.getGameState();
+    gameState.smallBlind = smallBlind;
+    gameState.bigBlind = bigBlind;
+    gameState.handNumber = 0;
+    
+    console.log(`💰 TEST: Setup cash game with blinds ${smallBlind}/${bigBlind}`);
+    
+    res.json({
+      success: true,
+      message: `Cash game setup with blinds ${smallBlind}/${bigBlind}`
+    });
+    
+  } catch (error) {
+    console.error('Error setting up cash game:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message
+    });
+  }
+});
+
+/**
  * TEST API: Professional Turn Order Validation
  * POST /api/test/validate_turn_order
  */
