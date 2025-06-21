@@ -1,360 +1,227 @@
-# Pure Texas Poker - Task Status
+# Pure Texas Poker - Task Status & Work Plan
 
-## ✅ Completed Features
+Based on the comprehensive `game.md` specification, here is the prioritized work plan to align the current implementation with professional Texas Hold'em standards.
 
-### Core Game Features
-- Multi-table lobby system
-- Real-time gameplay with WebSocket
-- Observer mode with seat selection
-- Smart username system with duplicate prevention
-- Connection resilience with auto-cleanup
-- Professional UI with animations
+## 🔥 IMMEDIATE PRIORITIES (Next Sprint)
 
-### Recent Fixes (June 2025)
-- Session data bug fix - Invalid session data error resolved
-- Observer list display fix - UI now shows observers correctly
-- Location system refactoring - Table/seat attributes implemented
-- Observer-Player state exclusion - Fixed dual state issue
-- Username validation & duplicate prevention
-- Player connection monitoring
-- User state management & authentication
-- Socket service export issue - Added missing socketService singleton
-- Missing joinTable method - Added method for table joining functionality
-- Socket timeout issues - Enhanced connection monitoring with auto-cleanup
-- OnlineList component specs alignment - Component now matches test expectations
-  * Added detailed Players/Observers sections with counts and styling
-  * Implemented seat numbers, status indicators, and proper highlighting  
-  * All unit tests (8/8) and integration tests (2/2) passing
-  * E2E test: Online Users After Login - 5/5 tests passing
-- **Join Table Button Disabled State for Anonymous Users** ✅ **COMPLETE**
-  * **Feature Spec**: `cypress/e2e/features/join-table-anonymous-disabled.feature` (5 scenarios)
-  * **Test Suite**: `cypress/e2e/join-table-button-disabled-anonymous.cy.ts` - **9/9 tests passing**
-  * **Implementation**: Complete button state management for anonymous/authenticated users
-  * **Features Implemented**:
-    - Disabled join table buttons when user is anonymous
-    - Button text changes: "Join Table" → "Login to Join"
-    - Inactive styling: opacity 0.6, cursor not-allowed, gray colors
-    - Tooltip: "Please login to join tables" using title attribute
-    - Login modal triggered when disabled button clicked (fallback)
-    - Proper state transitions on login/logout
-    - Navigation prevention for disabled buttons
-- **Observer-to-Player Test Cleanup** ✅ **COMPLETE**
-  * **Removed 5 duplicate test files** with overlapping functionality
-  * **Kept**: `cypress/e2e/observer-to-player-transition.cy.ts` (425 lines - most comprehensive)
-  * **Deleted duplicates**:
-    - `observer-to-player-online-list.cy.ts` (143 lines)
-    - `observer-to-player-session-test.cy.ts` (207 lines)
-    - `observer-to-player-transition-flow.cy.ts` (195 lines)
-    - `observer-to-player-transition-complete.cy.ts` (194 lines)
-    - `complete-observer-to-player-flow.cy.ts` (169 lines)
+### ✅ JUST COMPLETED
 
-## ✅ Recently Completed
+#### Test Infrastructure Fixes ✅ **COMPLETED**
+- **Fixed Selenium Test Timeouts**: Enhanced timeout handling for game controls verification and browser cleanup
+- **Issue**: Test suite was failing on "game controls should be properly disabled" with indefinite hangs
+- **Solution**: Added Promise.race timeout protection, improved error handling, aggressive cleanup operations
+- **Result**: All 74 test steps now complete successfully without timeouts
+- **Files**: `selenium/step_definitions/multiplayer-poker-round-steps.js`, `selenium/step_definitions/hooks.js`
 
-### High Priority
-- **Enhanced Player Hole Cards Display with Visibility Fix** ✅ **COMPLETE** 
-  * **Issue**: Players could not see their hole cards during gameplay, and red heart/diamond cards were not displaying in red color
-  * **Root Cause**: 
-    - Current player object not properly populated with cards from game state
-    - Missing hole cards API for test mode to deal cards at game start
-    - Color detection logic not handling both text names and symbol characters
-    - Players only receiving cards during showdown in test scenarios
-    - Restrictive `isObserver` flag preventing card display when users take seats
-  * **Solution**: 
-    - **Enhanced Frontend Logic**: Modified PokerTable to extract current user's cards from gameState.players instead of relying on separate currentPlayer object
-    - **Improved Color Handling**: Enhanced getCardColor() to detect both text names ('hearts', 'diamonds') and symbols (♥, ♦) for red color
-    - **New Backend API**: Added `/api/test_deal_hole_cards` endpoint to deal cards to all players at game start for testing
-    - **Test Integration**: Updated Selenium tests to call hole cards API after creating mock game for immediate card visibility
-    - **Enhanced Card Visibility Logic**: Replaced restrictive `isObserver`-based logic with multiple fallback detection methods:
-      1. Match by `currentPlayer.id` (primary method)
-      2. Match by `localStorage.nickname` (fallback for session issues)
-      3. Show any player with cards if not observer (testing mode)
-    - **Enhanced Debugging**: Added comprehensive logging to track currentUserPlayer and card data flow
-  * **Result**: 
-    - ✅ Players now see their 2 hole cards throughout the entire game (not just showdown)
-    - ✅ Red hearts ♥ and diamonds ♦ display in proper red color (#d40000)
-    - ✅ Black spades ♠ and clubs ♣ display in black color (#000)
-    - ✅ Robust card visibility even when session data is incomplete
-    - ✅ Test validation: Found 15 revealed cards during showdown (up from 6) confirming proper card dealing
-    - ✅ All 74 test steps passing in 1m09s
-  * **Files Enhanced**: 
-    - `frontend/src/components/Game/PokerTable.tsx` - Enhanced card display logic, color handling, and multiple fallback detection methods
-    - `backend/src/routes/testRoutes.ts` - Added hole cards dealing API endpoint
-    - `selenium/step_definitions/multiplayer-poker-round-steps.js` - Integrated hole cards dealing in tests
+### 🎯 HIGH PRIORITY (Week 1-2)
 
-- **Card Display Issues Fix** ✅ **COMPLETE**
-  * **Issue**: Blank white cards in table center and no hole cards shown to current player
-  * **Root Cause**: 
-    - No component to display player hole cards during gameplay (only during showdown)
-    - Community cards showing raw suit names ('hearts', 'spades') instead of symbols (♥, ♠)
-    - Session data being lost causing users stuck in observer mode
-    - Missing card color coding for red/black suits
-  * **Solution**: 
-    - Added dedicated PlayerHoleCards component that displays when user is a player (not observer)
-    - Fixed community cards to properly convert suit names to symbols with getSuitSymbol()
-    - Added proper card coloring (red for hearts/diamonds, black for spades/clubs)
-    - Implemented session data recovery in consolidatedHandler to prevent "Invalid session data" errors
-    - Added development mode debugging info to identify observer vs player status
-  * **Result**: Players now see their 2 hole cards clearly displayed, community cards show proper suit symbols with colors
-  * **Files Fixed**: `frontend/src/components/Game/PokerTable.tsx`, `frontend/src/components/AnimatedCard.tsx`, `backend/src/socketHandlers/consolidatedHandler.ts`
+#### 1. Professional Game Flow Implementation
+**Status**: In Progress - Based on game.md Section "Core Gameplay Rules"
 
-- **Selenium Test Timeout Verification Failure Fix** ✅ **COMPLETE**
-  * **Issue**: Multiplayer poker round Selenium test timing out on "game controls should be properly disabled" step and After hook cleanup
-  * **Root Cause**: WebDriver operations hanging indefinitely without timeouts
-  * **Solution**: 
-    - Added explicit timeouts to `findElements` operations with Promise.race timeout protection
-    - Implemented timeout safeguards for browser cleanup operations (cookies, localStorage, sessionStorage)
-    - Added proper error handling and fallback behavior
-  * **Result**: All 74 test steps now pass successfully in 1m09s
-  * **Files Fixed**: `selenium/step_definitions/multiplayer-poker-round-steps.js`, `selenium/step_definitions/hooks.js`
+**Current Gap Analysis**:
+- ✅ Basic betting rounds implemented (preflop, flop, turn, river)  
+- ❌ **Missing**: Proper blind rotation system
+- ❌ **Missing**: Minimum players validation (2+ to start)
+- ❌ **Missing**: Dealer button position management
+- ❌ **Missing**: Turn order enforcement (UTG, blinds, etc.)
 
-## ✅ Recently Completed
+**Implementation Tasks**:
+- [ ] **Blind System Enhancement**
+  - Implement automatic small/big blind posting
+  - Add blind rotation with dealer button movement
+  - Handle late joining blind requirements per poker rules
+- [ ] **Turn Order System** 
+  - Implement proper position-based turn order (UTG → Dealer)
+  - Add different turn orders for preflop vs post-flop
+  - Enforce turn-based action validation
+- [ ] **Game Start Validation**
+  - Prevent game start with < 2 players
+  - Add proper waiting room state management
+  - Implement minimum buy-in requirements
 
-### High Priority  
-- **TestPlayer1 Hole Cards Visibility in Tests** ✅ **COMPLETE**
-  * **Issue**: In Selenium tests, TestPlayer1 (representing current player) could not see their hole cards face up during gameplay
-  * **Root Cause**: Browser session was not properly associated with TestPlayer1 - backend created TestPlayer1 but frontend didn't know browser user was TestPlayer1
-  * **Solution**: 
-    - Modified test to set `localStorage.setItem('nickname', 'TestPlayer1')` to identify browser as TestPlayer1
-    - Re-navigate to game page to apply localStorage identity 
-    - Enhanced debugging to verify frontend visibility logic is working
-    - Now browser user is properly linked to TestPlayer1 game data
-  * **Result**: 
-    - ✅ TestPlayer1 can see their 2 hole cards face up (A♠ K♥) throughout entire game
-    - ✅ Enhanced visibility logic successfully detects TestPlayer1 by nickname
-    - ✅ All 74 test steps pass with proper card display functionality
-    - ✅ Complete poker round verification: preflop → flop → turn → river → showdown
-  * **Files Enhanced**: `selenium/step_definitions/multiplayer-poker-round-steps.js` - Added TestPlayer1 identity application logic
+#### 2. Hand Evaluation & Showdown System
+**Status**: Partial - Based on game.md Section "Hand Resolution"
 
-## 🔄 Currently Working On
+**Current Status**:
+- ✅ Basic hand evaluation exists (`handEvaluatorService.ts`)
+- ❌ **Critical Gap**: No side pot handling for all-in scenarios
+- ❌ **Missing**: Proper showdown card revelation sequence
+- ❌ **Missing**: Split pot handling for ties
 
-### Medium Priority
-- **Observer to Player Transition Implementation Verification**
-  * **Test Suite**: `cypress/e2e/observer-to-player-transition.cy.ts` (consolidated - 425 lines)
-  * **Requirements**: User appears in observers list when joining table, then moves to players list after taking seat
-  * **Current Status**: Need to verify implementation is working correctly with consolidated test
+**Implementation Tasks**:
+- [ ] **Side Pot System**
+  - Implement main pot vs side pot calculations
+  - Handle multiple all-in scenarios correctly
+  - Add side pot winner determination logic
+- [ ] **Showdown Enhancement**
+  - Add proper card revelation sequence
+  - Implement "best 5-card hand" evaluation from 7 cards
+  - Add tie-breaking with kicker cards
+- [ ] **Split Pot Logic**
+  - Handle exact ties with even pot distribution
+  - Implement odd chip distribution rules
 
-## 🚧 Ongoing Tasks
+#### 3. Professional Betting Structure
+**Status**: Basic - Based on game.md Section "Betting Structure"
 
-### Testing & Quality
-- [ ] Complete remaining location transition tests (1/2 passing)
-- [ ] Add mobile responsiveness tests
-- [ ] Add performance benchmarks
-- [ ] Add edge case coverage for:
-  - Socket disconnection scenarios
-  - Concurrent user actions
-  - Network latency handling
-  - Browser compatibility
-- [ ] Add load testing for multi-table scenarios
+**Current Issues**:
+- ✅ Basic bet/call/raise/fold implemented
+- ❌ **Missing**: Minimum raise validation
+- ❌ **Missing**: All-in handling with side pots
+- ❌ **Missing**: Betting caps and round limits
 
-### Technical Debt
-- [ ] Optimize socket connection handling
-- [ ] Refactor game state management
-- [ ] Improve error handling system
+**Implementation Tasks**:
+- [ ] **Betting Validation**
+  - Add minimum raise amount enforcement (previous raise + big blind)
+  - Implement maximum bet validation (player's chip stack)
+  - Add betting round completion detection
+- [ ] **All-In System**
+  - Handle all-in bets with side pot creation
+  - Implement "dry side pot" logic
+  - Add all-in player action skipping
 
-### Future Features
-- [ ] Chat system implementation
-- [ ] Tournament mode
-- [ ] Statistics tracking
-- [ ] Mobile responsiveness improvements
+## 🚧 MEDIUM PRIORITY (Week 3-4)
 
-## 📊 Test Coverage
+### 4. Advanced User Roles & Permissions
+**Based on game.md Section "User Roles and Responsibilities"**
 
-### Core Tests (100% Passing)
-- Setup Tests: 3/3
-- Observer Flow: 3/3
-- Observer Appearance: 5/5
-- Username Duplicate: 2/2
-- API Backend: 42/42
-- Session Establishment: 3/3 ✨ NEW
-- Observer → Player Transition: 3/3 ✅ FULL FLOW
-- Online Users After Login: 5/5 ✅ NEWLY FIXED
+**Current Status**: Basic player/observer distinction
+**Missing Features**:
+- [ ] **Spectator Mode Enhancements**
+  - Add spectator chat permissions (read-only)
+  - Implement spectator view restrictions (no hole cards)
+  - Add spectator count limits per table
+- [ ] **Moderator System**
+  - Add moderator role with game control permissions
+  - Implement dispute resolution tools
+  - Add player removal/timeout capabilities
 
-### Pending Tests
-- Location Transition: 1/2
+### 5. Game State Persistence & Recovery
+**Based on game.md testing requirements**
 
-## 🛠️ Tech Stack
-- Frontend: React 18, TypeScript, styled-components, Vite
-- Backend: Node.js, Express, Socket.io, TypeScript
-- Database: Prisma ORM with SQLite
-- Testing: Cypress for E2E
+**Implementation Needs**:
+- [ ] **Session Recovery**
+  - Save game state to database on each action
+  - Implement reconnection with state restoration
+  - Add game replay functionality for disputes
+- [ ] **Tournament Support** 
+  - Multi-table tournament structure
+  - Blind level progression
+  - Prize pool distribution
 
-## 📝 Notes
-- Production ready as of June 2025
-- Both servers running in parallel
-- Comprehensive E2E test coverage for critical paths
+### 6. Professional UI/UX Improvements
+**Based on poker industry standards**
 
-## Completed Features
+**Current Gaps**:
+- [ ] **Table Graphics**
+  - Professional felt background and styling
+  - Animated chip movements and pot awards
+  - Card flip animations for showdown
+- [ ] **Player Actions Interface**
+  - Betting slider for raise amounts
+  - Quick-action buttons (call any, fold, check)
+  - Time bank and action timers
 
-### ✅ Cucumber/BDD Integration (COMPLETED)
-**Status**: Full Cucumber integration implemented and working
+## 📋 MEDIUM-LOW PRIORITY (Week 5-6)
 
-**Implementation**:
-- **Configuration**: 
-  - Cypress configured with `@badeball/cypress-cucumber-preprocessor` v22.1.0
-  - `cypress.config.ts` updated with cucumber preprocessor and esbuild plugins
-  - Package.json includes cucumber-specific scripts
-- **Feature Files**: 7 Gherkin `.feature` files in `cypress/e2e/features/`
-  - `join-table-anonymous-disabled.feature` ✅ (5/5 tests passing)
-  - `online-users-list.feature`
-  - `session-persistence.feature` 
-  - `observer-to-player-transition.feature`
-  - `authentication.feature`
-  - `table-navigation.feature`
-  - `real-time-updates.feature`
-- **Step Definitions**: 8 TypeScript files in `cypress/e2e/step_definitions/`
-  - `common-steps.ts` - Shared steps across features
-  - `join-table-steps.ts` - Join table button functionality
-  - `online-users-steps.ts` - Online users list management
-  - `session-persistence-steps.ts` - Session management
-  - `observer-to-player-steps.ts` - Observer to player transitions
-  - `authentication-steps.ts` - Login/logout flows
-  - `table-navigation-steps.ts` - Table navigation
-  - `real-time-updates-steps.ts` - Real-time UI updates
+### 7. Enhanced Testing Suite
+**Based on game.md Section "End-to-End Testing Strategy"**
 
-**Commands**:
-```bash
-# Run all Cucumber feature files
-npm run test:e2e:cucumber
+**Test Coverage Gaps**:
+- [ ] **Game Start & Joining Tests**
+  - Minimum players to start validation
+  - Late joining with blind posting
+  - Seat assignment and buy-in flow
+- [ ] **Round Progression Tests**  
+  - Complete betting round cycles
+  - Community card dealing sequence
+  - Turn order validation across all phases
+- [ ] **Hand Resolution Tests**
+  - Showdown with multiple winners
+  - Side pot calculations
+  - Split pot scenarios
 
-# Open Cypress with Cucumber mode
-npm run test:e2e:cucumber:open
+### 8. Security & Anti-Cheat Measures
 
-# Run specific feature file
-npx cypress run --spec "cypress/e2e/features/join-table-anonymous-disabled.feature"
-```
+**Implementation Needs**:
+- [ ] **Card Order Transparency** ✅ **COMPLETED**
+  - Pre-generated card deck with SHA-256 hash
+  - Public hash verification system
+  - Post-game card order revelation
+- [ ] **Action Validation**
+  - Server-side action validation
+  - Anti-timing attack measures
+  - Rate limiting for player actions
 
-**BDD Benefits**:
-- Business-readable test specifications in Gherkin format
-- Natural language Given/When/Then scenarios
-- Reusable step definitions across multiple features
-- Living documentation that stakeholders can understand
-- Behavior-driven development approach
+## 🔮 FUTURE ENHANCEMENTS (Later Sprints)
 
-### ✅ Join Table Button Disabled State (COMPLETED)
-**Status**: Fully implemented and tested - 9/9 tests passing
+### 9. Advanced Features
+- **Statistics & Analytics**: Player performance tracking, hand history
+- **Social Features**: Friend systems, private tables, clubs
+- **Mobile Optimization**: Touch-friendly interface, responsive design  
+- **Internationalization**: Multi-language support, currency options
 
-**Requirements**: "if not login, join table buttons should be inactive state"
+### 10. Scalability & Performance
+- **Database Optimization**: Query optimization, connection pooling
+- **WebSocket Scaling**: Redis adapter for multi-server deployment
+- **CDN Integration**: Static asset optimization, global distribution
 
-**Implementation**:
-- Button disabled state: `disabled={!isAuthenticated}`
-- Text change: "Join Table" → "Login to Join" 
-- Visual styling: opacity 0.6, cursor not-allowed, gray colors
-- Tooltip support: "Please login to join tables"
-- Login modal trigger on disabled button click (fallback)
-- Proper state transitions on login/logout
+## 📊 Current Implementation Status
 
-**Test Coverage**:
-- **Feature File**: `cypress/e2e/features/join-table-anonymous-disabled.feature` (5 scenarios)
-- **E2E Test Suite**: `cypress/e2e/join-table-button-disabled-anonymous.cy.ts` (9 test scenarios)
-- **All tests passing**: Anonymous button restrictions, login transitions, tooltips, styling
+### ✅ Solid Foundation (Production Ready)
+- **User Authentication**: Username validation, duplicate prevention
+- **Basic Game Flow**: Join table, take seat, basic betting rounds
+- **Real-time Updates**: WebSocket communication, game state sync
+- **Observer System**: Watch games, transition to player
+- **Card Display**: Hole cards, community cards, proper suit colors
+- **Testing Infrastructure**: Comprehensive E2E test suite
 
-### ✅ OnlineList Component Specs Alignment (COMPLETED) 
-**Status**: Complete implementation matching test expectations
+### 🔧 Needs Enhancement (Partially Implemented)
+- **Betting System**: Basic actions work, missing advanced validation
+- **Hand Evaluation**: Core logic exists, needs side pot handling
+- **Game Controls**: UI exists, needs better state management
+- **Turn Management**: Basic turn tracking, needs position-based logic
 
-**Problem**: Component showed simple count vs tests expecting detailed player/observer lists
+### ❌ Missing Critical Features (Not Implemented)
+- **Blind System**: No automatic blind posting or rotation
+- **Side Pots**: No all-in scenario handling
+- **Professional Turn Order**: No position-based action sequences
+- **Game Start Validation**: No minimum player enforcement
 
-**Solution**: Completely rewrote `OnlineList.tsx`:
-- **Players Section**: "Players (X)" with detailed list showing seat numbers
-- **Observers Section**: "Observers (X)" with observer names  
-- **Status Indicators**: "(You)" for current user, "(Away)" for away players
-- **Styling**: Current user highlighting, away player styling, proper spacing
-- **Real-time Updates**: Live updates via socket connections
+## 🎯 Success Metrics
 
-**Test Results**:
-- Unit tests: 8/8 passing ✅
-- Integration tests: 2/2 passing ✅  
-- E2E test: "Online Users After Login" - 5/5 tests passing ✅
+**Technical Metrics**:
+- [ ] All 74 Selenium tests passing consistently
+- [ ] < 100ms WebSocket response times
+- [ ] Zero critical bugs in betting/pot calculations
+- [ ] 100% server-side action validation
 
-### ✅ Test Suite Cleanup (COMPLETED)
-**Problem**: 6 duplicate observer-to-player test files with overlapping functionality
+**Business Metrics**:
+- [ ] Complete Texas Hold'em rule compliance
+- [ ] Professional-grade user experience
+- [ ] Tournament-ready game infrastructure
+- [ ] Industry-standard security measures
 
-**Solution**: 
-- Analyzed file sizes and comprehensiveness
-- Kept `observer-to-player-transition.cy.ts` (425 lines, most comprehensive)
-- Removed 5 duplicate files (908 lines of duplicate code)
+---
 
-**Files Removed**:
-- `observer-to-player-online-list.cy.ts` (143 lines)
-- `observer-to-player-session-test.cy.ts` (207 lines)
-- `observer-to-player-transition-flow.cy.ts` (195 lines) 
-- `observer-to-player-transition-complete.cy.ts` (194 lines)
-- `complete-observer-to-player-flow.cy.ts` (169 lines)
+## 📝 Development Guidelines
 
-**Benefits**: Cleaner test suite, no conflicting tests, easier maintenance
+**Code Quality Standards**:
+- All poker logic must be server-side validated
+- Betting calculations must be precise (no floating point errors)
+- Game state changes must be atomic and recoverable
+- All actions must be auditable for dispute resolution
 
-## Architecture & Testing Notes
+**Testing Requirements**:
+- Every poker rule must have corresponding test coverage
+- All edge cases (all-in, side pots, ties) must be tested
+- Performance testing for concurrent player actions
+- Security testing for anti-cheat measures
 
-### Cucumber Integration Details
-- **Preprocessor**: Uses `@badeball/cypress-cucumber-preprocessor` for modern Cypress support
-- **Step Organization**: Common steps in shared file, feature-specific steps in dedicated files  
-- **No Duplicates**: Careful step definition management to avoid conflicts
-- **TypeScript Support**: Full TypeScript integration with proper types
-- **Parallel Execution**: Can run alongside existing Cypress test suites
+**Documentation Standards**:
+- API documentation for all game actions
+- Rules documentation for poker compliance
+- Deployment guides for production setup
+- Player guides for game features
 
-### Feature Coverage
-The BDD approach covers all major user journeys:
-1. **Authentication**: Login/logout flows, anonymous browsing
-2. **Table Interaction**: Join table restrictions, navigation
-3. **Real-time Features**: Online users, status updates  
-4. **Session Management**: Persistence across browser sessions
-5. **Observer Flows**: Observer to player transitions
-
-### Testing Strategy
-- **Unit Tests**: Component-level testing (Jest/React Testing Library)
-- **Integration Tests**: Feature integration (Cypress .cy.ts files)  
-- **BDD Tests**: Business behavior validation (Cucumber .feature files)
-- **E2E Tests**: End-to-end user journeys (Comprehensive Cypress suites)
-
-This multi-layered approach ensures robust test coverage from technical implementation to business requirements.
-
-## Completed Commits
-1. OnlineList component specs alignment fix
-2. Join table button disabled state implementation  
-3. Observer-to-player test cleanup (removed 5 duplicates)
-4. Complete Cucumber integration for BDD testing
-
-## Current Tasks
-
-### Card Order Transparency System
-**Status**: In Progress
-**Priority**: Medium
-
-**Feature Specification:**
-- Pre-generate complete card deck order with SHA-256 hash before each game hand
-- Store card order hash in database for auditability
-- Provide API endpoint to view latest 10 games' card orders and hashes
-- Allow users to download card order history for verification
-- Display card hash to players before hand starts for transparency
-- Reveal actual card order after hand completion
-
-**Technical Requirements:**
-- Extend database schema with `CardOrder` model
-- Enhance `DeckService` to generate deterministic shuffles with seeds
-- Create cryptographic hash service for card order verification
-- Build API endpoints for card order retrieval
-- Add frontend UI for viewing/downloading card histories
-- Implement cucumber tests for transparency features
-
-**Acceptance Criteria:**
-- [x] Card orders are pre-generated with verifiable hashes
-- [x] Users can view latest 10 games' card data
-- [x] Download functionality for card order history
-- [x] Hash verification ensures card order integrity
-- [x] BDD tests cover all transparency scenarios
-
-**Implementation Status:**
-✅ **Completed Core Implementation:**
-- Database schema extended with `CardOrder` model
-- `CardOrderService` with deterministic shuffling and SHA-256 hashing
-- API endpoints for transparency: `/api/card-orders/latest`, `/api/card-orders/game/:id`, `/api/card-orders/download`, `/api/card-orders/verify`
-- Integration with `GameManager` for automatic card order generation and revelation
-- Comprehensive unit tests (17 tests passing)
-- Cucumber feature file with BDD scenarios
-
-**Technical Features Implemented:**
-- Pre-determined card deck order with cryptographic seed
-- SHA-256 hash generation for card order verification
-- Automatic card order revelation when games complete
-- CSV download functionality for revealed card orders
-- Hash verification API for integrity checking
-- Deterministic shuffle reproducibility for auditing
+This work plan transforms the current functional prototype into a professional-grade Texas Hold'em poker platform that meets industry standards and provides the comprehensive gameplay experience outlined in `game.md`.
