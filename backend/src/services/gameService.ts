@@ -17,6 +17,9 @@ export class GameService {
   private playersActedThisRound: Set<string> = new Set();
   private gameId: string;
   private cardOrderHash?: string;
+  
+  // ENHANCED AUTOMATION: Callback for automatic phase transitions
+  private phaseTransitionCallback?: (gameId: string, fromPhase: string, toPhase: string, gameState: GameState) => void;
 
   constructor(gameId: string) {
     this.gameId = gameId;
@@ -27,6 +30,11 @@ export class GameService {
     this.cardOrderService = new CardOrderService();
     this.deck = [];
     this.gameState = this.initializeGameState();
+  }
+
+  // ENHANCED AUTOMATION: Set callback for automatic phase transitions
+  public setPhaseTransitionCallback(callback: (gameId: string, fromPhase: string, toPhase: string, gameState: GameState) => void): void {
+    this.phaseTransitionCallback = callback;
   }
 
   private initializeGameState(): GameState {
@@ -418,34 +426,67 @@ export class GameService {
 
   private isBettingRoundComplete(): boolean {
     const activePlayers = this.gameState.players.filter(p => p.isActive);
+    const playersWhoCanAct = activePlayers.filter(p => p.chips > 0); // Players not all-in
+    const allInPlayers = activePlayers.filter(p => p.chips === 0);
+    const currentBet = this.gameState.currentBet;
     
+    console.log(`🔍 BETTING ROUND COMPLETION CHECK:`);
+    console.log(`   Phase: ${this.gameState.phase}`);
+    console.log(`   Active Players: ${activePlayers.length}`);
+    console.log(`   Players Who Can Act: ${playersWhoCanAct.length}`);
+    console.log(`   All-In Players: ${allInPlayers.length}`);
+    console.log(`   Current Bet: ${currentBet}`);
+    console.log(`   Players Acted This Round: ${this.playersActedThisRound.size}`);
+    
+    // ENHANCED: Game over if only one player remains
     if (activePlayers.length <= 1) {
-      return true; // Game over
+      console.log(`✅ BETTING COMPLETE: Only ${activePlayers.length} active player(s) remaining`);
+      return true;
     }
 
-    // All active players must have acted and have equal bets
-    const playersWhoCanAct = activePlayers.filter(p => p.chips > 0); // Players not all-in
-    
-    // If all remaining players are all-in, betting round is complete
+    // ENHANCED: All remaining players are all-in except maybe one
     if (playersWhoCanAct.length <= 1) {
+      console.log(`✅ BETTING COMPLETE: All remaining players all-in (${playersWhoCanAct.length} can act)`);
       return true;
     }
 
     // Check if all players who can act have matching bets
-    const currentBet = this.gameState.currentBet;
     const allPlayersMatched = playersWhoCanAct.every(p => p.currentBet === currentBet);
+    console.log(`   All Bets Matched: ${allPlayersMatched}`);
     
-    // Special handling for preflop in heads-up play
+    if (!allPlayersMatched) {
+      console.log(`❌ BETTING INCOMPLETE: Not all bets matched`);
+      playersWhoCanAct.forEach(p => {
+        console.log(`     ${p.name}: ${p.currentBet} (need: ${currentBet})`);
+      });
+      return false;
+    }
+
+    // ENHANCED: Special handling for preflop in heads-up play
     if (this.gameState.phase === 'preflop' && activePlayers.length === 2) {
-      // In heads-up preflop, if someone has acted and all bets are equal, round is complete
       const someoneActed = this.playersActedThisRound.size > 0;
-      return allPlayersMatched && someoneActed;
+      console.log(`   Heads-Up Preflop: ${someoneActed ? 'Someone acted' : 'No one acted'}`);
+      const isComplete = allPlayersMatched && someoneActed;
+      console.log(`${isComplete ? '✅' : '❌'} BETTING ${isComplete ? 'COMPLETE' : 'INCOMPLETE'}: Heads-up preflop logic`);
+      return isComplete;
     }
     
-    // For all other cases, ALL active players must have acted in this betting round
+    // ENHANCED: For all other cases, ALL active players must have acted in this betting round
     const allPlayersActed = activePlayers.every(p => this.playersActedThisRound.has(p.id));
+    console.log(`   All Players Acted: ${allPlayersActed}`);
+    
+    if (!allPlayersActed) {
+      console.log(`❌ BETTING INCOMPLETE: Not all players have acted`);
+      activePlayers.forEach(p => {
+        const hasActed = this.playersActedThisRound.has(p.id);
+        console.log(`     ${p.name}: ${hasActed ? 'ACTED' : 'NOT ACTED'}`);
+      });
+      return false;
+    }
 
-    return allPlayersMatched && allPlayersActed;
+    const isComplete = allPlayersMatched && allPlayersActed;
+    console.log(`${isComplete ? '✅' : '❌'} BETTING ${isComplete ? 'COMPLETE' : 'INCOMPLETE'}: General logic`);
+    return isComplete;
   }
 
   private hasEveryPlayerActed(): boolean {
@@ -456,6 +497,9 @@ export class GameService {
   }
 
   private completePhase(): void {
+    const fromPhase = this.gameState.phase;
+    console.log(`🔄 AUTOMATED PHASE TRANSITION: Starting transition from ${fromPhase}`);
+    
     switch (this.gameState.phase) {
       case 'preflop':
         // Burn one card before dealing the flop
@@ -466,6 +510,7 @@ export class GameService {
         if (flopCards) this.gameState.communityCards = flopCards;
         this.gameState.phase = 'flop';
         this.resetBettingRound();
+        console.log(`🎯 AUTOMATED: Preflop → Flop (${flopCards?.length || 0} community cards dealt)`);
         break;
       case 'flop':
         // Burn one card before dealing the turn
@@ -477,6 +522,7 @@ export class GameService {
         if (turnCard) this.gameState.communityCards.push(...turnCard);
         this.gameState.phase = 'turn';
         this.resetBettingRound();
+        console.log(`🎯 AUTOMATED: Flop → Turn (turn card dealt: ${turnCard?.[0]?.rank}${turnCard?.[0]?.suit})`);
         break;
       case 'turn':
         // Burn one card before dealing the river
@@ -488,14 +534,28 @@ export class GameService {
         if (riverCard) this.gameState.communityCards.push(...riverCard);
         this.gameState.phase = 'river';
         this.resetBettingRound();
+        console.log(`🎯 AUTOMATED: Turn → River (river card dealt: ${riverCard?.[0]?.rank}${riverCard?.[0]?.suit})`);
         break;
       case 'river':
         this.gameState.phase = 'showdown';
         this.handleShowdown();
+        console.log(`🎯 AUTOMATED: River → Showdown (winner: ${this.gameState.winner || 'TBD'})`);
         break;
       default:
         throw new Error(`Invalid phase for completion: ${this.gameState.phase}`);
     }
+
+    const toPhase = this.gameState.phase;
+    
+    // ENHANCED AUTOMATION: Trigger callback for WebSocket broadcasting
+    if (this.phaseTransitionCallback) {
+      console.log(`🔔 AUTOMATED: Broadcasting phase transition ${fromPhase} → ${toPhase} via callback`);
+      this.phaseTransitionCallback(this.gameId, fromPhase, toPhase, this.gameState);
+    } else {
+      console.log(`⚠️ AUTOMATED: No phase transition callback set - transition not broadcasted`);
+    }
+    
+    console.log(`✅ AUTOMATED PHASE TRANSITION COMPLETE: ${fromPhase} → ${toPhase}`);
   }
 
   private handleShowdown(): void {

@@ -14,6 +14,10 @@ export class GameManager {
     this.cardOrderService = new CardOrderService();
     // Initialize with default game for testing
     const testGame = new GameService('test-game-id');
+    
+    // ENHANCED AUTOMATION: Set up callback for test game too
+    testGame.setPhaseTransitionCallback(this.handleAutomaticPhaseTransition.bind(this));
+    
     this.games.set('test-game-id', testGame);
     console.log(`DEBUG: GameManager initialized with test game. Map size: ${this.games.size}`);
   }
@@ -40,12 +44,87 @@ export class GameManager {
     }
   }
 
+  // ENHANCED AUTOMATION: Handle automatic phase transitions with WebSocket broadcasting
+  private handleAutomaticPhaseTransition(gameId: string, fromPhase: string, toPhase: string, gameState: GameState): void {
+    console.log(`🔔 AUTOMATED TRANSITION: GameManager handling ${fromPhase} → ${toPhase} for game ${gameId}`);
+    
+    // Create detailed transition message
+    let message = '';
+    let eventType = 'automaticPhaseTransition';
+    
+    switch (toPhase) {
+      case 'flop':
+        message = `🎴 Automatic Flop: 3 community cards dealt (betting round completed)`;
+        eventType = 'automaticFlop';
+        break;
+      case 'turn':
+        message = `🎴 Automatic Turn: 4th community card dealt (betting round completed)`;
+        eventType = 'automaticTurn';
+        break;
+      case 'river':
+        message = `🎴 Automatic River: 5th community card dealt (betting round completed)`;
+        eventType = 'automaticRiver';
+        break;
+      case 'showdown':
+        message = `🎯 Automatic Showdown: Determining winner (betting complete)`;
+        eventType = 'automaticShowdown';
+        break;
+      case 'finished':
+        const winnerName = gameState.winner ? 
+          this.games.get(gameId)?.getPlayer(gameState.winner)?.name || gameState.winner : 'Unknown';
+        message = `🏆 Hand Complete: ${winnerName} wins ${gameState.pot} chips`;
+        eventType = 'gameComplete';
+        break;
+      default:
+        message = `🔄 Phase transition: ${fromPhase} → ${toPhase}`;
+    }
+
+    // Broadcast the automatic transition to all clients
+    if (this.io) {
+      console.log(`📡 AUTOMATED: Broadcasting ${eventType} to game:${gameId}`);
+      
+      // Emit the updated game state
+      this.io.to(`game:${gameId}`).emit('gameState', gameState);
+      
+      // Emit specific phase transition event
+      this.io.to(`game:${gameId}`).emit(eventType, {
+        gameId,
+        fromPhase,
+        toPhase,
+        message,
+        communityCards: gameState.communityCards,
+        pot: gameState.pot,
+        currentPlayerId: gameState.currentPlayerId,
+        phase: gameState.phase,
+        isAutomatic: true,
+        timestamp: Date.now()
+      });
+      
+      // Emit general phase transition event for backwards compatibility
+      this.io.to(`game:${gameId}`).emit('phaseTransition', {
+        gameId,
+        fromPhase,
+        toPhase,
+        message,
+        isAutomatic: true
+      });
+      
+      console.log(`✅ AUTOMATED: Successfully broadcasted ${fromPhase} → ${toPhase} transition`);
+    } else {
+      console.log(`⚠️ AUTOMATED: No Socket.IO instance available for broadcasting`);
+    }
+  }
+
   public createGame(gameId: string): GameState {
     console.log(`DEBUG: GameManager.createGame called with gameId: ${gameId}`);
     if (this.games.has(gameId)) {
       return this.games.get(gameId)!.getGameState();
     }
     const gameService = new GameService(gameId);
+    
+    // ENHANCED AUTOMATION: Set up automatic phase transition callback
+    gameService.setPhaseTransitionCallback(this.handleAutomaticPhaseTransition.bind(this));
+    
     this.games.set(gameId, gameService);
     console.log(`DEBUG: GameManager games map size: ${this.games.size}`);
     console.log(`DEBUG: GameManager games map keys: ${Array.from(this.games.keys())}`);

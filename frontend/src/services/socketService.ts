@@ -506,6 +506,84 @@ export class SocketService {
       this.emitSystemMessage(`Action ${data.action} completed successfully${data.amount ? ` for ${data.amount}` : ''}${data.totalAmount ? ` (total: ${data.totalAmount})` : ''}`);
     });
 
+    // ENHANCED AUTOMATION: Handle automatic phase transitions
+    socket.on('automaticFlop', (data: { 
+      gameId: string; 
+      fromPhase: string; 
+      toPhase: string; 
+      message: string; 
+      communityCards: any[]; 
+      isAutomatic: boolean;
+      timestamp: number;
+    }) => {
+      console.log('🎴 FRONTEND: Automatic flop transition:', data);
+      this.emitSystemMessage(`🎴 ${data.message}`);
+    });
+
+    socket.on('automaticTurn', (data: { 
+      gameId: string; 
+      fromPhase: string; 
+      toPhase: string; 
+      message: string; 
+      communityCards: any[]; 
+      isAutomatic: boolean;
+      timestamp: number;
+    }) => {
+      console.log('🎴 FRONTEND: Automatic turn transition:', data);
+      this.emitSystemMessage(`🎴 ${data.message}`);
+    });
+
+    socket.on('automaticRiver', (data: { 
+      gameId: string; 
+      fromPhase: string; 
+      toPhase: string; 
+      message: string; 
+      communityCards: any[]; 
+      isAutomatic: boolean;
+      timestamp: number;
+    }) => {
+      console.log('🎴 FRONTEND: Automatic river transition:', data);
+      this.emitSystemMessage(`🎴 ${data.message}`);
+    });
+
+    socket.on('automaticShowdown', (data: { 
+      gameId: string; 
+      fromPhase: string; 
+      toPhase: string; 
+      message: string; 
+      isAutomatic: boolean;
+      timestamp: number;
+    }) => {
+      console.log('🎯 FRONTEND: Automatic showdown transition:', data);
+      this.emitSystemMessage(`🎯 ${data.message}`);
+    });
+
+    socket.on('gameComplete', (data: { 
+      gameId: string; 
+      fromPhase: string; 
+      toPhase: string; 
+      message: string; 
+      isAutomatic: boolean;
+      timestamp: number;
+    }) => {
+      console.log('🏆 FRONTEND: Game complete:', data);
+      this.emitSystemMessage(`🏆 ${data.message}`);
+    });
+
+    // Handle general phase transitions for backwards compatibility
+    socket.on('phaseTransition', (data: { 
+      gameId: string; 
+      fromPhase: string; 
+      toPhase: string; 
+      message: string; 
+      isAutomatic: boolean;
+    }) => {
+      console.log('🔄 FRONTEND: Phase transition:', data);
+      if (data.isAutomatic) {
+        this.emitSystemMessage(`🔄 ${data.message}`);
+      }
+    });
+
     // Handle table joining results
     socket.on('tableJoined', (data: { tableId: number; role: 'player' | 'observer'; buyIn: number; gameId?: string }) => {
       console.log('DEBUG: Frontend received tableJoined event:', data);

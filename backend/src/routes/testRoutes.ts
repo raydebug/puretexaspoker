@@ -484,6 +484,73 @@ router.post('/test_player_action/:gameId', async (req, res) => {
 });
 
 /**
+ * TEST API: Complete Betting Round for Automated Testing
+ * POST /api/test/complete_betting_round
+ */
+router.post('/test/complete_betting_round', async (req, res) => {
+  try {
+    const { gameId, phase } = req.body;
+    
+    const gameManager = GameManager.getInstance();
+    const testGames = (gameManager as any).testGames;
+    
+    if (!testGames || !testGames.has(gameId)) {
+      return res.status(404).json({
+        success: false,
+        error: 'Game not found'
+      });
+    }
+    
+    const gameState = testGames.get(gameId);
+    
+    console.log(`🔄 TEST: Completing betting round for phase ${phase}`);
+    
+    // Force betting round completion for testing
+    if (phase === 'preflop') {
+      // Transition to flop
+      gameState.phase = 'flop';
+      gameState.communityCards = [
+        { rank: 'A', suit: '♠' },
+        { rank: 'K', suit: '♥' },
+        { rank: 'Q', suit: '♦' }
+      ];
+    } else if (phase === 'flop') {
+      // Transition to turn
+      gameState.phase = 'turn'; 
+      gameState.communityCards.push({ rank: 'J', suit: '♣' });
+    } else if (phase === 'turn') {
+      // Transition to river
+      gameState.phase = 'river';
+      gameState.communityCards.push({ rank: '10', suit: '♠' });
+    } else if (phase === 'river') {
+      // Transition to showdown
+      gameState.phase = 'showdown';
+    }
+    
+    // Reset betting state for new round
+    gameState.currentBet = 0;
+    gameState.players.forEach((player: any) => {
+      player.currentBet = 0;
+    });
+    
+    console.log(`✅ TEST: Completed betting round transition from ${phase} to ${gameState.phase}`);
+    
+    res.json({
+      success: true,
+      gameState,
+      message: `Betting round completed for ${phase} phase`
+    });
+    
+  } catch (error) {
+    console.error('Error completing betting round:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message
+    });
+  }
+});
+
+/**
  * TEST API: Professional Turn Order Validation
  * POST /api/test/validate_turn_order
  */
