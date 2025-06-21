@@ -1,6 +1,9 @@
 import express from 'express';
 import { GameManager } from '../services/gameManager';
 import { tableManager } from '../services/TableManager';
+import { authService } from '../services/authService';
+import { roleManager } from '../services/roleManager';
+import { prisma } from '../db';
 
 const router = express.Router();
 
@@ -787,6 +790,257 @@ router.post('/test/check_blind_increase', async (req, res) => {
     
   } catch (error) {
     console.error('Error checking blind increase:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message
+    });
+  }
+});
+
+/**
+ * TEST API: User Role Management - Initialize Roles
+ * POST /api/test/initialize_roles
+ */
+router.post('/test/initialize_roles', async (req, res) => {
+  try {
+    // Initialize roles using the script
+    const { initializeRoles } = require('../scripts/initializeRoles');
+    await initializeRoles();
+    
+    console.log('🔐 TEST: Role system initialized');
+    
+    res.json({
+      success: true,
+      message: 'Role system initialized successfully'
+    });
+    
+  } catch (error) {
+    console.error('Error initializing roles:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message
+    });
+  }
+});
+
+/**
+ * TEST API: User Role Management - Create User with Role
+ * POST /api/test/create_user_with_role
+ */
+router.post('/test/create_user_with_role', async (req, res) => {
+  try {
+    const { username, password, role } = req.body;
+    
+    // Register user first
+    const authResponse = await authService.register({
+      username,
+      email: `${username}@test.com`,
+      password,
+      displayName: username
+    });
+    
+    // Assign role if different from default
+    if (role !== 'player') {
+      await roleManager.assignRole(authResponse.user.id, role, 'system');
+    }
+    
+    // Get updated user info with role
+    const userRoleInfo = await roleManager.getUserRoleInfo(authResponse.user.id);
+    
+    console.log(`👤 TEST: Created user ${username} with role ${role}`);
+    
+    res.json({
+      success: true,
+      user: {
+        ...authResponse.user,
+        role: userRoleInfo?.role
+      },
+      tokens: authResponse.tokens
+    });
+    
+  } catch (error) {
+    console.error('Error creating user with role:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message
+    });
+  }
+});
+
+/**
+ * TEST API: User Role Management - Check Permission
+ * POST /api/test/check_permission
+ */
+router.post('/test/check_permission', async (req, res) => {
+  try {
+    const { username, permission } = req.body;
+    
+    // Find user by username
+    const user = await prisma.user.findUnique({ where: { username } });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+    
+    const hasPermission = await roleManager.hasPermission(user.id, permission);
+    
+    res.json({
+      success: true,
+      hasPermission,
+      username,
+      permission
+    });
+    
+  } catch (error) {
+    console.error('Error checking permission:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message
+    });
+  }
+});
+
+/**
+ * TEST API: User Role Management - Get User Permissions
+ * POST /api/test/get_user_permissions
+ */
+router.post('/test/get_user_permissions', async (req, res) => {
+  try {
+    const { username } = req.body;
+    
+    // Find user by username
+    const user = await prisma.user.findUnique({ where: { username } });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+    
+    const userRoleInfo = await roleManager.getUserRoleInfo(user.id);
+    
+    res.json({
+      success: true,
+      permissions: userRoleInfo?.role.permissions || [],
+      role: userRoleInfo?.role
+    });
+    
+  } catch (error) {
+    console.error('Error getting user permissions:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message
+    });
+  }
+});
+
+/**
+ * TEST API: User Role Management - Execute Moderation
+ * POST /api/test/execute_moderation
+ */
+router.post('/test/execute_moderation', async (req, res) => {
+  try {
+    const { moderatorId, targetUserId, action, reason, duration, tableId } = req.body;
+    
+    const moderationAction = await roleManager.executeModeration({
+      type: action,
+      moderatorId,
+      targetUserId,
+      reason,
+      duration,
+      tableId
+    });
+    
+    if (moderationAction) {
+      console.log(`⚖️ TEST: ${action} executed by ${moderatorId} against ${targetUserId}`);
+      
+      res.json({
+        success: true,
+        moderationAction
+      });
+    } else {
+      res.status(403).json({
+        success: false,
+        error: 'Insufficient permissions for moderation action'
+      });
+    }
+    
+  } catch (error) {
+    console.error('Error executing moderation:', error);
+    res.status(403).json({
+      success: false,
+      error: (error as Error).message
+    });
+  }
+});
+
+/**
+ * TEST API: User Role Management - Assign Role
+ * POST /api/test/assign_role
+ */
+router.post('/test/assign_role', async (req, res) => {
+  try {
+    const { adminId, targetUserId, roleName } = req.body;
+    
+    const success = await roleManager.assignRole(targetUserId, roleName, adminId);
+    
+    if (success) {
+      console.log(`🔐 TEST: Role ${roleName} assigned to ${targetUserId} by ${adminId}`);
+      
+      res.json({
+        success: true,
+        message: `Role ${roleName} assigned successfully`
+      });
+    } else {
+      res.status(403).json({
+        success: false,
+        error: 'Failed to assign role'
+      });
+    }
+    
+  } catch (error) {
+    console.error('Error assigning role:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message
+    });
+  }
+});
+
+/**
+ * TEST API: User Role Management - Get User Role
+ * POST /api/test/get_user_role
+ */
+router.post('/test/get_user_role', async (req, res) => {
+  try {
+    const { username } = req.body;
+    
+    // Find user by username
+    const user = await prisma.user.findUnique({ where: { username } });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+    
+    const userRoleInfo = await roleManager.getUserRoleInfo(user.id);
+    
+    res.json({
+      success: true,
+      role: userRoleInfo?.role,
+      user: {
+        id: user.id,
+        username: user.username,
+        isActive: user.isActive,
+        isBanned: user.isBanned
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error getting user role:', error);
     res.status(500).json({
       success: false,
       error: (error as Error).message

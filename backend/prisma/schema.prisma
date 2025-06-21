@@ -24,8 +24,82 @@ model User {
   updatedAt   DateTime  @updatedAt
   lastLoginAt DateTime?
   
+  // USER ROLE MANAGEMENT: Enhanced role system
+  roleId      String    @default("player") // Default role is player
+  role        Role      @relation(fields: [roleId], references: [id])
+  isActive    Boolean   @default(true)
+  isBanned    Boolean   @default(false)
+  bannedBy    String?   // Admin who banned this user
+  bannedAt    DateTime?
+  banReason   String?
+  lastActiveAt DateTime?
+  
   // Relation to Player for backwards compatibility
   player      Player?
+  
+  // USER ROLE MANAGEMENT: Administrative actions
+  moderatedBy ModerationAction[] @relation("ModeratedUser")
+  moderatorActions ModerationAction[] @relation("ModeratorUser")
+}
+
+// USER ROLE MANAGEMENT: Role definitions with hierarchical permissions
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique // player, spectator, moderator, administrator
+  displayName String   // Human-readable name
+  description String?  // Role description
+  level       Int      @default(0) // Hierarchy level (0=player, 10=spectator, 50=moderator, 100=admin)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  users       User[]
+  permissions RolePermission[]
+}
+
+// USER ROLE MANAGEMENT: Granular permission system
+model Permission {
+  id          String   @id @default(uuid())
+  name        String   @unique // join_game, place_bet, kick_player, etc.
+  displayName String   // Human-readable name
+  description String?  // Permission description
+  category    String   // game, moderation, administration
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  roles       RolePermission[]
+}
+
+// USER ROLE MANAGEMENT: Many-to-many relationship between roles and permissions
+model RolePermission {
+  id           String     @id @default(uuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime   @default(now())
+  
+  role         Role       @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
+  
+  @@unique([roleId, permissionId])
+}
+
+// USER ROLE MANAGEMENT: Moderation actions and audit trail
+model ModerationAction {
+  id           String   @id @default(uuid())
+  type         String   // warn, kick, mute, ban, unban
+  reason       String?
+  duration     Int?     // Duration in minutes (for temporary actions)
+  moderatorId  String   // User who performed the action
+  targetUserId String   // User who was moderated
+  tableId      String?  // Table where action occurred (if applicable)
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime?
+  isActive     Boolean  @default(true)
+  
+  moderator    User     @relation("ModeratorUser", fields: [moderatorId], references: [id])
+  targetUser   User     @relation("ModeratedUser", fields: [targetUserId], references: [id])
 }
 
 model Player {
@@ -53,6 +127,13 @@ model Table {
   maxBuyIn    Int
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+  
+  // USER ROLE MANAGEMENT: Table administration
+  createdBy   String?       // User who created the table
+  isPrivate   Boolean       @default(false)
+  password    String?       // Optional table password
+  isActive    Boolean       @default(true)
+  
   playerTables PlayerTable[]
   games       Game[]
 }

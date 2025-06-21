@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../db';
 import type { User } from '@prisma/client';
+import { roleManager } from './roleManager';
 
 // JWT secret from environment variable
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-jwt-secret-change-in-production';
@@ -23,6 +24,15 @@ export interface UserProfile {
   gamesWon: number;
   createdAt: Date;
   lastLoginAt?: Date;
+  // USER ROLE MANAGEMENT: Enhanced user profile with role information
+  role?: {
+    name: string;
+    displayName: string;
+    level: number;
+    permissions: string[];
+  };
+  isActive: boolean;
+  isBanned: boolean;
 }
 
 export interface RegisterData {
@@ -128,6 +138,12 @@ export class AuthService {
     // Hash password
     const hashedPassword = await this.hashPassword(password);
 
+    // USER ROLE MANAGEMENT: Get default player role
+    const defaultRole = await prisma.role.findUnique({ where: { name: 'player' } });
+    if (!defaultRole) {
+      throw new Error('Default role not found. Please initialize roles first.');
+    }
+
     // Create user
     const user = await prisma.user.create({
       data: {
@@ -136,7 +152,8 @@ export class AuthService {
         password: hashedPassword,
         displayName: displayName || username,
         chips: 10000, // Starting chips
-        avatar: this.generateDefaultAvatar(username)
+        avatar: this.generateDefaultAvatar(username),
+        roleId: defaultRole.id
       }
     });
 
@@ -150,7 +167,7 @@ export class AuthService {
     });
 
     return {
-      user: this.formatUserProfile(user),
+      user: await this.formatUserProfile(user),
       tokens
     };
   }
@@ -170,6 +187,15 @@ export class AuthService {
       throw new Error('Invalid username or password');
     }
 
+    // USER ROLE MANAGEMENT: Check if user is banned or inactive
+    if (user.isBanned) {
+      throw new Error('Account is banned. Please contact support.');
+    }
+
+    if (!user.isActive) {
+      throw new Error('Account is inactive. Please contact support.');
+    }
+
     // Verify password
     const isPasswordValid = await this.verifyPassword(password, user.password);
     if (!isPasswordValid) {
@@ -182,11 +208,11 @@ export class AuthService {
     // Update last login
     await prisma.user.update({
       where: { id: user.id },
-      data: { lastLoginAt: new Date() }
+      data: { lastLoginAt: new Date(), lastActiveAt: new Date() }
     });
 
     return {
-      user: this.formatUserProfile(user),
+      user: await this.formatUserProfile(user),
       tokens
     };
   }
@@ -210,6 +236,11 @@ export class AuthService {
       throw new Error('User not found');
     }
 
+    // USER ROLE MANAGEMENT: Check if user is still active
+    if (!user.isActive || user.isBanned) {
+      throw new Error('Account is no longer active');
+    }
+
     // Generate new tokens
     return this.generateTokens(user.id);
   }
@@ -226,7 +257,7 @@ export class AuthService {
       return null;
     }
 
-    return this.formatUserProfile(user);
+    return await this.formatUserProfile(user);
   }
 
   /**
@@ -242,7 +273,7 @@ export class AuthService {
       data: updates
     });
 
-    return this.formatUserProfile(user);
+    return await this.formatUserProfile(user);
   }
 
   /**
@@ -287,7 +318,7 @@ export class AuthService {
       data: { chips: Math.max(0, newChipAmount) } // Ensure chips never go negative
     });
 
-    return this.formatUserProfile(user);
+    return await this.formatUserProfile(user);
   }
 
   /**
@@ -320,7 +351,10 @@ export class AuthService {
   /**
    * Format user data for public profile
    */
-  private formatUserProfile(user: User): UserProfile {
+  private async formatUserProfile(user: User): Promise<UserProfile> {
+    // USER ROLE MANAGEMENT: Get role information
+    const roleInfo = await roleManager.getUserRoleInfo(user.id);
+    
     return {
       id: user.id,
       username: user.username,
@@ -331,7 +365,15 @@ export class AuthService {
       gamesPlayed: user.gamesPlayed,
       gamesWon: user.gamesWon,
       createdAt: user.createdAt,
-      lastLoginAt: user.lastLoginAt || undefined
+      lastLoginAt: user.lastLoginAt || undefined,
+      role: roleInfo ? {
+        name: roleInfo.role.name,
+        displayName: roleInfo.role.displayName,
+        level: roleInfo.role.level,
+        permissions: roleInfo.role.permissions
+      } : undefined,
+      isActive: user.isActive,
+      isBanned: user.isBanned
     };
   }
 
@@ -347,6 +389,16 @@ export class AuthService {
       where: { id: userId },
       data: { lastLoginAt: new Date() }
     });
+  }
+
+  // USER ROLE MANAGEMENT: Check if user has permission for an action
+  public async hasPermission(userId: string, permission: string): Promise<boolean> {
+    return await roleManager.hasPermission(userId, permission);
+  }
+
+  // USER ROLE MANAGEMENT: Get user's role information
+  public async getUserRole(userId: string) {
+    return await roleManager.getUserRoleInfo(userId);
   }
 }
 
