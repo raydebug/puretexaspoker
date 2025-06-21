@@ -165,7 +165,7 @@ Feature: Game Persistence and Reconnection System
     When multiple simultaneous updates occur (player actions + auto-save)
     Then all database operations should be atomic
     And the game state should never be in an inconsistent state
-    If a save operation fails partway through
+    And if a save operation fails partway through
     Then the entire transaction should be rolled back
     And the previous consistent state should be preserved
     And error recovery should be automatic
