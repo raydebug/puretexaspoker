@@ -376,22 +376,51 @@ Given('I have {int} browser instances with players seated:', {timeout: 180000}, 
       }
       await delay(1500);
       
-      // Take seat
+      // Take seat - **CRITICAL DEBUGGING**: Check if seat click opens dialog
+      console.log(`🔍 SELENIUM: Looking for available seat ${seat} for ${playerName}`);
       await driver.wait(until.elementLocated(By.css(`[data-testid="available-seat-${seat}"]`)), 15000);
       const seatButton = await driver.findElement(By.css(`[data-testid="available-seat-${seat}"]`));
+      
+      // Check seat button state
+      const seatButtonText = await seatButton.getText();
+      const seatButtonEnabled = await seatButton.isEnabled();
+      console.log(`🔍 SELENIUM: Seat ${seat} button - Text: "${seatButtonText}", Enabled: ${seatButtonEnabled}`);
+      
       await driver.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", seatButton);
       await delay(300);
       
+      console.log(`🔍 SELENIUM: Clicking seat ${seat} for ${playerName}`);
       try {
         await seatButton.click();
+        console.log(`✅ SELENIUM: Seat ${seat} clicked successfully`);
       } catch (clickError) {
+        console.log(`⚠️ SELENIUM: Seat click failed, trying JS click: ${clickError.message}`);
         if (clickError.message.includes('click intercepted') || clickError.message.includes('not clickable')) {
           await driver.executeScript("arguments[0].click();", seatButton);
+          console.log(`✅ SELENIUM: JS seat click executed`);
         } else {
           throw clickError;
         }
       }
-      await delay(1000);
+      
+      await delay(2000); // Give more time for dialog to appear
+      
+      // **CRITICAL**: Check if dialog opened after seat click
+      try {
+        const dialogAfterSeatClick = await driver.findElement(By.css('[data-testid="seat-dialog"], .dialog-overlay, [role="dialog"]'));
+        const dialogVisible = await dialogAfterSeatClick.isDisplayed();
+        console.log(`✅ SELENIUM: Dialog opened after seat click - visible: ${dialogVisible}`);
+      } catch (e) {
+        console.log(`❌ SELENIUM: NO DIALOG OPENED after seat click! This is the problem.`);
+        
+        // Try to find any modal or dialog elements
+        try {
+          const anyModal = await driver.findElements(By.css('div[style*="position: fixed"], .modal, .dialog, [role="dialog"]'));
+          console.log(`🔍 SELENIUM: Found ${anyModal.length} modal-like elements on page`);
+        } catch (ee) {
+          console.log(`🔍 SELENIUM: No modal elements found at all`);
+        }
+      }
       
       // Set buy-in
       await driver.wait(until.elementLocated(By.css('[data-testid="buyin-dropdown"]')), 10000);
