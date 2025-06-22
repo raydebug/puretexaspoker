@@ -24,7 +24,9 @@ const pulseAnimation = keyframes`
   }
 `;
 
-const TimerContainer = styled.div<{ isVisible: boolean }>`
+const TimerContainer = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['isVisible'].includes(prop)
+})<{ isVisible: boolean }>`
   position: absolute;
   top: 50%;
   left: 50%;
@@ -37,7 +39,9 @@ const TimerContainer = styled.div<{ isVisible: boolean }>`
   z-index: 10;
 `;
 
-const CircleTimer = styled.div<{ 
+const CircleTimer = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['percentage', 'colorState'].includes(prop)
+})<{ 
   percentage: number; 
   colorState: 'normal' | 'warning' | 'critical' 
 }>`
@@ -70,7 +74,9 @@ const CircleTimer = styled.div<{
   }
 `;
 
-const TimerText = styled.div<{ colorState: 'normal' | 'warning' | 'critical' }>`
+const TimerText = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['colorState'].includes(prop)
+})<{ colorState: 'normal' | 'warning' | 'critical' }>`
   position: absolute;
   top: 50%;
   left: 50%;
