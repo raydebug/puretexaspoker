@@ -445,10 +445,26 @@ Given('I have {int} browser instances with players seated:', {timeout: 180000}, 
       await delay(2000);
       
       // **CRITICAL DEBUGGING**: Capture console logs after button click to see frontend activity
+      console.log(`🔍 SELENIUM: Waiting for frontend reaction...`);
+      await delay(1000); // Give more time for React to process
+      
       consoleLogs = await driver.manage().logs().get('browser');
+      console.log(`🔍 SELENIUM: Total browser console entries after click: ${consoleLogs.length}`);
+      
       if (consoleLogs.length > 0) {
-        console.log(`🔍 SELENIUM: Browser console logs after confirm click (${consoleLogs.length} entries):`);
-        consoleLogs.slice(-10).forEach(log => console.log(`  ${log.level.name}: ${log.message}`));
+        console.log(`🔍 SELENIUM: Browser console logs after confirm click (showing last 15 entries):`);
+        consoleLogs.slice(-15).forEach(log => {
+          // Filter out React warnings and focus on our debugging
+          if (log.message.includes('SeatSelectionDialog') || 
+              log.message.includes('SOCKET') || 
+              log.message.includes('takeSeat') ||
+              log.message.includes('handleConfirm') ||
+              log.level.name === 'SEVERE') {
+            console.log(`  ${log.level.name}: ${log.message}`);
+          }
+        });
+      } else {
+        console.log(`🔍 SELENIUM: No browser console logs found after button click`);
       }
       
       // **CRITICAL**: Wait for seat confirmation from backend
