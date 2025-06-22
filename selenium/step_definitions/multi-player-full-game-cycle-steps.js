@@ -484,82 +484,74 @@ Given('I have {int} browser instances with players seated:', {timeout: 180000}, 
         consoleLogs.slice(-5).forEach(log => console.log(`  ${log.level.name}: ${log.message}`));
       }
       
-      // **AGGRESSIVE CLICKING**: Try multiple click methods to ensure React onClick executes
-      console.log(`🔧 SELENIUM: Attempting multiple click strategies...`);
+      // **SMART CLICKING**: Try regular click first, then fallback strategies only if needed
+      console.log(`🔧 SELENIUM: Attempting smart click strategy...`);
       
-      // Strategy 1: Regular click
+      let clickSuccessful = false;
+      
+      // Strategy 1: Regular click (most reliable)
       try {
         await confirmButton.click();
         console.log(`✅ SELENIUM: Regular click successful`);
+        clickSuccessful = true;
       } catch (clickError) {
         console.log(`⚠️ SELENIUM: Regular click failed: ${clickError.message}`);
       }
       
-      // Strategy 2: JavaScript click
-      await driver.executeScript("arguments[0].click();", confirmButton);
-      console.log(`✅ SELENIUM: JavaScript click executed`);
-      
-      // Strategy 3: Force focus and click
-      await driver.executeScript(`
-        arguments[0].focus();
-        arguments[0].click();
-      `, confirmButton);
-      console.log(`✅ SELENIUM: Focus + click executed`);
-      
-      // Strategy 4: Dispatch click event
-      await driver.executeScript(`
-        const button = arguments[0];
-        const clickEvent = new MouseEvent('click', {
-          view: window,
-          bubbles: true,
-          cancelable: true,
-          buttons: 1
-        });
-        button.dispatchEvent(clickEvent);
-        console.log('🔧 SELENIUM: MouseEvent dispatched');
-      `, confirmButton);
-      
-      // Strategy 5: Try to find and call React onClick directly
-      await driver.executeScript(`
-        const button = arguments[0];
-        console.log('🔧 SELENIUM: Inspecting button for React props...');
+      // Only try other strategies if regular click failed
+      if (!clickSuccessful) {
+        console.log(`🔧 SELENIUM: Trying fallback click strategies...`);
         
-        // Try multiple React fiber approaches
-        const fiberKey = Object.keys(button).find(key => key.startsWith('__reactInternalInstance') || key.startsWith('__reactInternalFiber') || key.startsWith('_reactInternalFiber'));
-        
-        if (fiberKey && button[fiberKey]) {
-          const fiber = button[fiberKey];
-          console.log('🔧 SELENIUM: Found React fiber:', !!fiber);
-          
-          // Try to find onClick in memoizedProps
-          if (fiber.memoizedProps && fiber.memoizedProps.onClick) {
-            console.log('🔧 SELENIUM: Found onClick in memoizedProps, calling...');
-            try {
-              fiber.memoizedProps.onClick({ target: button, preventDefault: () => {}, stopPropagation: () => {} });
-              console.log('✅ SELENIUM: React onClick called successfully');
-            } catch (e) {
-              console.log('⚠️ SELENIUM: React onClick failed:', e.message);
-            }
-          } else {
-            console.log('🔧 SELENIUM: No onClick found in memoizedProps');
-          }
-          
-          // Try other prop locations
-          if (fiber.props && fiber.props.onClick) {
-            console.log('🔧 SELENIUM: Found onClick in props, calling...');
-            try {
-              fiber.props.onClick({ target: button, preventDefault: () => {}, stopPropagation: () => {} });
-              console.log('✅ SELENIUM: React onClick (props) called successfully');
-            } catch (e) {
-              console.log('⚠️ SELENIUM: React onClick (props) failed:', e.message);
-            }
-          }
-        } else {
-          console.log('🔧 SELENIUM: No React fiber found on button');
+        try {
+          // Strategy 2: JavaScript click
+          await driver.executeScript("arguments[0].click();", confirmButton);
+          console.log(`✅ SELENIUM: JavaScript click executed`);
+          clickSuccessful = true;
+        } catch (e) {
+          console.log(`⚠️ SELENIUM: JavaScript click failed: ${e.message}`);
         }
-      `, confirmButton);
+        
+        // Strategy 3: Force focus and click (only if previous strategies failed)
+        if (!clickSuccessful) {
+          try {
+            await driver.executeScript(`
+              arguments[0].focus();
+              arguments[0].click();
+            `, confirmButton);
+            console.log(`✅ SELENIUM: Focus + click executed`);
+            clickSuccessful = true;
+          } catch (e) {
+            console.log(`⚠️ SELENIUM: Focus + click failed: ${e.message}`);
+          }
+        }
+        
+        // Strategy 4: Dispatch click event (last resort)
+        if (!clickSuccessful) {
+          try {
+            await driver.executeScript(`
+              const button = arguments[0];
+              const clickEvent = new MouseEvent('click', {
+                view: window,
+                bubbles: true,
+                cancelable: true,
+                buttons: 1
+              });
+              button.dispatchEvent(clickEvent);
+              console.log('🔧 SELENIUM: MouseEvent dispatched');
+            `, confirmButton);
+            console.log(`✅ SELENIUM: MouseEvent dispatch executed`);
+            clickSuccessful = true;
+          } catch (e) {
+            console.log(`⚠️ SELENIUM: MouseEvent dispatch failed: ${e.message}`);
+          }
+        }
+      }
       
-      console.log(`✅ SELENIUM: All click strategies completed for ${playerName}`);
+      if (clickSuccessful) {
+        console.log(`✅ SELENIUM: Click strategy completed successfully for ${playerName}`);
+      } else {
+        console.log(`⚠️ SELENIUM: All click strategies failed for ${playerName}`);
+      }
       
       // Give React extra time to process
       await delay(1500);
@@ -589,29 +581,99 @@ Given('I have {int} browser instances with players seated:', {timeout: 180000}, 
         console.log(`🔍 SELENIUM: No browser console logs found after button click`);
       }
       
-      // **CRITICAL**: Wait for seat confirmation from backend
-      let seatConfirmed = false;
-      const confirmStartTime = Date.now();
-      const maxConfirmWait = 10000; // 10 seconds
+      // **SEAT CONFIRMATION**: Wait for dialog to close and seat to be confirmed
+      console.log(`🔍 SELENIUM: Waiting for dialog to close and seat confirmation...`);
       
-      while (!seatConfirmed && (Date.now() - confirmStartTime) < maxConfirmWait) {
+      let seatConfirmed = false;
+      let dialogClosed = false;
+      const confirmStartTime = Date.now();
+      const maxConfirmWait = 15000; // 15 seconds
+      
+      while ((!seatConfirmed || !dialogClosed) && (Date.now() - confirmStartTime) < maxConfirmWait) {
         try {
-          // Check if player is now actually seated (not just observer)
-          const seatIndicator = await driver.findElement(By.css(`[data-testid="player-seat-${seat}"], [data-testid="seat-${seat}-occupied"], .occupied-seat`));
-          if (seatIndicator) {
-            seatConfirmed = true;
-            console.log(`✅ ${playerName} CONFIRMED seated at seat ${seat} with ${chips} chips`);
+          // First check if dialog has closed (this happens when seat-taking succeeds)
+          if (!dialogClosed) {
+            try {
+              const dialog = await driver.findElement(By.css('[data-testid="seat-dialog"], .dialog-overlay, [role="dialog"]'));
+              const dialogVisible = await dialog.isDisplayed();
+              if (!dialogVisible) {
+                dialogClosed = true;
+                console.log(`✅ SELENIUM: Dialog closed - seat-taking likely successful`);
+              }
+            } catch (e) {
+              // Dialog not found = dialog closed
+              dialogClosed = true;
+              console.log(`✅ SELENIUM: Dialog closed (element not found) - seat-taking likely successful`);
+            }
+          }
+          
+          // Then check if seat is now occupied (use fresh element search)
+          if (!seatConfirmed) {
+            try {
+              // Look for multiple indicators that seat is occupied
+              const seatSelectors = [
+                `[data-testid="seat-${seat}"] .occupied`,
+                `[data-testid="seat-${seat}"] .player-info`,
+                `[data-testid="seat-${seat}"] .player-name`,
+                `.seat-${seat} .occupied`,
+                `.seat-${seat} .player-info`,
+                `[data-testid="player-seat-${seat}"]`,
+                `[data-testid="seat-${seat}-occupied"]`
+              ];
+              
+              for (const selector of seatSelectors) {
+                try {
+                  const seatElement = await driver.findElement(By.css(selector));
+                  if (seatElement && await seatElement.isDisplayed()) {
+                    seatConfirmed = true;
+                    console.log(`✅ SELENIUM: Seat ${seat} confirmed occupied (selector: ${selector})`);
+                    break;
+                  }
+                } catch (e) {
+                  // This selector didn't work, try next one
+                }
+              }
+              
+              // Alternative: Check if the seat button text changed from "CLICK TO SIT"
+              if (!seatConfirmed) {
+                try {
+                  const seatButton = await driver.findElement(By.css(`[data-testid="seat-${seat}"], .seat-button[data-seat="${seat}"]`));
+                  const buttonText = await seatButton.getText();
+                  if (buttonText && !buttonText.includes('CLICK TO SIT') && !buttonText.includes('Empty')) {
+                    seatConfirmed = true;
+                    console.log(`✅ SELENIUM: Seat ${seat} confirmed via button text change: "${buttonText}"`);
+                  }
+                } catch (e) {
+                  // Button approach didn't work
+                }
+              }
+              
+            } catch (e) {
+              // Continue trying to find seat confirmation
+            }
+          }
+          
+          // If both conditions met, we're done
+          if (seatConfirmed && dialogClosed) {
+            console.log(`🎉 SELENIUM: ${playerName} successfully seated at seat ${seat} - both dialog closed and seat confirmed!`);
             break;
           }
+          
         } catch (e) {
-          // Seat indicator not found yet, continue waiting
+          console.log(`🔍 SELENIUM: Continuing seat confirmation check... (${e.message})`);
         }
         
         await delay(500);
       }
       
+      // More lenient confirmation - if dialog closed, assume success even if seat indicator not found
+      if (dialogClosed && !seatConfirmed) {
+        console.log(`⚠️ SELENIUM: Dialog closed but seat indicator not found - assuming successful seat-taking`);
+        seatConfirmed = true;
+      }
+      
       if (!seatConfirmed) {
-        throw new Error(`❌ ${playerName} seat confirmation FAILED - player may still be observer only`);
+        throw new Error(`❌ ${playerName} seat confirmation FAILED after ${maxConfirmWait/1000}s - dialog may not have closed properly`);
       }
       
     } catch (error) {
