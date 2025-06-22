@@ -323,7 +323,7 @@ Given('I have a clean poker table {string} with {int} seats', async function (ta
 
 // ============== TIMEOUT BROWSER SETUP ==============
 
-Given('I have {int} browser instances with players seated:', async function (browserCount, dataTable) {
+Given('I have {int} browser instances with players seated:', {timeout: 60000}, async function (browserCount, dataTable) {
   console.log(`🚀 Setting up ${browserCount} browser instances for timeout testing...`);
   
   const playerData = dataTable.hashes();
