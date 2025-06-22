@@ -582,7 +582,20 @@ export function registerConsolidatedHandlers(io: Server) {
         handlePlayerReconnection(socket.data.playerId, socket.data.nickname, socket.data.gameId);
 
         // Get updated game state from gameManager (source of truth)
-        const gameState = gameService.getGameState();
+        let gameState = gameService.getGameState();
+
+        // **AUTO-START LOGIC**: Check if game should start automatically
+        if (gameState.status === 'waiting' && gameState.players.length >= 2) {
+          try {
+            console.log(`[CONSOLIDATED] Auto-starting game with ${gameState.players.length} players`);
+            gameService.startGame();
+            gameState = gameService.getGameState(); // Get updated state after start
+            console.log(`[CONSOLIDATED] Game auto-started successfully - new phase: ${gameState.phase}`);
+          } catch (startError) {
+            console.error(`[CONSOLIDATED] Failed to auto-start game:`, startError);
+            // Continue with seat assignment even if auto-start fails
+          }
+        }
 
         // Emit success events
         socket.emit('seatTaken', { seatNumber, playerId: socket.data.playerId, gameState });
