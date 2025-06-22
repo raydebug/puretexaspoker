@@ -587,7 +587,7 @@ Given('I have {int} browser instances with players seated:', {timeout: 180000}, 
       let seatConfirmed = false;
       let dialogClosed = false;
       const confirmStartTime = Date.now();
-      const maxConfirmWait = 15000; // 15 seconds
+      const maxConfirmWait = 8000; // 8 seconds - more reasonable timeout
       
       while ((!seatConfirmed || !dialogClosed) && (Date.now() - confirmStartTime) < maxConfirmWait) {
         try {
@@ -607,44 +607,42 @@ Given('I have {int} browser instances with players seated:', {timeout: 180000}, 
             }
           }
           
-          // Then check if seat is now occupied (use fresh element search)
+          // Then check if seat is now occupied (prioritize button text change - most reliable)
           if (!seatConfirmed) {
             try {
-              // Look for multiple indicators that seat is occupied
-              const seatSelectors = [
-                `[data-testid="seat-${seat}"] .occupied`,
-                `[data-testid="seat-${seat}"] .player-info`,
-                `[data-testid="seat-${seat}"] .player-name`,
-                `.seat-${seat} .occupied`,
-                `.seat-${seat} .player-info`,
-                `[data-testid="player-seat-${seat}"]`,
-                `[data-testid="seat-${seat}-occupied"]`
-              ];
-              
-              for (const selector of seatSelectors) {
-                try {
-                  const seatElement = await driver.findElement(By.css(selector));
-                  if (seatElement && await seatElement.isDisplayed()) {
-                    seatConfirmed = true;
-                    console.log(`✅ SELENIUM: Seat ${seat} confirmed occupied (selector: ${selector})`);
-                    break;
-                  }
-                } catch (e) {
-                  // This selector didn't work, try next one
+              // Primary method: Check if the seat button text changed from "CLICK TO SIT"
+              try {
+                const seatButton = await driver.findElement(By.css(`[data-testid="seat-${seat}"], .seat-button[data-seat="${seat}"]`));
+                const buttonText = await seatButton.getText();
+                if (buttonText && !buttonText.includes('CLICK TO SIT') && !buttonText.includes('Empty')) {
+                  seatConfirmed = true;
+                  console.log(`✅ SELENIUM: Seat ${seat} confirmed via button text change: "${buttonText}"`);
                 }
+              } catch (e) {
+                // Button approach didn't work, try other selectors
               }
               
-              // Alternative: Check if the seat button text changed from "CLICK TO SIT"
+              // Fallback: Look for other indicators that seat is occupied
               if (!seatConfirmed) {
-                try {
-                  const seatButton = await driver.findElement(By.css(`[data-testid="seat-${seat}"], .seat-button[data-seat="${seat}"]`));
-                  const buttonText = await seatButton.getText();
-                  if (buttonText && !buttonText.includes('CLICK TO SIT') && !buttonText.includes('Empty')) {
-                    seatConfirmed = true;
-                    console.log(`✅ SELENIUM: Seat ${seat} confirmed via button text change: "${buttonText}"`);
+                const seatSelectors = [
+                  `[data-testid="seat-${seat}"] .player-name`,
+                  `[data-testid="seat-${seat}"] .player-info`,
+                  `[data-testid="seat-${seat}"] .occupied`,
+                  `.seat-${seat} .player-info`,
+                  `[data-testid="player-seat-${seat}"]`
+                ];
+                
+                for (const selector of seatSelectors) {
+                  try {
+                    const seatElement = await driver.findElement(By.css(selector));
+                    if (seatElement && await seatElement.isDisplayed()) {
+                      seatConfirmed = true;
+                      console.log(`✅ SELENIUM: Seat ${seat} confirmed occupied (selector: ${selector})`);
+                      break;
+                    }
+                  } catch (e) {
+                    // This selector didn't work, try next one
                   }
-                } catch (e) {
-                  // Button approach didn't work
                 }
               }
               
@@ -663,7 +661,7 @@ Given('I have {int} browser instances with players seated:', {timeout: 180000}, 
           console.log(`🔍 SELENIUM: Continuing seat confirmation check... (${e.message})`);
         }
         
-        await delay(500);
+        await delay(300);
       }
       
       // More lenient confirmation - if dialog closed, assume success even if seat indicator not found
