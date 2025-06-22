@@ -19,7 +19,7 @@ Feature: Multi-Player Full Game Cycle with Comprehensive Actions
     And all players have their starting chip counts verified
 
     # GAME 1: Basic Actions with Mixed Outcomes
-    When "Player1" starts the first game
+    When the game starts automatically with enough players
     Then the game should start in all browser instances
     And blinds should be posted correctly:
       | player  | blind_type | amount | remaining_chips |

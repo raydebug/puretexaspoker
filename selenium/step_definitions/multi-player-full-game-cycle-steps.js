@@ -480,114 +480,63 @@ Given('all players have their starting chip counts verified', {timeout: 30000}, 
   console.log('📊 Chip tracker:', chipTracker);
 });
 
-When('{string} starts the first game', {timeout: 30000}, async function (playerName) {
-  const browserIndex = getBrowserIndexForPlayer(playerName);
-  const driver = browserInstances[browserIndex];
+When('the game starts automatically with enough players', {timeout: 45000}, async function () {
+  console.log(`🎯 Waiting for game to start automatically with ${Object.keys(chipTracker).length} players...`);
   
-  console.log(`🎯 ${playerName} attempting to start game...`);
+  // Wait for automatic game start (triggered when 2+ players are seated)
+  let gameStarted = false;
+  const startTime = Date.now();
+  const maxWaitTime = 40000; // 40 seconds
   
-  try {
-    // Wait for the game state to be ready with enough players
-    await delay(3000);
-    
-    // Check game status first
-    try {
-      const gameStatus = await driver.findElement(By.css('[data-testid="game-status"], .game-status'));
-      const statusText = await gameStatus.getText();
-      console.log(`🎮 Current game status: ${statusText}`);
-    } catch (e) {
-      console.log('⚠️ Could not read game status');
-    }
-    
-    // Try to find the start button with multiple approaches
-    let startButton = null;
-    const selectors = [
-      '[data-testid="start-game-button"]',
-      'button:contains("Start Game")',
-      'button:contains("Start")',
-      '[data-testid="betting-controls"] button',
-      '.betting-controls button'
-    ];
-    
-    for (const selector of selectors) {
+  while (!gameStarted && (Date.now() - startTime) < maxWaitTime) {
+    // Check game status in all browser instances
+    for (const [instanceId, driver] of Object.entries(browserInstances)) {
       try {
-        await driver.wait(until.elementLocated(By.css(selector)), 8000);
-        const buttons = await driver.findElements(By.css(selector));
+        const gameStatus = await driver.findElement(By.css('[data-testid="game-status"], .game-status, [data-testid="phase-indicator"]'));
+        const statusText = await gameStatus.getText().catch(() => '');
         
-        for (const button of buttons) {
-          const buttonText = await button.getText();
-          if (buttonText.toLowerCase().includes('start')) {
-            startButton = button;
-            console.log(`✅ Found start button with text: "${buttonText}"`);
-            break;
-          }
+        console.log(`🎮 Browser ${instanceId} game status: "${statusText}"`);
+        
+        // Check if game has started (not waiting anymore)
+        if (statusText && !statusText.toLowerCase().includes('waiting') && 
+            (statusText.toLowerCase().includes('preflop') || 
+             statusText.toLowerCase().includes('pre-flop') ||
+             statusText.toLowerCase().includes('playing') ||
+             statusText.toLowerCase().includes('betting'))) {
+          console.log(`✅ Game started automatically! Status: "${statusText}"`);
+          gameStarted = true;
+          break;
         }
         
-        if (startButton) break;
-      } catch (e) {
-        // Continue trying other selectors
+      } catch (error) {
+        // Continue checking other browsers
+        console.log(`⚠️ Could not read game status in browser ${instanceId}: ${error.message}`);
       }
     }
     
-    if (startButton) {
-      // Scroll to and click the start button
-      await driver.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", startButton);
-      await delay(1000);
-      
-      try {
-        await startButton.click();
-      } catch (clickError) {
-        if (clickError.message.includes('click intercepted') || clickError.message.includes('not clickable')) {
-          await driver.executeScript("arguments[0].click();", startButton);
-        } else {
-          throw clickError;
-        }
-      }
-      
-      console.log(`✅ ${playerName} clicked start game button`);
-      
-      // Wait for game to start
-      await delay(5000);
-      
-      // Verify game started
+    if (!gameStarted) {
+      await delay(2000); // Wait 2 seconds before checking again
+    }
+  }
+  
+  if (!gameStarted) {
+    console.log(`⚠️ Game did not start automatically after ${maxWaitTime/1000} seconds`);
+    
+    // Log current status in all browsers for debugging
+    for (const [instanceId, driver] of Object.entries(browserInstances)) {
       try {
         const gameStatus = await driver.findElement(By.css('[data-testid="game-status"], .game-status'));
         const statusText = await gameStatus.getText();
-        console.log(`🎮 Game status after start: ${statusText}`);
-        
-        if (statusText.toLowerCase().includes('preflop') || statusText.toLowerCase().includes('playing')) {
-          console.log(`✅ Game started successfully by ${playerName}`);
-        } else {
-          console.log(`⚠️ Game status unclear: ${statusText}`);
-        }
+        console.log(`🔍 Final status check - Browser ${instanceId}: "${statusText}"`);
       } catch (e) {
-        console.log('⚠️ Could not verify game status after start');
-      }
-      
-    } else {
-      console.log(`⚠️ No start game button found for ${playerName}`);
-      
-      // Try alternative approach - use API to start game if available
-      try {
-        const response = await axios.post('http://localhost:3001/api/test/start_game', {
-          gameId: '1'
-        });
-        if (response.data.success) {
-          console.log(`✅ Game started via API for ${playerName}`);
-          await delay(3000);
-        } else {
-          console.log(`⚠️ API start game failed: ${response.data.error}`);
-        }
-      } catch (apiError) {
-        console.log(`⚠️ Could not start game via API: ${apiError.message}`);
+        console.log(`🔍 Could not read final status in browser ${instanceId}`);
       }
     }
     
-  } catch (error) {
-    console.log(`❌ Failed to start game for ${playerName}: ${error.message}`);
-    
-    // Don't throw error - let test continue to see what happens
-    console.log('⚠️ Continuing test despite start game failure...');
+    // Don't throw error - let test continue to see what the actual state is
+    console.log('⚠️ Continuing test to analyze current game state...');
+  } else {
+    console.log('🎉 Game successfully started automatically!');
   }
 });
 
