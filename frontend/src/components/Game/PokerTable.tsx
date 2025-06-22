@@ -554,7 +554,7 @@ export const PokerTable: React.FC<PokerTableProps> = ({
   const currentUserPlayer = getCurrentUserPlayer();
 
   // Enhanced logic to determine if user should see their hole cards
-  const shouldShowUserHoleCards = () => {
+  const shouldShowUserHoleCards = React.useCallback(() => {
     // Method 1: Check if user is found in the players array (means they took a seat)
     const userIsSeatedPlayer = currentUserPlayer && currentUserPlayer.cards && currentUserPlayer.cards.length === 2;
     
@@ -566,7 +566,7 @@ export const PokerTable: React.FC<PokerTableProps> = ({
     const hasSeatedPlayerWithCards = gameState.players.some(p => p.cards && p.cards.length === 2);
     
     return userIsSeatedPlayer || userPlayerByName || (!isObserver && hasSeatedPlayerWithCards);
-  };
+  }, [currentUserPlayer, gameState.players, isObserver]);
 
   // Get the player whose cards we should display
   const getPlayerToShowCards = () => {
@@ -592,8 +592,7 @@ export const PokerTable: React.FC<PokerTableProps> = ({
 
   const playerWithCards = getPlayerToShowCards();
 
-  // Debug logging for game state changes
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Debug logging for game state changes  
   React.useEffect(() => {
     const nickname = localStorage.getItem('nickname');
     console.log('🎮 FRONTEND: PokerTable received game state update:', {
@@ -633,7 +632,7 @@ export const PokerTable: React.FC<PokerTableProps> = ({
         cardCount: p.cards.length
       })));
     }
-  }, [gameState, currentPlayer, currentUserPlayer, isObserver, playerWithCards]);
+  }, [gameState, currentPlayer, currentUserPlayer, isObserver, playerWithCards, shouldShowUserHoleCards]);
 
   const handleSeatClick = (seatNumber: number) => {
     // Allow seat selection if seat is empty and callback is provided

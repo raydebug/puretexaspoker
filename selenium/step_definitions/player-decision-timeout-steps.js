@@ -282,7 +282,13 @@ Given('I have {int} browser instances with players seated:', async function (bro
   
   const playerData = dataTable.hashes();
   
-  for (const player of playerData) {
+  // Navigate to the table page once
+  await this.helpers.navigateTo('/');
+  await sleep(3000);
+  
+  // Set up player tracking for the main browser instance
+  for (let i = 0; i < playerData.length; i++) {
+    const player = playerData[i];
     const browserId = parseInt(player.browser);
     const playerName = player.player;
     const seatNumber = parseInt(player.seat);
@@ -290,19 +296,14 @@ Given('I have {int} browser instances with players seated:', async function (bro
     
     console.log(`🎯 Setting up ${playerName} in browser ${browserId}`);
     
-    // Use main driver for simplicity in testing
-    const driver = this.driver;
+    // Use main driver instance for all players (simplified testing)
     timeoutBrowserInstances[browserId] = {
-      driver,
+      driver: this.driver,
       playerName,
       seatNumber,
       initialChips,
       isConnected: true
     };
-    
-    // Simplified navigation for testing
-    await this.helpers.navigateTo('/');
-    await sleep(2000);
     
     // Initialize timeout tracking for this player
     timeoutTracker[playerName] = {
@@ -317,7 +318,7 @@ Given('I have {int} browser instances with players seated:', async function (bro
     console.log(`✅ ${playerName} seated at seat ${seatNumber} with ${initialChips} chips`);
   }
   
-  console.log(`🎉 All ${browserCount} players successfully seated for timeout testing!`);
+  console.log(`🎉 All ${browserCount} players successfully set up for timeout testing!`);
 });
 
 // ============== TIMER VISIBILITY STEPS ==============
@@ -749,12 +750,12 @@ const { After } = require('@cucumber/cucumber');
 After({ tags: '@timeout' }, async function () {
   console.log('🧹 Cleaning up timeout test browser instances...');
   
+  // Since we're using a single browser instance, just reset tracking
   for (const [browserId, browserData] of Object.entries(timeoutBrowserInstances)) {
     try {
-      await browserData.driver.quit();
-      console.log(`✅ Browser instance ${browserId} closed`);
+      console.log(`✅ Browser instance ${browserId} cleanup completed`);
     } catch (error) {
-      console.error(`❌ Error closing browser ${browserId}:`, error.message);
+      console.error(`❌ Error cleaning browser ${browserId}:`, error.message);
     }
   }
   
