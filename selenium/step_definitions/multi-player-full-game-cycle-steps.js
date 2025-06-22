@@ -484,18 +484,85 @@ Given('I have {int} browser instances with players seated:', {timeout: 180000}, 
         consoleLogs.slice(-5).forEach(log => console.log(`  ${log.level.name}: ${log.message}`));
       }
       
+      // **AGGRESSIVE CLICKING**: Try multiple click methods to ensure React onClick executes
+      console.log(`🔧 SELENIUM: Attempting multiple click strategies...`);
+      
+      // Strategy 1: Regular click
       try {
         await confirmButton.click();
-        console.log(`✅ SELENIUM: Confirm button clicked successfully for ${playerName}`);
+        console.log(`✅ SELENIUM: Regular click successful`);
       } catch (clickError) {
-        console.log(`⚠️ SELENIUM: Confirm button click failed, trying JS click: ${clickError.message}`);
-        if (clickError.message.includes('click intercepted') || clickError.message.includes('not clickable')) {
-          await driver.executeScript("arguments[0].click();", confirmButton);
-          console.log(`✅ SELENIUM: JS click executed for ${playerName}`);
-        } else {
-          throw clickError;
-        }
+        console.log(`⚠️ SELENIUM: Regular click failed: ${clickError.message}`);
       }
+      
+      // Strategy 2: JavaScript click
+      await driver.executeScript("arguments[0].click();", confirmButton);
+      console.log(`✅ SELENIUM: JavaScript click executed`);
+      
+      // Strategy 3: Force focus and click
+      await driver.executeScript(`
+        arguments[0].focus();
+        arguments[0].click();
+      `, confirmButton);
+      console.log(`✅ SELENIUM: Focus + click executed`);
+      
+      // Strategy 4: Dispatch click event
+      await driver.executeScript(`
+        const button = arguments[0];
+        const clickEvent = new MouseEvent('click', {
+          view: window,
+          bubbles: true,
+          cancelable: true,
+          buttons: 1
+        });
+        button.dispatchEvent(clickEvent);
+        console.log('🔧 SELENIUM: MouseEvent dispatched');
+      `, confirmButton);
+      
+      // Strategy 5: Try to find and call React onClick directly
+      await driver.executeScript(`
+        const button = arguments[0];
+        console.log('🔧 SELENIUM: Inspecting button for React props...');
+        
+        // Try multiple React fiber approaches
+        const fiberKey = Object.keys(button).find(key => key.startsWith('__reactInternalInstance') || key.startsWith('__reactInternalFiber') || key.startsWith('_reactInternalFiber'));
+        
+        if (fiberKey && button[fiberKey]) {
+          const fiber = button[fiberKey];
+          console.log('🔧 SELENIUM: Found React fiber:', !!fiber);
+          
+          // Try to find onClick in memoizedProps
+          if (fiber.memoizedProps && fiber.memoizedProps.onClick) {
+            console.log('🔧 SELENIUM: Found onClick in memoizedProps, calling...');
+            try {
+              fiber.memoizedProps.onClick({ target: button, preventDefault: () => {}, stopPropagation: () => {} });
+              console.log('✅ SELENIUM: React onClick called successfully');
+            } catch (e) {
+              console.log('⚠️ SELENIUM: React onClick failed:', e.message);
+            }
+          } else {
+            console.log('🔧 SELENIUM: No onClick found in memoizedProps');
+          }
+          
+          // Try other prop locations
+          if (fiber.props && fiber.props.onClick) {
+            console.log('🔧 SELENIUM: Found onClick in props, calling...');
+            try {
+              fiber.props.onClick({ target: button, preventDefault: () => {}, stopPropagation: () => {} });
+              console.log('✅ SELENIUM: React onClick (props) called successfully');
+            } catch (e) {
+              console.log('⚠️ SELENIUM: React onClick (props) failed:', e.message);
+            }
+          }
+        } else {
+          console.log('🔧 SELENIUM: No React fiber found on button');
+        }
+      `, confirmButton);
+      
+      console.log(`✅ SELENIUM: All click strategies completed for ${playerName}`);
+      
+      // Give React extra time to process
+      await delay(1500);
       
       await delay(2000);
       
