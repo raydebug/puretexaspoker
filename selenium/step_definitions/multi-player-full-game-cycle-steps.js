@@ -303,6 +303,17 @@ Given('I have {int} browser instances with players seated:', {timeout: 180000}, 
     try {
       // Navigate to site
       await driver.get('http://localhost:3000');
+      
+      // **CRITICAL**: Immediately disable test environment detection to prevent nickname overrides
+      await driver.executeScript(`
+        window.SELENIUM_TEST = true;
+        window.Cypress = undefined;
+        localStorage.removeItem('nickname');
+        localStorage.removeItem('playerName');
+        localStorage.removeItem('user');
+        console.log('🚀 SELENIUM: Test environment detection disabled for unique nicknames');
+      `);
+      
       await delay(1500);
       
       // Handle any welcome popups
@@ -338,11 +349,33 @@ Given('I have {int} browser instances with players seated:', {timeout: 180000}, 
         }
       }
       
-      // Set nickname
+      // Set nickname - **CRITICAL DEBUGGING**: Verify unique nicknames  
+      console.log(`🔧 SELENIUM: Setting nickname to "${playerName}" for browser ${browserIndex}`);
+      
       await driver.wait(until.elementLocated(By.css('[data-testid="nickname-input"]')), 10000);
       const nicknameInput = await driver.findElement(By.css('[data-testid="nickname-input"]'));
+      
+      // Clear any existing value
       await nicknameInput.clear();
+      await delay(200);
+      
+      // Type the unique player name
       await nicknameInput.sendKeys(playerName);
+      await delay(500);
+      
+      // Verify the value was actually set
+      const actualNickname = await nicknameInput.getAttribute('value');
+      console.log(`🔍 SELENIUM: Nickname input value set to: "${actualNickname}" (expected: "${playerName}")`);
+      
+      if (actualNickname !== playerName) {
+        console.log(`⚠️ SELENIUM: Nickname mismatch! Trying to set again...`);
+        await nicknameInput.clear();
+        await delay(200);
+        await nicknameInput.sendKeys(playerName);
+        await delay(500);
+        const retryNickname = await nicknameInput.getAttribute('value');
+        console.log(`🔍 SELENIUM: Retry nickname value: "${retryNickname}"`);
+      }
       
       const setNicknameButton = await driver.findElement(By.css('[data-testid="join-button"]'));
       await driver.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", setNicknameButton);
@@ -358,6 +391,12 @@ Given('I have {int} browser instances with players seated:', {timeout: 180000}, 
         }
       }
       await delay(1500);
+      
+      // **CRITICAL DEBUGGING**: Verify nickname is stored correctly in browser
+      const storedNickname = await driver.executeScript(`
+        return localStorage.getItem('nickname') || document.querySelector('[data-testid="nickname-input"]')?.value || 'NOT_FOUND';
+      `);
+      console.log(`🔍 SELENIUM: Stored nickname in browser: "${storedNickname}"`);
       
       // Join table as observer
       await driver.wait(until.elementLocated(By.css('[data-testid^="join-table-"]')), 15000);

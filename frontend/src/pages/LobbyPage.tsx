@@ -163,9 +163,10 @@ const LobbyPage: React.FC = () => {
   const handleLogin = useCallback(async (nickname: string) => {
     console.log('🔍 FRONTEND: Login requested for:', nickname);
     
-    // Save to cookie
+    // Save to both cookie AND localStorage for compatibility
     Cookies.set('playerNickname', nickname, { expires: 7 });
-    console.log('🔍 FRONTEND: Cookie saved');
+    localStorage.setItem('nickname', nickname);
+    console.log('🔍 FRONTEND: Cookie and localStorage saved');
     
     // Update username state - this should close the modal
     setUserName(nickname);

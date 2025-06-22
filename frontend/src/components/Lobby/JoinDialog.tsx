@@ -278,8 +278,8 @@ export const JoinDialog: React.FC<JoinDialogProps> = ({ table, onClose, onJoin }
       }
     }
 
-    // Also check for test environment and provide a default nickname
-    if (typeof window !== 'undefined' && (window as any).Cypress && !nickname) {
+    // Also check for test environment and provide a default nickname (but not for Selenium tests)
+    if (typeof window !== 'undefined' && (window as any).Cypress && !nickname && !(window as any).SELENIUM_TEST) {
       setNickname('TestPlayer');
     }
 
@@ -463,8 +463,8 @@ export const JoinDialog: React.FC<JoinDialogProps> = ({ table, onClose, onJoin }
               disabled={isButtonDisabled}
               data-testid="join-as-observer"
               onClick={(e) => {
-                // In test mode, always allow submission
-                if (typeof window !== 'undefined' && (window as any).Cypress) {
+                // In test mode, always allow submission (but respect Selenium nicknames)
+                if (typeof window !== 'undefined' && (window as any).Cypress && !(window as any).SELENIUM_TEST) {
                   e.preventDefault();
                   console.log('JoinDialog: Test mode - forcing submission with nickname:', nickname.trim());
                   onJoin(nickname.trim() || 'TestPlayer');
