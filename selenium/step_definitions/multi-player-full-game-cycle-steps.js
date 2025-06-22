@@ -430,7 +430,30 @@ Given('I have {int} browser instances with players seated:', {timeout: 180000}, 
       }
       await delay(2000);
       
-      console.log(`✅ ${playerName} seated at seat ${seat} with ${chips} chips`);
+      // **CRITICAL**: Wait for seat confirmation from backend
+      let seatConfirmed = false;
+      const confirmStartTime = Date.now();
+      const maxConfirmWait = 10000; // 10 seconds
+      
+      while (!seatConfirmed && (Date.now() - confirmStartTime) < maxConfirmWait) {
+        try {
+          // Check if player is now actually seated (not just observer)
+          const seatIndicator = await driver.findElement(By.css(`[data-testid="player-seat-${seat}"], [data-testid="seat-${seat}-occupied"], .occupied-seat`));
+          if (seatIndicator) {
+            seatConfirmed = true;
+            console.log(`✅ ${playerName} CONFIRMED seated at seat ${seat} with ${chips} chips`);
+            break;
+          }
+        } catch (e) {
+          // Seat indicator not found yet, continue waiting
+        }
+        
+        await delay(500);
+      }
+      
+      if (!seatConfirmed) {
+        throw new Error(`❌ ${playerName} seat confirmation FAILED - player may still be observer only`);
+      }
       
     } catch (error) {
       console.log(`❌ Failed to set up ${playerName}: ${error.message}`);
