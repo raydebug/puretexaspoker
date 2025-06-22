@@ -373,16 +373,28 @@ export function registerConsolidatedHandlers(io: Server) {
 
         let gameId: string;
         if (!existingGame) {
-          const gameState = await gameManager.createGame(dbTable.id);
-          gameId = gameState.id!;
+          // Create new game in database first
+          const newGame = await prisma.game.create({
+            data: {
+              tableId: dbTable.id,
+              status: 'waiting',
+              pot: 0,
+              phase: 'waiting'
+            }
+          });
+          gameId = newGame.id;
+          
+          // Then create game service with the proper gameId
+          gameManager.createGame(gameId);
+          console.log(`[CONSOLIDATED] Created new game: ${gameId} for table: ${dbTable.id}`);
         } else {
           gameId = existingGame.id;
           
           // Ensure GameService exists in memory
           let gameService = gameManager.getGame(gameId);
           if (!gameService) {
-            const gameState = await gameManager.createGame(dbTable.id);
-            gameId = gameState.id!;
+            gameManager.createGame(gameId);
+            console.log(`[CONSOLIDATED] Recreated game service for existing game: ${gameId}`);
           }
         }
 

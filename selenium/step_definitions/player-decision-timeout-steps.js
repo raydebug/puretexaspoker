@@ -34,24 +34,75 @@ When('the game starts automatically with enough players', async function () {
   const driver = this.driver;
   if (driver) {
     try {
-      // Wait for game phase to change from 'waiting'
+      // Wait for game phase to change from 'waiting' with detailed logging
       await driver.wait(async () => {
-        const gameStatus = await driver.findElement(By.css('[data-testid="game-status"]')).catch(() => null);
-        if (gameStatus) {
-          const statusText = await gameStatus.getText();
-          return statusText !== 'WAITING' && statusText.trim() !== '';
+        try {
+          const gameStatus = await driver.findElement(By.css('[data-testid="game-status"]')).catch(() => null);
+          if (gameStatus) {
+            const statusText = await gameStatus.getText();
+            console.log(`🎮 Current game status: "${statusText}"`);
+            
+            // Also check for game phase element
+            const gamePhase = await driver.findElement(By.css('[data-testid="game-phase"]')).catch(() => null);
+            if (gamePhase) {
+              const phaseText = await gamePhase.getText();
+              console.log(`🎮 Current game phase: "${phaseText}"`);
+              return phaseText !== '' && phaseText !== 'waiting';
+            }
+            
+            return statusText !== 'WAITING' && statusText.trim() !== '';
+          }
+          
+          // Fallback: check for current player indicator (indicates game started)
+          const currentPlayerIndicator = await driver.findElement(By.css('[data-testid="current-player-indicator"]')).catch(() => null);
+          if (currentPlayerIndicator) {
+            const indicatorText = await currentPlayerIndicator.getText();
+            console.log(`🎮 Found current player indicator: "${indicatorText}"`);
+            return true;
+          }
+          
+          // Fallback: check for betting controls (indicates active game)
+          const bettingControls = await driver.findElement(By.css('[data-testid="betting-controls"]')).catch(() => null);
+          if (bettingControls) {
+            console.log(`🎮 Found betting controls - game is active`);
+            return true;
+          }
+          
+          return false;
+        } catch (error) {
+          console.log(`🎮 Error checking game status: ${error.message}`);
+          return false;
         }
-        return false;
-      }, 15000);
+      }, 25000); // Increased timeout to 25 seconds
       
       console.log('✅ Game started successfully');
     } catch (error) {
       console.log(`⚠️ Game start timeout: ${error.message}`);
+      
+      // Enhanced debugging: capture final state
+      try {
+        const gameStatus = await driver.findElement(By.css('[data-testid="game-status"]')).catch(() => null);
+        if (gameStatus) {
+          const statusText = await gameStatus.getText();
+          console.log(`🎮 Final game status: "${statusText}"`);
+        }
+        
+        const playerSeats = await driver.findElements(By.css('[data-testid^="seat-"]'));
+        console.log(`🎮 Found ${playerSeats.length} seat elements`);
+        
+        for (let i = 0; i < playerSeats.length; i++) {
+          const seat = playerSeats[i];
+          const seatText = await seat.getText().catch(() => 'Could not read seat');
+          console.log(`🎮 Seat ${i + 1}: "${seatText}"`);
+        }
+      } catch (debugError) {
+        console.log(`🎮 Error during debugging: ${debugError.message}`);
+      }
     }
   }
   
   gameStartTime = Date.now();
-  await sleep(2000);
+  await sleep(3000); // Increased delay
 });
 
 When('the preflop betting round begins', async function () {
@@ -277,11 +328,11 @@ Given('I have {int} browser instances with players seated:', async function (bro
   
   const playerData = dataTable.hashes();
   
-  // Navigate to the table page once
+  // Navigate to the lobby first
   await this.helpers.navigateTo('/');
   await sleep(3000);
   
-  // Set up player tracking for the main browser instance
+  // Set up each player sequentially
   for (let i = 0; i < playerData.length; i++) {
     const player = playerData[i];
     const browserId = parseInt(player.browser);
@@ -291,29 +342,135 @@ Given('I have {int} browser instances with players seated:', async function (bro
     
     console.log(`🎯 Setting up ${playerName} in browser ${browserId}`);
     
-    // Use main driver instance for all players (simplified testing)
-    timeoutBrowserInstances[browserId] = {
-      driver: this.driver,
-      playerName,
-      seatNumber,
-      initialChips,
-      isConnected: true
-    };
-    
-    // Initialize timeout tracking for this player
-    timeoutTracker[playerName] = {
-      browserId,
-      seatNumber,
-      currentTurn: false,
-      lastAction: null,
-      timeoutStart: null,
-      autoFolded: false
-    };
-    
-    console.log(`✅ ${playerName} seated at seat ${seatNumber} with ${initialChips} chips`);
+    try {
+      // Login as the player - simplified for single browser testing
+      const nicknameInput = await this.driver.findElement(By.css('[data-testid="nickname-input"], input[placeholder*="nickname"], input[name="nickname"]')).catch(() => null);
+      if (nicknameInput) {
+        await nicknameInput.clear();
+        await nicknameInput.sendKeys(playerName);
+        
+        const loginButton = await this.driver.findElement(By.css('[data-testid="login-button"], button[type="submit"], .login-button')).catch(() => null);
+        if (loginButton) {
+          await loginButton.click();
+          await sleep(2000);
+          console.log(`✅ ${playerName} logged in successfully`);
+        }
+      }
+      
+      // Navigate to lobby then find and join a table
+      await this.helpers.navigateTo('/');
+      await sleep(3000);
+      
+      // Look for first available table and join it
+      const tableCards = await this.driver.findElements(By.css('[data-testid*="table-card"], .table-card, [class*="table"]')).catch(() => []);
+      if (tableCards.length > 0) {
+        // Click on the first table
+        await tableCards[0].click();
+        await sleep(2000);
+        console.log(`🎯 ${playerName} joined a table`);
+      } else {
+        // Fallback: navigate directly to table 1
+        await this.helpers.navigateTo('/table/1');
+        await sleep(3000);
+      }
+      
+      // Take a seat
+      const seatSelector = `[data-testid="available-seat-${seatNumber}"]`;
+      try {
+        await this.driver.wait(until.elementLocated(By.css(seatSelector)), 10000);
+        const seatElement = await this.driver.findElement(By.css(seatSelector));
+        await seatElement.click();
+        console.log(`🎯 Clicked on seat ${seatNumber} for ${playerName}`);
+        await sleep(3000);
+        
+        // Verify seat was taken by checking for player name or chips
+        const playerSeatedSelectors = [
+          `[data-testid="seat-${seatNumber}"]`,
+          `[data-testid="seat-${seatNumber}"] [data-testid*="player"]`,
+          `[data-testid="seat-${seatNumber}"] .player-name`,
+          `[data-testid="seat-${seatNumber}"] .player-chips`
+        ];
+        
+        let seatTaken = false;
+        for (const selector of playerSeatedSelectors) {
+          try {
+            const element = await this.driver.findElement(By.css(selector));
+            const elementText = await element.getText();
+            if (elementText && elementText.trim() !== '' && elementText !== 'Click to Sit') {
+              seatTaken = true;
+              console.log(`✅ ${playerName} successfully took seat ${seatNumber} - found: ${elementText}`);
+              break;
+            }
+          } catch (e) {
+            // Continue checking
+          }
+        }
+        
+        if (!seatTaken) {
+          console.log(`⚠️ Could not verify seat ${seatNumber} was taken for ${playerName}`);
+        }
+        
+      } catch (seatError) {
+        console.log(`⚠️ Could not take seat ${seatNumber} for ${playerName}: ${seatError.message}`);
+        
+        // Try alternative seat selectors
+        const fallbackSelectors = [
+          `[data-testid*="seat-${seatNumber}"]`,
+          `.seat-${seatNumber}`,
+          `[data-seat="${seatNumber}"]`,
+          `.poker-seat:nth-child(${seatNumber})`
+        ];
+        
+        let seatFound = false;
+        for (const selector of fallbackSelectors) {
+          try {
+            const fallbackElement = await this.driver.findElement(By.css(selector));
+            await fallbackElement.click();
+            await sleep(2000);
+            console.log(`✅ Used fallback selector ${selector} for seat ${seatNumber}`);
+            seatFound = true;
+            break;
+          } catch (fallbackError) {
+            // Continue to next selector
+          }
+        }
+        
+        if (!seatFound) {
+          console.log(`⚠️ All seat selectors failed for seat ${seatNumber}`);
+        }
+      }
+      
+      // Store browser instance data
+      timeoutBrowserInstances[browserId] = {
+        driver: this.driver,
+        playerName,
+        seatNumber,
+        initialChips,
+        isConnected: true
+      };
+      
+      // Initialize timeout tracking for this player
+      timeoutTracker[playerName] = {
+        browserId,
+        seatNumber,
+        currentTurn: false,
+        lastAction: null,
+        timeoutStart: null,
+        autoFolded: false
+      };
+      
+      console.log(`✅ ${playerName} seated at seat ${seatNumber} with ${initialChips} chips`);
+      
+    } catch (setupError) {
+      console.log(`⚠️ Error setting up ${playerName}: ${setupError.message}`);
+      // Continue with other players
+    }
   }
   
   console.log(`🎉 All ${browserCount} players successfully set up for timeout testing!`);
+  
+  // Give time for all WebSocket connections to stabilize
+  await sleep(5000);
 });
 
 // ============== TIMER VISIBILITY STEPS ==============

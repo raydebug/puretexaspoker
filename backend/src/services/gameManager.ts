@@ -118,6 +118,7 @@ export class GameManager {
   public createGame(gameId: string): GameState {
     console.log(`DEBUG: GameManager.createGame called with gameId: ${gameId}`);
     if (this.games.has(gameId)) {
+      console.log(`DEBUG: Game ${gameId} already exists, returning existing state`);
       return this.games.get(gameId)!.getGameState();
     }
     const gameService = new GameService(gameId);
@@ -126,7 +127,7 @@ export class GameManager {
     gameService.setPhaseTransitionCallback(this.handleAutomaticPhaseTransition.bind(this));
     
     this.games.set(gameId, gameService);
-    console.log(`DEBUG: GameManager games map size: ${this.games.size}`);
+    console.log(`DEBUG: GameManager created game ${gameId}, map size: ${this.games.size}`);
     console.log(`DEBUG: GameManager games map keys: ${Array.from(this.games.keys())}`);
     return gameService.getGameState();
   }
