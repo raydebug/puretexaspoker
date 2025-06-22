@@ -419,16 +419,37 @@ Given('I have {int} browser instances with players seated:', {timeout: 180000}, 
       await driver.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", confirmButton);
       await delay(300);
       
+      // **CRITICAL DEBUGGING**: Add console log capture before and after button click
+      console.log(`🔍 SELENIUM: About to click confirm button for ${playerName}`);
+      
+      // Capture browser console logs before button click
+      let consoleLogs = await driver.manage().logs().get('browser');
+      if (consoleLogs.length > 0) {
+        console.log(`🔍 SELENIUM: Browser console logs before confirm click (${consoleLogs.length} entries):`);
+        consoleLogs.slice(-5).forEach(log => console.log(`  ${log.level.name}: ${log.message}`));
+      }
+      
       try {
         await confirmButton.click();
+        console.log(`✅ SELENIUM: Confirm button clicked successfully for ${playerName}`);
       } catch (clickError) {
+        console.log(`⚠️ SELENIUM: Confirm button click failed, trying JS click: ${clickError.message}`);
         if (clickError.message.includes('click intercepted') || clickError.message.includes('not clickable')) {
           await driver.executeScript("arguments[0].click();", confirmButton);
+          console.log(`✅ SELENIUM: JS click executed for ${playerName}`);
         } else {
           throw clickError;
         }
       }
+      
       await delay(2000);
+      
+      // **CRITICAL DEBUGGING**: Capture console logs after button click to see frontend activity
+      consoleLogs = await driver.manage().logs().get('browser');
+      if (consoleLogs.length > 0) {
+        console.log(`🔍 SELENIUM: Browser console logs after confirm click (${consoleLogs.length} entries):`);
+        consoleLogs.slice(-10).forEach(log => console.log(`  ${log.level.name}: ${log.message}`));
+      }
       
       // **CRITICAL**: Wait for seat confirmation from backend
       let seatConfirmed = false;
