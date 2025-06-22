@@ -10,6 +10,7 @@ export interface GameSettings {
   bigBlind: number;
   timeBank: number;
   turnTime: number;
+  playerDecisionTimeout: number;
 }
 
 export interface GameStats {

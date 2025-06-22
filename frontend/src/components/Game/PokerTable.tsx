@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { GameState, Player } from '../../types/shared';
+import DecisionTimer from '../DecisionTimer';
 
 interface PokerTableProps {
   gameState: GameState;
@@ -741,6 +742,20 @@ export const PokerTable: React.FC<PokerTableProps> = ({
                 ))}
               </div>
             )}
+            
+            {/* Decision Timer for current player */}
+            <DecisionTimer
+              timeLimit={10}
+              isActive={isCurrentPlayer && gameState.status === 'playing' && !isFolded}
+              playerId={player.id}
+              playerName={player.name}
+              onTimeout={() => {
+                console.log(`⏰ Player ${player.name} timed out - auto-folding`);
+                if (onAction) {
+                  onAction('fold');
+                }
+              }}
+            />
           </>
         )}
       </PlayerSeatExtended>
