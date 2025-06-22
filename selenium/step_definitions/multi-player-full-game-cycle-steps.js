@@ -422,6 +422,32 @@ Given('I have {int} browser instances with players seated:', {timeout: 180000}, 
       // **CRITICAL DEBUGGING**: Add console log capture before and after button click
       console.log(`🔍 SELENIUM: About to click confirm button for ${playerName}`);
       
+      // **DOM INSPECTION**: Check button state and properties before clicking
+      const buttonText = await confirmButton.getText();
+      const isEnabled = await confirmButton.isEnabled();
+      const isDisplayed = await confirmButton.isDisplayed();
+      const buttonTagName = await confirmButton.getTagName();
+      
+      console.log(`🔍 SELENIUM: Button inspection - Text: "${buttonText}", Enabled: ${isEnabled}, Displayed: ${isDisplayed}, TagName: ${buttonTagName}`);
+      
+      // Check if button has data-testid
+      let buttonTestId = '';
+      try {
+        buttonTestId = await confirmButton.getAttribute('data-testid');
+        console.log(`🔍 SELENIUM: Button data-testid: "${buttonTestId}"`);
+      } catch (e) {
+        console.log(`🔍 SELENIUM: No data-testid found on button`);
+      }
+      
+      // Check if dialog is properly rendered
+      try {
+        const dialogOverlay = await driver.findElement(By.css('[data-testid="seat-dialog"], .dialog-overlay, [role="dialog"]'));
+        const dialogDisplayed = await dialogOverlay.isDisplayed();
+        console.log(`🔍 SELENIUM: Dialog overlay displayed: ${dialogDisplayed}`);
+      } catch (e) {
+        console.log(`🔍 SELENIUM: No dialog overlay found: ${e.message}`);
+      }
+      
       // Capture browser console logs before button click
       let consoleLogs = await driver.manage().logs().get('browser');
       if (consoleLogs.length > 0) {
