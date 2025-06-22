@@ -329,8 +329,8 @@ const GamePage: React.FC = () => {
           // Calculate available seats (1-9, excluding occupied seats) - only if players is an array
           if (Array.isArray(players)) {
             const occupiedSeats = players.map(p => p.seatNumber).filter(seat => typeof seat === 'number');
-            const available = Array.from({ length: 9 }, (_, i) => i + 1).filter(seat => !occupiedSeats.includes(seat));
-            setAvailableSeats(available);
+          const available = Array.from({ length: 9 }, (_, i) => i + 1).filter(seat => !occupiedSeats.includes(seat));
+          setAvailableSeats(available);
           }
         });
         
