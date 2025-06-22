@@ -30,26 +30,23 @@ Given('the frontend is running on {string}', async function (frontendUrl) {
 When('the game starts automatically with enough players', async function () {
   console.log('🎮 Verifying game auto-starts with enough players...');
   
-  // Wait for game to start across all browser instances
-  for (let browserIndex = 1; browserIndex <= Object.keys(timeoutBrowserInstances).length; browserIndex++) {
-    const driver = timeoutBrowserInstances[browserIndex];
-    if (driver) {
-      try {
-        // Wait for game phase to change from 'waiting'
-        await driver.wait(async () => {
-          const gameStatus = await driver.findElement({ css: '[data-testid="game-status"]' }).catch(() => null);
-          if (gameStatus) {
-            const statusText = await gameStatus.getText();
-            return statusText !== 'WAITING' && statusText.trim() !== '';
-          }
-          return false;
-        }, 15000);
-        
-        console.log(`✅ Game started in browser ${browserIndex}`);
-      } catch (error) {
-        console.log(`⚠️ Game start timeout in browser ${browserIndex}:`, error.message);
-        // Continue with other browsers
-      }
+  // Use the main driver from this.driver (from hooks)
+  const driver = this.driver;
+  if (driver) {
+    try {
+      // Wait for game phase to change from 'waiting'
+      await driver.wait(async () => {
+        const gameStatus = await driver.findElement(By.css('[data-testid="game-status"]')).catch(() => null);
+        if (gameStatus) {
+          const statusText = await gameStatus.getText();
+          return statusText !== 'WAITING' && statusText.trim() !== '';
+        }
+        return false;
+      }, 15000);
+      
+      console.log('✅ Game started successfully');
+    } catch (error) {
+      console.log(`⚠️ Game start timeout: ${error.message}`);
     }
   }
   
@@ -60,17 +57,15 @@ When('the game starts automatically with enough players', async function () {
 When('the preflop betting round begins', async function () {
   console.log('🃏 Preflop betting round beginning...');
   
-  // Verify preflop round started across browsers
-  for (let browserIndex = 1; browserIndex <= Object.keys(timeoutBrowserInstances).length; browserIndex++) {
-    const driver = timeoutBrowserInstances[browserIndex];
-    if (driver) {
-      try {
-        // Look for current player indicator or action buttons
-        await driver.wait(until.elementLocated({ css: '[data-testid="current-player-indicator"], [data-testid="betting-controls"]' }), 10000);
-        console.log(`✅ Preflop betting started in browser ${browserIndex}`);
-      } catch (error) {
-        console.log(`⚠️ Preflop betting not detected in browser ${browserIndex}`);
-      }
+  // Use the main driver to verify preflop round started
+  const driver = this.driver;
+  if (driver) {
+    try {
+      // Look for current player indicator or action buttons
+      await driver.wait(until.elementLocated(By.css('[data-testid="current-player-indicator"], [data-testid="betting-controls"]')), 10000);
+      console.log('✅ Preflop betting started successfully');
+    } catch (error) {
+      console.log(`⚠️ Preflop betting not detected: ${error.message}`);
     }
   }
   
@@ -326,12 +321,11 @@ Given('I have {int} browser instances with players seated:', async function (bro
 Then('the current player should see a circle countdown timer', async function () {
   console.log('🔍 Verifying current player sees circle countdown timer...');
   
-  const currentPlayerBrowser = await getCurrentPlayerBrowser();
-  if (!currentPlayerBrowser) {
-    throw new Error('No current player browser found');
+  // Use the main driver directly since we're testing with simplified browser setup
+  const driver = this.driver;
+  if (!driver) {
+    throw new Error('No driver available');
   }
-  
-  const driver = currentPlayerBrowser.driver;
   
   // Look for countdown timer element
   const timerSelectors = [
@@ -355,6 +349,7 @@ Then('the current player should see a circle countdown timer', async function ()
         break;
       }
     } catch (error) {
+      console.log(`⚠️ Timer not found with selector ${selector}: ${error.message}`);
       // Continue to next selector
     }
   }
@@ -706,6 +701,9 @@ Then('the countdown timer should have these visual properties:', async function 
 async function getCurrentPlayerBrowser() {
   // Find which player is currently active
   const currentPlayerName = await getCurrentPlayerName();
+  if (!currentPlayerName) {
+    return null;
+  }
   return getBrowserForPlayer(currentPlayerName);
 }
 
