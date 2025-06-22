@@ -1300,6 +1300,7 @@ export class SocketService {
    */
   takeSeat(seatNumber: number, buyIn: number) {
     console.log(`🎯 SOCKET: takeSeat called - socket exists: ${!!this.socket}, connected: ${this.socket?.connected}`);
+    console.log(`🎯 SOCKET: takeSeat parameters - seatNumber: ${seatNumber}, buyIn: ${buyIn}`);
     
     if (!this.socket) {
       console.error('🎯 SOCKET: Socket not initialized, attempting to reconnect...');
@@ -1313,8 +1314,13 @@ export class SocketService {
       throw new Error('Socket not connected. Reconnecting...');
     }
     
-    console.log(`🎯 SOCKET: Taking seat ${seatNumber} with buy-in ${buyIn}`);
+    console.log(`🎯 SOCKET: SENDING takeSeat WebSocket event - seatNumber: ${seatNumber}, buyIn: ${buyIn}`);
+    console.log(`🎯 SOCKET: Socket ID: ${this.socket.id}, connected: ${this.socket.connected}`);
+    
+    // **CRITICAL**: Emit the takeSeat event
     this.socket.emit('takeSeat', { seatNumber, buyIn });
+    
+    console.log(`🎯 SOCKET: takeSeat event SENT successfully`);
   }
 
   /**
