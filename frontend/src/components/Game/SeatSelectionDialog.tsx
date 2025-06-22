@@ -272,7 +272,7 @@ export const SeatSelectionDialog: React.FC<SeatSelectionDialogProps> = ({
   };
 
   return (
-    <DialogOverlay onClick={onClose}>
+    <DialogOverlay onClick={onClose} data-testid="seat-dialog" role="dialog" className="dialog-overlay">
       <DialogContent onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
           <Title>Take Seat {seatNumber}</Title>
