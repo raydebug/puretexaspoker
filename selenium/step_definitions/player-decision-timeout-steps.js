@@ -357,20 +357,30 @@ Given('I have {int} browser instances with players seated:', {timeout: 60000}, a
         }
       }
       
-      // CRITICAL FIX: Navigate directly to game table page where seats are rendered
-      console.log(`🔧 SELENIUM: Navigating directly to game table page for ${playerName}...`);
-      const gameTableUrl = 'http://localhost:3000/table/1';
-      await this.driver.get(gameTableUrl);
-      await sleep(3000); // Give page time to load
+      // CRITICAL FIX: Follow proper user flow instead of direct navigation
+      console.log(`🔧 SELENIUM: Following proper user flow for ${playerName}...`);
       
-      console.log(`✅ SELENIUM: Navigated to game table: ${gameTableUrl}`);
+      // Step 1: Navigate to lobby
+      await this.driver.get('http://localhost:3000/');
+      await sleep(2000);
+      console.log(`✅ SELENIUM: Navigated to lobby`);
       
-      // Verify we're on the game page by looking for poker table elements
+      // Step 2: Join a table (which creates the game)
       try {
-        await this.driver.wait(until.elementLocated(By.css('[data-testid="poker-table"]')), 10000);
-        console.log(`✅ SELENIUM: Poker table found - on correct page`);
+        // Look for join table buttons
+        await this.driver.wait(until.elementLocated(By.css('[data-testid^="join-table-"], .join-table-btn, [class*="join"]')), 10000);
+        const joinButton = await this.driver.findElement(By.css('[data-testid^="join-table-"], .join-table-btn, [class*="join"]'));
+        await joinButton.click();
+        await sleep(3000);
+        console.log(`✅ SELENIUM: Joined table successfully`);
+        
+        // Step 3: Verify we're on the game page by looking for poker table elements
+        await this.driver.wait(until.elementLocated(By.css('[data-testid="poker-table"]')), 15000);
+        console.log(`✅ SELENIUM: Poker table found - on game page`);
+        
       } catch (e) {
-        console.log(`⚠️ SELENIUM: Poker table not found, but continuing...`);
+        console.log(`⚠️ SELENIUM: Could not join table via UI, continuing anyway...`);
+        console.log(`⚠️ SELENIUM: Error: ${e.message}`);
       }
       
       // Take a seat

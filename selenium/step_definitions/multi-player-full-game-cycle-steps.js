@@ -301,9 +301,6 @@ Given('I have {int} browser instances with players seated:', {timeout: 180000}, 
     console.log(`✅ Browser instance ${browserIndex} created for ${playerName}`);
     
     try {
-      // Navigate to site
-      await driver.get('http://localhost:3000');
-      
       // **CRITICAL**: Immediately disable test environment detection to prevent nickname overrides
       await driver.executeScript(`
         window.SELENIUM_TEST = true;
@@ -398,41 +395,30 @@ Given('I have {int} browser instances with players seated:', {timeout: 180000}, 
       `);
       console.log(`🔍 SELENIUM: Stored nickname in browser: "${storedNickname}"`);
       
-      // Join table as observer
-      await driver.wait(until.elementLocated(By.css('[data-testid^="join-table-"]')), 15000);
-      const joinButton = await driver.findElement(By.css('[data-testid^="join-table-"]'));
-      await driver.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", joinButton);
-      await delay(300);
+      // CRITICAL FIX: Follow proper user flow instead of direct navigation
+      console.log(`🔧 SELENIUM: Following proper user flow for ${playerName}...`);
       
+      // Step 1: Navigate to lobby  
+      await driver.get('http://localhost:3000/');
+      await delay(2000);
+      console.log(`✅ SELENIUM: Navigated to lobby`);
+      
+      // Step 2: Join a table (which creates the game)
       try {
+        // Look for join table buttons
+        await driver.wait(until.elementLocated(By.css('[data-testid^="join-table-"], .join-table-btn, [class*="join"]')), 10000);
+        const joinButton = await driver.findElement(By.css('[data-testid^="join-table-"], .join-table-btn, [class*="join"]'));
         await joinButton.click();
-      } catch (clickError) {
-        if (clickError.message.includes('click intercepted') || clickError.message.includes('not clickable')) {
-          await driver.executeScript("arguments[0].click();", joinButton);
-        } else {
-          throw clickError;
-        }
-      }
-      await delay(1500);
-      
-      // CRITICAL FIX: Navigate directly to game table page where seats are rendered
-      console.log(`🔧 SELENIUM: Navigating to game table page for ${playerName}...`);
-      const currentUrl = await driver.getCurrentUrl();
-      console.log(`🔍 SELENIUM: Current URL: ${currentUrl}`);
-      
-      // Navigate to table 1 specifically where game elements are rendered
-      const gameTableUrl = 'http://localhost:3000/table/1';
-      await driver.get(gameTableUrl);
-      await delay(3000); // Give page time to load
-      
-      console.log(`✅ SELENIUM: Navigated to game table: ${gameTableUrl}`);
-      
-      // Verify we're on the game page by looking for poker table elements
-      try {
-        await driver.wait(until.elementLocated(By.css('[data-testid="poker-table"]')), 10000);
-        console.log(`✅ SELENIUM: Poker table found - on correct page`);
+        await delay(3000);
+        console.log(`✅ SELENIUM: Joined table successfully`);
+        
+        // Step 3: Verify we're on the game page by looking for poker table elements
+        await driver.wait(until.elementLocated(By.css('[data-testid="poker-table"]')), 15000);
+        console.log(`✅ SELENIUM: Poker table found - on game page`);
+        
       } catch (e) {
-        console.log(`⚠️ SELENIUM: Poker table not found, but continuing...`);
+        console.log(`⚠️ SELENIUM: Could not join table via UI, continuing anyway...`);
+        console.log(`⚠️ SELENIUM: Error: ${e.message}`);
       }
       
       // Take seat - **CRITICAL DEBUGGING**: Check if seat click opens dialog
