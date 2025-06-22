@@ -1015,14 +1015,27 @@ export class SocketService {
         navigationService.navigateToLobby(true);
       }
     } else {
-      // If user is at a table, they should be on the corresponding game page
-        const currentGameId = navigationService.getCurrentGameId();
+      // **CRITICAL FIX**: Only navigate if NOT already on a game page
+      // URLs use game ID, not table ID - avoid unnecessary navigation that breaks WebSocket
+      if (!navigationService.isOnGamePage()) {
+        console.log(`🚀 FRONTEND: User is at table ${table} (seat=${seat}), but not on game page - navigating`);
+        console.log(`🚀 FRONTEND: Current path: ${navigationService.getCurrentPath()}`);
         
-        // If not on the correct game page, navigate there
-      if (!navigationService.isOnGamePage() || currentGameId !== table.toString()) {
-        console.log(`🚀 FRONTEND: User is at table ${table} (seat=${seat}), navigating to game page`);
-          console.log(`🚀 FRONTEND: Current path: ${navigationService.getCurrentPath()}`);
-        navigationService.navigateToGame(table.toString(), true);
+        // Use the current game ID if available (preserve existing navigation)
+        const currentGameId = navigationService.getCurrentGameId();
+        if (currentGameId) {
+          console.log(`🚀 FRONTEND: Already on game page ${currentGameId}, no navigation needed`);
+        } else {
+          // Only navigate if we have a valid game ID to navigate to
+          if (this.gameState && this.gameState.id) {
+            navigationService.navigateToGame(this.gameState.id, true);
+          } else {
+            console.log(`🚀 FRONTEND: No game ID available for navigation, staying on current page`);
+          }
+        }
+      } else {
+        console.log(`🚀 FRONTEND: User already on game page, no navigation needed`);
+        console.log(`🚀 FRONTEND: Current path: ${navigationService.getCurrentPath()}`);
       }
     }
   }
