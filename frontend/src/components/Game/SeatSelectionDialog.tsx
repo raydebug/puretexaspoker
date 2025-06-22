@@ -326,7 +326,12 @@ export const SeatSelectionDialog: React.FC<SeatSelectionDialogProps> = ({
           <Button onClick={onClose}>Cancel</Button>
           <Button
             $primary
-            onClick={handleConfirm}
+            onClick={(e) => {
+              console.log(`🎯 SeatSelectionDialog: Confirm button clicked! Event:`, e);
+              console.log(`🎯 SeatSelectionDialog: Button disabled state: ${!isValidBuyIn()}`);
+              console.log(`🎯 SeatSelectionDialog: Buy-in validation result: ${isValidBuyIn()}`);
+              handleConfirm();
+            }}
             disabled={!isValidBuyIn()}
             data-testid="confirm-seat-btn"
           >
