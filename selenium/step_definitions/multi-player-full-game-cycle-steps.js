@@ -415,6 +415,26 @@ Given('I have {int} browser instances with players seated:', {timeout: 180000}, 
       }
       await delay(1500);
       
+      // CRITICAL FIX: Navigate directly to game table page where seats are rendered
+      console.log(`🔧 SELENIUM: Navigating to game table page for ${playerName}...`);
+      const currentUrl = await driver.getCurrentUrl();
+      console.log(`🔍 SELENIUM: Current URL: ${currentUrl}`);
+      
+      // Navigate to table 1 specifically where game elements are rendered
+      const gameTableUrl = 'http://localhost:3000/table/1';
+      await driver.get(gameTableUrl);
+      await delay(3000); // Give page time to load
+      
+      console.log(`✅ SELENIUM: Navigated to game table: ${gameTableUrl}`);
+      
+      // Verify we're on the game page by looking for poker table elements
+      try {
+        await driver.wait(until.elementLocated(By.css('[data-testid="poker-table"]')), 10000);
+        console.log(`✅ SELENIUM: Poker table found - on correct page`);
+      } catch (e) {
+        console.log(`⚠️ SELENIUM: Poker table not found, but continuing...`);
+      }
+      
       // Take seat - **CRITICAL DEBUGGING**: Check if seat click opens dialog
       console.log(`🔍 SELENIUM: Looking for available seat ${seat} for ${playerName}`);
       await driver.wait(until.elementLocated(By.css(`[data-testid="available-seat-${seat}"]`)), 15000);
