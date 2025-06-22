@@ -593,6 +593,7 @@ export const PokerTable: React.FC<PokerTableProps> = ({
   const playerWithCards = getPlayerToShowCards();
 
   // Debug logging for game state changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   React.useEffect(() => {
     const nickname = localStorage.getItem('nickname');
     console.log('🎮 FRONTEND: PokerTable received game state update:', {
