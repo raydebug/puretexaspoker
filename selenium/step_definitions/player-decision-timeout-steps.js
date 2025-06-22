@@ -357,21 +357,20 @@ Given('I have {int} browser instances with players seated:', async function (bro
         }
       }
       
-      // Navigate to lobby then find and join a table
-      await this.helpers.navigateTo('/');
-      await sleep(3000);
+      // CRITICAL FIX: Navigate directly to game table page where seats are rendered
+      console.log(`🔧 SELENIUM: Navigating directly to game table page for ${playerName}...`);
+      const gameTableUrl = 'http://localhost:3000/table/1';
+      await this.driver.get(gameTableUrl);
+      await sleep(3000); // Give page time to load
       
-      // Look for first available table and join it
-      const tableCards = await this.driver.findElements(By.css('[data-testid*="table-card"], .table-card, [class*="table"]')).catch(() => []);
-      if (tableCards.length > 0) {
-        // Click on the first table
-        await tableCards[0].click();
-        await sleep(2000);
-        console.log(`🎯 ${playerName} joined a table`);
-      } else {
-        // Fallback: navigate directly to table 1
-        await this.helpers.navigateTo('/table/1');
-        await sleep(3000);
+      console.log(`✅ SELENIUM: Navigated to game table: ${gameTableUrl}`);
+      
+      // Verify we're on the game page by looking for poker table elements
+      try {
+        await this.driver.wait(until.elementLocated(By.css('[data-testid="poker-table"]')), 10000);
+        console.log(`✅ SELENIUM: Poker table found - on correct page`);
+      } catch (e) {
+        console.log(`⚠️ SELENIUM: Poker table not found, but continuing...`);
       }
       
       // Take a seat
@@ -921,6 +920,7 @@ After({ tags: '@timeout' }, async function () {
   currentPlayerTimeout = null;
   
   console.log('✅ Timeout test cleanup completed');
+});
 
 // ============== ADDITIONAL MISSING STEP DEFINITIONS ==============
 
@@ -1327,7 +1327,6 @@ Then('all game features should remain functional during countdown', async functi
   }
   
   console.log('✅ Game functionality verification completed');
-});
 });
 
 // ============== MISSING STEP DEFINITIONS ==============
