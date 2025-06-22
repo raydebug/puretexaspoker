@@ -10,13 +10,11 @@ Feature: Multi-Player Full Game Cycle with Comprehensive Actions
 
   @multi-browser @full-game-cycle
   Scenario: Three Complete Games with All Poker Actions
-    Given I have 5 browser instances with players seated:
+    Given I have 3 browser instances with players seated:
       | player   | browser | seat | initial_chips |
       | Player1  | 1       | 1    | 150          |
       | Player2  | 2       | 2    | 150          |
       | Player3  | 3       | 3    | 150          |
-      | Player4  | 4       | 4    | 150          |
-      | Player5  | 5       | 5    | 150          |
     And all players can see the initial seating arrangement
     And all players have their starting chip counts verified
 

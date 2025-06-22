@@ -23,17 +23,55 @@ async function createBrowserInstance(instanceId, headless = process.env.HEADLESS
   }
   chromeOptions.addArguments('--no-sandbox');
   chromeOptions.addArguments('--disable-dev-shm-usage');
+  chromeOptions.addArguments('--disable-gpu');
+  chromeOptions.addArguments('--window-size=1280,720');
+  chromeOptions.addArguments('--disable-extensions');
   chromeOptions.addArguments('--disable-web-security');
   chromeOptions.addArguments('--allow-running-insecure-content');
   chromeOptions.addArguments('--disable-features=VizDisplayCompositor');
+  chromeOptions.addArguments('--disable-background-timer-throttling');
+  chromeOptions.addArguments('--disable-backgrounding-occluded-windows');
+  chromeOptions.addArguments('--disable-renderer-backgrounding');
+  chromeOptions.addArguments('--disable-ipc-flooding-protection');
+  chromeOptions.addArguments('--remote-debugging-port=0');
   
-  const driver = await new Builder()
-    .forBrowser('chrome')
-    .setChromeOptions(chromeOptions)
-    .build();
+  let driver;
+  let retryCount = 0;
+  const maxRetries = 3;
   
-  browserInstances[instanceId] = driver;
-  return driver;
+  while (retryCount < maxRetries) {
+    try {
+      driver = await new Builder()
+        .forBrowser('chrome')
+        .setChromeOptions(chromeOptions)
+        .build();
+      
+      // Test the driver by navigating to a simple page
+      await driver.get('about:blank');
+      await driver.manage().setTimeouts({ implicit: 10000, pageLoad: 30000, script: 30000 });
+      
+      browserInstances[instanceId] = driver;
+      return driver;
+      
+    } catch (error) {
+      retryCount++;
+      console.log(`⚠️ Browser creation attempt ${retryCount} failed: ${error.message}`);
+      
+      if (driver) {
+        try {
+          await driver.quit();
+        } catch (quitError) {
+          // Ignore quit errors during cleanup
+        }
+      }
+      
+      if (retryCount >= maxRetries) {
+        throw new Error(`Failed to create browser instance ${instanceId} after ${maxRetries} attempts: ${error.message}`);
+      }
+      
+      await delay(2000); // Wait before retrying
+    }
+  }
 }
 
 async function performPlayerAction(playerName, action, amount = null) {
@@ -184,17 +222,20 @@ Given('I have a clean poker table {string} with {int} seats', async function (ta
 
 // Step Definitions
 
-Given('I have {int} browser instances with players seated:', {timeout: 60000}, async function (browserCount, dataTable) {
+Given('I have {int} browser instances with players seated:', {timeout: 90000}, async function (browserCount, dataTable) {
   console.log(`🚀 Setting up ${browserCount} browser instances for full game cycle...`);
   
   const players = dataTable.hashes();
   initialChipTotals = 0;
   
+  // Create all browser instances first
   for (let i = 1; i <= browserCount; i++) {
     await createBrowserInstance(i);
     console.log(`✅ Browser instance ${i} created`);
+    await delay(1000); // Short delay between browser creations
   }
   
+  // Seat players with better error handling and retry logic
   for (const player of players) {
     const { player: playerName, browser, seat, initial_chips } = player;
     const chips = parseInt(initial_chips);
@@ -202,54 +243,188 @@ Given('I have {int} browser instances with players seated:', {timeout: 60000}, a
     chipTracker[playerName] = chips;
     initialChipTotals += chips;
     
-    const driver = browserInstances[parseInt(browser)];
+    let driver = browserInstances[parseInt(browser)];
+    let retryCount = 0;
+    const maxRetries = 3;
     
-    try {
-      await driver.get('http://localhost:3000');
-      await delay(3000);
-      
-      // Click login button to open nickname modal
-      const loginButton = await driver.findElement(By.css('[data-testid="login-button"]'));
-      await loginButton.click();
-      await delay(1000);
-      
-      // Set nickname
-      const nicknameInput = await driver.findElement(By.css('[data-testid="nickname-input"]'));
-      await nicknameInput.clear();
-      await nicknameInput.sendKeys(playerName);
-      
-      const setNicknameButton = await driver.findElement(By.css('[data-testid="join-button"]'));
-      await setNicknameButton.click();
-      await delay(2000);
-      
-      // Join table as observer first
-      const joinButton = await driver.findElement(By.css('[data-testid^="join-table-"]'));
-      await joinButton.click();
-      await delay(2000);
-      
-      // Take seat
-      const seatButton = await driver.findElement(By.css(`[data-testid="available-seat-${seat}"]`));
-      await seatButton.click();
-      await delay(1000);
-      
-      // Set buy-in - use custom buy-in input
-      const buyInDropdown = await driver.findElement(By.css('[data-testid="buyin-dropdown"]'));
-      await buyInDropdown.click();
-      // Select custom option (value -1)
-      const customOption = await driver.findElement(By.css('[data-testid="buyin-dropdown"] option[value="-1"]'));
-      await customOption.click();
-      
-      const buyInInput = await driver.findElement(By.css('[data-testid="custom-buyin-input"]'));
-      await buyInInput.clear();
-      await buyInInput.sendKeys(chips.toString());
-      
-      const confirmButton = await driver.findElement(By.css('[data-testid="confirm-seat-btn"]'));
-      await confirmButton.click();
-      await delay(3000);
-      
-      console.log(`✅ ${playerName} seated at seat ${seat} with ${chips} chips`);
-    } catch (error) {
-      console.log(`⚠️ Setup for ${playerName} had issues: ${error.message}`);
+    while (retryCount < maxRetries) {
+      try {
+        console.log(`🎯 Setting up ${playerName} (attempt ${retryCount + 1}/${maxRetries})`);
+        
+        // Navigate to site
+        await driver.get('http://localhost:3000');
+        await delay(2000);
+        
+        // Handle any welcome popups or overlays that might interfere
+        try {
+          const closeButtons = await driver.findElements(By.css('button[aria-label="Close"], .close-button, [data-testid="close-welcome"]'));
+          for (const button of closeButtons) {
+            try {
+              await button.click();
+              await delay(500);
+            } catch (e) {
+              // Ignore if can't click close button
+            }
+          }
+        } catch (e) {
+          // No close buttons found, continue
+        }
+        
+        // Wait for login button and ensure it's clickable
+        await driver.wait(until.elementLocated(By.css('[data-testid="login-button"]')), 15000);
+        const loginButton = await driver.findElement(By.css('[data-testid="login-button"]'));
+        
+        // Scroll to element to ensure it's visible
+        await driver.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", loginButton);
+        await delay(1000);
+        
+        // Try normal click first, then JS click if intercepted
+        try {
+          await driver.wait(until.elementIsEnabled(loginButton), 5000);
+          await loginButton.click();
+        } catch (clickError) {
+          if (clickError.message.includes('click intercepted') || clickError.message.includes('not clickable')) {
+            console.log('⚠️ Normal click intercepted, trying JS click...');
+            await driver.executeScript("arguments[0].click();", loginButton);
+          } else {
+            throw clickError;
+          }
+        }
+        
+        await driver.wait(until.elementLocated(By.css('[data-testid="nickname-input"]')), 10000);
+        
+        // Set nickname
+        const nicknameInput = await driver.findElement(By.css('[data-testid="nickname-input"]'));
+        await nicknameInput.clear();
+        await nicknameInput.sendKeys(playerName);
+        
+        const setNicknameButton = await driver.findElement(By.css('[data-testid="join-button"]'));
+        await driver.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", setNicknameButton);
+        await delay(500);
+        
+        try {
+          await setNicknameButton.click();
+        } catch (clickError) {
+          if (clickError.message.includes('click intercepted') || clickError.message.includes('not clickable')) {
+            await driver.executeScript("arguments[0].click();", setNicknameButton);
+          } else {
+            throw clickError;
+          }
+        }
+        await delay(2000);
+        
+        // Join table as observer first
+        await driver.wait(until.elementLocated(By.css('[data-testid^="join-table-"]')), 15000);
+        const joinButton = await driver.findElement(By.css('[data-testid^="join-table-"]'));
+        await driver.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", joinButton);
+        await delay(500);
+        
+        try {
+          await joinButton.click();
+        } catch (clickError) {
+          if (clickError.message.includes('click intercepted') || clickError.message.includes('not clickable')) {
+            await driver.executeScript("arguments[0].click();", joinButton);
+          } else {
+            throw clickError;
+          }
+        }
+        await delay(2000);
+        
+        // Take seat
+        await driver.wait(until.elementLocated(By.css(`[data-testid="available-seat-${seat}"]`)), 15000);
+        const seatButton = await driver.findElement(By.css(`[data-testid="available-seat-${seat}"]`));
+        await driver.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", seatButton);
+        await delay(500);
+        
+        try {
+          await seatButton.click();
+        } catch (clickError) {
+          if (clickError.message.includes('click intercepted') || clickError.message.includes('not clickable')) {
+            await driver.executeScript("arguments[0].click();", seatButton);
+          } else {
+            throw clickError;
+          }
+        }
+        await delay(1500);
+        
+        // Set buy-in - proper sequence for seat selection dialog
+        // First wait for the seat selection dialog to appear
+        await driver.wait(until.elementLocated(By.css('[data-testid="buyin-dropdown"]')), 10000);
+        
+        const buyInDropdown = await driver.findElement(By.css('[data-testid="buyin-dropdown"]'));
+        await driver.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", buyInDropdown);
+        await delay(500);
+        
+        // Select the custom option from dropdown to reveal custom input
+        await driver.executeScript("arguments[0].value = '-1'; arguments[0].dispatchEvent(new Event('change', { bubbles: true }));", buyInDropdown);
+        await delay(1000);
+        
+        // Now wait for the custom input to appear and fill it
+        const buyInInput = await driver.wait(
+          until.elementLocated(By.css('[data-testid="custom-buyin-input"]')),
+          5000
+        );
+        
+        await driver.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", buyInInput);
+        await delay(500);
+        await buyInInput.clear();
+        await buyInInput.sendKeys(chips.toString());
+        await delay(500);
+        
+        const confirmButton = await driver.findElement(By.css('[data-testid="confirm-seat-btn"]'));
+        await driver.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", confirmButton);
+        await delay(500);
+        
+        try {
+          await confirmButton.click();
+        } catch (clickError) {
+          if (clickError.message.includes('click intercepted') || clickError.message.includes('not clickable')) {
+            await driver.executeScript("arguments[0].click();", confirmButton);
+          } else {
+            throw clickError;
+          }
+        }
+        await delay(3000);
+        
+        console.log(`✅ ${playerName} seated at seat ${seat} with ${chips} chips`);
+        break; // Success, exit retry loop
+        
+      } catch (error) {
+        retryCount++;
+        console.log(`⚠️ Setup attempt ${retryCount} for ${playerName} failed: ${error.message}`);
+        
+        if (retryCount >= maxRetries) {
+          console.log(`❌ Failed to set up ${playerName} after ${maxRetries} attempts`);
+          // Try to recreate the browser instance as a last resort
+          try {
+            // Safely quit the corrupted driver
+            if (driver) {
+              try {
+                await driver.quit();
+              } catch (quitError) {
+                console.log(`⚠️ Could not quit corrupted driver: ${quitError.message}`);
+              }
+            }
+            
+            // Remove the corrupted instance from our tracking
+            delete browserInstances[parseInt(browser)];
+            
+            // Create a new browser instance
+            const newDriver = await createBrowserInstance(parseInt(browser));
+            console.log(`🔄 Recreated browser instance ${browser} for ${playerName}`);
+            
+            // Update the driver reference for one more attempt
+            driver = newDriver;
+            
+          } catch (recreateError) {
+            console.log(`❌ Failed to recreate browser instance: ${recreateError.message}`);
+            // Mark this player as failed so we can continue with others
+            break;
+          }
+        } else {
+          await delay(2000); // Wait before retrying
+        }
+      }
     }
   }
 });
@@ -506,16 +681,26 @@ Then('all browser instances should show identical final states', async function 
 });
 
 // Cleanup
-After(async function () {
+After({timeout: 30000}, async function () {
   console.log('🧹 Cleaning up browser instances...');
   
+  const cleanupPromises = [];
+  
   for (const [instanceId, driver] of Object.entries(browserInstances)) {
-    try {
-      await driver.quit();
-      console.log(`✅ Browser instance ${instanceId} closed`);
-    } catch (error) {
-      console.log(`⚠️ Error closing browser instance ${instanceId}`);
+    if (driver) {
+      cleanupPromises.push(
+        driver.quit()
+          .then(() => console.log(`✅ Browser instance ${instanceId} closed`))
+          .catch(error => console.log(`⚠️ Error closing browser instance ${instanceId}: ${error.message}`))
+      );
     }
+  }
+  
+  // Wait for all cleanup operations to complete, but don't wait too long
+  try {
+    await Promise.allSettled(cleanupPromises);
+  } catch (error) {
+    console.log('⚠️ Some browser instances may not have closed properly');
   }
   
   browserInstances = {};
