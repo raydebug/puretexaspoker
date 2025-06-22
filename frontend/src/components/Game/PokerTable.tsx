@@ -593,7 +593,6 @@ export const PokerTable: React.FC<PokerTableProps> = ({
   const playerWithCards = getPlayerToShowCards();
 
   // Debug logging for game state changes  
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   React.useEffect(() => {
     const nickname = localStorage.getItem('nickname');
     console.log('🎮 FRONTEND: PokerTable received game state update:', {
@@ -633,6 +632,7 @@ export const PokerTable: React.FC<PokerTableProps> = ({
         cardCount: p.cards.length
       })));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState, currentPlayer, currentUserPlayer, isObserver, playerWithCards, shouldShowUserHoleCards]);
 
   const handleSeatClick = (seatNumber: number) => {

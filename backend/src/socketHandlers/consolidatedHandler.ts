@@ -378,8 +378,7 @@ export function registerConsolidatedHandlers(io: Server) {
             data: {
               tableId: dbTable.id,
               status: 'waiting',
-              pot: 0,
-              phase: 'waiting'
+              pot: 0
             }
           });
           gameId = newGame.id;
