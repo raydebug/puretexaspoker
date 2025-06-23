@@ -155,42 +155,7 @@ Given('the game starts and reaches flop phase', async function () {
     console.log('✅ Game reached flop phase');
 });
 
-When('the flop betting round begins', async function () {
-    console.log('🎴 Flop betting round beginning...');
-    
-    // Verify flop phase and get current player
-    const gameResponse = await webdriverHelpers.makeApiCall(
-        this.serverUrl,
-        `/api/test/get_game_state`,
-        'POST',
-        { gameId: this.gameId }
-    );
-    
-    expect(gameResponse.gameState.phase).to.equal('flop');
-    expect(gameResponse.gameState.currentPlayerId).to.not.be.null;
-    
-    console.log(`🎯 Flop betting round started, current player: ${gameResponse.gameState.currentPlayerId}`);
-});
-
-Then('the flop betting round should be automatically complete', async function () {
-    console.log('⚡ Verifying flop betting round completion...');
-    
-    await webdriverHelpers.sleep(2000);
-    
-    const gameResponse = await webdriverHelpers.makeApiCall(
-        this.serverUrl,
-        `/api/test/get_game_state`,
-        'POST',
-        { gameId: this.gameId }
-    );
-    
-    // Verify betting completion criteria
-    const activePlayers = gameResponse.gameState.players.filter(p => p.isActive);
-    const allBetsEqual = activePlayers.every(p => p.currentBet === gameResponse.gameState.currentBet);
-    
-    expect(allBetsEqual).to.be.true;
-    console.log('✅ Flop betting round automatically completed');
-});
+// Removed duplicate step definitions for flop betting - specialized for automated betting only
 
 Then('I should see {int} community cards displayed automatically', async function (expectedCount) {
     console.log(`⚡ Verifying ${expectedCount} community cards displayed...`);
@@ -272,19 +237,7 @@ Given('the game starts and reaches turn phase', async function () {
     console.log('✅ Game reached turn phase');
 });
 
-When('the turn betting round begins', async function () {
-    console.log('🎴 Turn betting round beginning...');
-    
-    const gameResponse = await webdriverHelpers.makeApiCall(
-        this.serverUrl,
-        `/api/test/get_game_state`,
-        'POST',
-        { gameId: this.gameId }
-    );
-    
-    expect(gameResponse.gameState.phase).to.equal('turn');
-    console.log(`🎯 Turn betting round started`);
-});
+// Removed duplicate step definition - specialized for automated betting only
 
 Then('the turn betting round should be automatically complete', async function () {
     console.log('⚡ Verifying turn betting round completion...');
@@ -343,19 +296,7 @@ Given('the game starts and reaches river phase', async function () {
     console.log('✅ Game reached river phase');
 });
 
-When('the river betting round begins', async function () {
-    console.log('🌊 River betting round beginning...');
-    
-    const gameResponse = await webdriverHelpers.makeApiCall(
-        this.serverUrl,
-        `/api/test/get_game_state`,
-        'POST',
-        { gameId: this.gameId }
-    );
-    
-    expect(gameResponse.gameState.phase).to.equal('river');
-    console.log('🎯 River betting round started');
-});
+// Removed duplicate step definition - specialized for automated betting only
 
 Then('the river betting round should be automatically complete', async function () {
     console.log('⚡ Verifying river betting round completion...');

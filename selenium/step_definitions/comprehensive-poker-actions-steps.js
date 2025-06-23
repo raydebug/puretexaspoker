@@ -574,17 +574,7 @@ Then('the raise should be processed correctly', async function () {
   console.log('✅ Raise processed correctly');
 });
 
-Then('the current bet should be {string}', async function (amount) {
-  console.log(`✅ Current bet verified: ${amount}`);
-});
-
-Then('{string} chip count should decrease appropriately', async function (playerName) {
-  console.log(`✅ ${playerName} chip count decreased appropriately`);
-});
-
-Then('{string} should be marked as folded', async function (playerName) {
-  console.log(`✅ ${playerName} marked as folded`);
-});
+// Removed duplicate step definitions - using the ones from multiplayer-poker-round-steps.js
 
 Then('{string} should not participate in further betting', async function (playerName) {
   console.log(`✅ ${playerName} not participating in further betting`);

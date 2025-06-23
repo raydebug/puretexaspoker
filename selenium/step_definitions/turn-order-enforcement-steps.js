@@ -425,19 +425,7 @@ Given('the game progresses through preflop, flop, and turn phases', async functi
     console.log('✅ Game progressed through preflop, flop, and turn phases');
 });
 
-When('the river betting round begins', async function () {
-    console.log('🌊 River betting round beginning...');
-    
-    const gameResponse = await this.helpers.makeApiCall(
-        this.serverUrl,
-        `/api/test/get_game_state`,
-        'POST',
-        {}
-    );
-    
-    expect(gameResponse.gameState.phase).to.equal('river');
-    console.log('✅ River betting round confirmed');
-});
+// Removed duplicate step definition - using the one from multiplayer-poker-round-steps.js
 
 Then('the current player should remain {string}', async function (expectedPlayer) {
     console.log(`🎯 Verifying current player remains ${expectedPlayer}...`);

@@ -864,60 +864,15 @@ Then('{string} should have {int} chips remaining', async function (playerName, e
   console.log(`💰 ${playerName} now has ${expectedChips} chips`);
 });
 
-Then('{string} should be marked as folded', async function (playerName) {
-  console.log(`🃏 ${playerName} is folded`);
-});
+// Removed duplicate step definition - using the one from multiplayer-poker-round-steps.js
 
 Then('the current bet should be {int}', async function (expectedBet) {
   console.log(`💵 Current bet is ${expectedBet}`);
 });
 
-Then('the preflop betting round should be complete', async function () {
-  console.log('✅ Preflop betting round complete');
-  await delay(3000);
-});
+// Removed duplicate step definitions - using the ones from multiplayer-poker-round-steps.js
 
-Then('{int} players should remain active', async function (activeCount) {
-  console.log(`👥 ${activeCount} players remain active`);
-});
-
-When('the flop is dealt with {int} community cards', async function (cardCount) {
-  console.log(`🃏 Flop dealt with ${cardCount} community cards`);
-  await delay(5000);
-});
-
-Then('all browser instances should show {int} community cards', async function (expectedCards) {
-  console.log(`✅ All browsers show ${expectedCards} community cards`);
-});
-
-Then('the phase should be {string}', async function (expectedPhase) {
-  console.log(`✅ Game phase: ${expectedPhase}`);
-});
-
-When('the flop betting round begins', async function () {
-  console.log('🎲 Flop betting round beginning...');
-  await delay(3000);
-});
-
-Then('the flop betting round should be complete', async function () {
-  console.log('✅ Flop betting round complete');
-  await delay(3000);
-});
-
-When('the turn card is dealt', async function () {
-  console.log('🃏 Turn card dealt');
-  await delay(5000);
-});
-
-When('the turn betting round completes with actions', async function () {
-  console.log('🎲 Turn betting round completing...');
-  await delay(5000);
-});
-
-When('the river card is dealt', async function () {
-  console.log('🃏 River card dealt');
-  await delay(5000);
-});
+// Removed duplicate step definitions - using the ones from multiplayer-poker-round-steps.js
 
 When('the river betting round completes with final actions', async function () {
   console.log('🎲 River betting round completing...');
