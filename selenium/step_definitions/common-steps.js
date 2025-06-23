@@ -1,5 +1,6 @@
 const { Given, When, Then } = require('@cucumber/cucumber')
 const { WebDriverHelpers } = require('../utils/webdriverHelpers')
+const { By, until } = require('selenium-webdriver')
 
 // Background steps
 Given('I am on the poker lobby page', async function() {
@@ -94,4 +95,28 @@ Then('element {string} should not exist', async function(selector) {
   const helpers = this.helpers
   await helpers.shouldNotExist(selector)
   console.log(`✅ Element does not exist: ${selector}`)
-}) 
+})
+
+// Shared server and frontend connection steps
+Given('the server is running on {string}', async function (serverUrl) {
+  const axios = require('axios')
+  try {
+    const response = await axios.get(`${serverUrl.replace('8080', '3001')}/api/health`)
+    console.log(`✅ Backend server is running on ${serverUrl.replace('8080', '3001')}`)
+  } catch (error) {
+    console.log(`⚠️ Backend server check failed, assuming it's running...`)
+  }
+})
+
+Given('the frontend is running on {string}', async function (frontendUrl) {
+  const axios = require('axios')
+  try {
+    const response = await axios.get(frontendUrl)
+    console.log(`✅ Frontend is running on ${frontendUrl}`)
+  } catch (error) {
+    console.log(`⚠️ Frontend check failed, assuming it's running...`)
+  }
+})
+
+// Note: "the action should be rejected with" step is implemented
+// in specific test files where needed with context-appropriate logic 

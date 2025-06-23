@@ -245,6 +245,7 @@ When('{string} attempts to kick another player', async function (username) {
     console.log(`📝 Kick attempt result: ${response.success ? 'Success' : 'Failed'}`);
 });
 
+// Role management specific error handling - checks moderation result context
 Then('the action should be rejected with {string}', async function (expectedError) {
     console.log(`⚡ Verifying action was rejected with error: ${expectedError}...`);
     

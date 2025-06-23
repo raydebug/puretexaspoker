@@ -243,24 +243,7 @@ async function verifyChipConsistency() {
   return true;
 }
 
-// Server and frontend connection steps
-Given('the server is running on {string}', async function (serverUrl) {
-  try {
-    const response = await axios.get(`${serverUrl}/api/health`);
-    console.log(`✅ Backend server is running on ${serverUrl}`);
-  } catch (error) {
-    console.log(`⚠️ Backend server check failed, assuming it's running...`);
-  }
-});
-
-Given('the frontend is running on {string}', async function (frontendUrl) {
-  try {
-    const response = await axios.get(frontendUrl);
-    console.log(`✅ Frontend is running on ${frontendUrl}`);
-  } catch (error) {
-    console.log(`⚠️ Frontend check failed, assuming it's running...`);
-  }
-});
+// Server and frontend connection steps moved to common-steps.js
 
 Given('I have a clean poker table {string} with {int} seats', async function (tableName, seatCount) {
   console.log(`🎯 Setting up clean poker table ${tableName} with ${seatCount} seats`);

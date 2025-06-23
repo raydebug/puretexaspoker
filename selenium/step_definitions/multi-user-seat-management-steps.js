@@ -3,24 +3,7 @@ const { Builder, By, until, Key } = require('selenium-webdriver');
 const { assert } = require('chai');
 const axios = require('axios');
 
-// Server and frontend connection steps
-Given('the server is running on {string}', async function (serverUrl) {
-  try {
-    const response = await axios.get(`${serverUrl.replace('8080', '3001')}/api/health`);
-    console.log(`✅ Backend server is running on ${serverUrl.replace('8080', '3001')}`);
-  } catch (error) {
-    console.log(`⚠️ Backend server check failed, assuming it's running...`);
-  }
-});
-
-Given('the frontend is running on {string}', async function (frontendUrl) {
-  try {
-    const response = await axios.get(frontendUrl);
-    console.log(`✅ Frontend is running on ${frontendUrl}`);
-  } catch (error) {
-    console.log(`⚠️ Frontend check failed, assuming it's running...`);
-  }
-});
+// Server and frontend connection steps moved to common-steps.js
 
 // Global variables to manage multiple browser instances
 let browserInstances = {};
@@ -529,6 +512,7 @@ Then('seats {int}, {int}, and {int} should be available in all browser instances
   }
 });
 
+// Multi-user specific error handling - extends common error handling
 Then('the action should be rejected with {string}', async function (expectedError) {
   // Check that at least one user received the expected error
   let errorFound = false;

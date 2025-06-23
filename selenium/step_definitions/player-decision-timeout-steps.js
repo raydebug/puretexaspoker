@@ -15,17 +15,7 @@ console.log('✅ Player decision timeout step definitions loaded');
 
 // ============== BASIC SETUP STEP DEFINITIONS ==============
 
-Given('the server is running on {string}', async function (serverUrl) {
-  console.log(`🌐 Verifying server is running on ${serverUrl}`);
-  this.serverUrl = serverUrl;
-  await sleep(1000);
-});
-
-Given('the frontend is running on {string}', async function (frontendUrl) {
-  console.log(`🌐 Verifying frontend is running on ${frontendUrl}`);
-  this.frontendUrl = frontendUrl;
-  await sleep(1000);
-});
+// Server and frontend connection steps moved to common-steps.js
 
 When('the game starts automatically with enough players', async function () {
   console.log('🎮 Verifying game auto-starts with enough players...');
