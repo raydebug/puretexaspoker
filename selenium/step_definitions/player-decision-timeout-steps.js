@@ -95,7 +95,7 @@ When('the game starts automatically with enough players', async function () {
   await sleep(3000); // Increased delay
 });
 
-When('the preflop betting round begins', async function () {
+When('the preflop betting round begins for timeout testing', async function () {
   console.log('🃏 Preflop betting round beginning...');
   
   // Use the main driver to verify preflop round started
@@ -287,29 +287,7 @@ Then('the timer should be visible in the seat area', async function () {
 
 // ============== BACKGROUND SETUP ==============
 
-Given('I have a clean poker table {string} with {int} seats', async function (tableName, seatCount) {
-  console.log(`🎯 Setting up clean poker table ${tableName} with ${seatCount} seats`);
-  this.tableName = tableName;
-  this.seatCount = seatCount;
-  
-  // Reset timeout tracking
-  timeoutTracker = {};
-  timeoutBrowserInstances = {};
-  gameStartTime = null;
-  currentPlayerTimeout = null;
-  
-  // Clean up any existing test data
-  try {
-    await webdriverHelpers.makeApiCall(
-      this.serverUrl,
-      `/api/test/reset_timeout_table`,
-      'POST',
-      { tableName, seatCount }
-    );
-  } catch (error) {
-    console.log('⚠️ Table reset failed, continuing...');
-  }
-});
+// Note: "I have a clean poker table" step is defined in common-steps.js
 
 // ============== TIMEOUT BROWSER SETUP ==============
 

@@ -1,8 +1,35 @@
 const { By, until } = require('selenium-webdriver');
+const axios = require('axios');
 
 class WebDriverHelpers {
   constructor(driver) {
     this.driver = driver;
+  }
+
+  // API call method
+  async makeApiCall(baseUrl, endpoint, method = 'GET', data = null) {
+    try {
+      const config = {
+        method: method,
+        url: `${baseUrl}${endpoint}`,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      };
+      
+      if (data) {
+        config.data = data;
+      }
+      
+      const response = await axios(config);
+      return response.data;
+    } catch (error) {
+      console.log(`API call failed: ${error.message}`);
+      return {
+        success: false,
+        error: error.response?.data?.error || error.message
+      };
+    }
   }
 
   // Element finding methods

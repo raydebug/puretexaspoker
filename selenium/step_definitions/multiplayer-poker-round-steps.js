@@ -505,42 +505,7 @@ Then('I should be able to interact with betting buttons', { timeout: 30000 }, as
 });
 
 // Player action steps
-When('{string} performs a {string} action', async function (playerName, action) {
-  console.log(`🎯 ${playerName} performs ${action} action`);
-  
-  // Simulate the action via backend API or UI
-  try {
-    await axios.post(`${backendApiUrl}/api/test_player_action/${testGameId}`, {
-      playerId: `test-player-${testPlayers.find(p => p.nickname === playerName)?.seatNumber}`,
-      action: action
-    });
-    console.log(`✅ ${playerName} ${action} action simulated`);
-  } catch (error) {
-    console.log(`⚠️ Could not simulate ${playerName} ${action}: ${error.message}`);
-  }
-  
-  // Wait for UI to update
-  await this.driver.sleep(1000);
-});
-
-When('{string} performs a {string} action with amount {string}', async function (playerName, action, amount) {
-  console.log(`🎯 ${playerName} performs ${action} action with amount ${amount}`);
-  
-  // Simulate the action with amount via backend API
-  try {
-    await axios.post(`${backendApiUrl}/api/test_player_action/${testGameId}`, {
-      playerId: `test-player-${testPlayers.find(p => p.nickname === playerName)?.seatNumber}`,
-      action: action,
-      amount: parseInt(amount)
-    });
-    console.log(`✅ ${playerName} ${action} ${amount} action simulated`);
-  } catch (error) {
-    console.log(`⚠️ Could not simulate ${playerName} ${action} ${amount}: ${error.message}`);
-  }
-  
-  // Wait for UI to update
-  await this.driver.sleep(1000);
-});
+// Note: "{string} performs a {string} action" steps are implemented in multi-player-full-game-cycle-steps.js
 
 // Verification steps
 Then('the action should be reflected in the UI', { timeout: 30000 }, async function () {

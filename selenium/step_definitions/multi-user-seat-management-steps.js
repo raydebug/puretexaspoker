@@ -46,24 +46,8 @@ async function cleanupBrowserInstances() {
 }
 
 // Background setup
-Given('I have a clean poker table {string} with {int} seats', async function (tableName, seatCount) {
-  tableId = tableName;
-  
-  // Setup clean table via API
-  const axios = require('axios');
-  try {
-    await axios.post('http://localhost:8080/api/test/create_table', {
-      name: tableName,
-      maxPlayers: seatCount,
-      smallBlind: 5,
-      bigBlind: 10,
-      minBuyIn: 100,
-      maxBuyIn: 1000
-    });
-  } catch (error) {
-    console.log('Table setup via API - this is expected for new tables');
-  }
-});
+// Note: "I have a clean poker table" step is defined in common-steps.js
+// Fixing port reference from 8080 to 3001
 
 // Multi-browser instance management
 Given('I have {int} browser instances ready', async function (count) {

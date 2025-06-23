@@ -1,6 +1,5 @@
 const { Given, Then, When } = require('@cucumber/cucumber');
 const { expect } = require('chai');
-const webdriverHelpers = require('../utils/webdriverHelpers');
 
 // Store turn order violation errors for validation
 let turnOrderViolations = [];
@@ -9,14 +8,14 @@ let currentPlayerBefore = null;
 
 // Professional Turn Order Enforcement Step Definitions
 
-Given('the preflop betting round begins', async function () {
+Given('the preflop betting round begins for turn order testing', async function () {
     console.log('⚡ Waiting for preflop betting round to begin...');
     
     // Wait for game state to update
-    await webdriverHelpers.sleep(2000);
+    await this.helpers.sleep(2000);
     
     // Get current game state via API
-    const gameResponse = await webdriverHelpers.makeApiCall(
+    const gameResponse = await this.helpers.makeApiCall(
         this.serverUrl,
         `/api/test/get_game_state`,
         'POST',
@@ -38,7 +37,7 @@ Then('{string} should be first to act \\(left of big blind)', async function (ex
     console.log(`⚡ Validating that ${expectedPlayer} should be first to act...`);
     
     // Get fresh game state
-    const gameResponse = await webdriverHelpers.makeApiCall(
+    const gameResponse = await this.helpers.makeApiCall(
         this.serverUrl,
         `/api/test/get_game_state`,
         'POST',
@@ -60,7 +59,7 @@ When('{string} attempts to {string} out of turn', async function (playerName, ac
     console.log(`⚠️ ${playerName} attempting ${action} out of turn...`);
     
     // Store current player before out-of-turn attempt
-    const gameResponse = await webdriverHelpers.makeApiCall(
+    const gameResponse = await this.helpers.makeApiCall(
         this.serverUrl,
         `/api/test/get_game_state`,
         'POST',
@@ -90,7 +89,7 @@ When('{string} attempts to {string} out of turn', async function (playerName, ac
             actionData.totalAmount = 100; // Default raise amount
         }
         
-        const actionResponse = await webdriverHelpers.makeApiCall(
+        const actionResponse = await this.helpers.makeApiCall(
             this.serverUrl,
             `/api/test/player_action`,
             'POST',
@@ -127,7 +126,7 @@ When('{string} attempts to {string} with amount {string} out of turn', async fun
     console.log(`⚠️ ${playerName} attempting ${action} with amount ${amount} out of turn...`);
     
     // Store current player before out-of-turn attempt
-    const gameResponse = await webdriverHelpers.makeApiCall(
+    const gameResponse = await this.helpers.makeApiCall(
         this.serverUrl,
         `/api/test/get_game_state`,
         'POST',
@@ -143,7 +142,7 @@ When('{string} attempts to {string} with amount {string} out of turn', async fun
     
     try {
         // Attempt the out-of-turn action
-        const actionResponse = await webdriverHelpers.makeApiCall(
+        const actionResponse = await this.helpers.makeApiCall(
             this.serverUrl,
             `/api/test/player_action`,
             'POST',
@@ -182,7 +181,7 @@ When('{string} attempts to {string} to {string} out of turn', async function (pl
     console.log(`⚠️ ${playerName} attempting ${action} to ${totalAmount} out of turn...`);
     
     // Store current player before out-of-turn attempt
-    const gameResponse = await webdriverHelpers.makeApiCall(
+    const gameResponse = await this.helpers.makeApiCall(
         this.serverUrl,
         `/api/test/get_game_state`,
         'POST',
@@ -195,7 +194,7 @@ When('{string} attempts to {string} to {string} out of turn', async function (pl
     
     try {
         // Attempt the out-of-turn raise
-        const actionResponse = await webdriverHelpers.makeApiCall(
+        const actionResponse = await this.helpers.makeApiCall(
             this.serverUrl,
             `/api/test/player_action`,
             'POST',
@@ -267,7 +266,7 @@ Then('the current player should still be {string}', async function (expectedPlay
     console.log(`🎯 Verifying current player is still ${expectedPlayer}...`);
     
     // Get current game state
-    const gameResponse = await webdriverHelpers.makeApiCall(
+    const gameResponse = await this.helpers.makeApiCall(
         this.serverUrl,
         `/api/test/get_game_state`,
         'POST',
@@ -289,7 +288,7 @@ Then('no out-of-turn actions should have been processed', async function () {
     console.log('🔒 Verifying no out-of-turn actions were processed...');
     
     // Get current game state and compare with previous state
-    const gameResponse = await webdriverHelpers.makeApiCall(
+    const gameResponse = await this.helpers.makeApiCall(
         this.serverUrl,
         `/api/test/get_game_state`,
         'POST',
@@ -315,7 +314,7 @@ Given('the game starts and completes preflop betting', async function () {
     console.log('🎰 Starting game and completing preflop betting...');
     
     // Start the game
-    const startResponse = await webdriverHelpers.makeApiCall(
+    const startResponse = await this.helpers.makeApiCall(
         this.serverUrl,
         `/api/test/start_game`,
         'POST',
@@ -327,21 +326,21 @@ Given('the game starts and completes preflop betting', async function () {
     }
     
     // Complete preflop betting automatically
-    const completeResponse = await webdriverHelpers.makeApiCall(
+    const completeResponse = await this.helpers.makeApiCall(
         this.serverUrl,
         `/api/test/complete_betting_round`,
         'POST',
         { gameId: this.gameId, phase: 'preflop' }
     );
     
-    await webdriverHelpers.sleep(2000);
+    await this.helpers.sleep(2000);
     console.log('✅ Preflop betting round completed');
 });
 
 Then('{string} should be first to act \\(left of dealer)', async function (expectedPlayer) {
     console.log(`⚡ Validating that ${expectedPlayer} should be first to act (left of dealer)...`);
     
-    const gameResponse = await webdriverHelpers.makeApiCall(
+    const gameResponse = await this.helpers.makeApiCall(
         this.serverUrl,
         `/api/test/get_game_state`,
         'POST',
@@ -362,7 +361,7 @@ Given('the game reaches showdown phase', async function () {
     console.log('🎰 Advancing game to showdown phase...');
     
     // Force game to showdown phase
-    const showdownResponse = await webdriverHelpers.makeApiCall(
+    const showdownResponse = await this.helpers.makeApiCall(
         this.serverUrl,
         `/api/test/force_showdown`,
         'POST',
@@ -373,10 +372,10 @@ Given('the game reaches showdown phase', async function () {
         throw new Error('Failed to force showdown phase');
     }
     
-    await webdriverHelpers.sleep(2000);
+    await this.helpers.sleep(2000);
     
     // Verify showdown phase
-    const gameResponse = await webdriverHelpers.makeApiCall(
+    const gameResponse = await this.helpers.makeApiCall(
         this.serverUrl,
         `/api/test/get_game_state`,
         'POST',
@@ -391,7 +390,7 @@ Given('the game progresses through preflop, flop, and turn phases', async functi
     console.log('🎰 Progressing game through multiple phases...');
     
     // Start game
-    await webdriverHelpers.makeApiCall(
+    await this.helpers.makeApiCall(
         this.serverUrl,
         `/api/test/start_game`,
         'POST',
@@ -399,7 +398,7 @@ Given('the game progresses through preflop, flop, and turn phases', async functi
     );
     
     // Complete preflop
-    await webdriverHelpers.makeApiCall(
+    await this.helpers.makeApiCall(
         this.serverUrl,
         `/api/test/complete_betting_round`,
         'POST',
@@ -407,7 +406,7 @@ Given('the game progresses through preflop, flop, and turn phases', async functi
     );
     
     // Complete flop
-    await webdriverHelpers.makeApiCall(
+    await this.helpers.makeApiCall(
         this.serverUrl,
         `/api/test/complete_betting_round`,
         'POST',
@@ -415,21 +414,21 @@ Given('the game progresses through preflop, flop, and turn phases', async functi
     );
     
     // Complete turn
-    await webdriverHelpers.makeApiCall(
+    await this.helpers.makeApiCall(
         this.serverUrl,
         `/api/test/complete_betting_round`,
         'POST',
         { gameId: this.gameId, phase: 'turn' }
     );
     
-    await webdriverHelpers.sleep(3000);
+    await this.helpers.sleep(3000);
     console.log('✅ Game progressed through preflop, flop, and turn phases');
 });
 
 When('the river betting round begins', async function () {
     console.log('🌊 River betting round beginning...');
     
-    const gameResponse = await webdriverHelpers.makeApiCall(
+    const gameResponse = await this.helpers.makeApiCall(
         this.serverUrl,
         `/api/test/get_game_state`,
         'POST',
@@ -443,7 +442,7 @@ When('the river betting round begins', async function () {
 Then('the current player should remain {string}', async function (expectedPlayer) {
     console.log(`🎯 Verifying current player remains ${expectedPlayer}...`);
     
-    const gameResponse = await webdriverHelpers.makeApiCall(
+    const gameResponse = await this.helpers.makeApiCall(
         this.serverUrl,
         `/api/test/get_game_state`,
         'POST',
@@ -459,7 +458,7 @@ When('{string} \\(big blind) checks when they should call', async function (play
     
     try {
         // Attempt to check when should call
-        const actionResponse = await webdriverHelpers.makeApiCall(
+        const actionResponse = await this.helpers.makeApiCall(
             this.serverUrl,
             `/api/test/player_action`,
             'POST',
@@ -492,7 +491,7 @@ When('{string} attempts to {string} when no bet exists', async function (playerN
     console.log(`⚠️ ${playerName} attempting ${action} when no bet exists...`);
     
     try {
-        const actionResponse = await webdriverHelpers.makeApiCall(
+        const actionResponse = await this.helpers.makeApiCall(
             this.serverUrl,
             `/api/test/player_action`,
             'POST',
@@ -525,7 +524,7 @@ When('{string} attempts multiple out-of-turn actions', async function (playerNam
     console.log(`⚠️ ${playerName} attempting multiple out-of-turn actions...`);
     
     // Store current player
-    const gameResponse = await webdriverHelpers.makeApiCall(
+    const gameResponse = await this.helpers.makeApiCall(
         this.serverUrl,
         `/api/test/get_game_state`,
         'POST',
@@ -556,7 +555,7 @@ When('{string} attempts multiple out-of-turn actions', async function (playerNam
                 actionData.totalAmount = 50;
             }
             
-            await webdriverHelpers.makeApiCall(
+            await this.helpers.makeApiCall(
                 this.serverUrl,
                 `/api/test/player_action`,
                 'POST',
@@ -578,7 +577,7 @@ When('{string} attempts multiple out-of-turn actions', async function (playerNam
             });
         }
         
-        await webdriverHelpers.sleep(500);
+        await this.helpers.sleep(500);
     }
     
     console.log(`⚠️ ${playerName} attempted ${actions.length} out-of-turn actions`);
@@ -601,7 +600,7 @@ Then('the game should continue normally', async function () {
     console.log('🎮 Verifying game continues normally after turn order violations...');
     
     // Get current game state
-    const gameResponse = await webdriverHelpers.makeApiCall(
+    const gameResponse = await this.helpers.makeApiCall(
         this.serverUrl,
         `/api/test/get_game_state`,
         'POST',

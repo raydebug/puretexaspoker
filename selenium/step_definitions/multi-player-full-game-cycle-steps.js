@@ -244,21 +244,7 @@ async function verifyChipConsistency() {
 }
 
 // Server and frontend connection steps moved to common-steps.js
-
-Given('I have a clean poker table {string} with {int} seats', async function (tableName, seatCount) {
-  console.log(`🎯 Setting up clean poker table ${tableName} with ${seatCount} seats`);
-  
-  try {
-    // Reset table state via API
-    await axios.post(`http://localhost:3001/api/test/reset-table`, {
-      tableName: tableName,
-      seatCount: seatCount
-    });
-    console.log(`✅ Table ${tableName} reset successfully`);
-  } catch (error) {
-    console.log(`⚠️ Table reset failed, continuing...`);
-  }
-});
+// Note: "I have a clean poker table" step is defined in common-steps.js
 
 // Step Definitions
 
@@ -836,7 +822,7 @@ Then('the pot should show {int} chips', async function (expectedPot) {
   console.log(`✅ Pot shows ${expectedPot} chips`);
 });
 
-When('the preflop betting round begins', async function () {
+When('the preflop betting round begins for multi-player game', async function () {
   console.log('🎲 Preflop betting round beginning...');
   await delay(3000);
 });
