@@ -33,7 +33,7 @@ Feature: User Role Management System
     Given I create test players "RegularPlayer,ModeratorUser" with roles "player,moderator"
     And both users are logged into the system
     When "RegularPlayer" attempts to kick another player
-    Then the action should be rejected with "Insufficient permissions"
+    Then the moderation action should be rejected with "Insufficient permissions"
     When "ModeratorUser" attempts to kick another player
     Then the action should be successful
     And a moderation record should be created

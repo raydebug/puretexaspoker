@@ -272,14 +272,14 @@ When('{string} attempts to kick another player', async function (username) {
 });
 
 // Role management specific error handling - checks moderation result context
-Then('the action should be rejected with {string}', async function (expectedError) {
-    console.log(`⚡ Verifying action was rejected with error: ${expectedError}...`);
+Then('the moderation action should be rejected with {string}', async function (expectedError) {
+    console.log(`⚡ Verifying moderation action was rejected with error: ${expectedError}...`);
     
     expect(this.lastModerationResult).to.exist;
     expect(this.lastModerationResult.success).to.be.false;
     expect(this.lastModerationResult.error).to.include(expectedError);
     
-    console.log(`✅ Action correctly rejected with error: ${expectedError}`);
+    console.log(`✅ Moderation action correctly rejected with error: ${expectedError}`);
 });
 
 Then('the action should be successful', async function () {
