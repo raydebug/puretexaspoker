@@ -1,8 +1,10 @@
 import { Given, When, Then } from '@badeball/cypress-cucumber-preprocessor';
 
+const apiUrl = Cypress.env('apiUrl') || 'http://localhost:3001';
+
 // Background steps
 Given('the card order transparency system is enabled', () => {
-  cy.request('GET', 'http://localhost:5001/api/test').should((response) => {
+  cy.request('GET', `${apiUrl}/api/test`).should((response) => {
     expect(response.status).to.eq(200);
   });
 });
@@ -42,7 +44,7 @@ Then('the hash should be displayed to all players', () => {
 
 Then('the card order should be stored in the database', () => {
   cy.get('@gameCardOrderHash').then((hash) => {
-    cy.request('GET', `http://localhost:5001/api/card-orders/game/test-game-id`)
+    cy.request('GET', `${apiUrl}/api/card-orders/game/test-game-id`)
       .should((response) => {
         expect(response.status).to.eq(200);
         expect(response.body.success).to.be.true;
@@ -52,7 +54,7 @@ Then('the card order should be stored in the database', () => {
 });
 
 Then('the card order should initially be unrevealed', () => {
-  cy.request('GET', `http://localhost:5001/api/card-orders/game/test-game-id`)
+  cy.request('GET', `${apiUrl}/api/card-orders/game/test-game-id`)
     .should((response) => {
       expect(response.body.data.isRevealed).to.be.false;
       expect(response.body.data.cardOrder).to.be.null;
@@ -65,7 +67,7 @@ Given('there are multiple completed games with card orders', () => {
   const gameIds = ['game-1', 'game-2', 'game-3'];
   
   gameIds.forEach((gameId, index) => {
-    cy.request('POST', 'http://localhost:5001/api/test/create-card-order', {
+    cy.request('POST', `${apiUrl}/api/test/create-card-order`, {
       gameId,
       isRevealed: index < 2,
       testData: true
@@ -74,7 +76,7 @@ Given('there are multiple completed games with card orders', () => {
 });
 
 When('I request the latest card orders via API', () => {
-  cy.request('GET', 'http://localhost:5001/api/card-orders/latest')
+  cy.request('GET', `${apiUrl}/api/card-orders/latest`)
     .as('latestCardOrdersResponse');
 });
 
@@ -120,7 +122,7 @@ Then('unrevealed records should hide the card order details', () => {
 
 // Download steps
 Given('there are completed games with revealed card orders', () => {
-  cy.request('POST', 'http://localhost:5001/api/test/create-revealed-card-orders', {
+  cy.request('POST', `${apiUrl}/api/test/create-revealed-card-orders`, {
     count: 3,
     testData: true
   });
@@ -129,7 +131,7 @@ Given('there are completed games with revealed card orders', () => {
 When('I request to download the card order history', () => {
   cy.request({
     method: 'GET',
-    url: 'http://localhost:5001/api/card-orders/download',
+    url: `${apiUrl}/api/card-orders/download`,
     headers: {
       'Accept': 'text/csv'
     }
@@ -174,7 +176,7 @@ Then('only revealed card orders should be included in the download', () => {
 
 // Verification steps
 Given('a game has been completed with revealed card order', () => {
-  cy.request('POST', 'http://localhost:5001/api/test/create-completed-game', {
+  cy.request('POST', `${apiUrl}/api/test/create-completed-game`, {
     gameId: 'completed-game-id',
     isRevealed: true,
     testData: true
@@ -183,7 +185,7 @@ Given('a game has been completed with revealed card order', () => {
 
 When('I verify the card order using the original hash', () => {
   cy.get('@completedGameData').then((gameData: any) => {
-    cy.request('POST', 'http://localhost:5001/api/card-orders/verify', {
+    cy.request('POST', `${apiUrl}/api/card-orders/verify`, {
       gameId: gameData.body.gameId,
       expectedHash: gameData.body.hash
     }).as('verificationResponse');
@@ -245,7 +247,7 @@ When('the game starts and progresses to completion', () => {
 });
 
 Then('the card order should be automatically revealed', () => {
-  cy.request('GET', `http://localhost:5001/api/card-orders/game/test-game-id`)
+  cy.request('GET', `${apiUrl}/api/card-orders/game/test-game-id`)
     .should((response) => {
       expect(response.body.data.isRevealed).to.be.true;
     });
@@ -270,7 +272,7 @@ Then('players should be notified of the card order revelation', () => {
 });
 
 Then('the card order should become publicly viewable', () => {
-  cy.request('GET', `http://localhost:5001/api/card-orders/game/test-game-id`)
+  cy.request('GET', `${apiUrl}/api/card-orders/game/test-game-id`)
     .should((response) => {
       expect(response.body.data.cardOrder).to.not.be.null;
       expect(response.body.data.seed).to.not.be.null;
@@ -280,7 +282,7 @@ Then('the card order should become publicly viewable', () => {
 // Tampered data verification steps
 When('I attempt to verify with an incorrect hash', () => {
   cy.get('@completedGameData').then((gameData: any) => {
-    cy.request('POST', 'http://localhost:5001/api/card-orders/verify', {
+    cy.request('POST', `${apiUrl}/api/card-orders/verify`, {
       gameId: gameData.body.gameId,
       expectedHash: 'incorrect_hash_value_that_should_fail_verification'
     }).as('tamperedVerificationResponse');
@@ -315,12 +317,12 @@ Given('a specific seed is used for card shuffling', () => {
 
 When('the same seed is used to regenerate the deck', () => {
   cy.get('@testSeed').then((seed) => {
-    cy.request('POST', 'http://localhost:5001/api/test/generate-deterministic-deck', {
+    cy.request('POST', `${apiUrl}/api/test/generate-deterministic-deck`, {
       seed,
       gameId: 'deterministic-test'
     }).as('firstDeckGeneration');
     
-    cy.request('POST', 'http://localhost:5001/api/test/generate-deterministic-deck', {
+    cy.request('POST', `${apiUrl}/api/test/generate-deterministic-deck`, {
       seed,
       gameId: 'deterministic-test-2'
     }).as('secondDeckGeneration');
@@ -353,21 +355,21 @@ Then('the shuffle should be reproducible', () => {
 
 // API endpoints steps
 Given('the poker system is running', () => {
-  cy.request('GET', 'http://localhost:5001/api/test').should((response) => {
+  cy.request('GET', `${apiUrl}/api/test`).should((response) => {
     expect(response.status).to.eq(200);
   });
 });
 
 When('I access the card order transparency endpoints', () => {
-  cy.request('GET', 'http://localhost:5001/api/card-orders/latest').as('latestEndpoint');
+  cy.request('GET', `${apiUrl}/api/card-orders/latest`).as('latestEndpoint');
   cy.request({
     method: 'GET',
-    url: 'http://localhost:5001/api/card-orders/game/test-game-id',
+    url: `${apiUrl}/api/card-orders/game/test-game-id`,
     failOnStatusCode: false
   }).as('gameEndpoint');
   cy.request({
     method: 'GET',
-    url: 'http://localhost:5001/api/card-orders/download',
+    url: `${apiUrl}/api/card-orders/download`,
     failOnStatusCode: false
   }).as('downloadEndpoint');
 });
@@ -395,7 +397,7 @@ Then('I should be able to download card order history', () => {
 Then('I should be able to verify card order hashes', () => {
   cy.request({
     method: 'POST',
-    url: 'http://localhost:5001/api/card-orders/verify',
+    url: `${apiUrl}/api/card-orders/verify`,
     body: {
       gameId: 'test-game-id',
       expectedHash: 'test_hash'
@@ -410,7 +412,7 @@ Then('I should be able to verify card order hashes', () => {
 Then('all endpoints should return proper error handling', () => {
   cy.request({
     method: 'GET',
-    url: 'http://localhost:5001/api/card-orders/game/invalid-game-id',
+    url: `${apiUrl}/api/card-orders/game/invalid-game-id`,
     failOnStatusCode: false
   }).should((response) => {
     expect(response.status).to.eq(404);
