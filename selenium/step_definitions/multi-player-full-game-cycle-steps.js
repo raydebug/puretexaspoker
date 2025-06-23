@@ -832,11 +832,31 @@ Then('{string} should be first to act', async function (playerName) {
 });
 
 When('{string} performs a {string} action', async function (playerName, action) {
+  console.log(`🎮 ${playerName} performing ${action} action...`);
+  
+  // Implement the action logic here
   await performPlayerAction(playerName, action);
+  
+  console.log(`✅ ${playerName} performed ${action}`);
 });
 
 When('{string} performs a {string} action with amount {int}', async function (playerName, action, amount) {
+  console.log(`🎮 ${playerName} performing ${action} action with amount ${amount}...`);
+  
+  // Implement the action logic here
   await performPlayerAction(playerName, action, amount);
+  
+  console.log(`✅ ${playerName} performed ${action} with amount ${amount}`);
+});
+
+When('{string} performs a {string} action with amount {string}', async function (playerName, action, amount) {
+  console.log(`🎮 ${playerName} performing ${action} action with amount ${amount}...`);
+  
+  // Convert string amount to number and implement the action logic
+  const numericAmount = parseInt(amount);
+  await performPlayerAction(playerName, action, numericAmount);
+  
+  console.log(`✅ ${playerName} performed ${action} with amount ${amount}`);
 });
 
 Then('{string} should have {int} chips remaining', async function (playerName, expectedChips) {

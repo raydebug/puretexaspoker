@@ -809,18 +809,7 @@ When('the flop betting round begins', async function () {
   }
 });
 
-Then('{string} should be first to act', async function (playerName) {
-  console.log(`🔍 Verifying ${playerName} is first to act`);
-  
-  try {
-    const currentPlayerIndicators = await this.driver.findElements(By.css('[data-testid*="current-player"], [class*="current-player"], [class*="active-player"]'));
-    if (currentPlayerIndicators.length > 0) {
-      console.log(`✅ Found current player indicators for ${playerName}`);
-    }
-  } catch (error) {
-    console.log(`⚠️ Could not verify ${playerName} is first to act`);
-  }
-});
+// Note: "{string} should be first to act" is implemented in multi-player-full-game-cycle-steps.js
 
 Then('the flop betting round should be complete', async function () {
   console.log('🔍 Verifying flop betting round completion');
