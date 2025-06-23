@@ -1,11 +1,37 @@
 const { Given, Then, When } = require('@cucumber/cucumber');
 const { expect } = require('chai');
-const webdriverHelpers = require('../utils/webdriverHelpers');
+const axios = require('axios');
 
 // Store role management state for validation
 let testUsers = {};
 let moderationActions = [];
 let roleAssignments = [];
+
+// Helper function for API calls
+async function makeApiCall(baseUrl, endpoint, method = 'GET', data = null) {
+    try {
+        const config = {
+            method: method,
+            url: `${baseUrl}${endpoint}`,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        };
+        
+        if (data) {
+            config.data = data;
+        }
+        
+        const response = await axios(config);
+        return response.data;
+    } catch (error) {
+        console.log(`API call failed: ${error.message}`);
+        return {
+            success: false,
+            error: error.response?.data?.message || error.message
+        };
+    }
+}
 
 // User Role Management Step Definitions
 
@@ -13,8 +39,8 @@ Given('the role system is initialized with default roles and permissions', async
     console.log('🔐 Verifying role system initialization...');
     
     // Initialize roles via test API
-    const response = await webdriverHelpers.makeApiCall(
-        this.serverUrl,
+    const response = await makeApiCall(
+        'http://localhost:3001',
         `/api/test/initialize_roles`,
         'POST',
         {}
@@ -30,8 +56,8 @@ Given('the role system is initialized with default roles and permissions', async
 Given('I register a new user {string} with password {string}', async function (username, password) {
     console.log(`👤 Registering new user: ${username}...`);
     
-    const response = await webdriverHelpers.makeApiCall(
-        this.serverUrl,
+    const response = await makeApiCall(
+        'http://localhost:3001',
         `/api/auth/register`,
         'POST',
         {
@@ -76,8 +102,8 @@ Then('{string} should be assigned the {string} role by default', async function 
 Then('{string} should have {string} permission', async function (username, permission) {
     console.log(`⚡ Verifying ${username} has permission ${permission}...`);
     
-    const response = await webdriverHelpers.makeApiCall(
-        this.serverUrl,
+    const response = await makeApiCall(
+        'http://localhost:3001',
         `/api/test/check_permission`,
         'POST',
         {
@@ -93,8 +119,8 @@ Then('{string} should have {string} permission', async function (username, permi
 Then('{string} should NOT have {string} permission', async function (username, permission) {
     console.log(`⚡ Verifying ${username} does NOT have permission ${permission}...`);
     
-    const response = await webdriverHelpers.makeApiCall(
-        this.serverUrl,
+    const response = await makeApiCall(
+        'http://localhost:3001',
         `/api/test/check_permission`,
         'POST',
         {
@@ -113,8 +139,8 @@ Given('I have test users with different roles:', async function (dataTable) {
     const users = dataTable.hashes();
     
     for (const userData of users) {
-        const response = await webdriverHelpers.makeApiCall(
-            this.serverUrl,
+        const response = await makeApiCall(
+            'http://localhost:3001',
             `/api/test/create_user_with_role`,
             'POST',
             {
@@ -143,8 +169,8 @@ When('I check permissions for each user', async function () {
     console.log('⚡ Checking permissions for all test users...');
     
     for (const [username, userInfo] of Object.entries(testUsers)) {
-        const response = await webdriverHelpers.makeApiCall(
-            this.serverUrl,
+        const response = await makeApiCall(
+            'http://localhost:3001',
             `/api/test/get_user_permissions`,
             'POST',
             { username: username }
@@ -186,8 +212,8 @@ Given('I create test players {string} with roles {string}', async function (user
         const username = usernameList[i];
         const role = roleList[i];
         
-        const response = await webdriverHelpers.makeApiCall(
-            this.serverUrl,
+        const response = await makeApiCall(
+            'http://localhost:3001',
             `/api/test/create_user_with_role`,
             'POST',
             {
@@ -227,8 +253,8 @@ When('{string} attempts to kick another player', async function (username) {
     const user = testUsers[username];
     const targetUser = Object.values(testUsers).find(u => u.username !== username);
     
-    const response = await webdriverHelpers.makeApiCall(
-        this.serverUrl,
+    const response = await makeApiCall(
+        'http://localhost:3001',
         `/api/test/execute_moderation`,
         'POST',
         {
@@ -279,8 +305,8 @@ Given('I have an administrator {string} and a player {string}', async function (
     console.log(`👥 Setting up administrator ${adminName} and player ${playerName}...`);
     
     // Create administrator
-    const adminResponse = await webdriverHelpers.makeApiCall(
-        this.serverUrl,
+    const adminResponse = await makeApiCall(
+        'http://localhost:3001',
         `/api/test/create_user_with_role`,
         'POST',
         {
@@ -291,8 +317,8 @@ Given('I have an administrator {string} and a player {string}', async function (
     );
     
     // Create player
-    const playerResponse = await webdriverHelpers.makeApiCall(
-        this.serverUrl,
+    const playerResponse = await makeApiCall(
+        'http://localhost:3001',
         `/api/test/create_user_with_role`,
         'POST',
         {
@@ -329,8 +355,8 @@ When('{string} assigns {string} the role {string}', async function (adminName, t
     const admin = testUsers[adminName];
     const target = testUsers[targetName];
     
-    const response = await webdriverHelpers.makeApiCall(
-        this.serverUrl,
+    const response = await makeApiCall(
+        'http://localhost:3001',
         `/api/test/assign_role`,
         'POST',
         {
@@ -357,8 +383,8 @@ When('{string} assigns {string} the role {string}', async function (adminName, t
 Then('{string} should have the {string} role', async function (username, expectedRole) {
     console.log(`⚡ Verifying ${username} has role ${expectedRole}...`);
     
-    const response = await webdriverHelpers.makeApiCall(
-        this.serverUrl,
+    const response = await makeApiCall(
+        'http://localhost:3001',
         `/api/test/get_user_role`,
         'POST',
         { username: username }
@@ -376,8 +402,8 @@ Then('{string} should have the {string} role', async function (username, expecte
 Then('{string} should gain {string} permission', async function (username, permission) {
     console.log(`⚡ Verifying ${username} gained permission ${permission}...`);
     
-    const response = await webdriverHelpers.makeApiCall(
-        this.serverUrl,
+    const response = await makeApiCall(
+        'http://localhost:3001',
         `/api/test/check_permission`,
         'POST',
         {
