@@ -14,7 +14,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 358244999
+              "duration": 466591000
             }
           },
           {
@@ -27,7 +27,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 68900332
+              "duration": 92893041
             }
           },
           {
@@ -190,7 +190,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 383791
+              "duration": 842041
             }
           },
           {
@@ -198,7 +198,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 368833
+              "duration": 820707
             }
           },
           {
@@ -206,7 +206,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 74172582
+              "duration": 87337875
             }
           }
         ],
@@ -225,7 +225,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 58139833
+              "duration": 70390917
             }
           },
           {
@@ -238,7 +238,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 5883750
+              "duration": 7742874
             }
           },
           {
@@ -404,7 +404,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 1131583
+              "duration": 985999
             }
           },
           {
@@ -412,7 +412,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 202957
+              "duration": 238332
             }
           },
           {
@@ -420,7 +420,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 67226958
+              "duration": 61855750
             }
           }
         ],
@@ -439,7 +439,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 59533209
+              "duration": 77920917
             }
           },
           {
@@ -452,7 +452,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 5656917
+              "duration": 7422249
             }
           },
           {
@@ -618,7 +618,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 122000
+              "duration": 111042
             }
           },
           {
@@ -626,7 +626,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 158083
+              "duration": 244000
             }
           },
           {
@@ -634,7 +634,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 92641416
+              "duration": 70457208
             }
           }
         ],
@@ -653,7 +653,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 73536916
+              "duration": 70151416
             }
           },
           {
@@ -666,7 +666,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3758792
+              "duration": 4105207
             }
           },
           {
@@ -822,7 +822,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 113499
+              "duration": 123667
             }
           },
           {
@@ -830,7 +830,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 393791
+              "duration": 254583
             }
           },
           {
@@ -838,7 +838,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 73700291
+              "duration": 77402791
             }
           }
         ],
@@ -857,7 +857,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 51980833
+              "duration": 56556875
             }
           },
           {
@@ -870,7 +870,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 5295167
+              "duration": 4728708
             }
           },
           {
@@ -1033,7 +1033,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 97208
+              "duration": 138374
             }
           },
           {
@@ -1041,7 +1041,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 149875
+              "duration": 197292
             }
           },
           {
@@ -1049,7 +1049,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 52990584
+              "duration": 61283457
             }
           }
         ],
@@ -1068,7 +1068,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 51259167
+              "duration": 48940291
             }
           },
           {
@@ -1081,7 +1081,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 5097582
+              "duration": 5166125
             }
           },
           {
@@ -1235,7 +1235,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 313416
+              "duration": 103374
             }
           },
           {
@@ -1243,7 +1243,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 145833
+              "duration": 113709
             }
           },
           {
@@ -1251,7 +1251,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 49361125
+              "duration": 71618833
             }
           }
         ],
@@ -1270,7 +1270,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 44372707
+              "duration": 57887332
             }
           },
           {
@@ -1283,7 +1283,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3432874
+              "duration": 6889250
             }
           },
           {
@@ -1411,7 +1411,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 225374
+              "duration": 107707
             }
           },
           {
@@ -1419,7 +1419,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 425374
+              "duration": 343166
             }
           },
           {
@@ -1427,7 +1427,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 52898958
+              "duration": 68706249
             }
           }
         ],
@@ -1446,7 +1446,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 52871790
+              "duration": 62052249
             }
           },
           {
@@ -1459,7 +1459,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 8364375
+              "duration": 3761750
             }
           },
           {
@@ -1597,7 +1597,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 179124
+              "duration": 196582
             }
           },
           {
@@ -1605,7 +1605,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 142499
+              "duration": 748083
             }
           },
           {
@@ -1613,7 +1613,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 72341458
+              "duration": 73536000
             }
           }
         ],
@@ -1632,7 +1632,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 55154792
+              "duration": 55947249
             }
           },
           {
@@ -1645,7 +1645,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 10161791
+              "duration": 9395083
             }
           },
           {
@@ -1773,7 +1773,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 408000
+              "duration": 344374
             }
           },
           {
@@ -1781,7 +1781,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 189250
+              "duration": 180457
             }
           },
           {
@@ -1789,7 +1789,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 59903500
+              "duration": 64743915
             }
           }
         ],
@@ -1808,7 +1808,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 51836709
+              "duration": 55721666
             }
           },
           {
@@ -1821,7 +1821,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 4807749
+              "duration": 3584708
             }
           },
           {
@@ -1965,7 +1965,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 89374
+              "duration": 290417
             }
           },
           {
@@ -1973,7 +1973,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 186290
+              "duration": 272832
             }
           },
           {
@@ -1981,7 +1981,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 55320125
+              "duration": 61373415
             }
           }
         ],
@@ -2011,7 +2011,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 53636500
+              "duration": 53245375
             }
           },
           {
@@ -2092,7 +2092,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 245124
+              "duration": 68833
             }
           },
           {
@@ -2100,7 +2100,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 205125
+              "duration": 81541
             }
           },
           {
@@ -2108,7 +2108,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 57228000
+              "duration": 69893333
             }
           }
         ],
@@ -2127,7 +2127,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 48513292
+              "duration": 61163875
             }
           },
           {
@@ -2218,7 +2218,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 242249
+              "duration": 119832
             }
           },
           {
@@ -2226,7 +2226,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 389834
+              "duration": 100207
             }
           },
           {
@@ -2234,7 +2234,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 60737874
+              "duration": 67434792
             }
           }
         ],
@@ -2253,7 +2253,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 47215749
+              "duration": 279611374
             }
           },
           {
@@ -2334,7 +2334,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 64625
+              "duration": 227291
             }
           },
           {
@@ -2342,7 +2342,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 70041
+              "duration": 144957
             }
           },
           {
@@ -2350,7 +2350,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 66809083
+              "duration": 19379582
             }
           }
         ],
@@ -2369,7 +2369,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 65220374
+              "duration": 65398083
             }
           },
           {
@@ -2450,7 +2450,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 1160667
+              "duration": 232582
             }
           },
           {
@@ -2458,7 +2458,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 212499
+              "duration": 192790
             }
           },
           {
@@ -2466,7 +2466,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 50001999
+              "duration": 84442041
             }
           }
         ],
@@ -2485,7 +2485,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 49473957
+              "duration": 65497624
             }
           },
           {
@@ -2595,7 +2595,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 194249
+              "duration": 111125
             }
           },
           {
@@ -2603,7 +2603,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 478999
+              "duration": 119333
             }
           },
           {
@@ -2611,7 +2611,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 59024750
+              "duration": 85181582
             }
           }
         ],
@@ -2630,7 +2630,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 52387042
+              "duration": 59771541
             }
           },
           {
@@ -2711,7 +2711,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 416665
+              "duration": 80707
             }
           },
           {
@@ -2719,7 +2719,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 154125
+              "duration": 85541
             }
           },
           {
@@ -2727,7 +2727,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 76922416
+              "duration": 67704041
             }
           }
         ],
@@ -2746,7 +2746,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 50927916
+              "duration": 56160582
             }
           },
           {
@@ -2827,7 +2827,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 81667
+              "duration": 143332
             }
           },
           {
@@ -2835,7 +2835,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 114917
+              "duration": 316042
             }
           },
           {
@@ -2843,7 +2843,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 61930416
+              "duration": 64916041
             }
           }
         ],
@@ -2862,7 +2862,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 50896666
+              "duration": 54711624
             }
           },
           {
@@ -2963,7 +2963,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 67541
+              "duration": 122833
             }
           },
           {
@@ -2971,7 +2971,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 113083
+              "duration": 147333
             }
           },
           {
@@ -2979,7 +2979,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 58549542
+              "duration": 115281250
             }
           }
         ],
@@ -3009,7 +3009,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 47250583
+              "duration": 135204207
             }
           },
           {
@@ -3022,7 +3022,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 12540981625
+              "duration": 12634018000
             }
           },
           {
@@ -3068,7 +3068,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 16308415
+              "duration": 11944542
             }
           },
           {
@@ -3081,7 +3081,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 22603792
+              "duration": 21905290
             }
           },
           {
@@ -3094,7 +3094,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3236417
+              "duration": 4635291
             }
           },
           {
@@ -3107,7 +3107,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 148208
+              "duration": 231500
             }
           },
           {
@@ -3120,7 +3120,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 1003225249
+              "duration": 1003038041
             }
           },
           {
@@ -3133,7 +3133,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 1037916,
+              "duration": 726125,
               "error_message": "AssertionError [ERR_ASSERTION]: Pot should have increased\n    + expected - actual\n\n    -false\n    +true\n\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/comprehensive-poker-actions-steps.js:92:5)"
             }
           },
@@ -3276,7 +3276,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 63791
+              "duration": 54709
             }
           },
           {
@@ -3284,7 +3284,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 73916
+              "duration": 63749
             }
           },
           {
@@ -3292,7 +3292,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 754016124
+              "duration": 770979625
             }
           }
         ],
@@ -3311,7 +3311,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 51953375
+              "duration": 54144625
             }
           },
           {
@@ -3324,7 +3324,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 12381159832
+              "duration": 12372189915
             }
           },
           {
@@ -3377,7 +3377,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 742166,
+              "duration": 697874,
               "error_message": "TypeError: this.setupAllInTestGame is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/comprehensive-poker-actions-steps.js:117:14)"
             }
           },
@@ -3614,7 +3614,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 40957
+              "duration": 77499
             }
           },
           {
@@ -3622,7 +3622,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 58541
+              "duration": 90000
             }
           },
           {
@@ -3630,7 +3630,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 722276040
+              "duration": 737351041
             }
           }
         ],
@@ -3649,7 +3649,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 53923834
+              "duration": 53795540
             }
           },
           {
@@ -3662,7 +3662,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 12329262167
+              "duration": 12405508874
             }
           },
           {
@@ -3722,7 +3722,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 246208,
+              "duration": 575625,
               "error_message": "TypeError: this.setupAllInTestGame is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/comprehensive-poker-actions-steps.js:227:14)"
             }
           },
@@ -3913,7 +3913,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 41917
+              "duration": 74999
             }
           },
           {
@@ -3921,7 +3921,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 50333
+              "duration": 85208
             }
           },
           {
@@ -3929,7 +3929,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 741938625
+              "duration": 755341334
             }
           }
         ],
@@ -3948,7 +3948,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 50648208
+              "duration": 61371375
             }
           },
           {
@@ -3961,7 +3961,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 12356967083
+              "duration": 12337147625
             }
           },
           {
@@ -4007,7 +4007,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 606665,
+              "duration": 373916,
               "error_message": "TypeError: this.setupAllInTestGame is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/comprehensive-poker-actions-steps.js:281:14)"
             }
           },
@@ -4137,7 +4137,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 168333
+              "duration": 36875
             }
           },
           {
@@ -4145,7 +4145,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 415125
+              "duration": 204582
             }
           },
           {
@@ -4153,7 +4153,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 900192124
+              "duration": 712389666
             }
           }
         ],
@@ -4172,7 +4172,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 75168166
+              "duration": 44559290
             }
           },
           {
@@ -4185,7 +4185,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 12380731625
+              "duration": 12386678542
             }
           },
           {
@@ -4231,7 +4231,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 526083,
+              "duration": 526542,
               "error_message": "TypeError: this.setupAllInTestGame is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/comprehensive-poker-actions-steps.js:330:14)"
             }
           },
@@ -4358,7 +4358,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 42874
+              "duration": 65667
             }
           },
           {
@@ -4366,7 +4366,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 52290
+              "duration": 68332
             }
           },
           {
@@ -4374,7 +4374,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 728212417
+              "duration": 728558457
             }
           }
         ],
@@ -4393,7 +4393,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 58834541
+              "duration": 56602583
             }
           },
           {
@@ -4406,7 +4406,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 12373537750
+              "duration": 12358120125
             }
           },
           {
@@ -4452,7 +4452,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 649791,
+              "duration": 317915,
               "error_message": "TypeError: this.setupAllInTestGame is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/comprehensive-poker-actions-steps.js:397:14)"
             }
           },
@@ -4569,7 +4569,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 66166
+              "duration": 33416
             }
           },
           {
@@ -4577,7 +4577,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 61457
+              "duration": 364457
             }
           },
           {
@@ -4585,7 +4585,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 727870291
+              "duration": 716761041
             }
           }
         ],
@@ -4604,7 +4604,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 48780083
+              "duration": 43521082
             }
           },
           {
@@ -4617,7 +4617,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 12337883249
+              "duration": 12418122083
             }
           },
           {
@@ -4738,7 +4738,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 59166
+              "duration": 148583
             }
           },
           {
@@ -4746,7 +4746,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 44708
+              "duration": 982707
             }
           },
           {
@@ -4754,7 +4754,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 11601500
+              "duration": 18064459
             }
           }
         ],
@@ -4773,7 +4773,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 46974541
+              "duration": 60227291
             }
           },
           {
@@ -4786,7 +4786,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 12359179457
+              "duration": 12366213792
             }
           },
           {
@@ -4853,7 +4853,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 634791,
+              "duration": 443542,
               "error_message": "TypeError: this.setupAllInTestGame is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/comprehensive-poker-actions-steps.js:514:14)"
             }
           },
@@ -4984,7 +4984,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 73000
+              "duration": 39833
             }
           },
           {
@@ -4992,7 +4992,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 149083
+              "duration": 52917
             }
           },
           {
@@ -5000,7 +5000,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 729784458
+              "duration": 769023125
             }
           }
         ],
@@ -5019,7 +5019,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 56418292
+              "duration": 58584416
             }
           },
           {
@@ -5032,7 +5032,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 12332365333
+              "duration": 12323447625
             }
           },
           {
@@ -5200,7 +5200,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 74832
+              "duration": 57291
             }
           },
           {
@@ -5208,7 +5208,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 366041
+              "duration": 62917
             }
           },
           {
@@ -5216,7 +5216,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 13249167
+              "duration": 11396290
             }
           }
         ],
@@ -5235,7 +5235,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 50705499
+              "duration": 12360791
             }
           },
           {
@@ -5248,7 +5248,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 12339552250
+              "duration": 12387073292
             }
           },
           {
@@ -5294,7 +5294,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 814792,
+              "duration": 529416,
               "error_message": "TypeError: this.setupAllInTestGame is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/comprehensive-poker-actions-steps.js:540:14)"
             }
           },
@@ -5428,7 +5428,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 121041
+              "duration": 30208
             }
           },
           {
@@ -5436,7 +5436,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 168999
+              "duration": 47083
             }
           },
           {
@@ -5444,7 +5444,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 1246094542
+              "duration": 733839542
             }
           }
         ],
@@ -5474,7 +5474,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 125412624
+              "duration": 50232958
             }
           },
           {
@@ -5487,7 +5487,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 130206290
+              "duration": 15180250
             }
           },
           {
@@ -5680,7 +5680,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 172458
+              "duration": 233040
             }
           },
           {
@@ -5688,7 +5688,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 128667
+              "duration": 218915
             }
           },
           {
@@ -5696,7 +5696,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 42269040
+              "duration": 43088250
             }
           }
         ],
@@ -5715,7 +5715,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 97910124
+              "duration": 40323666
             }
           },
           {
@@ -5728,7 +5728,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3777207
+              "duration": 4939209
             }
           },
           {
@@ -5886,7 +5886,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 120792
+              "duration": 157124
             }
           },
           {
@@ -5894,7 +5894,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 147957
+              "duration": 152249
             }
           },
           {
@@ -5902,7 +5902,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 84040124
+              "duration": 61321832
             }
           }
         ],
@@ -5921,7 +5921,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 58397874
+              "duration": 76335374
             }
           },
           {
@@ -5934,7 +5934,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 9150208
+              "duration": 4401874
             }
           },
           {
@@ -6096,7 +6096,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 7476582
+              "duration": 2878209
             }
           },
           {
@@ -6104,7 +6104,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 155792
+              "duration": 393750
             }
           },
           {
@@ -6112,7 +6112,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 70479957
+              "duration": 97817708
             }
           }
         ],
@@ -6131,7 +6131,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 86159167
+              "duration": 62680583
             }
           },
           {
@@ -6144,7 +6144,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 6555916
+              "duration": 2493000
             }
           },
           {
@@ -6291,7 +6291,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 109041
+              "duration": 86792
             }
           },
           {
@@ -6299,7 +6299,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 222707
+              "duration": 815541
             }
           },
           {
@@ -6307,7 +6307,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 75667791
+              "duration": 72711542
             }
           }
         ],
@@ -6326,7 +6326,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 72145709
+              "duration": 57102665
             }
           },
           {
@@ -6339,7 +6339,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3296249
+              "duration": 6475375
             }
           },
           {
@@ -6463,7 +6463,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 133417
+              "duration": 117208
             }
           },
           {
@@ -6471,7 +6471,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 284165
+              "duration": 196666
             }
           },
           {
@@ -6479,7 +6479,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 81100374
+              "duration": 64765415
             }
           }
         ],
@@ -6498,7 +6498,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 62789540
+              "duration": 48529624
             }
           },
           {
@@ -6511,7 +6511,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 4651666
+              "duration": 5638082
             }
           },
           {
@@ -6673,7 +6673,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 273208
+              "duration": 98625
             }
           },
           {
@@ -6681,7 +6681,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 440333
+              "duration": 85208
             }
           },
           {
@@ -6689,7 +6689,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 68388166
+              "duration": 60017875
             }
           }
         ],
@@ -6708,7 +6708,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 72364124
+              "duration": 42721916
             }
           },
           {
@@ -6721,7 +6721,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 13258249
+              "duration": 3430709
             }
           },
           {
@@ -6829,7 +6829,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 100624
+              "duration": 83084
             }
           },
           {
@@ -6837,7 +6837,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 101458
+              "duration": 86167
             }
           },
           {
@@ -6845,7 +6845,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 74820000
+              "duration": 64777666
             }
           }
         ],
@@ -6864,7 +6864,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 71187291
+              "duration": 50897541
             }
           },
           {
@@ -6877,7 +6877,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 5325207
+              "duration": 5237667
             }
           },
           {
@@ -6995,7 +6995,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 104208
+              "duration": 154584
             }
           },
           {
@@ -7003,7 +7003,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 121165
+              "duration": 219665
             }
           },
           {
@@ -7011,7 +7011,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 96006625
+              "duration": 61642374
             }
           }
         ],
@@ -7030,7 +7030,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 61769417
+              "duration": 55620624
             }
           },
           {
@@ -7043,7 +7043,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 9358291
+              "duration": 5801999
             }
           },
           {
@@ -7151,7 +7151,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 225041
+              "duration": 76459
             }
           },
           {
@@ -7159,7 +7159,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 4578790
+              "duration": 198125
             }
           },
           {
@@ -7167,7 +7167,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 78321999
+              "duration": 61735458
             }
           }
         ],
@@ -7186,7 +7186,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 66903417
+              "duration": 65449083
             }
           },
           {
@@ -7199,7 +7199,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 15513499
+              "duration": 13292416
             }
           },
           {
@@ -7363,7 +7363,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 99875
+              "duration": 100583
             }
           },
           {
@@ -7371,7 +7371,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 614208
+              "duration": 126709
             }
           },
           {
@@ -7379,7 +7379,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 71193375
+              "duration": 58413208
             }
           }
         ],
@@ -7398,7 +7398,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 67621666
+              "duration": 56176500
             }
           },
           {
@@ -7411,7 +7411,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 5213500
+              "duration": 2335083
             }
           },
           {
@@ -7529,7 +7529,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 310957
+              "duration": 177874
             }
           },
           {
@@ -7537,7 +7537,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 167165
+              "duration": 173250
             }
           },
           {
@@ -7545,7 +7545,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 81757249
+              "duration": 65208540
             }
           }
         ],
@@ -7575,7 +7575,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 56615125
+              "duration": 58928250
             }
           },
           {
@@ -7588,7 +7588,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 5677625
+              "duration": 4156874
             }
           },
           {
@@ -7601,7 +7601,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 777833,
+              "duration": 856958,
               "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/game-persistence-reconnection-steps.js:16:45)"
             }
           },
@@ -7744,7 +7744,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 1403749
+              "duration": 316374
             }
           },
           {
@@ -7752,7 +7752,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 143042
+              "duration": 317375
             }
           },
           {
@@ -7760,7 +7760,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 396925457
+              "duration": 310031458
             }
           }
         ],
@@ -7779,7 +7779,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 51246791
+              "duration": 45792958
             }
           },
           {
@@ -7792,7 +7792,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 4310624
+              "duration": 3059500
             }
           },
           {
@@ -7805,7 +7805,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 589957,
+              "duration": 720999,
               "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/game-persistence-reconnection-steps.js:16:45)"
             }
           },
@@ -7924,7 +7924,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 236916
+              "duration": 59540
             }
           },
           {
@@ -7932,7 +7932,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 157583
+              "duration": 131292
             }
           },
           {
@@ -7940,7 +7940,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 425276749
+              "duration": 262613249
             }
           }
         ],
@@ -7959,7 +7959,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 54865166
+              "duration": 35414084
             }
           },
           {
@@ -7972,7 +7972,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 7242459
+              "duration": 4351709
             }
           },
           {
@@ -7985,7 +7985,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 673207,
+              "duration": 671459,
               "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/game-persistence-reconnection-steps.js:16:45)"
             }
           },
@@ -8108,7 +8108,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 282666
+              "duration": 83624
             }
           },
           {
@@ -8116,7 +8116,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 97165
+              "duration": 167542
             }
           },
           {
@@ -8124,7 +8124,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 403965124
+              "duration": 286464665
             }
           }
         ],
@@ -8143,7 +8143,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 48160334
+              "duration": 35733082
             }
           },
           {
@@ -8156,7 +8156,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 5712915
+              "duration": 2301125
             }
           },
           {
@@ -8169,7 +8169,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 251083,
+              "duration": 509167,
               "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/game-persistence-reconnection-steps.js:16:45)"
             }
           },
@@ -8278,7 +8278,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 1067625
+              "duration": 228417
             }
           },
           {
@@ -8286,7 +8286,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 145250
+              "duration": 795708
             }
           },
           {
@@ -8294,7 +8294,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 417797624
+              "duration": 269664624
             }
           }
         ],
@@ -8313,7 +8313,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 53571832
+              "duration": 36494666
             }
           },
           {
@@ -8326,7 +8326,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 5002959
+              "duration": 2361000
             }
           },
           {
@@ -8339,7 +8339,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 246707,
+              "duration": 434624,
               "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/game-persistence-reconnection-steps.js:16:45)"
             }
           },
@@ -8478,7 +8478,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 147375
+              "duration": 63750
             }
           },
           {
@@ -8486,7 +8486,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 85625
+              "duration": 96332
             }
           },
           {
@@ -8494,7 +8494,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 402355708
+              "duration": 259332334
             }
           }
         ],
@@ -8513,7 +8513,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 50280375
+              "duration": 35705374
             }
           },
           {
@@ -8526,7 +8526,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3613875
+              "duration": 4657458
             }
           },
           {
@@ -8539,7 +8539,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 910999,
+              "duration": 1438499,
               "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/game-persistence-reconnection-steps.js:16:45)"
             }
           },
@@ -8658,7 +8658,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 78749
+              "duration": 106457
             }
           },
           {
@@ -8666,7 +8666,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 529875
+              "duration": 91625
             }
           },
           {
@@ -8674,7 +8674,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 389080707
+              "duration": 282471167
             }
           }
         ],
@@ -8693,7 +8693,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 46417833
+              "duration": 33696957
             }
           },
           {
@@ -8706,7 +8706,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 4785540
+              "duration": 2477166
             }
           },
           {
@@ -8719,7 +8719,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 306540,
+              "duration": 533415,
               "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/game-persistence-reconnection-steps.js:16:45)"
             }
           },
@@ -8838,7 +8838,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 227332
+              "duration": 75707
             }
           },
           {
@@ -8846,7 +8846,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 222542
+              "duration": 67125
             }
           },
           {
@@ -8854,7 +8854,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 380031125
+              "duration": 254189249
             }
           }
         ],
@@ -8873,7 +8873,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 50355083
+              "duration": 37545459
             }
           },
           {
@@ -8886,7 +8886,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3984999
+              "duration": 4623957
             }
           },
           {
@@ -8899,7 +8899,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 1394250,
+              "duration": 447458,
               "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/game-persistence-reconnection-steps.js:16:45)"
             }
           },
@@ -9047,7 +9047,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 101291
+              "duration": 440958
             }
           },
           {
@@ -9055,7 +9055,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 215832
+              "duration": 840499
             }
           },
           {
@@ -9063,7 +9063,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 398585334
+              "duration": 303721792
             }
           }
         ],
@@ -9082,7 +9082,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 47446457
+              "duration": 33833207
             }
           },
           {
@@ -9095,7 +9095,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 10348958
+              "duration": 2385666
             }
           },
           {
@@ -9108,7 +9108,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 535332,
+              "duration": 312375,
               "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/game-persistence-reconnection-steps.js:16:45)"
             }
           },
@@ -9227,7 +9227,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 322499
+              "duration": 47915
             }
           },
           {
@@ -9235,7 +9235,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 93999
+              "duration": 1035750
             }
           },
           {
@@ -9243,7 +9243,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 357398458
+              "duration": 255926999
             }
           }
         ],
@@ -9262,7 +9262,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 49339000
+              "duration": 32730999
             }
           },
           {
@@ -9275,7 +9275,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 4206624
+              "duration": 1807209
             }
           },
           {
@@ -9288,7 +9288,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 468041,
+              "duration": 460083,
               "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/game-persistence-reconnection-steps.js:16:45)"
             }
           },
@@ -9397,7 +9397,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 104749
+              "duration": 68583
             }
           },
           {
@@ -9405,7 +9405,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 544499
+              "duration": 65084
             }
           },
           {
@@ -9413,7 +9413,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 403788958
+              "duration": 277090082
             }
           }
         ],
@@ -9432,7 +9432,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 49490332
+              "duration": 32925541
             }
           },
           {
@@ -9445,7 +9445,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 4538916
+              "duration": 3932166
             }
           },
           {
@@ -9458,7 +9458,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 575833,
+              "duration": 353625,
               "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/game-persistence-reconnection-steps.js:16:45)"
             }
           },
@@ -9547,7 +9547,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 97375
+              "duration": 68624
             }
           },
           {
@@ -9555,7 +9555,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 94167
+              "duration": 113791
             }
           },
           {
@@ -9563,7 +9563,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 377384416
+              "duration": 306065332
             }
           }
         ],
@@ -9582,7 +9582,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 48824874
+              "duration": 33588458
             }
           },
           {
@@ -9595,7 +9595,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 2596415
+              "duration": 4410666
             }
           },
           {
@@ -9608,7 +9608,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 921415,
+              "duration": 782875,
               "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/game-persistence-reconnection-steps.js:16:45)"
             }
           },
@@ -9707,7 +9707,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 107416
+              "duration": 76375
             }
           },
           {
@@ -9715,7 +9715,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 121125
+              "duration": 274541
             }
           },
           {
@@ -9723,7 +9723,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 388257500
+              "duration": 286550915
             }
           }
         ],
@@ -9742,7 +9742,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 64284917
+              "duration": 34374875
             }
           },
           {
@@ -9755,7 +9755,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 17373625
+              "duration": 4224749
             }
           },
           {
@@ -9768,7 +9768,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 669125,
+              "duration": 769999,
               "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/game-persistence-reconnection-steps.js:16:45)"
             }
           },
@@ -9877,7 +9877,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 114957
+              "duration": 63958
             }
           },
           {
@@ -9885,7 +9885,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 111999
+              "duration": 132665
             }
           },
           {
@@ -9893,7 +9893,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 421177499
+              "duration": 282608624
             }
           }
         ],
@@ -9912,7 +9912,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 59611541
+              "duration": 40216916
             }
           },
           {
@@ -9925,7 +9925,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 5763375
+              "duration": 5116291
             }
           },
           {
@@ -9938,7 +9938,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 1093542,
+              "duration": 378959,
               "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/game-persistence-reconnection-steps.js:16:45)"
             }
           },
@@ -10037,7 +10037,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 81833
+              "duration": 68124
             }
           },
           {
@@ -10045,7 +10045,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 4435708
+              "duration": 74667
             }
           },
           {
@@ -10053,7 +10053,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 416508499
+              "duration": 275394000
             }
           }
         ],
@@ -10072,7 +10072,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 58066082
+              "duration": 38453833
             }
           },
           {
@@ -10085,7 +10085,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 5280709
+              "duration": 5731957
             }
           },
           {
@@ -10098,7 +10098,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 387374,
+              "duration": 197416,
               "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/game-persistence-reconnection-steps.js:16:45)"
             }
           },
@@ -10197,7 +10197,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 1368084
+              "duration": 85708
             }
           },
           {
@@ -10205,7 +10205,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 116790
+              "duration": 85250
             }
           },
           {
@@ -10213,7 +10213,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 429880499
+              "duration": 279301542
             }
           }
         ],
@@ -10243,7 +10243,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 54838541
+              "duration": 37119833
             }
           },
           {
@@ -10256,7 +10256,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 100792833
+              "duration": 67662958
             }
           },
           {
@@ -10269,7 +10269,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 84393000
+              "duration": 59011207
             }
           },
           {
@@ -10282,7 +10282,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 16046791
+              "duration": 12936083
             }
           },
           {
@@ -10295,7 +10295,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 5003440957,
+              "duration": 5001849582,
               "error_message": "Error: function timed out, ensure the promise resolves within 5000 milliseconds\n    at Timeout.<anonymous> (/Users/leiyao/work/puretexaspoker/node_modules/@cucumber/cucumber/lib/time.js:54:20)\n    at listOnTimeout (node:internal/timers:614:17)\n    at process.processTimers (node:internal/timers:549:7)"
             }
           },
@@ -10798,7 +10798,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 339999
+              "duration": 155666
             }
           },
           {
@@ -10806,7 +10806,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 359249
+              "duration": 174958
             }
           },
           {
@@ -10814,7 +10814,7 @@
             "hidden": true,
             "result": {
               "status": "failed",
-              "duration": 5001208833,
+              "duration": 5001170165,
               "error_message": "Error: function timed out, ensure the promise resolves within 5000 milliseconds\n    at Timeout.<anonymous> (/Users/leiyao/work/puretexaspoker/node_modules/@cucumber/cucumber/lib/time.js:54:20)\n    at listOnTimeout (node:internal/timers:614:17)\n    at process.processTimers (node:internal/timers:549:7)"
             }
           }
@@ -10845,7 +10845,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 310771749
+              "duration": 257513875
             }
           },
           {
@@ -10858,7 +10858,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 15114791
+              "duration": 36999707
             }
           },
           {
@@ -10871,7 +10871,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 12416166
+              "duration": 7836041
             }
           },
           {
@@ -11971,7 +11971,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 779458
+              "duration": 67999
             }
           },
           {
@@ -11979,7 +11979,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 150583
+              "duration": 68750
             }
           },
           {
@@ -11987,7 +11987,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 24070041
+              "duration": 21421958
             }
           }
         ],
@@ -12015,7 +12015,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 52100750
+              "duration": 53597041
             }
           },
           {
@@ -12028,7 +12028,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 13910332
+              "duration": 12037499
             }
           },
           {
@@ -12041,7 +12041,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 34266084
+              "duration": 19622875
             }
           },
           {
@@ -12263,7 +12263,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 245458
+              "duration": 168666
             }
           },
           {
@@ -12271,7 +12271,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 633582
+              "duration": 252499
             }
           },
           {
@@ -12279,7 +12279,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 61175749
+              "duration": 53488582
             }
           }
         ],
@@ -12307,7 +12307,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 83615082
+              "duration": 79787083
             }
           },
           {
@@ -12320,7 +12320,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 23989166
+              "duration": 9769916
             }
           },
           {
@@ -12333,7 +12333,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 4802583
+              "duration": 8103959
             }
           },
           {
@@ -12519,7 +12519,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 345667
+              "duration": 127708
             }
           },
           {
@@ -12527,7 +12527,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 1496666
+              "duration": 136624
             }
           },
           {
@@ -12535,7 +12535,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 68807082
+              "duration": 74437582
             }
           }
         ],
@@ -12563,7 +12563,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 59455665
+              "duration": 57611292
             }
           },
           {
@@ -12576,7 +12576,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 14022582
+              "duration": 3672332
             }
           },
           {
@@ -12589,7 +12589,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 4977832
+              "duration": 3164250
             }
           },
           {
@@ -12718,7 +12718,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 179583
+              "duration": 1294499
             }
           },
           {
@@ -12726,7 +12726,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 155166
+              "duration": 241499
             }
           },
           {
@@ -12734,7 +12734,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 57347791
+              "duration": 53462458
             }
           }
         ],
@@ -12773,7 +12773,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 54890875
+              "duration": 49647916
             }
           },
           {
@@ -12786,7 +12786,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3350833
+              "duration": 4923790
             }
           },
           {
@@ -12799,7 +12799,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3092541
+              "duration": 10534666
             }
           },
           {
@@ -13155,7 +13155,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 101458
+              "duration": 334042
             }
           },
           {
@@ -13163,7 +13163,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 100916
+              "duration": 101166
             }
           },
           {
@@ -13171,7 +13171,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 65452542
+              "duration": 43650042
             }
           }
         ],
@@ -13195,7 +13195,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 58170959
+              "duration": 45694167
             }
           },
           {
@@ -13208,7 +13208,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 2505417
+              "duration": 4174708
             }
           },
           {
@@ -13221,7 +13221,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 4243291
+              "duration": 6314083
             }
           },
           {
@@ -13556,7 +13556,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 88584
+              "duration": 131957
             }
           },
           {
@@ -13564,7 +13564,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 180083
+              "duration": 150124
             }
           },
           {
@@ -13572,7 +13572,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 65422791
+              "duration": 44764000
             }
           }
         ],
@@ -13600,7 +13600,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 56876250
+              "duration": 48329790
             }
           },
           {
@@ -13613,7 +13613,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3794124
+              "duration": 3381917
             }
           },
           {
@@ -13626,7 +13626,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3200458
+              "duration": 3649624
             }
           },
           {
@@ -13818,7 +13818,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 102542
+              "duration": 68541
             }
           },
           {
@@ -13826,7 +13826,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 829916
+              "duration": 69958
             }
           },
           {
@@ -13834,7 +13834,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 66405666
+              "duration": 53408583
             }
           }
         ],
@@ -13862,7 +13862,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 56013708
+              "duration": 49616750
             }
           },
           {
@@ -13875,7 +13875,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 4008583
+              "duration": 2309708
             }
           },
           {
@@ -13888,7 +13888,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 5903667
+              "duration": 5003041
             }
           },
           {
@@ -14142,7 +14142,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 76292
+              "duration": 67665
             }
           },
           {
@@ -14150,7 +14150,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 79459
+              "duration": 153500
             }
           },
           {
@@ -14158,7 +14158,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 73717707
+              "duration": 48036916
             }
           }
         ],
@@ -14186,7 +14186,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 84210916
+              "duration": 49464291
             }
           },
           {
@@ -14199,7 +14199,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 4160165
+              "duration": 2109540
             }
           },
           {
@@ -14212,7 +14212,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 9605999
+              "duration": 10873250
             }
           },
           {
@@ -14481,7 +14481,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 93999
+              "duration": 96500
             }
           },
           {
@@ -14489,7 +14489,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 88208
+              "duration": 630833
             }
           },
           {
@@ -14497,7 +14497,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 64696666
+              "duration": 46893125
             }
           }
         ],
@@ -14525,7 +14525,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 65479667
+              "duration": 51992291
             }
           },
           {
@@ -14538,7 +14538,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 6646083
+              "duration": 15356834
             }
           },
           {
@@ -14551,7 +14551,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 6638584
+              "duration": 17133999
             }
           },
           {
@@ -14766,7 +14766,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 94874
+              "duration": 94125
             }
           },
           {
@@ -14774,7 +14774,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 92666
+              "duration": 93916
             }
           },
           {
@@ -14782,7 +14782,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 76503291
+              "duration": 45123041
             }
           }
         ],
@@ -14810,7 +14810,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 73296166
+              "duration": 56254249
             }
           },
           {
@@ -14823,7 +14823,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 5756916
+              "duration": 3856292
             }
           },
           {
@@ -14836,7 +14836,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3630541
+              "duration": 4187166
             }
           },
           {
@@ -15040,7 +15040,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 151459
+              "duration": 108084
             }
           },
           {
@@ -15048,7 +15048,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 141167
+              "duration": 99416
             }
           },
           {
@@ -15056,7 +15056,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 64644082
+              "duration": 65325707
             }
           }
         ],
@@ -15095,7 +15095,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 58728959
+              "duration": 50210209
             }
           },
           {
@@ -15108,7 +15108,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 12481622875
+              "duration": 12440950000
             }
           },
           {
@@ -15168,7 +15168,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 6156533750
+              "duration": 6111070624
             }
           },
           {
@@ -15181,7 +15181,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 97431040
+              "duration": 59440875
             }
           },
           {
@@ -15194,7 +15194,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 11871333
+              "duration": 8502375
             }
           },
           {
@@ -15207,7 +15207,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 34419749
+              "duration": 24078792
             }
           },
           {
@@ -15220,7 +15220,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 14079250
+              "duration": 8514749
             }
           },
           {
@@ -15233,7 +15233,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 35752417
+              "duration": 21599958
             }
           },
           {
@@ -15246,7 +15246,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 20955667
+              "duration": 13612250
             }
           },
           {
@@ -15259,7 +15259,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 10083721542
+              "duration": 10096675582
             }
           },
           {
@@ -15272,7 +15272,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 11855666
+              "duration": 9542791
             }
           },
           {
@@ -15285,7 +15285,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 197540
+              "duration": 138833
             }
           },
           {
@@ -15298,7 +15298,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 10013699832
+              "duration": 10040109291
             }
           },
           {
@@ -16049,7 +16049,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 163125
+              "duration": 67666
             }
           },
           {
@@ -16057,7 +16057,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 83207
+              "duration": 90292
             }
           },
           {
@@ -16065,7 +16065,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 19595916
+              "duration": 13445791
             }
           }
         ],
@@ -16095,7 +16095,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 126522666
+              "duration": 51528624
             }
           },
           {
@@ -16108,7 +16108,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 5942041
+              "duration": 7122833
             }
           },
           {
@@ -16121,7 +16121,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 13900334
+              "duration": 8808709
             }
           },
           {
@@ -16271,7 +16271,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 719416
+              "duration": 253375
             }
           },
           {
@@ -16279,7 +16279,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 44208
+              "duration": 21833
             }
           },
           {
@@ -16287,7 +16287,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 402249
+              "duration": 37458
             }
           },
           {
@@ -16295,7 +16295,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 30935500
+              "duration": 44188667
             }
           }
         ],
@@ -16323,7 +16323,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 61669250
+              "duration": 45234625
             }
           },
           {
@@ -16336,7 +16336,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 4001916
+              "duration": 2021084
             }
           },
           {
@@ -16349,7 +16349,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 4706291
+              "duration": 3184957
             }
           },
           {
@@ -16525,7 +16525,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 266459
+              "duration": 192666
             }
           },
           {
@@ -16533,7 +16533,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 100416
+              "duration": 20832
             }
           },
           {
@@ -16541,7 +16541,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 108332
+              "duration": 33374
             }
           },
           {
@@ -16549,7 +16549,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 87305958
+              "duration": 43850500
             }
           }
         ],
@@ -16577,7 +16577,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 79186625
+              "duration": 44497291
             }
           },
           {
@@ -16590,7 +16590,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 10265083
+              "duration": 2750166
             }
           },
           {
@@ -16603,7 +16603,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 7395833
+              "duration": 3067041
             }
           },
           {
@@ -16766,7 +16766,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 302457
+              "duration": 263291
             }
           },
           {
@@ -16774,7 +16774,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 53790
+              "duration": 40917
             }
           },
           {
@@ -16782,7 +16782,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 590415
+              "duration": 97249
             }
           },
           {
@@ -16790,7 +16790,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 88335832
+              "duration": 51369000
             }
           }
         ],
@@ -16818,7 +16818,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 64451125
+              "duration": 54725375
             }
           },
           {
@@ -16831,7 +16831,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 5560250
+              "duration": 5627959
             }
           },
           {
@@ -16844,7 +16844,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 10771125
+              "duration": 5451042
             }
           },
           {
@@ -17020,7 +17020,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 192542
+              "duration": 791375
             }
           },
           {
@@ -17028,7 +17028,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 28374
+              "duration": 154207
             }
           },
           {
@@ -17036,7 +17036,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 44041
+              "duration": 126208
             }
           },
           {
@@ -17044,7 +17044,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 54969791
+              "duration": 63384125
             }
           }
         ],
@@ -17072,7 +17072,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 54944249
+              "duration": 55422250
             }
           },
           {
@@ -17085,7 +17085,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3901499
+              "duration": 3344207
             }
           },
           {
@@ -17098,7 +17098,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 6347375
+              "duration": 3898209
             }
           },
           {
@@ -17276,7 +17276,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 153332
+              "duration": 237291
             }
           },
           {
@@ -17284,7 +17284,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 88917
+              "duration": 48500
             }
           },
           {
@@ -17292,7 +17292,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 77041
+              "duration": 54000
             }
           },
           {
@@ -17300,7 +17300,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 44855917
+              "duration": 62090624
             }
           }
         ],
@@ -17328,7 +17328,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 57245124
+              "duration": 51913250
             }
           },
           {
@@ -17341,7 +17341,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3393875
+              "duration": 4038416
             }
           },
           {
@@ -17354,7 +17354,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 4822750
+              "duration": 7679875
             }
           },
           {
@@ -17541,7 +17541,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 192334
+              "duration": 528875
             }
           },
           {
@@ -17549,7 +17549,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 54666
+              "duration": 35708
             }
           },
           {
@@ -17557,7 +17557,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 147249
+              "duration": 55832
             }
           },
           {
@@ -17565,7 +17565,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 54246333
+              "duration": 47686374
             }
           }
         ],
@@ -17593,7 +17593,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 50585625
+              "duration": 52052415
             }
           },
           {
@@ -17606,7 +17606,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 4100999
+              "duration": 5692249
             }
           },
           {
@@ -17619,7 +17619,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 10551290
+              "duration": 4101291
             }
           },
           {
@@ -17783,7 +17783,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 221124
+              "duration": 175624
             }
           },
           {
@@ -17791,7 +17791,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 34625
+              "duration": 36458
             }
           },
           {
@@ -17799,7 +17799,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 55416
+              "duration": 54249
             }
           },
           {
@@ -17807,7 +17807,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 64826291
+              "duration": 48421167
             }
           }
         ],
@@ -17835,7 +17835,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 53634583
+              "duration": 47754834
             }
           },
           {
@@ -17848,7 +17848,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3155208
+              "duration": 4152374
             }
           },
           {
@@ -17861,7 +17861,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 4993249
+              "duration": 3915665
             }
           },
           {
@@ -18027,7 +18027,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 224333
+              "duration": 204750
             }
           },
           {
@@ -18035,7 +18035,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 130749
+              "duration": 76208
             }
           },
           {
@@ -18043,7 +18043,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 750125
+              "duration": 45500
             }
           },
           {
@@ -18051,7 +18051,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 49764166
+              "duration": 55763207
             }
           }
         ],
@@ -18079,7 +18079,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 60122792
+              "duration": 48011165
             }
           },
           {
@@ -18092,7 +18092,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 5897874
+              "duration": 2399292
             }
           },
           {
@@ -18105,7 +18105,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 9344374
+              "duration": 2032624
             }
           },
           {
@@ -18286,7 +18286,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 396792
+              "duration": 399750
             }
           },
           {
@@ -18294,7 +18294,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 33208
+              "duration": 35165
             }
           },
           {
@@ -18302,7 +18302,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 306584
+              "duration": 69542
             }
           },
           {
@@ -18310,7 +18310,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 59286791
+              "duration": 55524582
             }
           }
         ],
@@ -18349,7 +18349,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 52655792
+              "duration": 51318499
             }
           },
           {
@@ -18362,7 +18362,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 2174291
+              "duration": 4352000
             }
           },
           {
@@ -18495,7 +18495,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 157375
+              "duration": 1115125
             }
           },
           {
@@ -18503,7 +18503,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 242082
+              "duration": 159500
             }
           },
           {
@@ -18511,7 +18511,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 69149499
+              "duration": 70705166
             }
           }
         ],
@@ -18530,7 +18530,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 54627500
+              "duration": 51777792
             }
           },
           {
@@ -18543,7 +18543,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3120792
+              "duration": 3388042
             }
           },
           {
@@ -18725,7 +18725,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 113833
+              "duration": 235666
             }
           },
           {
@@ -18733,7 +18733,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 190541
+              "duration": 960041
             }
           },
           {
@@ -18741,7 +18741,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 61706375
+              "duration": 56681458
             }
           }
         ],
@@ -18760,7 +18760,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 52540124
+              "duration": 55058583
             }
           },
           {
@@ -18773,7 +18773,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3904832
+              "duration": 3693583
             }
           },
           {
@@ -18932,7 +18932,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 94292
+              "duration": 277957
             }
           },
           {
@@ -18940,7 +18940,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 165708
+              "duration": 249334
             }
           },
           {
@@ -18948,7 +18948,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 66695583
+              "duration": 60096166
             }
           }
         ],
@@ -18967,7 +18967,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 58729624
+              "duration": 49190875
             }
           },
           {
@@ -18980,7 +18980,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 2427541
+              "duration": 4140874
             }
           },
           {
@@ -19133,7 +19133,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 112250
+              "duration": 141000
             }
           },
           {
@@ -19141,7 +19141,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 95207
+              "duration": 109415
             }
           },
           {
@@ -19149,7 +19149,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 87140249
+              "duration": 60089166
             }
           }
         ],
@@ -19168,7 +19168,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 56672457
+              "duration": 49732332
             }
           },
           {
@@ -19181,7 +19181,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 4658542
+              "duration": 1737791
             }
           },
           {
@@ -19321,7 +19321,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 82208
+              "duration": 69583
             }
           },
           {
@@ -19329,7 +19329,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 281042
+              "duration": 144333
             }
           },
           {
@@ -19337,7 +19337,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 64303667
+              "duration": 65239499
             }
           }
         ],
@@ -19356,7 +19356,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 58110041
+              "duration": 50279417
             }
           },
           {
@@ -19369,7 +19369,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3098250
+              "duration": 4610916
             }
           },
           {
@@ -19509,7 +19509,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 108250
+              "duration": 70875
             }
           },
           {
@@ -19517,7 +19517,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 108207
+              "duration": 176832
             }
           },
           {
@@ -19525,7 +19525,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 68474625
+              "duration": 50096708
             }
           }
         ],
@@ -19544,7 +19544,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 76267250
+              "duration": 48398584
             }
           },
           {
@@ -19557,7 +19557,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 6415666
+              "duration": 3430707
             }
           },
           {
@@ -19706,7 +19706,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 724458
+              "duration": 170582
             }
           },
           {
@@ -19714,7 +19714,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2855707
+              "duration": 261583
             }
           },
           {
@@ -19722,7 +19722,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 63199416
+              "duration": 62359041
             }
           }
         ],
@@ -19741,7 +19741,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 60539208
+              "duration": 43947667
             }
           },
           {
@@ -19754,7 +19754,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 2592124
+              "duration": 2375915
             }
           },
           {
@@ -19861,7 +19861,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 394041
+              "duration": 141499
             }
           },
           {
@@ -19869,7 +19869,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 113834
+              "duration": 1971333
             }
           },
           {
@@ -19877,7 +19877,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 71178458
+              "duration": 69590624
             }
           }
         ],
@@ -19896,7 +19896,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 55145874
+              "duration": 47478833
             }
           },
           {
@@ -19909,7 +19909,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3621084
+              "duration": 4119249
             }
           },
           {
@@ -20039,7 +20039,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 83374
+              "duration": 377250
             }
           },
           {
@@ -20047,7 +20047,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 82792
+              "duration": 1565415
             }
           },
           {
@@ -20055,7 +20055,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 69477958
+              "duration": 152251790
             }
           }
         ],
@@ -20074,7 +20074,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 55899583
+              "duration": 81054541
             }
           },
           {
@@ -20087,7 +20087,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3626250
+              "duration": 3732499
             }
           },
           {
@@ -20227,7 +20227,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 106291
+              "duration": 581667
             }
           },
           {
@@ -20235,7 +20235,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 311333
+              "duration": 150332
             }
           },
           {
@@ -20243,7 +20243,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 58372875
+              "duration": 77464833
             }
           }
         ],
@@ -20273,7 +20273,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 54654125
+              "duration": 56073375
             }
           },
           {
@@ -20286,7 +20286,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 4200250
+              "duration": 4494417
             }
           },
           {
@@ -20295,12 +20295,11 @@
             "line": 8,
             "name": "the role system is initialized with default roles and permissions",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:12"
+              "location": "selenium/step_definitions/user-role-management-steps.js:38"
             },
             "result": {
-              "status": "failed",
-              "duration": 544582,
-              "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/user-role-management-steps.js:16:45)"
+              "status": "passed",
+              "duration": 341874415
             }
           },
           {
@@ -20319,7 +20318,7 @@
             "line": 12,
             "name": "I register a new user \"NewPlayer\" with password \"password123\"",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:30"
+              "location": "selenium/step_definitions/user-role-management-steps.js:56"
             },
             "result": {
               "status": "skipped",
@@ -20332,7 +20331,7 @@
             "line": 13,
             "name": "the registration is successful",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:59"
+              "location": "selenium/step_definitions/user-role-management-steps.js:85"
             },
             "result": {
               "status": "skipped",
@@ -20345,7 +20344,7 @@
             "line": 14,
             "name": "\"NewPlayer\" should be assigned the \"player\" role by default",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:65"
+              "location": "selenium/step_definitions/user-role-management-steps.js:91"
             },
             "result": {
               "status": "skipped",
@@ -20358,7 +20357,7 @@
             "line": 15,
             "name": "\"NewPlayer\" should have \"join_game\" permission",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:76"
+              "location": "selenium/step_definitions/user-role-management-steps.js:102"
             },
             "result": {
               "status": "skipped",
@@ -20371,7 +20370,7 @@
             "line": 16,
             "name": "\"NewPlayer\" should have \"place_bet\" permission",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:76"
+              "location": "selenium/step_definitions/user-role-management-steps.js:102"
             },
             "result": {
               "status": "skipped",
@@ -20384,7 +20383,7 @@
             "line": 17,
             "name": "\"NewPlayer\" should have \"chat_message\" permission",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:76"
+              "location": "selenium/step_definitions/user-role-management-steps.js:102"
             },
             "result": {
               "status": "skipped",
@@ -20397,7 +20396,7 @@
             "line": 18,
             "name": "\"NewPlayer\" should NOT have \"warn_player\" permission",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:93"
+              "location": "selenium/step_definitions/user-role-management-steps.js:119"
             },
             "result": {
               "status": "skipped",
@@ -20410,7 +20409,7 @@
             "line": 19,
             "name": "\"NewPlayer\" should NOT have \"ban_user\" permission",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:93"
+              "location": "selenium/step_definitions/user-role-management-steps.js:119"
             },
             "result": {
               "status": "skipped",
@@ -20422,7 +20421,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 180208
+              "duration": 87415
             }
           },
           {
@@ -20430,7 +20429,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 116083
+              "duration": 94540
             }
           },
           {
@@ -20438,7 +20437,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 379589792
+              "duration": 17861666
             }
           }
         ],
@@ -20457,7 +20456,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 47272582
+              "duration": 54510665
             }
           },
           {
@@ -20470,7 +20469,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 4367790
+              "duration": 7067999
             }
           },
           {
@@ -20479,12 +20478,11 @@
             "line": 8,
             "name": "the role system is initialized with default roles and permissions",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:12"
+              "location": "selenium/step_definitions/user-role-management-steps.js:38"
             },
             "result": {
-              "status": "failed",
-              "duration": 168207,
-              "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/user-role-management-steps.js:16:45)"
+              "status": "passed",
+              "duration": 89447167
             }
           },
           {
@@ -20536,7 +20534,7 @@
             "line": 22,
             "name": "I have test users with different roles:",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:110"
+              "location": "selenium/step_definitions/user-role-management-steps.js:136"
             },
             "result": {
               "status": "skipped",
@@ -20549,7 +20547,7 @@
             "line": 27,
             "name": "I check permissions for each user",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:142"
+              "location": "selenium/step_definitions/user-role-management-steps.js:168"
             },
             "result": {
               "status": "skipped",
@@ -20562,7 +20560,7 @@
             "line": 28,
             "name": "\"TestPlayer\" should have permissions: \"join_game,place_bet,chat_message\"",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:162"
+              "location": "selenium/step_definitions/user-role-management-steps.js:188"
             },
             "result": {
               "status": "skipped",
@@ -20575,7 +20573,7 @@
             "line": 29,
             "name": "\"TestMod\" should have permissions: \"join_game,place_bet,chat_message,warn_player,kick_player\"",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:162"
+              "location": "selenium/step_definitions/user-role-management-steps.js:188"
             },
             "result": {
               "status": "skipped",
@@ -20588,7 +20586,7 @@
             "line": 30,
             "name": "\"TestAdmin\" should have permissions: \"join_game,place_bet,chat_message,warn_player,kick_player,ban_user\"",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:162"
+              "location": "selenium/step_definitions/user-role-management-steps.js:188"
             },
             "result": {
               "status": "skipped",
@@ -20600,7 +20598,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 85874
+              "duration": 93290
             }
           },
           {
@@ -20608,7 +20606,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 98250
+              "duration": 151458
             }
           },
           {
@@ -20616,7 +20614,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 346308832
+              "duration": 15454708
             }
           }
         ],
@@ -20635,7 +20633,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 52719790
+              "duration": 59684916
             }
           },
           {
@@ -20648,7 +20646,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 4719666
+              "duration": 4945541
             }
           },
           {
@@ -20657,12 +20655,11 @@
             "line": 8,
             "name": "the role system is initialized with default roles and permissions",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:12"
+              "location": "selenium/step_definitions/user-role-management-steps.js:38"
             },
             "result": {
-              "status": "failed",
-              "duration": 677874,
-              "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/user-role-management-steps.js:16:45)"
+              "status": "passed",
+              "duration": 60785833
             }
           },
           {
@@ -20681,7 +20678,7 @@
             "line": 33,
             "name": "I create test players \"RegularPlayer,ModeratorUser\" with roles \"player,moderator\"",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:179"
+              "location": "selenium/step_definitions/user-role-management-steps.js:205"
             },
             "result": {
               "status": "skipped",
@@ -20694,7 +20691,7 @@
             "line": 34,
             "name": "both users are logged into the system",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:215"
+              "location": "selenium/step_definitions/user-role-management-steps.js:241"
             },
             "result": {
               "status": "skipped",
@@ -20707,7 +20704,7 @@
             "line": 35,
             "name": "\"RegularPlayer\" attempts to kick another player",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:224"
+              "location": "selenium/step_definitions/user-role-management-steps.js:250"
             },
             "result": {
               "status": "skipped",
@@ -20730,7 +20727,7 @@
             "line": 37,
             "name": "\"ModeratorUser\" attempts to kick another player",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:224"
+              "location": "selenium/step_definitions/user-role-management-steps.js:250"
             },
             "result": {
               "status": "skipped",
@@ -20743,7 +20740,7 @@
             "line": 38,
             "name": "the action should be successful",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:259"
+              "location": "selenium/step_definitions/user-role-management-steps.js:285"
             },
             "result": {
               "status": "skipped",
@@ -20756,7 +20753,7 @@
             "line": 39,
             "name": "a moderation record should be created",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:268"
+              "location": "selenium/step_definitions/user-role-management-steps.js:294"
             },
             "result": {
               "status": "skipped",
@@ -20768,7 +20765,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 825750
+              "duration": 104833
             }
           },
           {
@@ -20776,7 +20773,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 384958
+              "duration": 278791
             }
           },
           {
@@ -20784,7 +20781,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 371431917
+              "duration": 14240500
             }
           }
         ],
@@ -20803,7 +20800,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 43995832
+              "duration": 48342457
             }
           },
           {
@@ -20816,7 +20813,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 2097584
+              "duration": 3910915
             }
           },
           {
@@ -20825,12 +20822,11 @@
             "line": 8,
             "name": "the role system is initialized with default roles and permissions",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:12"
+              "location": "selenium/step_definitions/user-role-management-steps.js:38"
             },
             "result": {
-              "status": "failed",
-              "duration": 1372624,
-              "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/user-role-management-steps.js:16:45)"
+              "status": "passed",
+              "duration": 84901582
             }
           },
           {
@@ -20849,7 +20845,7 @@
             "line": 42,
             "name": "I have an administrator \"AdminUser\" and a player \"TargetPlayer\"",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:278"
+              "location": "selenium/step_definitions/user-role-management-steps.js:304"
             },
             "result": {
               "status": "skipped",
@@ -20872,7 +20868,7 @@
             "line": 44,
             "name": "\"AdminUser\" assigns \"TargetPlayer\" the role \"moderator\"",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:326"
+              "location": "selenium/step_definitions/user-role-management-steps.js:352"
             },
             "result": {
               "status": "skipped",
@@ -20885,7 +20881,7 @@
             "line": 45,
             "name": "\"TargetPlayer\" should have the \"moderator\" role",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:357"
+              "location": "selenium/step_definitions/user-role-management-steps.js:383"
             },
             "result": {
               "status": "skipped",
@@ -20898,7 +20894,7 @@
             "line": 46,
             "name": "\"TargetPlayer\" should gain \"warn_player\" permission",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:376"
+              "location": "selenium/step_definitions/user-role-management-steps.js:402"
             },
             "result": {
               "status": "skipped",
@@ -20911,7 +20907,7 @@
             "line": 47,
             "name": "\"TargetPlayer\" should gain \"kick_player\" permission",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:376"
+              "location": "selenium/step_definitions/user-role-management-steps.js:402"
             },
             "result": {
               "status": "skipped",
@@ -20924,7 +20920,7 @@
             "line": 48,
             "name": "the role change should be logged in the system",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:393"
+              "location": "selenium/step_definitions/user-role-management-steps.js:419"
             },
             "result": {
               "status": "skipped",
@@ -20936,7 +20932,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 534249
+              "duration": 55292
             }
           },
           {
@@ -20944,7 +20940,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 106208
+              "duration": 76042
             }
           },
           {
@@ -20952,7 +20948,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 345224040
+              "duration": 14276292
             }
           }
         ],
@@ -20971,7 +20967,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 43984750
+              "duration": 53751332
             }
           },
           {
@@ -20984,7 +20980,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3514124
+              "duration": 2479583
             }
           },
           {
@@ -20993,12 +20989,11 @@
             "line": 8,
             "name": "the role system is initialized with default roles and permissions",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:12"
+              "location": "selenium/step_definitions/user-role-management-steps.js:38"
             },
             "result": {
-              "status": "failed",
-              "duration": 213874,
-              "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/user-role-management-steps.js:16:45)"
+              "status": "passed",
+              "duration": 53677166
             }
           },
           {
@@ -21096,7 +21091,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 170541
+              "duration": 129709
             }
           },
           {
@@ -21104,7 +21099,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 94041
+              "duration": 111999
             }
           },
           {
@@ -21112,7 +21107,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 344263832
+              "duration": 14451666
             }
           }
         ],
@@ -21131,7 +21126,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 48876292
+              "duration": 47867291
             }
           },
           {
@@ -21144,7 +21139,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 4924708
+              "duration": 4064875
             }
           },
           {
@@ -21153,12 +21148,11 @@
             "line": 8,
             "name": "the role system is initialized with default roles and permissions",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:12"
+              "location": "selenium/step_definitions/user-role-management-steps.js:38"
             },
             "result": {
-              "status": "failed",
-              "duration": 1885290,
-              "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/user-role-management-steps.js:16:45)"
+              "status": "passed",
+              "duration": 54833374
             }
           },
           {
@@ -21246,7 +21240,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 94540
+              "duration": 53665
             }
           },
           {
@@ -21254,7 +21248,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 191625
+              "duration": 60417
             }
           },
           {
@@ -21262,7 +21256,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 365039665
+              "duration": 12395667
             }
           }
         ],
@@ -21281,7 +21275,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 44634583
+              "duration": 48534374
             }
           },
           {
@@ -21294,7 +21288,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3741041
+              "duration": 3062084
             }
           },
           {
@@ -21303,12 +21297,11 @@
             "line": 8,
             "name": "the role system is initialized with default roles and permissions",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:12"
+              "location": "selenium/step_definitions/user-role-management-steps.js:38"
             },
             "result": {
-              "status": "failed",
-              "duration": 318292,
-              "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/user-role-management-steps.js:16:45)"
+              "status": "passed",
+              "duration": 64439167
             }
           },
           {
@@ -21327,7 +21320,7 @@
             "line": 70,
             "name": "I have an administrator \"AdminUser\" and a player \"ProblematicUser\"",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:278"
+              "location": "selenium/step_definitions/user-role-management-steps.js:304"
             },
             "result": {
               "status": "skipped",
@@ -21399,7 +21392,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 72583
+              "duration": 59458
             }
           },
           {
@@ -21407,7 +21400,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 139374
+              "duration": 62249
             }
           },
           {
@@ -21415,7 +21408,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 355141541
+              "duration": 13841625
             }
           }
         ],
@@ -21434,7 +21427,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 43090666
+              "duration": 48414874
             }
           },
           {
@@ -21447,7 +21440,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 2270749
+              "duration": 1586999
             }
           },
           {
@@ -21456,12 +21449,11 @@
             "line": 8,
             "name": "the role system is initialized with default roles and permissions",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:12"
+              "location": "selenium/step_definitions/user-role-management-steps.js:38"
             },
             "result": {
-              "status": "failed",
-              "duration": 394124,
-              "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/user-role-management-steps.js:16:45)"
+              "status": "passed",
+              "duration": 54068415
             }
           },
           {
@@ -21559,7 +21551,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 241249
+              "duration": 100375
             }
           },
           {
@@ -21567,7 +21559,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 174750
+              "duration": 91583
             }
           },
           {
@@ -21575,7 +21567,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 360952541
+              "duration": 12255249
             }
           }
         ],
@@ -21594,7 +21586,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 45964625
+              "duration": 53214917
             }
           },
           {
@@ -21607,7 +21599,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 4011834
+              "duration": 8873207
             }
           },
           {
@@ -21616,12 +21608,11 @@
             "line": 8,
             "name": "the role system is initialized with default roles and permissions",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:12"
+              "location": "selenium/step_definitions/user-role-management-steps.js:38"
             },
             "result": {
-              "status": "failed",
-              "duration": 291666,
-              "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/user-role-management-steps.js:16:45)"
+              "status": "passed",
+              "duration": 61646375
             }
           },
           {
@@ -21729,7 +21720,7 @@
             "line": 99,
             "name": "the action should be successful",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:259"
+              "location": "selenium/step_definitions/user-role-management-steps.js:285"
             },
             "result": {
               "status": "skipped",
@@ -21741,7 +21732,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 84917
+              "duration": 131957
             }
           },
           {
@@ -21749,7 +21740,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 139040
+              "duration": 136375
             }
           },
           {
@@ -21757,7 +21748,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 372392208
+              "duration": 13053291
             }
           }
         ],
@@ -21776,7 +21767,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 45278542
+              "duration": 55551500
             }
           },
           {
@@ -21789,7 +21780,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 4046499
+              "duration": 3543375
             }
           },
           {
@@ -21798,12 +21789,11 @@
             "line": 8,
             "name": "the role system is initialized with default roles and permissions",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:12"
+              "location": "selenium/step_definitions/user-role-management-steps.js:38"
             },
             "result": {
-              "status": "failed",
-              "duration": 766957,
-              "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/user-role-management-steps.js:16:45)"
+              "status": "passed",
+              "duration": 65868959
             }
           },
           {
@@ -21914,7 +21904,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 61583
+              "duration": 59749
             }
           },
           {
@@ -21922,7 +21912,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 65375
+              "duration": 57416
             }
           },
           {
@@ -21930,7 +21920,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 351302250
+              "duration": 13901167
             }
           }
         ],
@@ -21949,7 +21939,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 44832249
+              "duration": 50667791
             }
           },
           {
@@ -21962,7 +21952,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3785624
+              "duration": 4042667
             }
           },
           {
@@ -21971,12 +21961,11 @@
             "line": 8,
             "name": "the role system is initialized with default roles and permissions",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:12"
+              "location": "selenium/step_definitions/user-role-management-steps.js:38"
             },
             "result": {
-              "status": "failed",
-              "duration": 196667,
-              "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/user-role-management-steps.js:16:45)"
+              "status": "passed",
+              "duration": 52941874
             }
           },
           {
@@ -22064,7 +22053,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 159625
+              "duration": 98916
             }
           },
           {
@@ -22072,7 +22061,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 144499
+              "duration": 160499
             }
           },
           {
@@ -22080,7 +22069,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 364369542
+              "duration": 14406167
             }
           }
         ],
@@ -22099,7 +22088,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 46602125
+              "duration": 49211249
             }
           },
           {
@@ -22112,7 +22101,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 4834042
+              "duration": 2025790
             }
           },
           {
@@ -22121,12 +22110,11 @@
             "line": 8,
             "name": "the role system is initialized with default roles and permissions",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:12"
+              "location": "selenium/step_definitions/user-role-management-steps.js:38"
             },
             "result": {
-              "status": "failed",
-              "duration": 3179333,
-              "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/user-role-management-steps.js:16:45)"
+              "status": "passed",
+              "duration": 54663709
             }
           },
           {
@@ -22274,7 +22262,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 93209
+              "duration": 85875
             }
           },
           {
@@ -22282,7 +22270,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 69167
+              "duration": 78915
             }
           },
           {
@@ -22290,7 +22278,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 335915333
+              "duration": 14185250
             }
           }
         ],
@@ -22309,7 +22297,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 42059415
+              "duration": 48732458
             }
           },
           {
@@ -22322,7 +22310,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 4467792
+              "duration": 3267334
             }
           },
           {
@@ -22331,12 +22319,11 @@
             "line": 8,
             "name": "the role system is initialized with default roles and permissions",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:12"
+              "location": "selenium/step_definitions/user-role-management-steps.js:38"
             },
             "result": {
-              "status": "failed",
-              "duration": 969167,
-              "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/user-role-management-steps.js:16:45)"
+              "status": "passed",
+              "duration": 58049375
             }
           },
           {
@@ -22424,7 +22411,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 1350416
+              "duration": 69542
             }
           },
           {
@@ -22432,7 +22419,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 127833
+              "duration": 69125
             }
           },
           {
@@ -22440,7 +22427,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 354474459
+              "duration": 17403625
             }
           }
         ],
@@ -22459,7 +22446,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 56739291
+              "duration": 52344416
             }
           },
           {
@@ -22472,7 +22459,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 9495083
+              "duration": 4671707
             }
           },
           {
@@ -22481,12 +22468,11 @@
             "line": 8,
             "name": "the role system is initialized with default roles and permissions",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:12"
+              "location": "selenium/step_definitions/user-role-management-steps.js:38"
             },
             "result": {
-              "status": "failed",
-              "duration": 369624,
-              "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/user-role-management-steps.js:16:45)"
+              "status": "passed",
+              "duration": 73972125
             }
           },
           {
@@ -22574,7 +22560,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 114249
+              "duration": 72791
             }
           },
           {
@@ -22582,7 +22568,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 104874
+              "duration": 77917
             }
           },
           {
@@ -22590,7 +22576,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 372621374
+              "duration": 12595250
             }
           }
         ],
@@ -22609,7 +22595,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 45497207
+              "duration": 55286541
             }
           },
           {
@@ -22622,7 +22608,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 2307500
+              "duration": 3946291
             }
           },
           {
@@ -22631,12 +22617,11 @@
             "line": 8,
             "name": "the role system is initialized with default roles and permissions",
             "match": {
-              "location": "selenium/step_definitions/user-role-management-steps.js:12"
+              "location": "selenium/step_definitions/user-role-management-steps.js:38"
             },
             "result": {
-              "status": "failed",
-              "duration": 1072041,
-              "error_message": "TypeError: webdriverHelpers.makeApiCall is not a function\n    at World.<anonymous> (/Users/leiyao/work/puretexaspoker/selenium/step_definitions/user-role-management-steps.js:16:45)"
+              "status": "passed",
+              "duration": 50600124
             }
           },
           {
@@ -22724,7 +22709,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 49249
+              "duration": 100833
             }
           },
           {
@@ -22732,7 +22717,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 184666
+              "duration": 243208
             }
           },
           {
@@ -22740,7 +22725,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 346456375
+              "duration": 15204708
             }
           }
         ],

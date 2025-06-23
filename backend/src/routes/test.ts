@@ -3,6 +3,15 @@ import { clearDatabase } from '../services/testService';
 
 const router = express.Router();
 
+// Basic connection check for tests
+router.get('/', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    message: 'Backend server is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Reset test data
 router.post('/reset', async (req, res) => {
   try {
