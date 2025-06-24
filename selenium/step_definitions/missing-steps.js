@@ -293,13 +293,7 @@ Then('the seat change should be successful', async function () {
   await this.helpers.sleep(1000);
 });
 
-Then('{string} should be at seat {int} in all browser instances', async function (playerName, seat) {
-  console.log(`🔍 Verifying ${playerName} is at seat ${seat} in all browsers...`);
-  
-  // Check across all browser instances
-  await this.helpers.sleep(2000);
-  console.log(`✅ ${playerName} confirmed at seat ${seat} in all browsers`);
-});
+// REMOVED - this step exists in multi-user-seat-management-steps.js
 
 // Additional missing step definitions
 Then('seat {int} should be available in all browser instances', async function (seat) {

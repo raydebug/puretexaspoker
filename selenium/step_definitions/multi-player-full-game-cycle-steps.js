@@ -41,6 +41,26 @@ async function createBrowserInstance(instanceId, headless = process.env.HEADLESS
   chromeOptions.addArguments('--allow-file-access');
   chromeOptions.addArguments('--disable-background-networking');
   chromeOptions.addArguments('--user-data-dir=/tmp/chrome_test_profile_' + instanceId);
+  // Additional localStorage access fixes
+  chromeOptions.addArguments('--disable-site-isolation-trials');
+  chromeOptions.addArguments('--disable-features=VizDisplayCompositor,VizHitTestSurfaceLayer');
+  chromeOptions.addArguments('--enable-unsafe-swiftshader');
+  chromeOptions.addArguments('--disable-blink-features=AutomationControlled');
+  chromeOptions.addArguments('--allow-cross-origin-auth-prompt');
+  chromeOptions.addArguments('--disable-client-side-phishing-detection');
+  chromeOptions.addArguments('--disable-features=TranslateUI');
+  chromeOptions.addArguments('--disable-hang-monitor');
+  chromeOptions.addArguments('--disable-prompt-on-repost');
+  chromeOptions.addArguments('--disable-domain-reliability');
+  chromeOptions.addArguments('--ignore-certificate-errors');
+  chromeOptions.addArguments('--allow-insecure-localhost');
+  // Force localStorage to be available
+  chromeOptions.addArguments('--enable-experimental-web-platform-features');
+  chromeOptions.setUserPreferences({
+    'profile.default_content_setting_values.notifications': 2,
+    'profile.default_content_settings.popups': 0,
+    'profile.managed_default_content_settings.images': 1
+  });
   
   // Clean up existing instance if it exists
   if (browserInstances[instanceId]) {
