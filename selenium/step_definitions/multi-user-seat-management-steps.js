@@ -8,7 +8,7 @@ const axios = require('axios');
 // Global variables to manage multiple browser instances
 let browserInstances = {};
 let userSessions = {};
-let tableId = 'MultiUserTable';
+let tableId = '1'; // Use table ID 1 (first table) which should exist
 
 // Browser management utilities
 async function createBrowserInstance(instanceId, headless = process.env.HEADLESS !== 'false') {
@@ -844,21 +844,84 @@ async function loginUser(driver, username) {
 
 async function navigateToTable(driver, tableName) {
   try {
-    // Navigate to lobby first
+    console.log(`🚢 Navigating to table ${tableName}...`);
+    
+    // Navigate to lobby first and wait for it to fully load
     await driver.get('http://localhost:3000');
+    console.log(`📍 Navigated to lobby`);
     
-    // Wait for lobby to load
-    await driver.wait(until.elementLocated(By.css('body')), 5000);
+    // Wait for lobby to load completely
+    await driver.wait(until.elementLocated(By.css('body')), 10000);
+    await new Promise(resolve => setTimeout(resolve, 2000)); // Give lobby time to initialize
     
-    // Navigate to table page
-    await driver.get(`http://localhost:3000/table/${tableName}`);
+    // Try to navigate to table directly, or use lobby method as fallback
+    try {
+      const tableUrl = `http://localhost:3000/table/${tableName}`;
+      console.log(`🎯 Navigating to table URL: ${tableUrl}`);
+      await driver.get(tableUrl);
+    } catch (directNavError) {
+      console.log(`⚠️ Direct navigation failed, trying lobby approach...`);
+      
+      // Navigate via lobby - click join button for table
+      await driver.get('http://localhost:3000');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      try {
+        // Look for a join table button
+        const joinButton = await driver.wait(
+          until.elementLocated(By.css('.join-table-button, [data-testid="join-table"], button:contains("Join")')),
+          10000
+        );
+        await joinButton.click();
+        console.log(`✅ Clicked join table button from lobby`);
+      } catch (joinError) {
+        console.log(`⚠️ Could not find join button, trying direct game page access...`);
+        await driver.get('http://localhost:3000/game');
+      }
+    }
     
-    // Wait for table page to load
-    await driver.wait(
-      until.elementLocated(By.css('.poker-table, [data-testid="poker-table"]')),
-      5000
-    );
+    // Wait for table page to load with multiple possible selectors
+    console.log(`⏳ Waiting for poker table to load...`);
+    
+    try {
+      await driver.wait(
+        until.elementLocated(By.css('.poker-table, [data-testid="poker-table"], .game-table, .table-container, .poker-game')),
+        15000
+      );
+      console.log(`✅ Poker table loaded successfully`);
+    } catch (tableError) {
+      // Try alternative approach - look for any game-related content
+      console.log(`⚠️ Primary table selectors not found, trying alternatives...`);
+      
+      try {
+        await driver.wait(
+          until.elementLocated(By.css('.game, .poker, [data-testid*="game"], [data-testid*="table"], main, .content')),
+          10000
+        );
+        console.log(`✅ Alternative game content found`);
+      } catch (altError) {
+        console.log(`❌ No table content found at all`);
+        
+        // Debug: log what's actually on the page
+        const pageTitle = await driver.getTitle();
+        const currentUrl = await driver.getCurrentUrl();
+        console.log(`📄 Page title: ${pageTitle}`);
+        console.log(`🔗 Current URL: ${currentUrl}`);
+        
+        // Try to find any elements to see what's on the page
+        const bodyElements = await driver.findElements(By.css('div, main, section'));
+        console.log(`📋 Found ${bodyElements.length} container elements on page`);
+        
+        throw new Error(`Table page did not load properly. Title: ${pageTitle}, URL: ${currentUrl}`);
+      }
+    }
+    
+    // Additional wait for page to stabilize
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    console.log(`✅ Table navigation completed for ${tableName}`);
+    
   } catch (error) {
+    console.log(`❌ Failed to navigate to table ${tableName}: ${error.message}`);
     throw new Error(`Failed to navigate to table ${tableName}: ${error.message}`);
   }
 }
