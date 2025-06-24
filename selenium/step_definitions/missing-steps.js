@@ -605,9 +605,7 @@ Given('there are multiple side pots', async function () {
   console.log('💰 Multiple side pots scenario');
 });
 
-Then('side pots should be calculated correctly', async function () {
-  console.log('✅ Side pots calculated correctly');
-});
+// REMOVED: Duplicate step definition - more comprehensive version exists in multi-player-full-game-cycle-steps.js
 
 Then('each side pot should be awarded to the correct winner', async function () {
   console.log('✅ Side pots awarded correctly');

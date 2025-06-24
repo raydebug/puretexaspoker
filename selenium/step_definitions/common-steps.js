@@ -146,41 +146,13 @@ Given('I have a clean poker table {string} with {int} seats', async function (ta
 // Multi-browser test steps
 // Note: "I have browser instances with players seated" is implemented in specialized files
 
-Then('all players can see the initial seating arrangement', async function () {
-  console.log('👀 Verifying all players can see initial seating arrangement...')
-  console.log('✅ All players can see the initial seating arrangement')
-})
-
-Then('all players have their starting chip counts verified', async function () {
-  console.log('💰 Verifying all players have correct starting chip counts...')
-  console.log('✅ All players have their starting chip counts verified')
-})
-
-// Game start verification
-Then('the game should start in all browser instances', async function () {
-  console.log('🎮 Verifying game starts in all browser instances...')
-  console.log('✅ Game should start in all browser instances')
-})
-
-// Blinds verification
-Then('blinds should be posted correctly:', async function (dataTable) {
-  console.log('💰 Verifying blinds are posted correctly...')
-  
-  const blindData = dataTable.hashes()
-  for (const blind of blindData) {
-    console.log(`✅ ${blind.player}: ${blind.blind_type} blind of ${blind.amount} (${blind.remaining_chips} remaining)`)
-  }
-})
-
-Then('all players should receive {int} hole cards each', async function (cardCount) {
-  console.log(`🃏 Verifying all players receive ${cardCount} hole cards each...`)
-  console.log(`✅ All players should receive ${cardCount} hole cards each`)
-})
-
-Then('the pot should show {int} chips', async function (potAmount) {
-  console.log(`💰 Verifying pot shows ${potAmount} chips...`)
-  console.log(`✅ Pot should show ${potAmount} chips`)
-})
+// REMOVED: Duplicate step definitions - more comprehensive versions exist in multi-player-full-game-cycle-steps.js
+// - all players can see the initial seating arrangement
+// - all players have their starting chip counts verified  
+// - the game should start in all browser instances
+// - blinds should be posted correctly:
+// - all players should receive {int} hole cards each
+// - the pot should show {int} chips
 
 // Generic betting round steps for basic tests
 When('the preflop betting round begins', async function () {
