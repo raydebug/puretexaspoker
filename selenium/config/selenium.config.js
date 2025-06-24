@@ -37,6 +37,23 @@ class SeleniumManager {
         chromeOptions.addArguments('--disable-web-security');
         chromeOptions.addArguments('--allow-running-insecure-content');
         chromeOptions.addArguments(`--window-size=${this.config.windowSize.width},${this.config.windowSize.height}`);
+        // Fix localStorage access issues
+        chromeOptions.addArguments('--disable-features=VizDisplayCompositor');
+        chromeOptions.addArguments('--disable-background-timer-throttling');
+        chromeOptions.addArguments('--disable-backgrounding-occluded-windows');
+        chromeOptions.addArguments('--disable-renderer-backgrounding');
+        chromeOptions.addArguments('--disable-ipc-flooding-protection');
+        chromeOptions.addArguments('--allow-file-access-from-files');
+        chromeOptions.addArguments('--disable-features=VizDisplayCompositor');
+        chromeOptions.addArguments('--disable-extensions');
+        chromeOptions.addArguments('--disable-gpu');
+        chromeOptions.addArguments('--remote-debugging-port=0');
+        chromeOptions.addArguments('--force-device-scale-factor=1');
+        chromeOptions.addArguments('--disable-default-apps');
+        chromeOptions.addArguments('--disable-background-networking');
+        // Enable localStorage for file:// URLs
+        chromeOptions.addArguments('--enable-local-file-accesses');
+        chromeOptions.addArguments('--allow-file-access');
         builder.forBrowser('chrome').setChromeOptions(chromeOptions);
         break;
 

@@ -36,6 +36,11 @@ async function createBrowserInstance(instanceId, headless = process.env.HEADLESS
   chromeOptions.addArguments('--remote-debugging-port=0');
   chromeOptions.addArguments('--force-device-scale-factor=1');
   chromeOptions.addArguments('--disable-default-apps');
+  chromeOptions.addArguments('--allow-file-access-from-files');
+  chromeOptions.addArguments('--enable-local-file-accesses');
+  chromeOptions.addArguments('--allow-file-access');
+  chromeOptions.addArguments('--disable-background-networking');
+  chromeOptions.addArguments('--user-data-dir=/tmp/chrome_test_profile_' + instanceId);
   
   // Clean up existing instance if it exists
   if (browserInstances[instanceId]) {
