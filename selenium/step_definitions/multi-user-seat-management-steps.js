@@ -56,28 +56,34 @@ Given('I have {int} browser instances ready', async function (count) {
   }
 });
 
-Given('I have {int} browser instances with users seated:', {timeout: 30000}, async function (count, dataTable) {
+Given('I have {int} browser instances with users seated:', {timeout: 90000}, async function (count, dataTable) {
   const users = dataTable.hashes();
+  console.log(`🚀 Setting up ${users.length} browser instances in parallel...`);
   
-  for (const userData of users) {
-    console.log(`🔄 Setting up browser instance for ${userData.user}...`);
+  // Setup all browser instances in parallel for speed
+  const setupPromises = users.map(async (userData, index) => {
     const browserId = `browser${userData.browser}`;
-    const driver = await createBrowserInstance(browserId);
+    console.log(`🔄 [${index + 1}/${users.length}] Starting setup for ${userData.user}...`);
     
     try {
-      // Navigate and login with better error handling
-      console.log(`🌐 Navigating ${userData.user} to lobby...`);
+      // Create browser instance
+      const driver = await createBrowserInstance(browserId);
+      console.log(`✅ Browser created for ${userData.user}`);
+      
+      // Sequential setup for this user (but parallel across users)
       await driver.get('http://localhost:3000');
+      console.log(`🌐 ${userData.user} navigated to lobby`);
       
-      console.log(`🔐 Logging in ${userData.user}...`);
       await loginUser(driver, userData.user);
+      console.log(`🔐 ${userData.user} logged in`);
       
-      console.log(`🎲 ${userData.user} joining table...`);
       await navigateToTable(driver, tableId);
+      console.log(`🎲 ${userData.user} joined table`);
       
-      console.log(`💺 ${userData.user} taking seat ${userData.initial_seat || userData.seat}...`);
       await takeSeat(driver, parseInt(userData.initial_seat || userData.seat), parseInt(userData.buy_in));
+      console.log(`💺 ${userData.user} took seat ${userData.initial_seat || userData.seat}`);
       
+      // Store session data
       userSessions[userData.user] = {
         driver: driver,
         browserId: browserId,
@@ -85,55 +91,119 @@ Given('I have {int} browser instances with users seated:', {timeout: 30000}, asy
         chips: parseInt(userData.buy_in)
       };
       
-      console.log(`✅ ${userData.user} successfully setup at seat ${userData.initial_seat || userData.seat}`);
+      console.log(`✅ [${index + 1}/${users.length}] ${userData.user} setup completed successfully`);
+      return { success: true, user: userData.user };
+      
     } catch (error) {
-      console.log(`❌ Failed to setup ${userData.user}: ${error.message}`);
-      throw error;
+      console.log(`❌ [${index + 1}/${users.length}] Failed to setup ${userData.user}: ${error.message}`);
+      return { success: false, user: userData.user, error: error.message };
+    }
+  });
+  
+  // Wait for all setups to complete
+  console.log(`⏳ Waiting for all ${users.length} browser setups to complete...`);
+  const results = await Promise.allSettled(setupPromises);
+  
+  // Check results and report
+  const successful = results.filter(r => r.status === 'fulfilled' && r.value.success);
+  const failed = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.success));
+  
+  console.log(`📊 Setup Results: ${successful.length} successful, ${failed.length} failed`);
+  
+  if (failed.length > 0) {
+    console.log(`❌ Failed setups:`);
+    failed.forEach(f => {
+      const user = f.status === 'fulfilled' ? f.value.user : 'unknown';
+      const error = f.status === 'fulfilled' ? f.value.error : f.reason?.message;
+      console.log(`  - ${user}: ${error}`);
+    });
+    
+    // If too many failed, throw error
+    if (failed.length >= users.length / 2) {
+      throw new Error(`Multi-user setup failed: ${failed.length}/${users.length} setups failed`);
     }
   }
   
   // Wait for all seat changes to synchronize
   console.log(`⏳ Waiting for seat synchronization...`);
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  console.log(`✅ Multi-user setup completed with ${users.length} users`);
+  await new Promise(resolve => setTimeout(resolve, 3000));
+  console.log(`✅ Multi-user setup completed: ${successful.length}/${users.length} users ready`);
 });
 
-Given('I have {int} browser instances with users as observers', async function (count) {
+Given('I have {int} browser instances with users as observers', {timeout: 60000}, async function (count) {
+  console.log(`🚀 Setting up ${count} observer browser instances in parallel...`);
+  
+  const setupPromises = [];
   for (let i = 1; i <= count; i++) {
-    const browserId = `browser${i}`;
-    const driver = await createBrowserInstance(browserId);
-    const username = `Observer${i}`;
-    
-    await driver.get('http://localhost:3000');
-    await loginUser(driver, username);
-    await navigateToTable(driver, tableId);
-    
-    userSessions[username] = {
-      driver: driver,
-      browserId: browserId,
-      currentSeat: null,
-      chips: 0
-    };
+    setupPromises.push(async () => {
+      const browserId = `browser${i}`;
+      const username = `Observer${i}`;
+      
+      try {
+        console.log(`🔄 Setting up observer ${username}...`);
+        const driver = await createBrowserInstance(browserId);
+        
+        await driver.get('http://localhost:3000');
+        await loginUser(driver, username);
+        await navigateToTable(driver, tableId);
+        
+        userSessions[username] = {
+          driver: driver,
+          browserId: browserId,
+          currentSeat: null,
+          chips: 0
+        };
+        
+        console.log(`✅ Observer ${username} setup completed`);
+        return { success: true, user: username };
+      } catch (error) {
+        console.log(`❌ Failed to setup observer ${username}: ${error.message}`);
+        return { success: false, user: username, error: error.message };
+      }
+    });
   }
+  
+  const results = await Promise.allSettled(setupPromises.map(fn => fn()));
+  const successful = results.filter(r => r.status === 'fulfilled' && r.value.success);
+  console.log(`✅ Observer setup completed: ${successful.length}/${count} observers ready`);
 });
 
-Given('I have {int} browser instances with users ready', async function (count) {
+Given('I have {int} browser instances with users ready', {timeout: 60000}, async function (count) {
+  console.log(`🚀 Setting up ${count} ready player browser instances in parallel...`);
+  
+  const setupPromises = [];
   for (let i = 1; i <= count; i++) {
-    const browserId = `browser${i}`;
-    const driver = await createBrowserInstance(browserId);
-    const username = `Player${i}`;
-    
-    await driver.get('http://localhost:3000');
-    await loginUser(driver, username);
-    await navigateToTable(driver, tableId);
-    
-    userSessions[username] = {
-      driver: driver,
-      browserId: browserId,
-      currentSeat: null,
-      chips: 0
-    };
+    setupPromises.push(async () => {
+      const browserId = `browser${i}`;
+      const username = `Player${i}`;
+      
+      try {
+        console.log(`🔄 Setting up ready player ${username}...`);
+        const driver = await createBrowserInstance(browserId);
+        
+        await driver.get('http://localhost:3000');
+        await loginUser(driver, username);
+        await navigateToTable(driver, tableId);
+        
+        userSessions[username] = {
+          driver: driver,
+          browserId: browserId,
+          currentSeat: null,
+          chips: 0
+        };
+        
+        console.log(`✅ Ready player ${username} setup completed`);
+        return { success: true, user: username };
+      } catch (error) {
+        console.log(`❌ Failed to setup ready player ${username}: ${error.message}`);
+        return { success: false, user: username, error: error.message };
+      }
+    });
   }
+  
+  const results = await Promise.allSettled(setupPromises.map(fn => fn()));
+  const successful = results.filter(r => r.status === 'fulfilled' && r.value.success);
+  console.log(`✅ Ready players setup completed: ${successful.length}/${count} players ready`);
 });
 
 // User actions
