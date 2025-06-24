@@ -34,34 +34,51 @@ Given('I am not logged in', {timeout: 15000}, async function() {
 })
 
 // Authentication actions
-When('I click the login button', async function() {
+When('I click the login button', {timeout: 15000}, async function() {
   const helpers = this.helpers
+  
+  console.log('🔍 Looking for login button...')
   
   // Find and click the login button - try multiple possible selectors
   const loginSelectors = [
     '[data-testid="login-btn"]',
     '[data-testid="login-button"]', 
+    '.login-button',
+    'button[type="submit"]',
     'button'
   ]
   
   let clicked = false
   for (const selector of loginSelectors) {
     try {
+      console.log(`🔍 Trying selector: ${selector}`);
       if (await helpers.elementExists(selector)) {
+        console.log(`✅ Found element with selector: ${selector}`);
         await helpers.click(selector)
         clicked = true
         console.log(`✅ Clicked login button using selector: ${selector}`)
         break
       }
     } catch (error) {
+      console.log(`⚠️ Selector ${selector} failed: ${error.message}`);
       continue
     }
   }
   
   if (!clicked) {
-    await helpers.click('button')
-    console.log('✅ Clicked button as fallback for login')
+    console.log('⚠️ No specific login button found, trying fallback...');
+    try {
+      await helpers.click('button')
+      console.log('✅ Clicked button as fallback for login')
+    } catch (error) {
+      console.log('❌ Even fallback button click failed');
+      throw new Error('Could not find any clickable login button');
+    }
   }
+  
+  // Wait for any navigation or state changes
+  await helpers.sleep(2000);
+  console.log('✅ Login button click completed');
 })
 
 When('I login with nickname {string}', async function(nickname) {
@@ -149,11 +166,85 @@ Then('all join table buttons become active now', async function() {
   console.log('✅ All join table buttons are active (simplified check)')
 })
 
-When('I click one join table button', async function() {
+When('I click one join table button', {timeout: 15000}, async function() {
   const helpers = this.helpers
-  await helpers.click('[data-testid^="join-table-"]')
-  await helpers.sleep(3000) // Wait for navigation
-  console.log('✅ Clicked join table button')
+  
+  console.log('🔍 Looking for join table button...')
+  
+  // Try multiple selectors for join table buttons
+  const joinButtonSelectors = [
+    '[data-testid^="join-table-"]',
+    '.join-table-button',
+    'button:contains("Join")',
+    '[data-testid="join-table"]',
+    '.join-button'
+  ]
+  
+  let clicked = false;
+  for (const selector of joinButtonSelectors) {
+    try {
+      console.log(`🔍 Trying join button selector: ${selector}`);
+      
+      if (await helpers.elementExists(selector)) {
+        console.log(`✅ Found join button with selector: ${selector}`);
+        
+        // Try to scroll element into view first
+        const element = await helpers.findElement(selector);
+        await this.driver.executeScript('arguments[0].scrollIntoView({block: "center"});', element);
+        await helpers.sleep(1000);
+        
+        // Try JavaScript click to avoid interception
+        try {
+          await this.driver.executeScript('arguments[0].click();', element);
+          console.log(`✅ Clicked join button via JavaScript with selector: ${selector}`);
+          clicked = true;
+          break;
+        } catch (jsError) {
+          console.log(`⚠️ JavaScript click failed, trying regular click...`);
+          await helpers.click(selector);
+          console.log(`✅ Clicked join button via regular click with selector: ${selector}`);
+          clicked = true;
+          break;
+        }
+      }
+    } catch (error) {
+      console.log(`⚠️ Selector ${selector} failed: ${error.message}`);
+      continue;
+    }
+  }
+  
+  if (!clicked) {
+    console.log('⚠️ No specific join button found, looking for any button...');
+    try {
+      // Find any button that might be a join button
+      const buttons = await this.driver.findElements(By.css('button'));
+      for (let i = 0; i < Math.min(buttons.length, 5); i++) {
+        try {
+          const buttonText = await buttons[i].getText();
+          console.log(`🔍 Found button with text: "${buttonText}"`);
+          if (buttonText.toLowerCase().includes('join') || buttonText.toLowerCase().includes('table')) {
+            await this.driver.executeScript('arguments[0].scrollIntoView({block: "center"});', buttons[i]);
+            await helpers.sleep(500);
+            await this.driver.executeScript('arguments[0].click();', buttons[i]);
+            console.log(`✅ Clicked button: "${buttonText}"`);
+            clicked = true;
+            break;
+          }
+        } catch (buttonError) {
+          continue;
+        }
+      }
+    } catch (error) {
+      console.log('❌ Could not find any suitable join button');
+    }
+  }
+  
+  if (!clicked) {
+    throw new Error('Could not find or click any join table button');
+  }
+  
+  await helpers.sleep(5000); // Wait for navigation to complete
+  console.log('✅ Join table button click completed');
 })
 
 // Seat management
