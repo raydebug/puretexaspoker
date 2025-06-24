@@ -313,81 +313,94 @@ Given('I have {int} browser instances with players seated:', {timeout: 180000}, 
       
       await delay(1500);
       
-      // Handle any welcome popups
+      // Navigate to the lobby page
+      await driver.get('http://localhost:3000');
+      await delay(2000);
+      
+      // Check if user is already logged in
       try {
-        const closeButtons = await driver.findElements(By.css('button[aria-label="Close"], .close-button, [data-testid="close-welcome"]'));
-        for (const button of closeButtons) {
+        const userInfo = await driver.wait(
+          until.elementLocated(By.css('[data-testid="user-name"]')),
+          3000
+        );
+        const currentUser = await userInfo.getText();
+        if (currentUser.includes(playerName)) {
+          console.log(`✅ ${playerName} is already logged in`);
+        } else {
+          console.log(`🔍 Different user logged in, proceeding with login flow...`);
+          throw new Error('Need to login');
+        }
+      } catch (error) {
+        console.log(`🔍 User not logged in, proceeding with login flow...`);
+        
+        // Step 1: Click the "Login" button to open the modal
+        console.log(`🎯 Looking for login button to open modal for ${playerName}...`);
+        let openModalButton;
+        try {
+          openModalButton = await driver.wait(
+            until.elementLocated(By.css('[data-testid="login-button"]')),
+            8000
+          );
+          console.log(`✅ Found modal trigger button for ${playerName}`);
+        } catch (error) {
+          // Try alternative selectors
           try {
-            await button.click();
-            await delay(300);
-          } catch (e) {
-            // Ignore if can't click close button
+            openModalButton = await driver.wait(
+              until.elementLocated(By.xpath('//button[contains(text(), "Login")]')),
+              5000
+            );
+            console.log(`✅ Found login button via text for ${playerName}`);
+          } catch (altError) {
+            console.log(`❌ Could not find login button for ${playerName}`);
+            throw new Error(`Login button not found: ${error.message}`);
           }
         }
-      } catch (e) {
-        // No close buttons found, continue
-      }
-      
-      // Wait for and click login button
-      await driver.wait(until.elementLocated(By.css('[data-testid="login-button"]')), 15000);
-      const loginButton = await driver.findElement(By.css('[data-testid="login-button"]'));
-      await driver.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", loginButton);
-      await delay(500);
-      
-      try {
-        await driver.wait(until.elementIsEnabled(loginButton), 5000);
-        await loginButton.click();
-      } catch (clickError) {
-        if (clickError.message.includes('click intercepted') || clickError.message.includes('not clickable')) {
-          console.log('⚠️ Normal click intercepted, trying JS click...');
-          await driver.executeScript("arguments[0].click();", loginButton);
-        } else {
-          throw clickError;
-        }
-      }
-      
-      // Set nickname - **CRITICAL DEBUGGING**: Verify unique nicknames  
-      console.log(`🔧 SELENIUM: Setting nickname to "${playerName}" for browser ${browserIndex}`);
-      
-      await driver.wait(until.elementLocated(By.css('[data-testid="nickname-input"]')), 10000);
-      const nicknameInput = await driver.findElement(By.css('[data-testid="nickname-input"]'));
-      
-      // Clear any existing value
-      await nicknameInput.clear();
-      await delay(200);
-      
-      // Type the unique player name
-      await nicknameInput.sendKeys(playerName);
-      await delay(500);
-      
-      // Verify the value was actually set
-      const actualNickname = await nicknameInput.getAttribute('value');
-      console.log(`🔍 SELENIUM: Nickname input value set to: "${actualNickname}" (expected: "${playerName}")`);
-      
-      if (actualNickname !== playerName) {
-        console.log(`⚠️ SELENIUM: Nickname mismatch! Trying to set again...`);
+        
+        await openModalButton.click();
+        console.log(`🔓 Clicked login button to open modal for ${playerName}`);
+        
+        // Step 2: Wait for modal to appear and fill nickname input
+        console.log(`⏳ Waiting for login modal to appear for ${playerName}...`);
+        const nicknameInput = await driver.wait(
+          until.elementLocated(By.css('[data-testid="nickname-input"]')),
+          8000
+        );
+        console.log(`✅ Found nickname input for ${playerName}`);
+        
+        // Clear and enter username
         await nicknameInput.clear();
-        await delay(200);
         await nicknameInput.sendKeys(playerName);
-        await delay(500);
-        const retryNickname = await nicknameInput.getAttribute('value');
-        console.log(`🔍 SELENIUM: Retry nickname value: "${retryNickname}"`);
-      }
-      
-      const setNicknameButton = await driver.findElement(By.css('[data-testid="join-button"]'));
-      await driver.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", setNicknameButton);
-      await delay(300);
-      
-      try {
-        await setNicknameButton.click();
-      } catch (clickError) {
-        if (clickError.message.includes('click intercepted') || clickError.message.includes('not clickable')) {
-          await driver.executeScript("arguments[0].click();", setNicknameButton);
+        console.log(`📝 Entered username: ${playerName}`);
+        
+        // Step 3: Click the "Start Playing" button to submit
+        const submitButton = await driver.wait(
+          until.elementLocated(By.css('[data-testid="join-button"]')),
+          5000
+        );
+        console.log(`🎯 Found submit button for ${playerName}`);
+        
+        await submitButton.click();
+        console.log(`✅ Clicked submit button for ${playerName}`);
+        
+        // Step 4: Wait for login to complete and modal to close
+        console.log(`⏳ Waiting for login to complete for ${playerName}...`);
+        await driver.wait(
+          until.elementLocated(By.css('[data-testid="user-name"]')),
+          10000
+        );
+        
+        // Verify the user is now logged in
+        const userInfo = await driver.findElement(By.css('[data-testid="user-name"]'));
+        const loggedInUser = await userInfo.getText();
+        if (loggedInUser.includes(playerName)) {
+          console.log(`✅ Login successful for ${playerName}`);
         } else {
-          throw clickError;
+          console.log(`⚠️ Login may not have completed correctly for ${playerName} (expected: ${playerName}, got: ${loggedInUser})`);
         }
+        
+        // Wait a bit more for the system to stabilize
+        await delay(1000);
       }
-      await delay(1500);
       
       // **CRITICAL DEBUGGING**: Verify nickname is stored correctly in browser (with error handling)
       let storedNickname = 'NOT_ACCESSIBLE';

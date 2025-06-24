@@ -135,11 +135,7 @@ Given('the frontend is running on {string}', async function (frontendUrl) {
   }
 })
 
-// Error handling step (generic implementation)
-Then('the action should be rejected with {string}', async function (expectedError) {
-  console.log(`🚫 Verifying action is rejected with: ${expectedError}...`)
-  console.log(`✅ Action should be rejected with: ${expectedError}`)
-})
+// REMOVED: Duplicate step definition - more comprehensive version exists in multi-user-seat-management-steps.js
 
 // Additional common steps for multi-user tests
 Given('I have a clean poker table {string} with {int} seats', async function (tableName, seatCount) {
