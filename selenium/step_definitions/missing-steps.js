@@ -224,33 +224,7 @@ Given('all users are viewing table {string}', async function (tableName) {
   console.log(`✅ All users are viewing table ${tableName}`);
 });
 
-Then('all browser instances should immediately show:', async function (dataTable) {
-  console.log('🔍 Verifying seat arrangements across all browser instances...');
-  
-  const expectedSeats = dataTable.hashes();
-  
-  for (const seatInfo of expectedSeats) {
-    const { seat, player, chips, status } = seatInfo;
-    console.log(`✅ Seat ${seat}: ${player || 'Empty'} (${status})`);
-  }
-  
-  await this.helpers.sleep(2000);
-  console.log('✅ Seat arrangements verified across all browsers');
-});
-
-Then('all browser instances should show:', async function (dataTable) {
-  console.log('🔍 Verifying game state across all browser instances...');
-  
-  const expectedStates = dataTable.hashes();
-  
-  for (const stateInfo of expectedStates) {
-    const { phase, status } = stateInfo;
-    console.log(`✅ Game phase: ${phase}, Status: ${status}`);
-  }
-  
-  await this.helpers.sleep(2000);
-  console.log('✅ Game states verified across all browsers');
-});
+// REMOVED - these steps exist in multi-user-seat-management-steps.js
 
 // Card order transparency step definitions
 When('{string} attempts to return to seat {int} \\(previously occupied by Player2)', async function (playerName, seat) {
@@ -295,20 +269,7 @@ Then('the seat change should be successful', async function () {
 
 // REMOVED - this step exists in multi-user-seat-management-steps.js
 
-// Additional missing step definitions
-Then('seat {int} should be available in all browser instances', async function (seat) {
-  console.log(`✅ Seat ${seat} is available in all browser instances`);
-});
-
-Then('the final arrangement should show:', async function (dataTable) {
-  console.log('🔍 Verifying final seating arrangement...');
-  
-  const finalSeats = dataTable.hashes();
-  for (const seatInfo of finalSeats) {
-    const { seat, player } = seatInfo;
-    console.log(`✅ Final: Seat ${seat} -> ${player}`);
-  }
-});
+// REMOVED DUPLICATE STEP DEFINITIONS (exist in other files)
 
 // Community cards and phase verification
 Then('all browser instances should show {int} community cards', async function (cardCount) {
