@@ -299,9 +299,15 @@ Given('I have {int} browser instances with players seated:', {timeout: 180000}, 
       await driver.executeScript(`
         window.SELENIUM_TEST = true;
         window.Cypress = undefined;
-        localStorage.removeItem('nickname');
-        localStorage.removeItem('playerName');
-        localStorage.removeItem('user');
+        try {
+          if (window.localStorage) {
+            localStorage.removeItem('nickname');
+            localStorage.removeItem('playerName');
+            localStorage.removeItem('user');
+          }
+        } catch (e) {
+          console.log('🚀 SELENIUM: localStorage access denied, but continuing with test setup');
+        }
         console.log('🚀 SELENIUM: Test environment detection disabled for unique nicknames');
       `);
       
@@ -383,11 +389,22 @@ Given('I have {int} browser instances with players seated:', {timeout: 180000}, 
       }
       await delay(1500);
       
-      // **CRITICAL DEBUGGING**: Verify nickname is stored correctly in browser
-      const storedNickname = await driver.executeScript(`
-        return localStorage.getItem('nickname') || document.querySelector('[data-testid="nickname-input"]')?.value || 'NOT_FOUND';
-      `);
-      console.log(`🔍 SELENIUM: Stored nickname in browser: "${storedNickname}"`);
+      // **CRITICAL DEBUGGING**: Verify nickname is stored correctly in browser (with error handling)
+      let storedNickname = 'NOT_ACCESSIBLE';
+      try {
+        storedNickname = await driver.executeScript(`
+          try {
+            return window.localStorage ? window.localStorage.getItem('nickname') : 'localStorage_not_available';
+          } catch (e) {
+            console.log('localStorage access denied: ' + e.message);
+            return 'localStorage_access_denied';
+          }
+        `);
+        console.log(`🔍 SELENIUM: Stored nickname in browser: "${storedNickname}"`);
+      } catch (error) {
+        console.log(`🔍 SELENIUM: Could not access localStorage: ${error.message}`);
+        // Continue without localStorage access - not critical for core functionality
+      }
       
       // CRITICAL FIX: Follow proper user flow instead of direct navigation
       console.log(`🔧 SELENIUM: Following proper user flow for ${playerName}...`);
