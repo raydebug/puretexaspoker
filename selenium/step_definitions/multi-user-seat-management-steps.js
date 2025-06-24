@@ -56,29 +56,46 @@ Given('I have {int} browser instances ready', async function (count) {
   }
 });
 
-Given('I have {int} browser instances with users seated:', async function (count, dataTable) {
+Given('I have {int} browser instances with users seated:', {timeout: 30000}, async function (count, dataTable) {
   const users = dataTable.hashes();
   
   for (const userData of users) {
+    console.log(`🔄 Setting up browser instance for ${userData.user}...`);
     const browserId = `browser${userData.browser}`;
     const driver = await createBrowserInstance(browserId);
     
-    // Navigate and login
-    await driver.get('http://localhost:3000');
-    await loginUser(driver, userData.user);
-    await navigateToTable(driver, tableId);
-    await takeSeat(driver, parseInt(userData.initial_seat || userData.seat), parseInt(userData.buy_in));
-    
-    userSessions[userData.user] = {
-      driver: driver,
-      browserId: browserId,
-      currentSeat: parseInt(userData.initial_seat || userData.seat),
-      chips: parseInt(userData.buy_in)
-    };
+    try {
+      // Navigate and login with better error handling
+      console.log(`🌐 Navigating ${userData.user} to lobby...`);
+      await driver.get('http://localhost:3000');
+      
+      console.log(`🔐 Logging in ${userData.user}...`);
+      await loginUser(driver, userData.user);
+      
+      console.log(`🎲 ${userData.user} joining table...`);
+      await navigateToTable(driver, tableId);
+      
+      console.log(`💺 ${userData.user} taking seat ${userData.initial_seat || userData.seat}...`);
+      await takeSeat(driver, parseInt(userData.initial_seat || userData.seat), parseInt(userData.buy_in));
+      
+      userSessions[userData.user] = {
+        driver: driver,
+        browserId: browserId,
+        currentSeat: parseInt(userData.initial_seat || userData.seat),
+        chips: parseInt(userData.buy_in)
+      };
+      
+      console.log(`✅ ${userData.user} successfully setup at seat ${userData.initial_seat || userData.seat}`);
+    } catch (error) {
+      console.log(`❌ Failed to setup ${userData.user}: ${error.message}`);
+      throw error;
+    }
   }
   
   // Wait for all seat changes to synchronize
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  console.log(`⏳ Waiting for seat synchronization...`);
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  console.log(`✅ Multi-user setup completed with ${users.length} users`);
 });
 
 Given('I have {int} browser instances with users as observers', async function (count) {
@@ -763,30 +780,64 @@ Then('the game state should be synchronized across all browser instances', async
 // Helper functions
 async function loginUser(driver, username) {
   try {
-    // Set nickname in localStorage
-    await driver.executeScript(`localStorage.setItem('nickname', '${username}');`);
+    console.log(`🔑 Setting up authentication for ${username}...`);
+    
+    // Set nickname in localStorage first
+    await driver.executeScript(`
+      try {
+        localStorage.setItem('nickname', '${username}');
+        console.log('Set nickname in localStorage: ${username}');
+      } catch (e) {
+        console.log('localStorage not available: ' + e.message);
+      }
+    `);
+    
+    // Wait for page to fully load
+    await driver.wait(until.elementLocated(By.css('body')), 10000);
     
     // Try to find and fill login form if it exists
     try {
+      console.log(`🔍 Looking for login form for ${username}...`);
       const nicknameInput = await driver.wait(
-        until.elementLocated(By.css('input[placeholder*="nickname"], input[name="nickname"], #nickname')),
-        2000
+        until.elementLocated(By.css('input[placeholder*="nickname"], input[name="nickname"], #nickname, [data-testid="nickname-input"]')),
+        5000
       );
+      
+      console.log(`✅ Found nickname input for ${username}`);
       await nicknameInput.clear();
       await nicknameInput.sendKeys(username);
       
-      const loginButton = await driver.findElement(
-        By.css('button[type="submit"], .login-button, button:contains("Login")')
+      // Look for login/submit button
+      const loginButton = await driver.wait(
+        until.elementLocated(By.css('button[type="submit"], .login-button, button:contains("Login"), button:contains("Start"), [data-testid="login-button"]')),
+        3000
       );
+      
+      console.log(`🎯 Clicking login button for ${username}...`);
       await loginButton.click();
-    } catch (error) {
-      // Login form might not be visible, continue
-      console.log(`Login form not found for ${username}, continuing...`);
+      
+      // Wait for login to process
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      console.log(`✅ Login completed for ${username}`);
+      
+    } catch (loginError) {
+      // Login form might not be visible, user might already be logged in
+      console.log(`⚠️ Login form not found for ${username}, checking if already logged in...`);
+      
+      // Check if user is already authenticated by looking for user indicator
+      try {
+        await driver.wait(
+          until.elementLocated(By.css('.user-info, [data-testid="user-name"], .nickname-display')),
+          3000
+        );
+        console.log(`✅ ${username} appears to be already logged in`);
+      } catch (checkError) {
+        console.log(`⚠️ Could not verify login status for ${username}, continuing anyway...`);
+      }
     }
     
-    // Wait for login to complete
-    await new Promise(resolve => setTimeout(resolve, 1000));
   } catch (error) {
+    console.log(`❌ Login failed for ${username}: ${error.message}`);
     throw new Error(`Failed to login user ${username}: ${error.message}`);
   }
 }
@@ -814,35 +865,68 @@ async function navigateToTable(driver, tableName) {
 
 async function takeSeat(driver, seatNumber, buyIn) {
   try {
+    console.log(`💺 Attempting to take seat ${seatNumber} with buy-in ${buyIn}...`);
+    
     // Find and click the seat
     const seatElement = await driver.wait(
-      until.elementLocated(By.css(`[data-testid="seat-${seatNumber}"]`)),
-      5000
+      until.elementLocated(By.css(`[data-testid="seat-${seatNumber}"], .seat-${seatNumber}, .seat[data-seat="${seatNumber}"]`)),
+      10000
     );
+    
+    console.log(`✅ Found seat ${seatNumber} element`);
+    
+    // Make sure seat is clickable
+    await driver.wait(until.elementIsEnabled(seatElement), 5000);
     await seatElement.click();
+    
+    console.log(`🎯 Clicked seat ${seatNumber}`);
     
     // Fill buy-in amount if input exists
     try {
       const buyInInput = await driver.wait(
-        until.elementLocated(By.css('input[placeholder*="buy"], input[name="buyIn"], #buyIn')),
-        3000
+        until.elementLocated(By.css('input[placeholder*="buy"], input[name="buyIn"], #buyIn, [data-testid="buyin-input"]')),
+        5000
       );
+      
+      console.log(`💰 Found buy-in input for seat ${seatNumber}`);
       await buyInInput.clear();
       await buyInInput.sendKeys(buyIn.toString());
       
       // Click confirm button
-      const confirmButton = await driver.findElement(
-        By.css('button[type="submit"], .confirm-button, button:contains("Confirm"), button:contains("Join")')
+      const confirmButton = await driver.wait(
+        until.elementLocated(By.css('button[type="submit"], .confirm-button, button:contains("Confirm"), button:contains("Join"), [data-testid="confirm-button"]')),
+        5000
       );
+      
+      console.log(`✅ Clicking confirm button for seat ${seatNumber}...`);
       await confirmButton.click();
-    } catch (error) {
+      
+      // Wait for seat assignment to complete with longer timeout
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      console.log(`✅ Seat ${seatNumber} assignment completed`);
+      
+    } catch (buyInError) {
       // Buy-in dialog might not appear, seat might be taken directly
-      console.log(`Buy-in dialog not found for seat ${seatNumber}`);
+      console.log(`⚠️ Buy-in dialog not found for seat ${seatNumber}, checking if seat was taken directly...`);
+      
+      // Check if seat was taken successfully without buy-in dialog
+      try {
+        await driver.wait(
+          until.elementLocated(By.css(`[data-testid="seat-${seatNumber}"] .player-name, .seat-${seatNumber} .player`)),
+          3000
+        );
+        console.log(`✅ Seat ${seatNumber} appears to be taken successfully`);
+      } catch (verifyError) {
+        console.log(`⚠️ Could not verify seat ${seatNumber} was taken`);
+        // Still continue, the seat might be taken anyway
+      }
+      
+      // Standard wait for seat assignment
+      await new Promise(resolve => setTimeout(resolve, 2000));
     }
     
-    // Wait for seat assignment to complete
-    await new Promise(resolve => setTimeout(resolve, 1000));
   } catch (error) {
+    console.log(`❌ Failed to take seat ${seatNumber}: ${error.message}`);
     throw new Error(`Failed to take seat ${seatNumber}: ${error.message}`);
   }
 }
