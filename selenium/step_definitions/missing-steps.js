@@ -716,9 +716,7 @@ Then('all browser instances should show:', async function (dataTable) {
   }
 });
 
-When('all users are viewing table {string}', async function (tableName) {
-  console.log(`✅ All users viewing table ${tableName} (simplified)`);
-});
+// REMOVED: Duplicate step definition - exists as Given at line 222
 
 When('{string} attempts to return to seat {int} \\(previously occupied by {string})', async function (username1, seatNumber, username2) {
   console.log(`✅ ${username1} attempting to return to seat ${seatNumber} (simplified)`);
@@ -728,6 +726,4 @@ When('{string} attempts to take seat {int} \\(occupied by {string})', async func
   console.log(`✅ ${username1} attempting to take occupied seat ${seatNumber} (simplified)`);
 });
 
-When('{string} attempts to {string} out of turn', async function (playerName, action) {
-  console.log(`✅ ${playerName} attempts ${action} out of turn (simplified)`);
-}); 
+// REMOVED: Duplicate step definition - exists in turn-order-enforcement-steps.js 

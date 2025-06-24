@@ -852,62 +852,107 @@ async function loginUser(driver, username) {
   try {
     console.log(`🔑 Setting up authentication for ${username}...`);
     
-    // Set nickname in localStorage first
-    await driver.executeScript(`
-      try {
-        localStorage.setItem('nickname', '${username}');
-        console.log('Set nickname in localStorage: ${username}');
-      } catch (e) {
-        console.log('localStorage not available: ' + e.message);
-      }
-    `);
-    
     // Wait for page to fully load
     await driver.wait(until.elementLocated(By.css('body')), 10000);
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Try to find and fill login form if it exists
+    // Check if user is already logged in by looking for user info
     try {
-      console.log(`🔍 Looking for login form for ${username}...`);
-      const nicknameInput = await driver.wait(
-        until.elementLocated(By.css('input[placeholder*="nickname"], input[name="nickname"], #nickname, [data-testid="nickname-input"]')),
-        5000
-      );
-      
-      console.log(`✅ Found nickname input for ${username}`);
-      await nicknameInput.clear();
-      await nicknameInput.sendKeys(username);
-      
-      // Look for login/submit button
-      const loginButton = await driver.wait(
-        until.elementLocated(By.css('button[type="submit"], .login-button, button:contains("Login"), button:contains("Start"), [data-testid="login-button"]')),
+      const userInfo = await driver.wait(
+        until.elementLocated(By.css('[data-testid="user-name"]')),
         3000
       );
-      
-      console.log(`🎯 Clicking login button for ${username}...`);
-      await loginButton.click();
-      
-      // Wait for login to process
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      console.log(`✅ Login completed for ${username}`);
-      
-    } catch (loginError) {
-      // Login form might not be visible, user might already be logged in
-      console.log(`⚠️ Login form not found for ${username}, checking if already logged in...`);
-      
-      // Check if user is already authenticated by looking for user indicator
+      const currentUser = await userInfo.getText();
+      if (currentUser.includes(username)) {
+        console.log(`✅ ${username} is already logged in`);
+        return;
+      }
+    } catch (error) {
+      console.log(`🔍 User not logged in, proceeding with login flow...`);
+    }
+    
+    // Step 1: Click the "Login" button to open the modal
+    console.log(`🎯 Looking for login button to open modal for ${username}...`);
+    let openModalButton;
+    try {
+      openModalButton = await driver.wait(
+        until.elementLocated(By.css('[data-testid="login-button"]')),
+        8000
+      );
+      console.log(`✅ Found modal trigger button for ${username}`);
+    } catch (error) {
+      // Try alternative selectors
       try {
-        await driver.wait(
-          until.elementLocated(By.css('.user-info, [data-testid="user-name"], .nickname-display')),
-          3000
+        openModalButton = await driver.wait(
+          until.elementLocated(By.xpath('//button[contains(text(), "Login")]')),
+          5000
         );
-        console.log(`✅ ${username} appears to be already logged in`);
-      } catch (checkError) {
-        console.log(`⚠️ Could not verify login status for ${username}, continuing anyway...`);
+        console.log(`✅ Found login button via text for ${username}`);
+      } catch (altError) {
+        console.log(`❌ Could not find login button for ${username}`);
+        throw new Error(`Login button not found: ${error.message}`);
       }
     }
     
+    await openModalButton.click();
+    console.log(`🔓 Clicked login button to open modal for ${username}`);
+    
+    // Step 2: Wait for modal to appear and fill nickname input
+    console.log(`⏳ Waiting for login modal to appear for ${username}...`);
+    const nicknameInput = await driver.wait(
+      until.elementLocated(By.css('[data-testid="nickname-input"]')),
+      8000
+    );
+    console.log(`✅ Found nickname input for ${username}`);
+    
+    // Clear and enter username
+    await nicknameInput.clear();
+    await nicknameInput.sendKeys(username);
+    console.log(`📝 Entered username: ${username}`);
+    
+    // Step 3: Click the "Start Playing" button to submit
+    const submitButton = await driver.wait(
+      until.elementLocated(By.css('[data-testid="join-button"]')),
+      5000
+    );
+    console.log(`🎯 Found submit button for ${username}`);
+    
+    await submitButton.click();
+    console.log(`✅ Clicked submit button for ${username}`);
+    
+    // Step 4: Wait for login to complete and modal to close
+    console.log(`⏳ Waiting for login to complete for ${username}...`);
+    await driver.wait(
+      until.elementLocated(By.css('[data-testid="user-name"]')),
+      10000
+    );
+    
+    // Verify the user is now logged in
+    const userInfo = await driver.findElement(By.css('[data-testid="user-name"]'));
+    const loggedInUser = await userInfo.getText();
+    if (loggedInUser.includes(username)) {
+      console.log(`✅ Login successful for ${username}`);
+    } else {
+      console.log(`⚠️ Login may not have completed correctly for ${username} (expected: ${username}, got: ${loggedInUser})`);
+    }
+    
+    // Wait a bit more for the system to stabilize
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
   } catch (error) {
     console.log(`❌ Login failed for ${username}: ${error.message}`);
+    
+    // Debug: Take a screenshot and log page state
+    try {
+      const pageSource = await driver.getPageSource();
+      console.log(`📄 Page title: ${await driver.getTitle()}`);
+      console.log(`🔗 Current URL: ${await driver.getCurrentUrl()}`);
+      console.log(`📋 Page contains login elements: ${pageSource.includes('data-testid="login-button"')}`);
+      console.log(`📋 Page contains modal elements: ${pageSource.includes('data-testid="nickname-input"')}`);
+    } catch (debugError) {
+      console.log(`Debug info collection failed: ${debugError.message}`);
+    }
+    
     throw new Error(`Failed to login user ${username}: ${error.message}`);
   }
 }
@@ -1000,17 +1045,47 @@ async function takeSeat(driver, seatNumber, buyIn) {
   try {
     console.log(`💺 Attempting to take seat ${seatNumber} with buy-in ${buyIn}...`);
     
-    // Find and click the seat
-    const seatElement = await driver.wait(
-      until.elementLocated(By.css(`[data-testid="seat-${seatNumber}"], .seat-${seatNumber}, .seat[data-seat="${seatNumber}"]`)),
-      10000
-    );
+    // Find and click the seat - USE CORRECT SELECTORS based on frontend implementation
+    const seatSelectors = [
+      `[data-testid="available-seat-${seatNumber}"]`, // Empty seats use this pattern
+      `[data-testid="seat-${seatNumber}"]`,           // Occupied seats use this pattern  
+      `.seat-${seatNumber}`,                          // Fallback class names
+      `.seat[data-seat="${seatNumber}"]`              // Legacy fallback
+    ];
     
-    console.log(`✅ Found seat ${seatNumber} element`);
+    let seatElement = null;
+    for (const selector of seatSelectors) {
+      try {
+        console.log(`🔍 Trying seat selector: ${selector}`);
+        seatElement = await driver.wait(
+          until.elementLocated(By.css(selector)),
+          3000 // Shorter timeout per selector
+        );
+        console.log(`✅ Found seat ${seatNumber} using selector: ${selector}`);
+        break;
+      } catch (error) {
+        console.log(`⚠️ Seat selector failed: ${selector}`);
+        continue;
+      }
+    }
     
-    // Make sure seat is clickable
+    if (!seatElement) {
+      throw new Error(`Failed to locate seat ${seatNumber} with any selector`);
+    }
+    
+    // Make sure seat is clickable and scroll into view
+    await driver.executeScript('arguments[0].scrollIntoView(true);', seatElement);
+    await new Promise(resolve => setTimeout(resolve, 500));
     await driver.wait(until.elementIsEnabled(seatElement), 5000);
-    await seatElement.click();
+    
+    try {
+      await seatElement.click();
+      console.log(`✅ Regular clicked seat ${seatNumber}`);
+    } catch (clickError) {
+      console.log(`⚠️ Regular click failed, trying JavaScript click...`);
+      await driver.executeScript('arguments[0].click();', seatElement);
+      console.log(`✅ JavaScript clicked seat ${seatNumber}`);
+    }
     
     console.log(`🎯 Clicked seat ${seatNumber}`);
     
