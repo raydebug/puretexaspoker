@@ -852,8 +852,12 @@ async function loginUser(driver, username) {
   try {
     console.log(`🔑 Setting up authentication for ${username}...`);
     
+    // Navigate to lobby page first
+    await driver.get('http://localhost:3000');
+    await driver.wait(until.elementLocated(By.css('[data-testid="lobby-container"]')), 10000);
+    console.log(`✅ ${username} loaded lobby page`);
+    
     // Wait for page to fully load
-    await driver.wait(until.elementLocated(By.css('body')), 10000);
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     // Check if user is already logged in by looking for user info

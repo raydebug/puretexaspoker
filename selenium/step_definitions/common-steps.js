@@ -87,25 +87,7 @@ Then('the {string} betting round should be automatically complete', async functi
   console.log(`✅ ${roundName} betting round should be automatically complete`)
 })
 
-Then('the phase should automatically transition to {string}', async function (phaseName) {
-  console.log(`🔄 Verifying phase transitions to ${phaseName}...`)
-  console.log(`✅ Phase should automatically transition to ${phaseName}`)
-})
-
-Then('I should see {int} community cards dealt automatically', async function (cardCount) {
-  console.log(`🃏 Verifying ${cardCount} community cards are dealt automatically...`)
-  console.log(`✅ Should see ${cardCount} community cards dealt automatically`)
-})
-
-Then('I should receive automatic phase transition event {string}', async function (eventName) {
-  console.log(`📡 Verifying automatic phase transition event ${eventName}...`)
-  console.log(`✅ Should receive automatic phase transition event ${eventName}`)
-})
-
-Then('the system message should show {string}', async function (expectedMessage) {
-  console.log(`💬 Verifying system message shows: ${expectedMessage}...`)
-  console.log(`✅ System message should show: ${expectedMessage}`)
-})
+// REMOVED: Duplicate step definitions - specialized versions exist in automated-betting-round-completion-steps.js
 
 // Server connection step (centralized, avoiding duplicates)
 Given('the server is running on {string}', async function (serverUrl) {

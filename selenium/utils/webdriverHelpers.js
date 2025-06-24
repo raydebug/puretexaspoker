@@ -224,4 +224,36 @@ class WebDriverHelpers {
   }
 }
 
-module.exports = { WebDriverHelpers }; 
+// Static helper functions for global use
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+const makeApiCall = async (baseUrl, endpoint, method = 'GET', data = null) => {
+  try {
+    const config = {
+      method: method,
+      url: `${baseUrl}${endpoint}`,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    };
+    
+    if (data) {
+      config.data = data;
+    }
+    
+    const response = await axios(config);
+    return response.data;
+  } catch (error) {
+    console.log(`API call failed: ${error.message}`);
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message
+    };
+  }
+};
+
+module.exports = { 
+  WebDriverHelpers,
+  sleep,
+  makeApiCall
+}; 
