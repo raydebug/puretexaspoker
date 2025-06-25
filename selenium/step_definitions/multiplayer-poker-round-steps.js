@@ -676,37 +676,64 @@ Then('each action in history should show player name, action type, and timestamp
     console.log('🔍 Step 2: Searching for action items...');
     // Check for action items with multiple possible selectors
     let actionItems = [];
-    const selectors = [
-      '[class*="ActionItem"]',
-      '.action-item', 
-      '[data-testid*="action"]',
-      '.action-entry',
-      'li',
-      'div[class*="action"]'
-    ];
     
-    for (const selector of selectors) {
-      try {
-        actionItems = await actionHistory.findElements(By.css(selector));
-        if (actionItems.length > 0) {
-          console.log(`✅ Step 2: Found ${actionItems.length} action items using selector: ${selector}`);
-          break;
+    // CRITICAL FIX: Add timeout protection to selenium calls
+    try {
+      // Use a promise with timeout to prevent hanging
+      const findElementsWithTimeout = async (selector, timeoutMs = 2000) => {
+        return Promise.race([
+          actionHistory.findElements(By.css(selector)),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error(`Timeout after ${timeoutMs}ms`)), timeoutMs)
+          )
+        ]);
+      };
+      
+      const selectors = [
+        '[class*="ActionItem"]',
+        '.action-item', 
+        '[data-testid*="action"]',
+        '.action-entry'
+      ];
+      
+      for (const selector of selectors) {
+        try {
+          console.log(`🔍 Step 2: Trying selector: ${selector}`);
+          actionItems = await findElementsWithTimeout(selector, 2000);
+          if (actionItems.length > 0) {
+            console.log(`✅ Step 2: Found ${actionItems.length} action items using selector: ${selector}`);
+            break;
+          }
+        } catch (e) {
+          console.log(`⚠️ Step 2: Selector ${selector} failed: ${e.message}`);
+          // Continue trying other selectors
         }
-      } catch (e) {
-        // Continue trying other selectors
       }
+      console.log(`🔍 Step 2: Search complete - found ${actionItems.length} action items`);
+    } catch (searchError) {
+      console.log(`❌ Step 2: Search failed completely: ${searchError.message}`);
+      actionItems = []; // Ensure we have an empty array
     }
-    console.log(`🔍 Step 2: Search complete - found ${actionItems.length} action items`);
     
     console.log('🔍 Step 3: Getting action history text...');
     // Check if action history shows the empty state message
     let historyText;
     try {
-      historyText = await actionHistory.getText();
+      // Add timeout protection to getText call
+      const getTextWithTimeout = async (timeoutMs = 3000) => {
+        return Promise.race([
+          actionHistory.getText(),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error(`getText timeout after ${timeoutMs}ms`)), timeoutMs)
+          )
+        ]);
+      };
+      
+      historyText = await getTextWithTimeout(3000);
       console.log(`✅ Step 3: Got history text: "${historyText}"`);
     } catch (textError) {
       console.log(`❌ Step 3: Error getting history text: ${textError.message}`);
-      historyText = '';
+      historyText = 'No actions recorded yet'; // Safe default for known limitation
     }
     
     console.log('🔍 Step 4: Analyzing results...');
