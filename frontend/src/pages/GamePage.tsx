@@ -72,37 +72,7 @@ const ErrorMessage = styled.h2`
   font-size: 24px;
 `;
 
-const ReturnButton = styled.button`
-  padding: 12px 24px;
-  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  
-  &:hover {
-    background: linear-gradient(135deg, #2980b9 0%, #21618c 100%);
-    transform: translateY(-2px);
-  }
-  
-  &:active {
-    transform: translateY(0);
-  }
-`;
 
-const ObserverContainer = styled.div`
-  position: relative;
-  width: 100%;
-  height: 100vh;
-  background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 2rem;
-`;
 
 const GameLayout = styled.div`
   display: flex;
@@ -129,30 +99,32 @@ const TableContainer = styled.div`
   position: relative;
 `;
 
-const ObserverHeader = styled.div`
-  text-align: center;
-  margin-bottom: 2rem;
-  
-  h2 {
-    color: #ffd700;
-    margin-bottom: 0.5rem;
-    font-size: 2rem;
-  }
-  
-  p {
-    color: #ffffff;
-    opacity: 0.8;
-    font-size: 1.1rem;
-  }
+const LobbyButtonContainer = styled.div`
+  background: rgba(0, 0, 0, 0.8);
+  padding: 1rem;
+  border-bottom: 1px solid #333;
 `;
 
-const ObserverControls = styled.div`
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  display: flex;
-  gap: 1rem;
-  z-index: 1000;
+const LobbyButton = styled.button`
+  width: 100%;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: linear-gradient(135deg, #2980b9 0%, #21618c 100%);
+    transform: translateY(-1px);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
 `;
 
 const GamePage: React.FC = () => {
@@ -560,9 +532,6 @@ const GamePage: React.FC = () => {
         <ErrorContainer>
           <ErrorMessage>Game Error</ErrorMessage>
           <p>{error}</p>
-          <ReturnButton onClick={handleReturnToLobby}>
-            Return to Lobby
-          </ReturnButton>
         </ErrorContainer>
       </GameContainer>
     );
@@ -586,6 +555,12 @@ const GamePage: React.FC = () => {
       <GameContainer data-testid="observer-view">
         <GameLayout>
           <LeftSidebar>
+            <LobbyButtonContainer>
+              <LobbyButton onClick={handleReturnToLobby}>
+                Return to Lobby
+              </LobbyButton>
+            </LobbyButtonContainer>
+            
             <ActionHistory 
               gameId={gameId || ''} 
             />
@@ -608,12 +583,6 @@ const GamePage: React.FC = () => {
             />
           </TableContainer>
         </GameLayout>
-        
-        <ObserverControls>
-          <ReturnButton onClick={handleReturnToLobby}>
-            Leave Table
-          </ReturnButton>
-        </ObserverControls>
 
         {/* Seat Selection Dialog */}
         {showSeatDialog && selectedSeat !== null && (
@@ -631,6 +600,12 @@ const GamePage: React.FC = () => {
   return (
     <GameContainer>
       <LeftSidebar>
+        <LobbyButtonContainer>
+          <LobbyButton onClick={handleReturnToLobby}>
+            Return to Lobby
+          </LobbyButton>
+        </LobbyButtonContainer>
+        
         <ActionHistory 
           gameId={gameId || ''} 
         />
