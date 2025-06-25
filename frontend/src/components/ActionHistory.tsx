@@ -20,12 +20,14 @@ interface ActionHistoryProps {
 
 const Container = styled.div`
   background: rgba(0, 0, 0, 0.7);
-  border-radius: 8px;
+  border-radius: 0;
   padding: 1rem;
   margin: 0;
-  border: 1px solid #333;
+  border: none;
+  border-bottom: 1px solid #333;
   max-height: 300px;
   overflow-y: auto;
+  flex: 1;
 `;
 
 const Title = styled.h3`

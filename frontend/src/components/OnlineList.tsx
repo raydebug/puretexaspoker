@@ -5,9 +5,9 @@ const ListContainer = styled.div<{ compact?: boolean }>`
   ${props => props.compact ? `
     position: relative;
     background-color: rgba(0, 0, 0, 0.7);
-    border-radius: 0.5rem;
-    padding: 0.5rem;
-    border: 1px solid #333;
+    border-radius: 0;
+    padding: 1rem;
+    border: none;
     margin: 0;
   ` : `
     position: fixed;

@@ -16,7 +16,7 @@ const GameContainer = styled.div`
   background: linear-gradient(135deg, #0f4c36 0%, #1a5d42 50%, #0f4c36 100%);
   overflow: hidden;
   display: flex;
-  padding: 1rem;
+  padding: 0;
 `;
 
 const LoadingContainer = styled.div`
@@ -116,8 +116,9 @@ const LeftSidebar = styled.div`
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding: 1rem;
+  gap: 0;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.2);
 `;
 
 const TableContainer = styled.div`
@@ -148,8 +149,7 @@ const ObserverHeader = styled.div`
 const ObserverControls = styled.div`
   position: fixed;
   bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
+  right: 2rem;
   display: flex;
   gap: 1rem;
   z-index: 1000;
@@ -583,54 +583,47 @@ const GamePage: React.FC = () => {
   // Observer view - user is watching the table
   if (isObserver) {
     return (
-      <GameContainer>
-        <ObserverContainer data-testid="observer-view">
-          <ObserverHeader>
-            <h2>Observing Table {gameId}</h2>
-            <p>You are currently watching this game. Click on any available seat to join the action!</p>
-          </ObserverHeader>
-          
-          <GameLayout>
-            <LeftSidebar>
-              <ActionHistory 
-                gameId={gameId || ''} 
-              />
-              
-              <OnlineList 
-                observers={observers}
-                showMode="observers"
-                compact={true}
-              />
-            </LeftSidebar>
-            
-            <TableContainer>
-              <PokerTable 
-                gameState={gameState} 
-                currentPlayer={null}
-                onAction={handleAction}
-                isObserver={true}
-                availableSeats={availableSeats}
-                onSeatSelect={handleSeatSelection}
-              />
-            </TableContainer>
-          </GameLayout>
-          
-          <ObserverControls>
-            <ReturnButton onClick={handleReturnToLobby}>
-              Leave Table
-            </ReturnButton>
-          </ObserverControls>
-
-          {/* Seat Selection Dialog */}
-          {showSeatDialog && selectedSeat !== null && (
-            <SeatSelectionDialog
-              table={table}
-              seatNumber={selectedSeat}
-              onClose={handleSeatDialogClose}
-              onConfirm={handleSeatConfirm}
+      <GameContainer data-testid="observer-view">
+        <GameLayout>
+          <LeftSidebar>
+            <ActionHistory 
+              gameId={gameId || ''} 
             />
-          )}
-        </ObserverContainer>
+            
+            <OnlineList 
+              observers={observers}
+              showMode="observers"
+              compact={true}
+            />
+          </LeftSidebar>
+          
+          <TableContainer>
+            <PokerTable 
+              gameState={gameState} 
+              currentPlayer={null}
+              onAction={handleAction}
+              isObserver={true}
+              availableSeats={availableSeats}
+              onSeatSelect={handleSeatSelection}
+            />
+          </TableContainer>
+        </GameLayout>
+        
+        <ObserverControls>
+          <ReturnButton onClick={handleReturnToLobby}>
+            Leave Table
+          </ReturnButton>
+        </ObserverControls>
+
+        {/* Seat Selection Dialog */}
+        {showSeatDialog && selectedSeat !== null && (
+          <SeatSelectionDialog
+            table={table}
+            seatNumber={selectedSeat}
+            onClose={handleSeatDialogClose}
+            onConfirm={handleSeatConfirm}
+          />
+        )}
       </GameContainer>
     );
   }
