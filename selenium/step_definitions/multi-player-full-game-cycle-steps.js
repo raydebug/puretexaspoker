@@ -110,13 +110,43 @@ async function createBrowserInstance(instanceId, headless = process.env.HEADLESS
 }
 
 async function performPlayerAction(playerName, action, amount = null) {
-  const browserIndex = getBrowserIndexForPlayer(playerName);
-  const driver = browserInstances[browserIndex];
+  console.log(`🎮 ${playerName} performing ${action}${amount ? ` with amount ${amount}` : ''}`);
   
   try {
-    console.log(`🎮 ${playerName} performing ${action}${amount ? ` with amount ${amount}` : ''}`);
+    // For multi-browser mode, use the specific browser instance
+    let driver;
+    if (Object.keys(browserInstances).length > 1) {
+      const browserIndex = getBrowserIndexForPlayer(playerName);
+      driver = browserInstances[browserIndex];
+      
+      if (!driver) {
+        throw new Error(`No browser instance found for ${playerName} (index: ${browserIndex})`);
+      }
+    } else {
+      // For single-browser mode (like multiplayer-poker-round tests), use backend API
+      console.log(`🔧 Single-browser mode: Using backend API for ${playerName} ${action}`);
+      
+      const backendApiUrl = process.env.BACKEND_URL || 'http://localhost:3001';
+      const gameId = '297'; // Use the current game ID
+      
+      const axios = require('axios');
+      const response = await axios.post(`${backendApiUrl}/api/test/execute_player_action`, {
+        gameId: gameId,
+        playerId: playerName,
+        action: action.toLowerCase(),
+        amount: amount
+      });
+      
+      if (response.data.success) {
+        console.log(`✅ Backend action executed: ${playerName} ${action}`);
+        await delay(2000); // Give time for UI to update
+        return true;
+      } else {
+        throw new Error(`Backend action failed: ${response.data.error}`);
+      }
+    }
     
-    // Wait for action buttons to be available
+    // Multi-browser mode: Use UI controls
     await driver.wait(until.elementLocated(By.css('[data-testid="fold-button"]')), 10000);
     
     switch (action.toLowerCase()) {

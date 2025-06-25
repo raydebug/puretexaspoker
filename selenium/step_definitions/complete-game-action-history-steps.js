@@ -233,7 +233,7 @@ Then('the action history should show actions from {string}, {string}, and {strin
   }
 });
 
-When('the showdown phase begins', async function () {
+When('the showdown phase begins in complete action history test', async function () {
   console.log('🏆 Starting showdown phase');
   
   try {

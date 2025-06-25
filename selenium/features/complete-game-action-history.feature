@@ -106,7 +106,7 @@ Feature: Complete Game Action History Coverage
     Then the action history should show "Charlie call $795"
     
     # Showdown Phase
-    When the showdown phase begins for complete game
+    When the showdown phase begins in complete action history test
     Then the action history should show "System Showdown"
     
     When both players reveal their cards:
