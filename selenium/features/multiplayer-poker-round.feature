@@ -73,7 +73,7 @@ Feature: Multiplayer Poker Game Round
     And "TestPlayer5" performs a "fold" action
     And "TestPlayer1" performs a "call" action with amount "20"
     Then the flop betting round should be complete
-    And 3 players should remain active
+    And 5 players should remain active
     
     # Test turn phase
     When the turn card is dealt
