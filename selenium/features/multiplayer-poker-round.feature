@@ -39,24 +39,24 @@ Feature: Multiplayer Poker Game Round
     And the turn should move to "TestPlayer4"
     And the action history should show the "check" action
     
-    When "TestPlayer4" performs a "raise" action with amount "30"
+    When "TestPlayer2" performs a "bet" action with amount "30"
     Then the raise should be processed via UI
-    And "TestPlayer4" chip count should decrease to "220"
+    And "TestPlayer2" chip count should decrease to "120"
     And the current bet should be "30"
-    And the turn should move to "TestPlayer5"
+    And the turn should move to "TestPlayer4"
     And the chip count change should be visible in the UI
-    And the action history should show the "raise" action
+    And the action history should show the "bet" action
+    
+    When "TestPlayer4" performs a "call" action with amount "30"
+    Then "TestPlayer4" chip count should decrease to "220"
+    And the turn should move to "TestPlayer5"
     
     When "TestPlayer5" performs a "call" action with amount "30"
     Then "TestPlayer5" chip count should decrease to "150"
     And the turn should move to "TestPlayer1"
     
-    When "TestPlayer1" performs a "call" action with amount "25"
-    Then "TestPlayer1" chip count should decrease to "175"
-    And the turn should move to "TestPlayer2"
-    
-    When "TestPlayer2" performs a "call" action with amount "20"
-    Then "TestPlayer2" chip count should decrease to "130"
+    When "TestPlayer1" performs a "call" action with amount "30"
+    Then "TestPlayer1" chip count should decrease to "170"
     And the turn should move to "TestPlayer3"
     
     When "TestPlayer3" performs a "fold" action
