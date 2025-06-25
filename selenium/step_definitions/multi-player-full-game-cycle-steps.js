@@ -130,8 +130,7 @@ async function performPlayerAction(playerName, action, amount = null) {
       const gameId = '297'; // Use the current game ID
       
       const axios = require('axios');
-      const response = await axios.post(`${backendApiUrl}/api/test/execute_player_action`, {
-        gameId: gameId,
+      const response = await axios.post(`${backendApiUrl}/api/test_player_action/${gameId}`, {
         playerId: playerName,
         action: action.toLowerCase(),
         amount: amount
