@@ -514,8 +514,8 @@ Then('scrolling should be smooth', async function () {
   console.log('✅ Smooth scrolling verified (implicit in responsiveness test)');
 });
 
-Then('no memory leaks should occur', async function () {
-  console.log('🔍 Checking for memory leaks');
+Then('no memory leaks should occur in complete game', async function () {
+  console.log('🔍 Checking for memory leaks in complete game flow');
   
   try {
     // Basic memory usage check via browser console

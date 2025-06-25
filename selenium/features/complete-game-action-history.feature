@@ -106,7 +106,7 @@ Feature: Complete Game Action History Coverage
     Then the action history should show "Charlie call $795"
     
     # Showdown Phase
-    When the showdown phase begins
+    When the showdown phase begins for complete game
     Then the action history should show "System Showdown"
     
     When both players reveal their cards:
@@ -150,7 +150,7 @@ Feature: Complete Game Action History Coverage
     Then the action history should show approximately 100 total actions
     And the action history should remain responsive
     And scrolling should be smooth
-    And no memory leaks should occur
+    And no memory leaks should occur in complete game
     And the oldest actions should still be accessible
 
   Scenario: Action History Data Integrity Validation
