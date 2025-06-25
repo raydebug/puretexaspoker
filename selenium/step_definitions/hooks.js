@@ -5,35 +5,57 @@ const { WebDriverHelpers } = require('../utils/webdriverHelpers.js')
 let helpers
 
 // Global setup - runs once before all scenarios
-BeforeAll(async function() {
+BeforeAll({timeout: 30000}, async function() {
   console.log('🚀 Setting up Selenium test environment...')
   
-  // Initialize WebDriver
-  const driver = await seleniumManager.getDriver()
-  console.log(`✅ WebDriver initialized with browser: ${seleniumManager.getConfig().browser}`)
+  try {
+    // Initialize WebDriver with timeout protection
+    const driver = await Promise.race([
+      seleniumManager.getDriver(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('WebDriver initialization timed out')), 25000))
+    ]);
+    console.log(`✅ WebDriver initialized with browser: ${seleniumManager.getConfig().browser}`)
+  } catch (error) {
+    console.error('❌ Failed to initialize WebDriver:', error.message)
+    throw error
+  }
 })
 
 // Setup before each scenario
 Before({timeout: 60000}, async function() {
   console.log('🔧 Setting up scenario...')
   
-  // Get or initialize driver
-  const driver = await seleniumManager.getDriver()
+  // Get or initialize driver with timeout protection
+  const driver = await Promise.race([
+    seleniumManager.getDriver(),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Driver retrieval timed out')), 15000))
+  ]);
+  
   helpers = new WebDriverHelpers(driver)
   
   // Store helpers in the world for step definitions to access
   this.helpers = helpers
   this.driver = driver
   
-  // Navigate to base URL to start fresh with better error handling
+  // Only navigate if needed (check current URL first to avoid unnecessary navigation)
   try {
-    await helpers.navigateTo('/')
-    console.log('✅ Navigated to base URL')
+    const currentUrl = await driver.getCurrentUrl();
+    if (!currentUrl.includes('localhost:3000')) {
+      await helpers.navigateTo('/')
+      console.log('✅ Navigated to base URL')
+    } else {
+      console.log('✅ Already on base URL')
+    }
   } catch (error) {
     console.log(`⚠️ Navigation failed, retrying: ${error.message}`)
     await helpers.sleep(2000)
-    await helpers.navigateTo('/')
-    console.log('✅ Navigated to base URL (retry)')
+    try {
+      await helpers.navigateTo('/')
+      console.log('✅ Navigated to base URL (retry)')
+    } catch (retryError) {
+      console.log(`❌ Navigation retry failed: ${retryError.message}`)
+      throw retryError
+    }
   }
 })
 
