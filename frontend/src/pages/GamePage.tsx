@@ -6,7 +6,6 @@ import { ActionHistory } from '../components/ActionHistory';
 import { socketService } from '../services/socketService';
 import { GameState, Player } from '../types/game';
 import { TableData } from '../types/table';
-import { soundService } from '../services/soundService';
 import { PokerTable } from '../components/Game/PokerTable';
 import { SeatSelectionDialog } from '../components/Game/SeatSelectionDialog';
 
@@ -301,9 +300,6 @@ const GamePage: React.FC = () => {
       try {
         console.log('DEBUG: GamePage attempting to connect to socket...');
         await socketService.connect();
-        
-        // Get nickname from localStorage or use default
-        localStorage.getItem('nickname') || 'Player' + Math.floor(Math.random() * 1000);
         
         // Join the table as observer first (this will trigger the backend joinTable logic)
         if (table && gameId) {
