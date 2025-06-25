@@ -33,10 +33,10 @@ Feature: Multiplayer Poker Game Round
     And the action history should be empty initially
     
     # Simulate a realistic preflop betting round
-    When "TestPlayer1" performs a "call" action
+    When "TestPlayer3" performs a "call" action  
     Then the action should be reflected in the UI
-    And the pot amount should update to "10"
-    And the turn should move to "TestPlayer2"
+    And the pot amount should update to "25"
+    And the turn should move to "TestPlayer4"
     And the action history should show the "call" action
     
     When "TestPlayer2" performs a "raise" action with amount "30"
