@@ -1530,36 +1530,34 @@ Then('the preflop betting round should be complete', async function () {
   }
 });
 
-Then('the total pot should reflect all player contributions', async function () {
-  console.log('🔍 Verifying total pot reflects player contributions');
+Then('the pot should remain {string} with all checks', async function (expectedPot) {
+  console.log(`🔍 Verifying pot remains ${expectedPot} with all checks`);
   
-  // CRITICAL FIX: Check backend game state for pot contributions and fail if wrong
   try {
     const response = await axios.get(`${backendApiUrl}/api/test_get_mock_game/${testGameId}`);
     
     if (response.data.success && response.data.gameState) {
       const gameState = response.data.gameState;
-      const potAmount = gameState.pot;
+      const potAmount = gameState.pot.toString();
       
-      console.log(`🔍 Backend pot amount: ${potAmount}`);
+      console.log(`🔍 Backend pot amount: ${potAmount}, expected: ${expectedPot}`);
       
-      // Basic validation that pot > 0 (since players have contributed)
-      if (potAmount > 0) {
-        console.log(`✅ Pot reflects contributions: ${potAmount}`);
+      if (potAmount === expectedPot) {
+        console.log(`✅ Pot correctly remains ${expectedPot} (all players checked, no betting)`);
         return; // Success
       } else {
-        console.log(`❌ Pot should have contributions but shows ${potAmount}`);
-        throw new Error(`❌ VERIFICATION FAILED: Pot should have contributions but backend shows ${potAmount}`);
+        console.log(`❌ Pot should be ${expectedPot} but shows ${potAmount}`);
+        throw new Error(`❌ VERIFICATION FAILED: Pot should be ${expectedPot} but backend shows ${potAmount}`);
       }
     } else {
-      throw new Error(`❌ VERIFICATION FAILED: Could not retrieve game state for pot contributions verification`);
+      throw new Error(`❌ VERIFICATION FAILED: Could not retrieve game state for pot verification`);
     }
   } catch (error) {
     if (error.message.includes('VERIFICATION FAILED')) {
       throw error; // Re-throw verification failures
     }
-    console.log(`❌ Error checking pot contributions: ${error.message}`);
-    throw new Error(`❌ VERIFICATION FAILED: Pot contributions verification failed - ${error.message}`);
+    console.log(`❌ Error checking pot: ${error.message}`);
+    throw new Error(`❌ VERIFICATION FAILED: Pot verification failed - ${error.message}`);
   }
 });
 

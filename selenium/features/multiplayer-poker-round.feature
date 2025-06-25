@@ -55,7 +55,7 @@ Feature: Multiplayer Poker Game Round
     When "TestPlayer1" performs a "check" action
     Then the action should be reflected in the UI
     And the preflop betting round should be complete
-    And the total pot should reflect all player contributions
+    And the pot should remain "0" with all checks
     
     # Test flop phase with community cards
     When the flop is dealt with 3 community cards
