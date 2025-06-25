@@ -333,25 +333,75 @@ Given('I have {int} browser instances with players seated:', {timeout: 180000}, 
       } catch (error) {
         console.log(`🔍 User not logged in, proceeding with login flow...`);
         
-        // Step 1: Click the "Login" button to open the modal
+        // Step 1: Check if user is already logged in, if so logout first
+        console.log(`🔍 Checking login state for ${playerName}...`);
+        
+        // First check if user is already logged in (logout button present)
+        try {
+          const logoutButton = await driver.findElement(By.css('[data-testid="logout-button"]'));
+          if (await logoutButton.isDisplayed()) {
+            console.log(`🔍 User already logged in, logging out first for ${playerName}...`);
+            await logoutButton.click();
+            await delay(1500); // Wait for logout to complete
+            console.log(`✅ Logged out previous user for ${playerName}`);
+          }
+        } catch (logoutError) {
+          console.log(`🔍 No logout button found, user not logged in for ${playerName}`);
+        }
+        
+        // Now look for login button
         console.log(`🎯 Looking for login button to open modal for ${playerName}...`);
         let openModalButton;
         try {
           openModalButton = await driver.wait(
             until.elementLocated(By.css('[data-testid="login-button"]')),
-            8000
+            10000
           );
           console.log(`✅ Found modal trigger button for ${playerName}`);
         } catch (error) {
           // Try alternative selectors
           try {
-            openModalButton = await driver.wait(
-              until.elementLocated(By.xpath('//button[contains(text(), "Login")]')),
-              5000
-            );
-            console.log(`✅ Found login button via text for ${playerName}`);
+            const alternatives = [
+              '//button[contains(text(), "Login")]',
+              '[data-testid="anonymous-info"] button',
+              'button[data-testid*="login"]',
+              '.user-info button:contains("Login")'
+            ];
+            
+            for (const selector of alternatives) {
+              try {
+                if (selector.startsWith('//')) {
+                  openModalButton = await driver.wait(until.elementLocated(By.xpath(selector)), 3000);
+                } else {
+                  openModalButton = await driver.wait(until.elementLocated(By.css(selector)), 3000);
+                }
+                console.log(`✅ Found login button via alternative selector: ${selector}`);
+                break;
+              } catch (e) {
+                console.log(`⚠️ Alternative selector failed: ${selector}`);
+              }
+            }
+            
+            if (!openModalButton) {
+              throw new Error('No login button found with any selector');
+            }
+            
           } catch (altError) {
-            console.log(`❌ Could not find login button for ${playerName}`);
+            console.log(`❌ Could not find login button for ${playerName} with any method`);
+            
+            // Debug: Check what buttons are actually on the page
+            try {
+              const allButtons = await driver.findElements(By.css('button'));
+              console.log(`🔍 Debug: Found ${allButtons.length} buttons on page:`);
+              for (let i = 0; i < Math.min(allButtons.length, 5); i++) {
+                const buttonText = await allButtons[i].getText().catch(() => '(no text)');
+                const buttonId = await allButtons[i].getAttribute('data-testid').catch(() => '(no id)');
+                console.log(`  Button ${i}: text="${buttonText}", id="${buttonId}"`);
+              }
+            } catch (debugError) {
+              console.log(`🔍 Could not debug buttons: ${debugError.message}`);
+            }
+            
             throw new Error(`Login button not found: ${error.message}`);
           }
         }

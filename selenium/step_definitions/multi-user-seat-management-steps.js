@@ -875,25 +875,60 @@ async function loginUser(driver, username) {
       console.log(`🔍 User not logged in, proceeding with login flow...`);
     }
     
-    // Step 1: Click the "Login" button to open the modal
+    // Step 1: Check if user is already logged in, if so logout first  
+    console.log(`🔍 Checking login state for ${username}...`);
+    
+    // First check if user is already logged in (logout button present)
+    try {
+      const logoutButton = await driver.findElement(By.css('[data-testid="logout-button"]'));
+      if (await logoutButton.isDisplayed()) {
+        console.log(`🔍 User already logged in, logging out first for ${username}...`);
+        await logoutButton.click();
+        await new Promise(resolve => setTimeout(resolve, 1500)); // Wait for logout to complete
+        console.log(`✅ Logged out previous user for ${username}`);
+      }
+    } catch (logoutError) {
+      console.log(`🔍 No logout button found, user not logged in for ${username}`);
+    }
+    
+    // Now look for login button
     console.log(`🎯 Looking for login button to open modal for ${username}...`);
     let openModalButton;
     try {
       openModalButton = await driver.wait(
         until.elementLocated(By.css('[data-testid="login-button"]')),
-        8000
+        10000
       );
       console.log(`✅ Found modal trigger button for ${username}`);
     } catch (error) {
       // Try alternative selectors
       try {
-        openModalButton = await driver.wait(
-          until.elementLocated(By.xpath('//button[contains(text(), "Login")]')),
-          5000
-        );
-        console.log(`✅ Found login button via text for ${username}`);
+        const alternatives = [
+          '//button[contains(text(), "Login")]',
+          '[data-testid="anonymous-info"] button',
+          'button[data-testid*="login"]'
+        ];
+        
+        for (const selector of alternatives) {
+          try {
+            if (selector.startsWith('//')) {
+              openModalButton = await driver.wait(until.elementLocated(By.xpath(selector)), 3000);
+            } else {
+              openModalButton = await driver.wait(until.elementLocated(By.css(selector)), 3000);
+            }
+            console.log(`✅ Found login button via alternative selector: ${selector}`);
+            break;
+          } catch (e) {
+            console.log(`⚠️ Alternative selector failed: ${selector}`);
+          }
+        }
+        
+        if (!openModalButton) {
+          throw new Error('No login button found with any selector');
+        }
+        
       } catch (altError) {
-        console.log(`❌ Could not find login button for ${username}`);
+        console.log(`❌ Could not find login button for ${username} with any method`);
         throw new Error(`Login button not found: ${error.message}`);
       }
     }
