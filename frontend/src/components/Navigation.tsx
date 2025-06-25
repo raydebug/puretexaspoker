@@ -5,7 +5,7 @@ import styled from 'styled-components';
 const NavContainer = styled.nav`
   position: fixed;
   top: 20px;
-  left: 20px;
+  right: 20px;
   z-index: 1000;
   display: flex;
   gap: 10px;
