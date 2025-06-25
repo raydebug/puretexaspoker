@@ -1,17 +1,11 @@
-import React, { useEffect, useState, useRef, startTransition } from 'react';
+import React, { useEffect, useState, startTransition } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import styled from 'styled-components';
-import { GameBoard } from '../components/GameBoard';
-import { PlayerActions } from '../components/PlayerActions';
-import { GameStatus } from '../components/GameStatus';
 import { OnlineList } from '../components/OnlineList';
 import { ActionHistory } from '../components/ActionHistory';
-import { ChatBox } from '../components/ChatBox';
 import { socketService } from '../services/socketService';
 import { GameState, Player } from '../types/game';
-import { SeatAction } from '../components/SeatMenu';
 import { TableData } from '../types/table';
-import SoundControls from '../components/SoundControls';
 import { soundService } from '../services/soundService';
 import { PokerTable } from '../components/Game/PokerTable';
 import { SeatSelectionDialog } from '../components/Game/SeatSelectionDialog';
@@ -22,6 +16,8 @@ const GameContainer = styled.div`
   height: 100vh;
   background: linear-gradient(135deg, #0f4c36 0%, #1a5d42 50%, #0f4c36 100%);
   overflow: hidden;
+  display: flex;
+  padding: 1rem;
 `;
 
 const LoadingContainer = styled.div`
@@ -109,6 +105,30 @@ const ObserverContainer = styled.div`
   padding: 2rem;
 `;
 
+const GameLayout = styled.div`
+  display: flex;
+  width: 100%;
+  height: 100%;
+  gap: 1rem;
+`;
+
+const LeftSidebar = styled.div`
+  width: 300px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+`;
+
+const TableContainer = styled.div`
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+`;
+
 const ObserverHeader = styled.div`
   text-align: center;
   margin-bottom: 2rem;
@@ -150,7 +170,6 @@ const GamePage: React.FC = () => {
     console.log('🎯 GamePage: Observers state updated:', observers);
   }, [observers]);
   const [isLoading, setIsLoading] = useState(true);
-  const [joinAttempted, setJoinAttempted] = useState(false);
   const [isObserver, setIsObserver] = useState(true); // Start as observer
   const [availableSeats, setAvailableSeats] = useState<number[]>([]);
   const [showSeatDialog, setShowSeatDialog] = useState(false);
@@ -159,7 +178,6 @@ const GamePage: React.FC = () => {
   
   // Get table info from state if coming from JoinGamePage
   const table = location.state?.table as TableData | undefined;
-  const buyIn = location.state?.buyIn as number | undefined;
 
   useEffect(() => {
     console.log('DEBUG: GamePage mounting with gameId:', gameId);
@@ -285,7 +303,7 @@ const GamePage: React.FC = () => {
         await socketService.connect();
         
         // Get nickname from localStorage or use default
-        const nickname = localStorage.getItem('nickname') || 'Player' + Math.floor(Math.random() * 1000);
+        localStorage.getItem('nickname') || 'Player' + Math.floor(Math.random() * 1000);
         
         // Join the table as observer first (this will trigger the backend joinTable logic)
         if (table && gameId) {
@@ -438,27 +456,7 @@ const GamePage: React.FC = () => {
     socketService.emitGameAction(action, amount);
   };
 
-  const handleSeatAction = (action: SeatAction, playerId: string) => {
-    if (!gameState) return;
-    
-    soundService.play('buttonClick');
-    
-    switch (action) {
-      case 'leaveMidway':
-        socketService.updatePlayerStatus(gameState.id, playerId, true);
-        break;
-      case 'comeBack':
-        socketService.updatePlayerStatus(gameState.id, playerId, false);
-        break;
-      case 'standUp':
-        socketService.standUp(gameState.id, playerId);
-        break;
-      case 'leaveTable':
-        socketService.leaveTable(gameState.id, playerId);
-        navigate('/lobby');
-        break;
-    }
-  };
+
 
   const handleReturnToLobby = () => {
     navigate('/');
@@ -596,29 +594,35 @@ const GamePage: React.FC = () => {
             <p>You are currently watching this game. Click on any available seat to join the action!</p>
           </ObserverHeader>
           
-          <PokerTable 
-            gameState={gameState} 
-            currentPlayer={null}
-            onAction={handleAction}
-            isObserver={true}
-            availableSeats={availableSeats}
-            onSeatSelect={handleSeatSelection}
-          />
+          <GameLayout>
+            <LeftSidebar>
+              <OnlineList 
+                observers={observers}
+                showMode="observers"
+              />
+              
+              <ActionHistory 
+                gameId={gameId || ''} 
+              />
+            </LeftSidebar>
+            
+            <TableContainer>
+              <PokerTable 
+                gameState={gameState} 
+                currentPlayer={null}
+                onAction={handleAction}
+                isObserver={true}
+                availableSeats={availableSeats}
+                onSeatSelect={handleSeatSelection}
+              />
+            </TableContainer>
+          </GameLayout>
           
           <ObserverControls>
             <ReturnButton onClick={handleReturnToLobby}>
               Leave Table
             </ReturnButton>
           </ObserverControls>
-          
-          <OnlineList 
-            observers={observers}
-            showMode="observers"
-          />
-
-          <ActionHistory 
-            gameId={gameId || ''} 
-          />
 
           {/* Seat Selection Dialog */}
           {showSeatDialog && selectedSeat !== null && (
@@ -636,23 +640,27 @@ const GamePage: React.FC = () => {
 
   return (
     <GameContainer>
-      <PokerTable
-        gameState={gameState}
-        currentPlayer={currentPlayer}
-        onAction={handleAction}
-        isObserver={false}
-        availableSeats={availableSeats}
-        onSeatSelect={handleSeatSelection}
-      />
+      <LeftSidebar>
+        <OnlineList 
+          observers={observers}
+          showMode="observers"
+        />
+        
+        <ActionHistory 
+          gameId={gameId || ''} 
+        />
+      </LeftSidebar>
       
-      <OnlineList 
-        observers={observers}
-        showMode="observers"
-      />
-
-      <ActionHistory 
-        gameId={gameId || ''} 
-      />
+      <TableContainer>
+        <PokerTable
+          gameState={gameState}
+          currentPlayer={currentPlayer}
+          onAction={handleAction}
+          isObserver={false}
+          availableSeats={availableSeats}
+          onSeatSelect={handleSeatSelection}
+        />
+      </TableContainer>
 
       {/* Seat Selection Dialog for seat changes */}
       {showSeatDialog && selectedSeat !== null && (

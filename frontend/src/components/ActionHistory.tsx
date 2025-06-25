@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 
 interface ActionHistoryItem {
@@ -129,7 +129,7 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ gameId, handNumber
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchActionHistory = async () => {
+  const fetchActionHistory = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -158,13 +158,13 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ gameId, handNumber
     } finally {
       setLoading(false);
     }
-  };
+  }, [gameId, handNumber]);
 
   useEffect(() => {
     if (gameId) {
       fetchActionHistory();
     }
-  }, [gameId, handNumber]);
+  }, [gameId, handNumber, fetchActionHistory]);
 
   const formatAmount = (amount: number | null) => {
     if (amount === null || amount === 0) return '';
