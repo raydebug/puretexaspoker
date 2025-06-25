@@ -925,27 +925,8 @@ Then('all previous actions should still be visible', async function () {
   }
 });
 
-When('{string} performs a {string} action with amount {string}', async function (playerName, action, amount) {
-  console.log(`🎯 ${playerName} performing ${action} with amount ${amount}`);
-  
-  try {
-    const response = await axios.post(`${backendApiUrl}/api/test/execute_player_action`, {
-      gameId: testGameId,
-      playerId: playerName,
-      action: action.toLowerCase(),
-      amount: parseInt(amount)
-    });
-    
-    if (response.data.success) {
-      console.log(`✅ ${playerName} performed ${action} with amount ${amount}`);
-      await this.driver.sleep(2000);
-    } else {
-      throw new Error(`Failed ${action} by ${playerName}: ${response.data.error}`);
-    }
-  } catch (error) {
-    console.log(`⚠️ Error with ${playerName} ${action}: ${error.message}`);
-  }
-});
+// Note: Step definition for '{string} performs a {string} action with amount {string}' 
+// is already defined in multi-player-full-game-cycle-steps.js - removed duplicate
 
 Then('the action history should show {string}', async function (expectedText) {
   console.log(`🔍 Verifying action history shows: "${expectedText}"`);
