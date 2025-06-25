@@ -349,4 +349,50 @@ router.post('/:gameId/actions', async (req, res) => {
   }
 });
 
+// Get action history for a game
+router.get('/:gameId/actions/history', async (req, res) => {
+  try {
+    const { gameId } = req.params;
+    const { handNumber } = req.query;
+
+    if (!gameId) {
+      return res.status(400).json({ error: 'Game ID is required' });
+    }
+
+    // Import gamePersistenceManager
+    const { GamePersistenceManager } = await import('../services/gamePersistenceManager');
+    const gamePersistenceManager = GamePersistenceManager.getInstance();
+
+    // Get action history using the existing service
+    const actionHistory = await gamePersistenceManager.getActionHistory(
+      gameId, 
+      handNumber ? parseInt(handNumber as string) : undefined
+    );
+
+    // Format the response for frontend consumption
+    const formattedHistory = actionHistory.map(action => ({
+      id: action.id,
+      playerId: action.playerId,
+      playerName: action.playerName,
+      action: action.action,
+      amount: action.amount,
+      phase: action.phase,
+      handNumber: action.handNumber,
+      actionSequence: action.actionSequence,
+      timestamp: action.timestamp
+    }));
+
+    res.json({
+      success: true,
+      gameId,
+      actionHistory: formattedHistory,
+      count: formattedHistory.length
+    });
+
+  } catch (error) {
+    console.error('Error getting action history:', error);
+    res.status(500).json({ error: 'Failed to get action history' });
+  }
+});
+
 export default router; 

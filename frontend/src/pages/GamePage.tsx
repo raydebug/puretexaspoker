@@ -5,6 +5,7 @@ import { GameBoard } from '../components/GameBoard';
 import { PlayerActions } from '../components/PlayerActions';
 import { GameStatus } from '../components/GameStatus';
 import { OnlineList } from '../components/OnlineList';
+import { ActionHistory } from '../components/ActionHistory';
 import { ChatBox } from '../components/ChatBox';
 import { socketService } from '../services/socketService';
 import { GameState, Player } from '../types/game';
@@ -615,6 +616,10 @@ const GamePage: React.FC = () => {
             showMode="observers"
           />
 
+          <ActionHistory 
+            gameId={gameId || ''} 
+          />
+
           {/* Seat Selection Dialog */}
           {showSeatDialog && selectedSeat !== null && (
             <SeatSelectionDialog
@@ -643,6 +648,10 @@ const GamePage: React.FC = () => {
       <OnlineList 
         observers={observers}
         showMode="observers"
+      />
+
+      <ActionHistory 
+        gameId={gameId || ''} 
       />
 
       {/* Seat Selection Dialog for seat changes */}
