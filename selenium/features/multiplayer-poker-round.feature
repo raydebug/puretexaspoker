@@ -29,12 +29,15 @@ Feature: Multiplayer Poker Game Round
     When the game starts and preflop betting begins
     Then the current player should have betting options available
     And I should be able to interact with betting buttons
+    And I should see the action history component
+    And the action history should be empty initially
     
     # Simulate a realistic preflop betting round
     When "TestPlayer1" performs a "call" action
     Then the action should be reflected in the UI
     And the pot amount should update to "10"
     And the turn should move to "TestPlayer2"
+    And the action history should show the "call" action
     
     When "TestPlayer2" performs a "raise" action with amount "30"
     Then the raise should be processed via UI
@@ -42,6 +45,7 @@ Feature: Multiplayer Poker Game Round
     And the current bet should be "30"
     And the turn should move to "TestPlayer3"
     And the chip count change should be visible in the UI
+    And the action history should show the "raise" action
     
     When "TestPlayer3" performs a "fold" action
     Then "TestPlayer3" should be marked as folded
@@ -114,4 +118,6 @@ Feature: Multiplayer Poker Game Round
     Then all player chip counts should be accurate
     And the pot display should show correct final amount
     And the game controls should be properly disabled
-    And the winner celebration should be displayed 
+    And the winner celebration should be displayed
+    And the action history should show actions from multiple phases
+    And each action in history should show player name, action type, and timestamp 
