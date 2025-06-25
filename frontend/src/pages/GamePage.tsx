@@ -99,33 +99,7 @@ const TableContainer = styled.div`
   position: relative;
 `;
 
-const LobbyButtonContainer = styled.div`
-  background: rgba(0, 0, 0, 0.8);
-  padding: 1rem;
-  border-bottom: 1px solid #333;
-`;
 
-const LobbyButton = styled.button`
-  width: 100%;
-  padding: 0.75rem;
-  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  
-  &:hover {
-    background: linear-gradient(135deg, #2980b9 0%, #21618c 100%);
-    transform: translateY(-1px);
-  }
-  
-  &:active {
-    transform: translateY(0);
-  }
-`;
 
 const GamePage: React.FC = () => {
   const navigate = useNavigate();
@@ -426,9 +400,7 @@ const GamePage: React.FC = () => {
 
 
 
-  const handleReturnToLobby = () => {
-    navigate('/');
-  };
+
 
   // Function to handle seat selection for observers
   const handleSeatSelection = (seatNumber: number) => {
@@ -555,12 +527,6 @@ const GamePage: React.FC = () => {
       <GameContainer data-testid="observer-view">
         <GameLayout>
           <LeftSidebar>
-            <LobbyButtonContainer>
-              <LobbyButton onClick={handleReturnToLobby}>
-                Return to Lobby
-              </LobbyButton>
-            </LobbyButtonContainer>
-            
             <ActionHistory 
               gameId={gameId || ''} 
             />
@@ -600,12 +566,6 @@ const GamePage: React.FC = () => {
   return (
     <GameContainer>
       <LeftSidebar>
-        <LobbyButtonContainer>
-          <LobbyButton onClick={handleReturnToLobby}>
-            Return to Lobby
-          </LobbyButton>
-        </LobbyButtonContainer>
-        
         <ActionHistory 
           gameId={gameId || ''} 
         />
