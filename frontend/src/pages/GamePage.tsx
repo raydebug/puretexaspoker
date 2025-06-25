@@ -592,13 +592,14 @@ const GamePage: React.FC = () => {
           
           <GameLayout>
             <LeftSidebar>
+              <ActionHistory 
+                gameId={gameId || ''} 
+              />
+              
               <OnlineList 
                 observers={observers}
                 showMode="observers"
-              />
-              
-              <ActionHistory 
-                gameId={gameId || ''} 
+                compact={true}
               />
             </LeftSidebar>
             
@@ -637,13 +638,14 @@ const GamePage: React.FC = () => {
   return (
     <GameContainer>
       <LeftSidebar>
+        <ActionHistory 
+          gameId={gameId || ''} 
+        />
+        
         <OnlineList 
           observers={observers}
           showMode="observers"
-        />
-        
-        <ActionHistory 
-          gameId={gameId || ''} 
+          compact={true}
         />
       </LeftSidebar>
       

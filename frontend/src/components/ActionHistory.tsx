@@ -22,7 +22,7 @@ const Container = styled.div`
   background: rgba(0, 0, 0, 0.7);
   border-radius: 8px;
   padding: 1rem;
-  margin-top: 1rem;
+  margin: 0;
   border: 1px solid #333;
   max-height: 300px;
   overflow-y: auto;
