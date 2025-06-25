@@ -1,0 +1,22 @@
+{
+  "totalStepFiles": 16,
+  "totalSteps": 657,
+  "coverage": {
+    "apiEndpoints": {
+      "total": 107,
+      "covered": 2,
+      "percentage": 2
+    },
+    "socketEvents": {
+      "total": 29,
+      "covered": 0,
+      "percentage": 0
+    },
+    "components": {
+      "total": 27,
+      "covered": 0,
+      "percentage": 0
+    }
+  },
+  "duplicateAreas": 1
+}
