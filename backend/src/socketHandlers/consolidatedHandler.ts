@@ -599,7 +599,7 @@ export function registerConsolidatedHandlers(io: Server) {
         if (gameState.status === 'waiting' && gameState.players.length >= 2) {
           try {
             console.log(`[CONSOLIDATED] Auto-starting game with ${gameState.players.length} players`);
-            gameService.startGame();
+            await gameManager.startGame(socket.data.gameId);
             gameState = gameService.getGameState(); // Get updated state after start
             console.log(`[CONSOLIDATED] Game auto-started successfully - new phase: ${gameState.phase}`);
           } catch (startError) {

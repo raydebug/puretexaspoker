@@ -566,22 +566,48 @@ Given('I have {int} browser instances with players seated:', {timeout: 180000}, 
       await delay(2000);
       console.log(`✅ SELENIUM: Navigated to lobby`);
       
-      // Step 2: Join a table (which creates the game)
+      // Step 2: Join a table (which creates the game) - ENHANCED VERSION
       try {
-        // Look for join table buttons
-        await driver.wait(until.elementLocated(By.css('[data-testid^="join-table-"], .join-table-btn, [class*="join"]')), 10000);
-        const joinButton = await driver.findElement(By.css('[data-testid^="join-table-"], .join-table-btn, [class*="join"]'));
-        await joinButton.click();
-        await delay(3000);
-        console.log(`✅ SELENIUM: Joined table successfully`);
+        console.log(`🔍 SELENIUM: Looking for table join buttons for ${playerName}...`);
         
-        // Step 3: Verify we're on the game page by looking for poker table elements
-        await driver.wait(until.elementLocated(By.css('[data-testid="poker-table"]')), 15000);
-        console.log(`✅ SELENIUM: Poker table found - on game page`);
+        // Wait for tables to load first
+        await driver.wait(until.elementLocated(By.css('[data-testid^="join-table-"]')), 15000);
+        const joinButtons = await driver.findElements(By.css('[data-testid^="join-table-"]'));
+        console.log(`📊 SELENIUM: Found ${joinButtons.length} table join buttons`);
+        
+        if (joinButtons.length > 0) {
+          const firstTableButton = joinButtons[0];
+          const testId = await firstTableButton.getAttribute('data-testid');
+          console.log(`🎯 SELENIUM: Clicking first table join button: ${testId}`);
+          
+          // Use JavaScript click for reliability
+          await driver.executeScript("arguments[0].click();", firstTableButton);
+          
+          // Wait for navigation to complete (welcome popup may appear)
+          await delay(5000);
+          console.log(`✅ SELENIUM: Table join button clicked for ${playerName}`);
+          
+          // Step 3: Wait for poker table to appear
+          console.log(`🔍 SELENIUM: Waiting for poker table to appear for ${playerName}...`);
+          await driver.wait(until.elementLocated(By.css('[data-testid="poker-table"]')), 20000);
+          console.log(`✅ SELENIUM: Poker table found - ${playerName} is on game page`);
+          
+        } else {
+          throw new Error('No table join buttons found');
+        }
         
       } catch (e) {
-        console.log(`⚠️ SELENIUM: Could not join table via UI, continuing anyway...`);
-        console.log(`⚠️ SELENIUM: Error: ${e.message}`);
+        console.log(`❌ SELENIUM: Failed to join table for ${playerName}: ${e.message}`);
+        
+        // Try to get current URL for debugging
+        try {
+          const currentUrl = await driver.getCurrentUrl();
+          console.log(`🔍 SELENIUM: Current URL for ${playerName}: ${currentUrl}`);
+        } catch (urlError) {
+          console.log(`🔍 SELENIUM: Could not get URL: ${urlError.message}`);
+        }
+        
+        throw new Error(`Failed to join table for ${playerName}: ${e.message}`);
       }
       
       // Take seat - **CRITICAL DEBUGGING**: Check if seat click opens dialog

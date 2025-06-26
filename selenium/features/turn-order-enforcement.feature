@@ -4,7 +4,7 @@ Feature: Professional Turn Order Enforcement
   So that the game maintains integrity and follows official Texas Hold'em rules
 
   Background:
-    Given the server is running on "http://localhost:8080"
+    Given the server is running on "http://localhost:3001"
     And I am in the game lobby
     And there is a test table "Turn Order Test Table" with 5 seats
 

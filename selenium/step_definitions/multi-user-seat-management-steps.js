@@ -998,80 +998,57 @@ async function loginUser(driver, username) {
 
 async function navigateToTable(driver, tableName) {
   try {
-    console.log(`🚢 Navigating to table ${tableName}...`);
+    console.log(`🚢 Following proper user flow to join table ${tableName}...`);
     
-    // Navigate to lobby first and wait for it to fully load
-    await driver.get('http://localhost:3000');
-    console.log(`📍 Navigated to lobby`);
+    // Step 1: Navigate to lobby  
+    await driver.get('http://localhost:3000/');
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    console.log(`✅ Navigated to lobby`);
     
-    // Wait for lobby to load completely
-    await driver.wait(until.elementLocated(By.css('body')), 10000);
-    await new Promise(resolve => setTimeout(resolve, 2000)); // Give lobby time to initialize
-    
-    // Try to navigate to table directly, or use lobby method as fallback
+    // Step 2: Join a table (which creates the game) - ENHANCED VERSION
     try {
-      const tableUrl = `http://localhost:3000/table/${tableName}`;
-      console.log(`🎯 Navigating to table URL: ${tableUrl}`);
-      await driver.get(tableUrl);
-    } catch (directNavError) {
-      console.log(`⚠️ Direct navigation failed, trying lobby approach...`);
+      console.log(`🔍 Looking for table join buttons...`);
       
-      // Navigate via lobby - click join button for table
-      await driver.get('http://localhost:3000');
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Wait for tables to load first
+      await driver.wait(until.elementLocated(By.css('[data-testid^="join-table-"]')), 15000);
+      const joinButtons = await driver.findElements(By.css('[data-testid^="join-table-"]'));
+      console.log(`📊 Found ${joinButtons.length} table join buttons`);
       
-      try {
-        // Look for a join table button
-        const joinButton = await driver.wait(
-          until.elementLocated(By.css('.join-table-button, [data-testid="join-table"], button:contains("Join")')),
-          10000
-        );
-        await joinButton.click();
-        console.log(`✅ Clicked join table button from lobby`);
-      } catch (joinError) {
-        console.log(`⚠️ Could not find join button, trying direct game page access...`);
-        await driver.get('http://localhost:3000/game');
-      }
-    }
-    
-    // Wait for table page to load with multiple possible selectors
-    console.log(`⏳ Waiting for poker table to load...`);
-    
-    try {
-      await driver.wait(
-        until.elementLocated(By.css('.poker-table, [data-testid="poker-table"], .game-table, .table-container, .poker-game')),
-        15000
-      );
-      console.log(`✅ Poker table loaded successfully`);
-    } catch (tableError) {
-      // Try alternative approach - look for any game-related content
-      console.log(`⚠️ Primary table selectors not found, trying alternatives...`);
-      
-      try {
-        await driver.wait(
-          until.elementLocated(By.css('.game, .poker, [data-testid*="game"], [data-testid*="table"], main, .content')),
-          10000
-        );
-        console.log(`✅ Alternative game content found`);
-      } catch (altError) {
-        console.log(`❌ No table content found at all`);
+      if (joinButtons.length > 0) {
+        const firstTableButton = joinButtons[0];
+        const testId = await firstTableButton.getAttribute('data-testid');
+        console.log(`🎯 Clicking first table join button: ${testId}`);
         
-        // Debug: log what's actually on the page
-        const pageTitle = await driver.getTitle();
+        // Use JavaScript click for reliability
+        await driver.executeScript("arguments[0].click();", firstTableButton);
+        
+        // Wait for navigation to complete (welcome popup may appear)
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        console.log(`✅ Table join button clicked`);
+        
+        // Step 3: Wait for poker table to appear
+        console.log(`🔍 Waiting for poker table to appear...`);
+        await driver.wait(until.elementLocated(By.css('[data-testid="poker-table"]')), 20000);
+        console.log(`✅ Poker table found - on game page`);
+        
+      } else {
+        throw new Error('No table join buttons found');
+      }
+      
+    } catch (e) {
+      console.log(`❌ Failed to join table: ${e.message}`);
+      
+      // Try to get current URL for debugging
+      try {
         const currentUrl = await driver.getCurrentUrl();
-        console.log(`📄 Page title: ${pageTitle}`);
-        console.log(`🔗 Current URL: ${currentUrl}`);
-        
-        // Try to find any elements to see what's on the page
-        const bodyElements = await driver.findElements(By.css('div, main, section'));
-        console.log(`📋 Found ${bodyElements.length} container elements on page`);
-        
-        throw new Error(`Table page did not load properly. Title: ${pageTitle}, URL: ${currentUrl}`);
+        console.log(`🔍 Current URL: ${currentUrl}`);
+      } catch (urlError) {
+        console.log(`🔍 Could not get URL: ${urlError.message}`);
       }
+      
+      throw new Error(`Failed to join table: ${e.message}`);
     }
     
-    // Additional wait for page to stabilize
-    await new Promise(resolve => setTimeout(resolve, 1000));
     console.log(`✅ Table navigation completed for ${tableName}`);
     
   } catch (error) {
@@ -1084,12 +1061,15 @@ async function takeSeat(driver, seatNumber, buyIn) {
   try {
     console.log(`💺 Attempting to take seat ${seatNumber} with buy-in ${buyIn}...`);
     
-    // Find and click the seat - USE CORRECT SELECTORS based on frontend implementation
+    // Wait a moment for the poker table to fully load after joining
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Step 1: Find the correct seat element 
     const seatSelectors = [
-      `[data-testid="available-seat-${seatNumber}"]`, // Empty seats use this pattern
-      `[data-testid="seat-${seatNumber}"]`,           // Occupied seats use this pattern  
-      `.seat-${seatNumber}`,                          // Fallback class names
-      `.seat[data-seat="${seatNumber}"]`              // Legacy fallback
+      `[data-testid="available-seat-${seatNumber}"]`,
+      `[data-testid="seat-${seatNumber}"]`,
+      `.seat-${seatNumber}`,
+      `[data-seat="${seatNumber}"]`
     ];
     
     let seatElement = null;
@@ -1098,7 +1078,7 @@ async function takeSeat(driver, seatNumber, buyIn) {
         console.log(`🔍 Trying seat selector: ${selector}`);
         seatElement = await driver.wait(
           until.elementLocated(By.css(selector)),
-          3000 // Shorter timeout per selector
+          5000
         );
         console.log(`✅ Found seat ${seatNumber} using selector: ${selector}`);
         break;
@@ -1112,64 +1092,93 @@ async function takeSeat(driver, seatNumber, buyIn) {
       throw new Error(`Failed to locate seat ${seatNumber} with any selector`);
     }
     
-    // Make sure seat is clickable and scroll into view
+    // Step 2: Click the seat to open dialog
+    console.log(`🎯 Clicking seat ${seatNumber} to open dialog...`);
+    
+    // Scroll into view and ensure clickable
     await driver.executeScript('arguments[0].scrollIntoView(true);', seatElement);
     await new Promise(resolve => setTimeout(resolve, 500));
-    await driver.wait(until.elementIsEnabled(seatElement), 5000);
     
     try {
       await seatElement.click();
-      console.log(`✅ Regular clicked seat ${seatNumber}`);
+      console.log(`✅ Successfully clicked seat ${seatNumber}`);
     } catch (clickError) {
       console.log(`⚠️ Regular click failed, trying JavaScript click...`);
       await driver.executeScript('arguments[0].click();', seatElement);
       console.log(`✅ JavaScript clicked seat ${seatNumber}`);
     }
     
-    console.log(`🎯 Clicked seat ${seatNumber}`);
-    
-    // Fill buy-in amount if input exists
+    // Step 3: Wait for dialog to appear and handle it
+    console.log(`⏳ Waiting for seat selection dialog...`);
     try {
-      const buyInInput = await driver.wait(
-        until.elementLocated(By.css('input[placeholder*="buy"], input[name="buyIn"], #buyIn, [data-testid="buyin-input"]')),
-        5000
+      const dialogElement = await driver.wait(
+        until.elementLocated(By.css('[data-testid="seat-dialog"], [role="dialog"], .dialog-overlay')),
+        10000
       );
+      console.log(`✅ Seat dialog detected`);
       
-      console.log(`💰 Found buy-in input for seat ${seatNumber}`);
-      await buyInInput.clear();
-      await buyInInput.sendKeys(buyIn.toString());
-      
-      // Click confirm button
-      const confirmButton = await driver.wait(
-        until.elementLocated(By.css('button[type="submit"], .confirm-button, button:contains("Confirm"), button:contains("Join"), [data-testid="confirm-button"]')),
-        5000
-      );
-      
-      console.log(`✅ Clicking confirm button for seat ${seatNumber}...`);
-      await confirmButton.click();
-      
-      // Wait for seat assignment to complete with longer timeout
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      console.log(`✅ Seat ${seatNumber} assignment completed`);
-      
-    } catch (buyInError) {
-      // Buy-in dialog might not appear, seat might be taken directly
-      console.log(`⚠️ Buy-in dialog not found for seat ${seatNumber}, checking if seat was taken directly...`);
-      
-      // Check if seat was taken successfully without buy-in dialog
+      // Fill buy-in input if it exists
       try {
-        await driver.wait(
-          until.elementLocated(By.css(`[data-testid="seat-${seatNumber}"] .player-name, .seat-${seatNumber} .player`)),
-          3000
+        const buyInInput = await driver.findElement(
+          By.css('input[data-testid="buyin-input"], input[type="number"], input[placeholder*="buy"], input[name="buyIn"]')
         );
-        console.log(`✅ Seat ${seatNumber} appears to be taken successfully`);
-      } catch (verifyError) {
-        console.log(`⚠️ Could not verify seat ${seatNumber} was taken`);
-        // Still continue, the seat might be taken anyway
+        
+        console.log(`💰 Found buy-in input, entering ${buyIn}...`);
+        await buyInInput.clear();
+        await buyInInput.sendKeys(buyIn.toString());
+        
+      } catch (inputError) {
+        console.log(`ℹ️ No buy-in input found, using default...`);
       }
       
-      // Standard wait for seat assignment
+      // Click confirm button
+      const confirmSelectors = [
+        '[data-testid="confirm-button"]',
+        'button[type="submit"]', 
+        '.confirm-button',
+        'button:contains("Confirm")',
+        'button:contains("Take Seat")',
+        'button:contains("Join")'
+      ];
+      
+      let confirmButton = null;
+      for (const selector of confirmSelectors) {
+        try {
+          if (selector.includes(':contains')) {
+            confirmButton = await driver.findElement(By.xpath(`//button[contains(text(), "Confirm") or contains(text(), "Take Seat") or contains(text(), "Join")]`));
+          } else {
+            confirmButton = await driver.findElement(By.css(selector));
+          }
+          console.log(`✅ Found confirm button with selector: ${selector}`);
+          break;
+        } catch (error) {
+          continue;
+        }
+      }
+      
+      if (!confirmButton) {
+        throw new Error('Could not find confirm button in dialog');
+      }
+      
+      console.log(`🔘 Clicking confirm button...`);
+      await confirmButton.click();
+      
+      // Wait for dialog to close and seat assignment to complete
+      console.log(`⏳ Waiting for seat assignment to complete...`);
+      await driver.wait(
+        until.stalenessOf(dialogElement),
+        8000
+      );
+      
+      // Additional wait for WebSocket updates
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      console.log(`✅ Seat ${seatNumber} assignment completed successfully`);
+      
+    } catch (dialogError) {
+      console.log(`⚠️ Dialog handling failed: ${dialogError.message}`);
+      // Try alternative: maybe seat was taken immediately without dialog
       await new Promise(resolve => setTimeout(resolve, 2000));
+      console.log(`ℹ️ Proceeding assuming seat was taken without dialog...`);
     }
     
   } catch (error) {

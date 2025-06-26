@@ -4,7 +4,7 @@ Feature: Multi-User Seat Management with Multiple Browser Instances
   So that users can join, take seats, and change seats without conflicts
 
   Background:
-    Given the server is running on "http://localhost:8080"
+    Given the server is running on "http://localhost:3001"
     And the frontend is running on "http://localhost:3000"
     And I have a clean poker table "MultiUserTable" with 6 seats
 
