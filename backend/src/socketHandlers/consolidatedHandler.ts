@@ -199,6 +199,20 @@ export function registerConsolidatedHandlers(io: Server) {
 
       io.to(`game:${connectionState.gameId}`).emit('gameState', gameState);
 
+      // **CRITICAL FIX**: Broadcast updated observer/player counts after player moves to observer
+      const observers = locationManager.getObserversAtTable(connectionState.tableId);
+      const players = locationManager.getPlayersAtTable(connectionState.tableId);
+      const totalUsers = observers.length + players.length;
+      
+      io.to(`game:${connectionState.gameId}`).emit('location:usersAtTable', {
+        tableId: connectionState.tableId,
+        totalUsers,
+        observers: observers.length,
+        players: players.length
+      });
+      
+      console.log(`[CONSOLIDATED] Broadcasted table ${connectionState.tableId} user update after disconnect - Observers: ${observers.length}, Players: ${players.length}, Total: ${totalUsers}`);
+
     } catch (error) {
       console.error('[CONSOLIDATED] Error moving player to observer:', error);
     }
@@ -432,6 +446,20 @@ export function registerConsolidatedHandlers(io: Server) {
           seat: null
         });
 
+        // **CRITICAL FIX**: Broadcast updated observer/player counts after joining as observer
+        const observers = locationManager.getObserversAtTable(tableId);
+        const players = locationManager.getPlayersAtTable(tableId);
+        const totalUsers = observers.length + players.length;
+        
+        io.to(`game:${gameId}`).emit('location:usersAtTable', {
+          tableId,
+          totalUsers,
+          observers: observers.length,
+          players: players.length
+        });
+        
+        console.log(`[CONSOLIDATED] Broadcasted table ${tableId} user update after join - Observers: ${observers.length}, Players: ${players.length}, Total: ${totalUsers}`);
+
         console.log(`[CONSOLIDATED] Successfully joined ${nickname} as observer to game ${gameId}`);
         
       } catch (error) {
@@ -621,6 +649,20 @@ export function registerConsolidatedHandlers(io: Server) {
           table: socket.data.tableId,
           seat: seatNumber
         });
+
+        // **CRITICAL FIX**: Broadcast updated observer/player counts after seat change
+        const observers = locationManager.getObserversAtTable(socket.data.tableId);
+        const players = locationManager.getPlayersAtTable(socket.data.tableId);
+        const totalUsers = observers.length + players.length;
+        
+        io.to(`game:${socket.data.gameId}`).emit('location:usersAtTable', {
+          tableId: socket.data.tableId,
+          totalUsers,
+          observers: observers.length,
+          players: players.length
+        });
+        
+        console.log(`[CONSOLIDATED] Broadcasted table ${socket.data.tableId} user update - Observers: ${observers.length}, Players: ${players.length}, Total: ${totalUsers}`);
 
         console.log(`[CONSOLIDATED] Successfully seated ${socket.data.nickname} at seat ${seatNumber}`);
         
