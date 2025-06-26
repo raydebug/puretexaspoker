@@ -62,3 +62,10 @@ backend/prisma/dev.db-journal
 # Cypress
 frontend/cypress/videos/
 frontend/cypress/screenshots/ 
+# Selenium test artifacts
+selenium/screenshots/failed-*.png
+selenium/screenshots/*.png
+selenium/reports/complete-analysis-*.json
+selenium/reports/coverage-report-*.json
+selenium/reports/coverage-comparisons/
+selenium/debug-*.js
