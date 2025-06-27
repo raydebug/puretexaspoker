@@ -1213,6 +1213,192 @@ Then('{string} should post {int} chips as ante', async function (playerName, exp
     console.log(`✅ ${playerName} correctly posted ${expectedAnteAmount} chips as ante`);
 });
 
+// All-In Dead Blind Scenarios step definitions
+Given('the game has blinds {string}', async function (blindAmounts) {
+    console.log(`🎮 Setting game blinds to ${blindAmounts}...`);
+    
+    const [smallBlind, bigBlind] = blindAmounts.split('/').map(amount => parseInt(amount));
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/set_game_blinds',
+        'POST',
+        {
+            tableId: 'Enhanced Blind Test Table',
+            smallBlind,
+            bigBlind
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to set game blinds: ${response.error}`);
+    }
+    
+    // Store blind amounts for later verification
+    this.gameBlinds = { smallBlind, bigBlind };
+    
+    console.log(`✅ Game blinds set to ${blindAmounts}`);
+});
+
+When('{string} has a dead blind obligation for {int} chips', async function (playerName, obligationAmount) {
+    console.log(`⚡ Creating dead blind obligation for ${playerName}: ${obligationAmount} chips...`);
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/create_dead_blind_obligation',
+        'POST',
+        {
+            tableId: 'Enhanced Blind Test Table',
+            playerName,
+            obligationAmount,
+            reason: 'test_scenario'
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to create dead blind obligation: ${response.error}`);
+    }
+    
+    // Store the obligation for later verification
+    if (!this.deadBlindObligations) {
+        this.deadBlindObligations = [];
+    }
+    
+    this.deadBlindObligations.push({
+        playerName,
+        obligationAmount,
+        reason: 'test_scenario'
+    });
+    
+    console.log(`✅ Dead blind obligation created for ${playerName}: ${obligationAmount} chips`);
+});
+
+When('{string} only has {int} chips remaining', async function (playerName, remainingChips) {
+    console.log(`⚡ Setting ${playerName} chip count to ${remainingChips}...`);
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/set_player_chips',
+        'POST',
+        {
+            tableId: 'Enhanced Blind Test Table',
+            playerName,
+            chipAmount: remainingChips
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to set player chips: ${response.error}`);
+    }
+    
+    // Store the player's chip count for later verification
+    if (!this.playerChips) {
+        this.playerChips = {};
+    }
+    this.playerChips[playerName] = remainingChips;
+    
+    console.log(`✅ ${playerName} now has ${remainingChips} chips remaining`);
+});
+
+Then('{string} should post an all-in dead blind of {int} chips', async function (playerName, allInAmount) {
+    console.log(`⚡ Verifying ${playerName} posts all-in dead blind of ${allInAmount} chips...`);
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_all_in_dead_blind',
+        'POST',
+        {
+            tableId: 'Enhanced Blind Test Table',
+            playerName,
+            expectedAllInAmount: allInAmount
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to verify all-in dead blind: ${response.error}`);
+    }
+    
+    expect(response.deadBlindPosted).to.exist;
+    expect(response.deadBlindPosted.playerName).to.equal(playerName);
+    expect(response.deadBlindPosted.amount).to.equal(allInAmount);
+    expect(response.deadBlindPosted.isAllIn).to.be.true;
+    expect(response.deadBlindPosted.type).to.equal('dead_blind');
+    
+    // Verify the player is now all-in
+    expect(response.playerStatus).to.exist;
+    expect(response.playerStatus.isAllIn).to.be.true;
+    expect(response.playerStatus.remainingChips).to.equal(0);
+    
+    console.log(`✅ ${playerName} correctly posted all-in dead blind of ${allInAmount} chips`);
+});
+
+Then('the remaining dead blind obligation should be waived', async function () {
+    console.log('⚡ Verifying remaining dead blind obligation is waived...');
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_obligation_waiver',
+        'POST',
+        {
+            tableId: 'Enhanced Blind Test Table'
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to verify obligation waiver: ${response.error}`);
+    }
+    
+    expect(response.waivedObligations).to.exist;
+    expect(response.waivedObligations).to.be.an('array');
+    expect(response.waivedObligations.length).to.be.greaterThan(0);
+    
+    // Verify each waived obligation
+    response.waivedObligations.forEach(waiver => {
+        expect(waiver.playerName).to.exist;
+        expect(waiver.originalObligation).to.be.a('number');
+        expect(waiver.waivedAmount).to.be.a('number');
+        expect(waiver.reason).to.equal('insufficient_chips');
+        expect(waiver.waivedAmount).to.be.greaterThan(0);
+    });
+    
+    console.log(`✅ Remaining dead blind obligations waived: ${response.waivedObligations.length} waivers`);
+});
+
+Then('{string} should be eligible for side pot creation', async function (playerName) {
+    console.log(`⚡ Verifying ${playerName} is eligible for side pot creation...`);
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_side_pot_eligibility',
+        'POST',
+        {
+            tableId: 'Enhanced Blind Test Table',
+            playerName
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to verify side pot eligibility: ${response.error}`);
+    }
+    
+    expect(response.eligibility).to.exist;
+    expect(response.eligibility.isEligible).to.be.true;
+    expect(response.eligibility.playerName).to.equal(playerName);
+    expect(response.eligibility.reason).to.equal('all_in_player');
+    
+    // Verify side pot structure
+    expect(response.sidePotStructure).to.exist;
+    expect(response.sidePotStructure.mainPot).to.exist;
+    expect(response.sidePotStructure.sidePots).to.be.an('array');
+    
+    // Verify the all-in player's contribution cap
+    expect(response.eligibility.contributionCap).to.exist;
+    expect(response.eligibility.contributionCap).to.be.a('number');
+    expect(response.eligibility.contributionCap).to.be.greaterThan(0);
+    
+    console.log(`✅ ${playerName} is eligible for side pot creation with contribution cap of ${response.eligibility.contributionCap} chips`);
+});
+
 module.exports = {
     tournamentSchedule,
     gameState,
