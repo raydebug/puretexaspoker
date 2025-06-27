@@ -5,15 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "npm run test:clean && concurrently --kill-others-on-fail \"cd backend && npm test\" \"cd frontend && npm test\"",
-    "test:clean": "rimraf cypress/screenshots cypress/videos selenium/screenshots selenium/reports",
-    "test:e2e": "npm run test:e2e:api && npm run test:e2e:cucumber",
-    "test:e2e:api": "cypress run --spec 'cypress/e2e/00-api-comprehensive.cy.ts'",
-    "test:e2e:game": "cypress run --spec 'cypress/e2e/comprehensive-poker-game.cy.ts'",
-    "test:e2e:cucumber": "cypress run --spec 'cypress/e2e/features/**/*.feature'",
-    "test:e2e:cucumber:open": "cypress open --config specPattern='cypress/e2e/features/**/*.feature'",
-    "test:e2e:open": "cypress open",
-    "test:e2e:headed": "cypress run --headed",
-    "test:e2e:all": "npm run test:e2e:api && npm run test:e2e:game && npm run test:e2e:cucumber",
+    "test:clean": "rimraf selenium/screenshots selenium/reports",
     "test:selenium": "npm run test:selenium:cucumber",
     "test:selenium:cucumber": "npx cucumber-js selenium/features/**/*.feature --require selenium/step_definitions/**/*.js --format @cucumber/pretty-formatter --format json:selenium/reports/cucumber-report.json",
     "test:selenium:chrome": "BROWSER=chrome npm run test:selenium:cucumber",
@@ -30,7 +22,7 @@
     "coverage:analyze": "node selenium/utils/runCoverageAnalysis.js",
     "coverage:compare": "node selenium/utils/runCoverageComparison.js",
     "coverage:complete": "node selenium/utils/runCompleteCoverageAnalysis.js",
-    "test:all": "npm run test:e2e:all && npm run test:selenium:all",
+    "test:all": "npm run test:selenium:all",
     "frontend": "cd frontend && npm start",
     "backend": "cd backend && npm start",
     "kill-ports": "lsof -ti:3000,3001 | xargs kill -9 2>/dev/null || true",
@@ -48,13 +40,10 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@badeball/cypress-cucumber-preprocessor": "^22.1.0",
-    "@bahmutov/cypress-esbuild-preprocessor": "^2.2.5",
     "@cucumber/cucumber": "^10.3.1",
     "@cucumber/pretty-formatter": "^1.0.1",
     "@types/chai": "^5.2.2",
     "@types/chai-jquery": "^1.1.43",
-    "@types/cypress": "^0.1.6",
     "@types/jquery": "^3.5.32",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.15.19",
@@ -65,8 +54,6 @@
     "chai-jquery": "^2.1.0",
     "chromedriver": "^137.0.4",
     "concurrently": "^8.2.2",
-    "cypress": "^14.4.0",
-    "cypress-file-upload": "^5.0.8",
     "geckodriver": "^4.3.3",
     "jquery": "^3.7.1",
     "rimraf": "^5.0.5",
@@ -78,11 +65,5 @@
   "dependencies": {
     "axios": "^1.10.0",
     "socket.io-client": "^4.8.1"
-  },
-  "cypress-cucumber-preprocessor": {
-    "stepDefinitions": "cypress/e2e/step_definitions/**/*.ts",
-    "nonGlobalStepDefinitions": false,
-    "filterSpecs": true,
-    "omitFiltered": true
   }
 }

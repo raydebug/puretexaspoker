@@ -1,6 +1,6 @@
 # Selenium Test Suite
 
-This directory contains Selenium WebDriver-based tests that run the same Cucumber features as the Cypress tests, providing cross-browser testing capabilities.
+This directory contains Selenium WebDriver-based tests that provide comprehensive cross-browser testing capabilities for the poker application.
 
 ## Structure
 
@@ -8,7 +8,7 @@ This directory contains Selenium WebDriver-based tests that run the same Cucumbe
 selenium/
 ├── config/
 │   └── selenium.config.ts     # WebDriver configuration and management
-├── features/                  # Cucumber feature files (copied from cypress/e2e/features)
+├── features/                  # Cucumber feature files
 ├── step_definitions/          # Selenium WebDriver step definitions
 │   ├── hooks.ts              # Before/After hooks for setup/teardown
 │   ├── common-steps.ts       # Common step definitions
@@ -51,7 +51,7 @@ npm run test:selenium:headed
 # Run all browsers
 npm run test:selenium:all
 
-# Run both Cypress and Selenium tests
+# Run all tests
 npm run test:all
 ```
 
@@ -158,15 +158,15 @@ The Selenium tests can be integrated into CI/CD pipelines:
     npm run test:selenium:firefox -- --headless
 ```
 
-## Comparison with Cypress
+## Test Coverage
 
-| Feature | Cypress | Selenium |
-|---------|---------|----------|
-| Browser Support | Chrome family | Chrome, Firefox, Edge |
-| Execution Speed | Faster | Slower |
-| Setup Complexity | Simpler | More complex |
-| Cross-browser | Limited | Excellent |
-| Debugging | Excellent | Good |
-| CI/CD Integration | Excellent | Excellent |
+The Selenium test suite provides comprehensive coverage including:
 
-Both test suites run the same Cucumber features, ensuring consistent test coverage across different browser engines. 
+- **User Authentication**: Login, registration, and session management
+- **Table Management**: Joining tables, seat selection, and observer mode
+- **Game Flow**: Complete poker game scenarios and betting actions
+- **Real-time Features**: WebSocket communication and live updates
+- **Error Handling**: Connection issues and recovery scenarios
+- **Cross-browser Compatibility**: Consistent behavior across Chrome, Firefox, and Edge
+
+The test suite uses Cucumber BDD features to ensure clear, maintainable test scenarios that can be understood by both technical and non-technical stakeholders. 

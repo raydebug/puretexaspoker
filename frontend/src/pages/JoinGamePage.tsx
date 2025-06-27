@@ -118,19 +118,6 @@ export const JoinGamePage: React.FC = () => {
   useEffect(() => {
     if (table && !isJoining) {
       console.log('Auto-joining table as observer from JoinGamePage');
-      
-      // In test mode, navigate directly without socket connection
-      if (typeof window !== 'undefined' && (window as any).Cypress) {
-        console.log('JoinGamePage: Test mode detected - navigating directly to game');
-        navigate(`/game/${table.id}`, { 
-          state: { 
-            table,
-            role: 'observer'
-          }
-        });
-        return;
-      }
-      
       handleJoinAsObserver();
     }
   }, [table]); // Depend on table to avoid multiple calls

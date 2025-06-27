@@ -142,14 +142,14 @@ A modern, real-time Texas Hold'em poker game built with React, TypeScript, Node.
 - **Smart Username System**: Duplicate prevention with helpful suggestions
 - **Connection Resilience**: Automatic cleanup of disconnected players
 - **Professional UI**: Modern, responsive design with smooth animations
-- **Comprehensive Testing**: E2E test coverage for critical user flows
+- **Comprehensive Testing**: Selenium WebDriver E2E test coverage for critical user flows
 
 ## 🛠️ Tech Stack
 
 - **Frontend**: React 18, TypeScript, styled-components, Vite
 - **Backend**: Node.js, Express, Socket.io, TypeScript  
 - **Database**: Prisma ORM with SQLite
-- **Testing**: Cypress for E2E, comprehensive API testing
+- **Testing**: Selenium WebDriver for E2E, comprehensive API testing
 - **Development**: Concurrently for parallel dev servers, hot reload
 
 ## 🚀 Quick Start
@@ -181,23 +181,16 @@ npm run dev
 
 ### Running Tests
 ```bash
-# Run E2E tests
-npm run test:e2e
+# Run Selenium E2E tests
+npm run test:selenium
 
-# Run comprehensive BDD feature tests
-npx cypress run --spec "cypress/e2e/features/login-join-take-seats.feature" --headed
-npx cypress run --spec "cypress/e2e/features/multiplayer-poker-round.feature" --headed
+# Run specific browser tests
+npm run test:selenium:chrome
+npm run test:selenium:firefox
+npm run test:selenium:edge
 
-# Run specific legacy tests
-npx cypress run --spec "cypress/e2e/setup.cy.ts"
-npx cypress run --spec "cypress/e2e/username-validation.cy.ts"  
-npx cypress run --spec "cypress/e2e/observer-flow.cy.ts"
-npx cypress run --spec "cypress/e2e/observer-appears-when-joining-test.cy.ts"
-npx cypress run --spec "cypress/e2e/user-location-transition-flow.cy.ts"
-npx cypress run --spec "cypress/e2e/logout-anonymous-browsing.cy.ts"
-npx cypress run --spec "cypress/e2e/lobby-basic.cy.ts"
-npx cypress run --spec "cypress/e2e/anonymous-first-lobby.cy.ts"
-npx cypress run --spec "cypress/e2e/join-table-button-text.cy.ts"
+# Run tests with coverage analysis
+npm run test:selenium:coverage
 
 # Test the new testing APIs directly
 curl -X DELETE http://localhost:3001/api/test_cleanup_games
@@ -323,7 +316,7 @@ frontend/
 
 - **Feature Documentation**: See `/docs/` directory for detailed feature specifications
 - **API Documentation**: Available at http://localhost:3001/api when server running
-- **Test Documentation**: Comprehensive E2E test scenarios in `/cypress/e2e/`
+- **Test Documentation**: Comprehensive E2E test scenarios in `/selenium/features/`
 
 ## 🤝 Contributing
 

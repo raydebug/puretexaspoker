@@ -6,8 +6,6 @@ node_modules/
 # Testing
 coverage/
 .nyc_output/
-cypress/videos/
-cypress/screenshots/
 
 # Production
 build/
@@ -49,19 +47,10 @@ logs/
 .DS_Store
 Thumbs.db
 
-# Cypress
-cypress/fixtures/
-cypress/plugins/
-cypress/support/
-cypress/tsconfig.json
-
 # Development database
 backend/prisma/dev.db
 backend/prisma/dev.db-journal
 
-# Cypress
-frontend/cypress/videos/
-frontend/cypress/screenshots/ 
 # Selenium test artifacts
 selenium/screenshots/failed-*.png
 selenium/screenshots/*.png

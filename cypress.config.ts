@@ -1,1 +1,0 @@
-./config/cypress.config.ts

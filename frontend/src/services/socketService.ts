@@ -77,9 +77,9 @@ export class SocketService {
     this.eventEmitter.setMaxListeners(50);
     
     // Auto-detect test environment
-    if (typeof window !== 'undefined' && (window as any).Cypress) {
+    if (typeof window !== 'undefined' && (window as any).SELENIUM_TEST) {
+      console.log('DEBUG: Test mode detected, enabling test mode');
       this.setTestMode(true);
-      console.log('DEBUG: Cypress detected, enabling test mode');
     }
 
     // Add to window for debugging (non-production only)

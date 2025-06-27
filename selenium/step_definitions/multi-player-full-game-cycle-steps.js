@@ -327,7 +327,6 @@ Given('I have {int} browser instances with players seated:', {timeout: 180000}, 
       // **CRITICAL**: Immediately disable test environment detection to prevent nickname overrides
       await driver.executeScript(`
         window.SELENIUM_TEST = true;
-        window.Cypress = undefined;
         try {
           if (window.localStorage) {
             localStorage.removeItem('nickname');

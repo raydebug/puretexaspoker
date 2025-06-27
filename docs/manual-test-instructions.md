@@ -73,8 +73,7 @@ DEBUG: Backend successfully seated player in seat X
 If you see "Invalid session data" in the logs, the bug is still present.
 
 ## 📸 Screenshots
-If testing with Cypress, screenshots are saved in:
-`cypress/screenshots/observer-to-player-transition.cy.ts/`
+Screenshots can be taken during testing for debugging purposes.
 
 ## 🎉 Expected Final State
 - User successfully seated at poker table

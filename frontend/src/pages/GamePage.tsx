@@ -131,9 +131,8 @@ const GamePage: React.FC = () => {
     socketService.resetConnectionState();
     
     // In test mode, create mock data and skip socket connection
-    // Support both Cypress and Selenium test environments
-    const isTestMode = (typeof window !== 'undefined' && (window as any).Cypress) || 
-                       (typeof navigator !== 'undefined' && navigator.webdriver);
+    // Support Selenium test environments
+    const isTestMode = (typeof navigator !== 'undefined' && navigator.webdriver);
     
     if (isTestMode) {
       console.log('GamePage: Test mode detected - setting up for test environment');
@@ -425,8 +424,7 @@ const GamePage: React.FC = () => {
     socketService.takeSeat(selectedSeat, buyInAmount);
     
     // In test mode, simulate taking the seat
-    const isTestMode = (typeof window !== 'undefined' && (window as any).Cypress) || 
-                       (typeof navigator !== 'undefined' && navigator.webdriver);
+    const isTestMode = (typeof navigator !== 'undefined' && navigator.webdriver);
     
     if (isTestMode) {
       // Use startTransition to batch all state updates together
