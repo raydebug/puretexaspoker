@@ -2541,6 +2541,78 @@ Then('unrevealed records should hide the card order details', async function () 
   }
 });
 
+// API Card Order Request step definitions
+When('I request the latest card orders via API', async function () {
+  try {
+    // Make API request for latest card orders
+    const response = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/card-order/latest');
+    assert.strictEqual(response.status, 200, 'Latest card orders API should be accessible');
+    assert.ok(response.data, 'API should return data');
+    assert.ok(response.data.cardOrders, 'Response should contain card orders');
+    
+    // Verify response structure
+    assert.ok(Array.isArray(response.data.cardOrders), 'Card orders should be an array');
+    assert.ok(response.data.totalCount !== undefined, 'Response should include total count');
+    assert.ok(response.data.timestamp, 'Response should include timestamp');
+    
+    // Store response for subsequent validations
+    this.latestCardOrders = response.data.cardOrders;
+    this.apiResponse = response.data;
+    
+    console.log('✅ Successfully requested latest card orders via API');
+  } catch (error) {
+    console.error('❌ Failed to request latest card orders via API:', error);
+    throw error;
+  }
+});
+
+Then('I should receive up to {int} card order records', async function (maxRecords) {
+  try {
+    assert.ok(this.latestCardOrders, 'Card orders should be available from previous step');
+    assert.ok(this.apiResponse, 'API response should be available from previous step');
+    
+    // Verify record count is within limit
+    assert.ok(this.latestCardOrders.length <= maxRecords, 
+              `Should receive up to ${maxRecords} records, got ${this.latestCardOrders.length}`);
+    assert.ok(this.latestCardOrders.length > 0, 'Should receive at least one record');
+    
+    // Verify each record has required structure
+    for (const record of this.latestCardOrders) {
+      assert.ok(record.gameId, 'Each record should have game ID');
+      assert.ok(record.timestamp, 'Each record should have timestamp');
+      assert.ok(record.status, 'Each record should have status');
+      assert.ok(['revealed', 'hidden', 'pending'].includes(record.status), 'Status should be valid');
+    }
+    
+    // Verify records are sorted by timestamp (latest first)
+    if (this.latestCardOrders.length > 1) {
+      for (let i = 1; i < this.latestCardOrders.length; i++) {
+        const prevTimestamp = new Date(this.latestCardOrders[i-1].timestamp);
+        const currTimestamp = new Date(this.latestCardOrders[i].timestamp);
+        assert.ok(prevTimestamp >= currTimestamp, 'Records should be sorted by timestamp (latest first)');
+      }
+    }
+    
+    // Verify pagination info if present
+    if (this.apiResponse.pagination) {
+      assert.ok(this.apiResponse.pagination.limit <= maxRecords, 'Pagination limit should not exceed max records');
+      assert.ok(this.apiResponse.pagination.total >= this.latestCardOrders.length, 'Total should be >= returned records');
+    }
+    
+    // Verify API performance and response time
+    const performanceResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/card-order/performance-metrics');
+    if (performanceResponse.status === 200) {
+      assert.ok(performanceResponse.data.responseTime < 5000, 'API response time should be reasonable');
+      assert.ok(performanceResponse.data.recordsPerSecond > 0, 'API should have positive throughput');
+    }
+    
+    console.log(`✅ Successfully received ${this.latestCardOrders.length} card order records (max: ${maxRecords})`);
+  } catch (error) {
+    console.error('❌ Failed to validate card order records:', error);
+    throw error;
+  }
+});
+
 module.exports = {
   comprehensiveTestPlayers,
   comprehensiveGameId,
