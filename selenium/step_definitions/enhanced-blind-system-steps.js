@@ -837,6 +837,102 @@ Then('the regular blinds should be posted by the appropriate players', async fun
     console.log(`✅ Regular blinds posted correctly - Small: ${smallBlind.playerName} (${smallBlind.amount}), Big: ${bigBlind.playerName} (${bigBlind.amount})`);
 });
 
+// Tournament Late Entry Restrictions scenario steps
+Given('the tournament started {int} minutes ago', async function (minutesAgo) {
+    console.log(`⏰ Setting tournament start time to ${minutesAgo} minutes ago...`);
+    
+    const tournamentId = Object.keys(testTournaments)[0] || 'test-tournament-late';
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/set_tournament_start_time',
+        'POST',
+        {
+            tournamentId,
+            minutesAgo
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to set tournament start time: ${response.error}`);
+    }
+    
+    // Update our test state
+    if (!testTournaments[tournamentId]) {
+        testTournaments[tournamentId] = {};
+    }
+    testTournaments[tournamentId].startedMinutesAgo = minutesAgo;
+    
+    console.log(`✅ Tournament start time set to ${minutesAgo} minutes ago`);
+});
+
+When('{string} attempts to join', async function (playerName) {
+    console.log(`👤 ${playerName} attempting to join tournament...`);
+    
+    const tournamentId = Object.keys(testTournaments)[0] || 'test-tournament-late';
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/attempt_tournament_join',
+        'POST',
+        {
+            tournamentId,
+            playerName,
+            chips: 1000
+        }
+    );
+    
+    // Store the response for later verification
+    this.joinAttemptResponse = response;
+    
+    console.log(`⚡ ${playerName} join attempt completed`);
+});
+
+Then('{string} should be rejected with {string}', async function (playerName, expectedMessage) {
+    console.log(`⚡ Verifying ${playerName} was rejected with message: ${expectedMessage}...`);
+    
+    expect(this.joinAttemptResponse).to.exist;
+    expect(this.joinAttemptResponse.success).to.be.false;
+    expect(this.joinAttemptResponse.error).to.exist;
+    expect(this.joinAttemptResponse.error).to.include(expectedMessage);
+    
+    console.log(`✅ ${playerName} was correctly rejected with: ${this.joinAttemptResponse.error}`);
+});
+
+// Additional missing step definition for Enhanced Blind System
+Given('the game starts with blinds {string}', async function (blindAmounts) {
+    console.log(`🎮 Starting game with blinds ${blindAmounts}...`);
+    
+    const [smallBlind, bigBlind] = blindAmounts.split('/').map(amount => parseInt(amount));
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/start_game_with_blinds',
+        'POST',
+        {
+            tableId: 'Enhanced Blind Test Table',
+            smallBlind,
+            bigBlind
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to start game with blinds: ${response.error}`);
+    }
+    
+    // Update game state
+    if (!gameState) {
+        gameState = {};
+    }
+    gameState[response.gameId] = {
+        smallBlind,
+        bigBlind,
+        status: 'active'
+    };
+    
+    console.log(`✅ Game started with blinds ${blindAmounts}`);
+});
+
 module.exports = {
     tournamentSchedule,
     gameState,
