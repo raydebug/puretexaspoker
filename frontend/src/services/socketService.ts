@@ -4,7 +4,7 @@ import { TableData } from '../types/table';
 import { cookieService } from './cookieService';
 import { errorTrackingService } from './errorTrackingService';
 import { navigationService } from './navigationService';
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'eventemitter3';
 
 const SOCKET_URL = 'http://localhost:3001';
 
@@ -73,9 +73,6 @@ export class SocketService {
   private tablesUpdateListeners: ((tables: TableData[]) => void)[] = [];
 
   constructor() {
-    // Set up event emitter with higher max listeners to avoid warnings
-    this.eventEmitter.setMaxListeners(50);
-    
     // Auto-detect test environment
     if (typeof window !== 'undefined' && (window as any).SELENIUM_TEST) {
       console.log('DEBUG: Test mode detected, enabling test mode');
