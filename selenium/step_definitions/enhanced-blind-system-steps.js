@@ -1603,6 +1603,202 @@ Then('normal gameplay should resume', async function () {
     console.log(`✅ Normal gameplay resumed at level ${response.currentLevel.level}`);
 });
 
+// Late Entry During Blind Positions scenario step definitions
+Given('the small blind position is seat {int}', async function (seatNumber) {
+    console.log(`🎯 Setting small blind position to seat ${seatNumber}...`);
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/set_blind_position',
+        'POST',
+        {
+            tableId: 'Enhanced Blind Test Table',
+            blindType: 'small',
+            seatNumber
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to set small blind position: ${response.error}`);
+    }
+    
+    // Store blind positions for later verification
+    if (!this.blindPositions) {
+        this.blindPositions = {};
+    }
+    this.blindPositions.smallBlind = seatNumber;
+    
+    console.log(`✅ Small blind position set to seat ${seatNumber}`);
+});
+
+Given('the big blind position is seat {int}', async function (seatNumber) {
+    console.log(`🎯 Setting big blind position to seat ${seatNumber}...`);
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/set_blind_position',
+        'POST',
+        {
+            tableId: 'Enhanced Blind Test Table',
+            blindType: 'big',
+            seatNumber
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to set big blind position: ${response.error}`);
+    }
+    
+    // Store blind positions for later verification
+    if (!this.blindPositions) {
+        this.blindPositions = {};
+    }
+    this.blindPositions.bigBlind = seatNumber;
+    
+    console.log(`✅ Big blind position set to seat ${seatNumber}`);
+});
+
+When('{string} joins the game in seat {int} \\(big blind position)', async function (playerName, seatNumber) {
+    console.log(`👤 ${playerName} joining game in seat ${seatNumber} (big blind position)...`);
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/join_game_in_blind_position',
+        'POST',
+        {
+            tableId: 'Enhanced Blind Test Table',
+            playerName,
+            seatNumber,
+            blindPosition: 'big'
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to join game in blind position: ${response.error}`);
+    }
+    
+    // Store the join result for later verification
+    this.blindPositionJoinResult = response.result;
+    
+    console.log(`✅ ${playerName} joined in seat ${seatNumber} (big blind position)`);
+});
+
+Then('{string} should have a big blind obligation', async function (playerName) {
+    console.log(`⚡ Verifying ${playerName} has big blind obligation...`);
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_blind_obligation',
+        'POST',
+        {
+            tableId: 'Enhanced Blind Test Table',
+            playerName,
+            expectedBlindType: 'big'
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to verify blind obligation: ${response.error}`);
+    }
+    
+    expect(response.blindObligation).to.exist;
+    expect(response.blindObligation.playerName).to.equal(playerName);
+    expect(response.blindObligation.blindType).to.equal('big');
+    expect(response.blindObligation.amount).to.be.a('number');
+    expect(response.blindObligation.amount).to.be.greaterThan(0);
+    expect(response.blindObligation.isRegularBlind).to.be.true;
+    expect(response.blindObligation.isDead).to.be.false;
+    
+    console.log(`✅ ${playerName} has big blind obligation of ${response.blindObligation.amount} chips`);
+});
+
+When('the hand begins', async function () {
+    console.log('🃏 Starting the hand...');
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/start_hand',
+        'POST',
+        {
+            tableId: 'Enhanced Blind Test Table'
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to start hand: ${response.error}`);
+    }
+    
+    // Store hand start result
+    this.handStartResult = response.result;
+    
+    console.log(`✅ Hand started with hand ID: ${response.result.handId}`);
+});
+
+Then('{string} should post the regular big blind', async function (playerName) {
+    console.log(`⚡ Verifying ${playerName} posts regular big blind...`);
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_regular_blind_posting',
+        'POST',
+        {
+            tableId: 'Enhanced Blind Test Table',
+            playerName,
+            blindType: 'big'
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to verify regular blind posting: ${response.error}`);
+    }
+    
+    expect(response.blindPosted).to.exist;
+    expect(response.blindPosted.playerName).to.equal(playerName);
+    expect(response.blindPosted.blindType).to.equal('big');
+    expect(response.blindPosted.amount).to.be.a('number');
+    expect(response.blindPosted.amount).to.be.greaterThan(0);
+    expect(response.blindPosted.isRegular).to.be.true;
+    expect(response.blindPosted.isDead).to.be.false;
+    expect(response.blindPosted.isAutomatic).to.be.true;
+    
+    console.log(`✅ ${playerName} posted regular big blind of ${response.blindPosted.amount} chips`);
+});
+
+Then('no additional dead blind should be required', async function () {
+    console.log('⚡ Verifying no additional dead blind is required...');
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_no_dead_blind_required',
+        'POST',
+        {
+            tableId: 'Enhanced Blind Test Table'
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to verify no dead blind required: ${response.error}`);
+    }
+    
+    expect(response.deadBlindCheck).to.exist;
+    expect(response.deadBlindCheck.deadBlindsRequired).to.be.false;
+    expect(response.deadBlindCheck.reason).to.equal('joined_in_blind_position');
+    expect(response.deadBlindCheck.additionalObligations).to.be.an('array');
+    expect(response.deadBlindCheck.additionalObligations).to.have.length(0);
+    
+    // Verify only regular blind was posted
+    expect(response.blindsPosted).to.exist;
+    expect(response.blindsPosted).to.be.an('array');
+    
+    const regularBlinds = response.blindsPosted.filter(blind => !blind.isDead);
+    const deadBlinds = response.blindsPosted.filter(blind => blind.isDead);
+    
+    expect(regularBlinds.length).to.be.greaterThan(0);
+    expect(deadBlinds.length).to.equal(0);
+    
+    console.log(`✅ No additional dead blind required - only regular blind posted`);
+});
+
 module.exports = {
     tournamentSchedule,
     gameState,
