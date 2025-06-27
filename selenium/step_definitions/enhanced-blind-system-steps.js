@@ -1399,6 +1399,210 @@ Then('{string} should be eligible for side pot creation', async function (player
     console.log(`✅ ${playerName} is eligible for side pot creation with contribution cap of ${response.eligibility.contributionCap} chips`);
 });
 
+// Tournament Break Management scenario step definitions
+Given('I create a tournament with break schedule:', async function (dataTable) {
+    console.log('🏆 Creating tournament with break schedule...');
+    
+    const breakSchedule = dataTable.hashes().map(row => ({
+        level: parseInt(row.level),
+        smallBlind: parseInt(row.smallBlind),
+        bigBlind: parseInt(row.bigBlind),
+        duration: parseInt(row.duration), // in minutes
+        breakAfter: row.breakAfter === 'true'
+    }));
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/create_tournament_with_breaks',
+        'POST',
+        {
+            tournamentId: 'Tournament Break Test',
+            tableId: 'Enhanced Blind Test Table',
+            breakSchedule
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to create tournament with break schedule: ${response.error}`);
+    }
+    
+    // Store the tournament and break schedule for later verification
+    this.tournament = response.tournament;
+    this.breakSchedule = breakSchedule;
+    
+    console.log(`✅ Tournament created with ${breakSchedule.length} levels and break schedule`);
+});
+
+When('the level {int} duration elapses', async function (levelNumber) {
+    console.log(`⏰ Simulating level ${levelNumber} duration elapse...`);
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/elapse_level_duration',
+        'POST',
+        {
+            tournamentId: 'Tournament Break Test',
+            levelNumber
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to elapse level duration: ${response.error}`);
+    }
+    
+    // Store the level transition result
+    this.levelTransition = response.transition;
+    
+    console.log(`✅ Level ${levelNumber} duration elapsed, transition: ${response.transition.type}`);
+});
+
+Then('the tournament should enter a break period', async function () {
+    console.log('⚡ Verifying tournament enters break period...');
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_tournament_break_status',
+        'POST',
+        {
+            tournamentId: 'Tournament Break Test'
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to verify break status: ${response.error}`);
+    }
+    
+    expect(response.tournamentStatus).to.exist;
+    expect(response.tournamentStatus.isOnBreak).to.be.true;
+    expect(response.tournamentStatus.breakType).to.equal('scheduled');
+    expect(response.tournamentStatus.currentState).to.equal('break');
+    
+    // Verify break start time
+    expect(response.breakInfo).to.exist;
+    expect(response.breakInfo.startTime).to.exist;
+    expect(response.breakInfo.scheduledDuration).to.be.a('number');
+    expect(response.breakInfo.scheduledDuration).to.be.greaterThan(0);
+    
+    console.log(`✅ Tournament is now on break for ${response.breakInfo.scheduledDuration} minutes`);
+});
+
+Then('the break duration should be set correctly', async function () {
+    console.log('⚡ Verifying break duration is set correctly...');
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_break_duration',
+        'POST',
+        {
+            tournamentId: 'Tournament Break Test'
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to verify break duration: ${response.error}`);
+    }
+    
+    expect(response.breakDuration).to.exist;
+    expect(response.breakDuration.configured).to.be.a('number');
+    expect(response.breakDuration.remaining).to.be.a('number');
+    expect(response.breakDuration.configured).to.be.greaterThan(0);
+    expect(response.breakDuration.remaining).to.be.greaterThan(0);
+    
+    // Verify the break duration matches tournament configuration
+    expect(response.breakDuration.configured).to.be.oneOf([5, 10, 15]); // Standard break durations
+    
+    console.log(`✅ Break duration correctly set: ${response.breakDuration.configured} minutes (${response.breakDuration.remaining} remaining)`);
+});
+
+Then('no new hands should be dealt during the break', async function () {
+    console.log('⚡ Verifying no new hands are dealt during break...');
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_break_hand_dealing',
+        'POST',
+        {
+            tournamentId: 'Tournament Break Test'
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to verify break hand dealing: ${response.error}`);
+    }
+    
+    expect(response.handDealingStatus).to.exist;
+    expect(response.handDealingStatus.isBlocked).to.be.true;
+    expect(response.handDealingStatus.reason).to.equal('tournament_break');
+    expect(response.handDealingStatus.newHandsAllowed).to.be.false;
+    
+    // Verify any attempts to deal hands are properly rejected
+    expect(response.dealingAttempts).to.exist;
+    expect(response.dealingAttempts.attempted).to.be.a('number');
+    expect(response.dealingAttempts.rejected).to.equal(response.dealingAttempts.attempted);
+    
+    console.log(`✅ Hand dealing properly blocked during break (${response.dealingAttempts.rejected} attempts rejected)`);
+});
+
+When('the break period ends', async function () {
+    console.log('⏰ Simulating break period ending...');
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/end_tournament_break',
+        'POST',
+        {
+            tournamentId: 'Tournament Break Test'
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to end tournament break: ${response.error}`);
+    }
+    
+    // Store the break end result
+    this.breakEndResult = response.result;
+    
+    console.log(`✅ Break period ended, transitioning to level ${response.result.newLevel}`);
+});
+
+Then('normal gameplay should resume', async function () {
+    console.log('⚡ Verifying normal gameplay resumes...');
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_gameplay_resumption',
+        'POST',
+        {
+            tournamentId: 'Tournament Break Test'
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to verify gameplay resumption: ${response.error}`);
+    }
+    
+    expect(response.gameplayStatus).to.exist;
+    expect(response.gameplayStatus.isActive).to.be.true;
+    expect(response.gameplayStatus.state).to.equal('active');
+    expect(response.gameplayStatus.isOnBreak).to.be.false;
+    
+    // Verify hand dealing is now allowed
+    expect(response.handDealing).to.exist;
+    expect(response.handDealing.isAllowed).to.be.true;
+    expect(response.handDealing.blockReason).to.be.null;
+    
+    // Verify tournament progressed to next level
+    expect(response.currentLevel).to.exist;
+    expect(response.currentLevel.level).to.be.a('number');
+    expect(response.currentLevel.level).to.be.greaterThan(2); // Should be level 3 after break
+    
+    // Verify players can take actions
+    expect(response.playerActions).to.exist;
+    expect(response.playerActions.actionsEnabled).to.be.true;
+    
+    console.log(`✅ Normal gameplay resumed at level ${response.currentLevel.level}`);
+});
+
 module.exports = {
     tournamentSchedule,
     gameState,
