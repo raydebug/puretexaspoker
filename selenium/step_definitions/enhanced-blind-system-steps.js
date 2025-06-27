@@ -1101,6 +1101,118 @@ Then('they should receive appropriate late entry dead blind obligations', async 
     console.log(`✅ Late entry player correctly assigned ${this.joinAttemptResponse.deadBlindObligations.length} dead blind obligations`);
 });
 
+// Additional missing step definitions for Enhanced Blind System scenarios
+Given('I create test players {string} with chips {string}', async function (playerNames, chipAmounts) {
+    console.log(`👥 Creating test players ${playerNames} with chips ${chipAmounts}...`);
+    
+    const players = playerNames.split(',');
+    const chips = chipAmounts.split(',').map(amount => parseInt(amount.trim()));
+    
+    if (players.length !== chips.length) {
+        throw new Error(`Number of players (${players.length}) doesn't match number of chip amounts (${chips.length})`);
+    }
+    
+    this.testPlayers = [];
+    
+    for (let i = 0; i < players.length; i++) {
+        const playerName = players[i].trim();
+        const chipAmount = chips[i];
+        
+        const response = await webdriverHelpers.makeApiCall(
+            this.serverUrl,
+            '/api/test/create_test_player',
+            'POST',
+            {
+                playerName,
+                chipAmount
+            }
+        );
+        
+        if (!response.success) {
+            throw new Error(`Failed to create player ${playerName}: ${response.error}`);
+        }
+        
+        this.testPlayers.push({
+            name: playerName,
+            chips: chipAmount,
+            userId: response.userId
+        });
+    }
+    
+    console.log(`✅ Created ${players.length} test players with varying chip amounts`);
+});
+
+Given('the current blind level has an ante of {int}', async function (anteAmount) {
+    console.log(`⚡ Setting current blind level ante to ${anteAmount}...`);
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/set_current_ante',
+        'POST',
+        {
+            tableId: 'Enhanced Blind Test Table',
+            anteAmount
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to set ante amount: ${response.error}`);
+    }
+    
+    // Store ante amount for later verification
+    this.currentAnteAmount = anteAmount;
+    
+    console.log(`✅ Set current blind level ante to ${anteAmount} chips`);
+});
+
+When('the ante collection begins', async function () {
+    console.log('⚡ Starting ante collection process...');
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/start_ante_collection',
+        'POST',
+        {
+            tableId: 'Enhanced Blind Test Table'
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to start ante collection: ${response.error}`);
+    }
+    
+    // Store ante collection details for later verification
+    this.anteCollectionDetails = response.anteCollection;
+    
+    console.log('✅ Ante collection started successfully');
+});
+
+Then('{string} should post {int} chips as ante', async function (playerName, expectedAnteAmount) {
+    console.log(`⚡ Verifying ${playerName} posts ${expectedAnteAmount} chips as ante...`);
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_ante_posting',
+        'POST',
+        {
+            tableId: 'Enhanced Blind Test Table',
+            playerName,
+            expectedAnteAmount
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to verify ante posting: ${response.error}`);
+    }
+    
+    expect(response.antePosted).to.exist;
+    expect(response.antePosted.playerName).to.equal(playerName);
+    expect(response.antePosted.amount).to.equal(expectedAnteAmount);
+    expect(response.antePosted.isAllIn).to.be.false; // Regular ante, not all-in
+    
+    console.log(`✅ ${playerName} correctly posted ${expectedAnteAmount} chips as ante`);
+});
+
 module.exports = {
     tournamentSchedule,
     gameState,
