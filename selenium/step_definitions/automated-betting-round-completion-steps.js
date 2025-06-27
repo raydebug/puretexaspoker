@@ -465,6 +465,303 @@ Then('all betting rounds should be skipped automatically', async function () {
     console.log('✅ All betting rounds skipped automatically');
 });
 
+When('each player takes their appropriate action', async function () {
+    console.log('🎮 Simulating each player taking appropriate actions...');
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/simulate_player_actions',
+        'POST',
+        {
+            gameId: 'automated-betting-test',
+            actionSequence: 'appropriate'
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to simulate player actions: ${response.error}`);
+    }
+    
+    // Store the action results for later verification
+    this.playerActions = response.actions;
+    
+    console.log(`✅ ${response.actions.length} player actions simulated`);
+});
+
+// Automated Betting Round Completion step definitions
+Then('the betting round should complete automatically', async function () {
+    console.log('⚡ Verifying betting round completes automatically...');
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_automatic_betting_completion',
+        'POST',
+        {
+            gameId: 'automated-betting-test'
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to verify automatic betting completion: ${response.error}`);
+    }
+    
+    expect(response.bettingRound).to.exist;
+    expect(response.bettingRound.isComplete).to.be.true;
+    expect(response.bettingRound.completionMethod).to.equal('automatic');
+    expect(response.bettingRound.allPlayersActed).to.be.true;
+    expect(response.bettingRound.betsEqualized).to.be.true;
+    
+    // Verify timing - should complete promptly after last action
+    expect(response.timing).to.exist;
+    expect(response.timing.completionDelay).to.be.lessThan(1000); // Under 1 second
+    
+    console.log(`✅ Betting round completed automatically after ${response.timing.completionDelay}ms`);
+});
+
+Then('the next phase should begin', async function () {
+    console.log('⚡ Verifying next phase begins...');
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_phase_transition',
+        'POST',
+        {
+            gameId: 'automated-betting-test'
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to verify phase transition: ${response.error}`);
+    }
+    
+    expect(response.phaseTransition).to.exist;
+    expect(response.phaseTransition.transitioned).to.be.true;
+    expect(response.phaseTransition.previousPhase).to.exist;
+    expect(response.phaseTransition.currentPhase).to.exist;
+    expect(response.phaseTransition.currentPhase).to.not.equal(response.phaseTransition.previousPhase);
+    
+    // Verify valid phase progression
+    const validPhases = ['preflop', 'flop', 'turn', 'river', 'showdown'];
+    expect(validPhases).to.include(response.phaseTransition.currentPhase);
+    expect(validPhases).to.include(response.phaseTransition.previousPhase);
+    
+    // Verify automatic transition timing
+    expect(response.phaseTransition.transitionDelay).to.be.lessThan(2000); // Under 2 seconds
+    
+    console.log(`✅ Phase transitioned from ${response.phaseTransition.previousPhase} to ${response.phaseTransition.currentPhase}`);
+});
+
+When('some players go all-in', async function () {
+    console.log('🎯 Simulating some players going all-in...');
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/simulate_all_in_players',
+        'POST',
+        {
+            gameId: 'automated-betting-test',
+            allInPlayerCount: 2
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to simulate all-in players: ${response.error}`);
+    }
+    
+    expect(response.allInPlayers).to.exist;
+    expect(response.allInPlayers).to.be.an('array');
+    expect(response.allInPlayers.length).to.be.greaterThan(0);
+    
+    // Verify each all-in player
+    response.allInPlayers.forEach(player => {
+        expect(player.playerName).to.exist;
+        expect(player.isAllIn).to.be.true;
+        expect(player.remainingChips).to.equal(0);
+        expect(player.allInAmount).to.be.greaterThan(0);
+    });
+    
+    // Store all-in players for later verification
+    this.allInPlayers = response.allInPlayers;
+    
+    console.log(`✅ ${response.allInPlayers.length} players went all-in`);
+});
+
+Then('the betting round should complete when appropriate', async function () {
+    console.log('⚡ Verifying betting round completes when appropriate with all-in players...');
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_all_in_betting_completion',
+        'POST',
+        {
+            gameId: 'automated-betting-test'
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to verify all-in betting completion: ${response.error}`);
+    }
+    
+    expect(response.bettingStatus).to.exist;
+    expect(response.bettingStatus.shouldComplete).to.be.true;
+    expect(response.bettingStatus.completionReason).to.be.oneOf(['all_players_all_in', 'action_complete_with_all_in']);
+    expect(response.bettingStatus.isComplete).to.be.true;
+    
+    // Verify side pot creation if needed
+    if (response.sidePots) {
+        expect(response.sidePots).to.be.an('array');
+        expect(response.sidePots.length).to.be.greaterThanOrEqual(0);
+    }
+    
+    console.log(`✅ Betting round completed appropriately: ${response.bettingStatus.completionReason}`);
+});
+
+Then('remaining players should be able to continue betting', async function () {
+    console.log('⚡ Verifying remaining players can continue betting...');
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_remaining_player_betting',
+        'POST',
+        {
+            gameId: 'automated-betting-test'
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to verify remaining player betting: ${response.error}`);
+    }
+    
+    expect(response.remainingPlayers).to.exist;
+    expect(response.remainingPlayers).to.be.an('array');
+    expect(response.remainingPlayers.length).to.be.greaterThan(0);
+    
+    // Verify each remaining player can bet
+    response.remainingPlayers.forEach(player => {
+        expect(player.playerName).to.exist;
+        expect(player.isAllIn).to.be.false;
+        expect(player.canBet).to.be.true;
+        expect(player.remainingChips).to.be.greaterThan(0);
+        expect(player.availableActions).to.include.members(['fold', 'call', 'raise']);
+    });
+    
+    console.log(`✅ ${response.remainingPlayers.length} remaining players can continue betting`);
+});
+
+When('all but one player folds', async function () {
+    console.log('🃏 Simulating all but one player folding...');
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/simulate_mass_fold',
+        'POST',
+        {
+            gameId: 'automated-betting-test',
+            leaveOnePlayer: true
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to simulate mass fold: ${response.error}`);
+    }
+    
+    expect(response.foldResults).to.exist;
+    expect(response.foldResults.playersLeft).to.equal(1);
+    expect(response.foldResults.playersFolded).to.be.greaterThan(0);
+    expect(response.foldResults.remainingPlayer).to.exist;
+    
+    // Store the remaining player
+    this.remainingPlayer = response.foldResults.remainingPlayer;
+    
+    console.log(`✅ ${response.foldResults.playersFolded} players folded, ${response.foldResults.remainingPlayer.playerName} remains`);
+});
+
+Then('the hand should end immediately', async function () {
+    console.log('⚡ Verifying hand ends immediately...');
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_immediate_hand_end',
+        'POST',
+        {
+            gameId: 'automated-betting-test'
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to verify immediate hand end: ${response.error}`);
+    }
+    
+    expect(response.handStatus).to.exist;
+    expect(response.handStatus.isEnded).to.be.true;
+    expect(response.handStatus.endReason).to.equal('all_others_folded');
+    expect(response.handStatus.endedImmediately).to.be.true;
+    
+    // Verify timing - should end very quickly
+    expect(response.timing).to.exist;
+    expect(response.timing.endDelay).to.be.lessThan(500); // Under 500ms
+    
+    console.log(`✅ Hand ended immediately after ${response.timing.endDelay}ms`);
+});
+
+Then('the remaining player should win the pot', async function () {
+    console.log('⚡ Verifying remaining player wins the pot...');
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_pot_winner',
+        'POST',
+        {
+            gameId: 'automated-betting-test'
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to verify pot winner: ${response.error}`);
+    }
+    
+    expect(response.potResult).to.exist;
+    expect(response.potResult.winner).to.exist;
+    expect(response.potResult.winner.playerName).to.equal(this.remainingPlayer.playerName);
+    expect(response.potResult.potAmount).to.be.greaterThan(0);
+    expect(response.potResult.winMethod).to.equal('remaining_player');
+    
+    // Verify chip distribution
+    expect(response.chipDistribution).to.exist;
+    expect(response.chipDistribution.distributed).to.be.true;
+    expect(response.chipDistribution.totalDistributed).to.equal(response.potResult.potAmount);
+    
+    console.log(`✅ ${response.potResult.winner.playerName} won pot of ${response.potResult.potAmount} chips`);
+});
+
+Then('no showdown should occur', async function () {
+    console.log('⚡ Verifying no showdown occurs...');
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_no_showdown',
+        'POST',
+        {
+            gameId: 'automated-betting-test'
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to verify no showdown: ${response.error}`);
+    }
+    
+    expect(response.showdownStatus).to.exist;
+    expect(response.showdownStatus.showdownOccurred).to.be.false;
+    expect(response.showdownStatus.reason).to.equal('remaining_player_wins');
+    expect(response.showdownStatus.cardsRevealed).to.be.false;
+    expect(response.showdownStatus.handEvaluationPerformed).to.be.false;
+    
+    // Verify no showdown data exists
+    expect(response.showdownData).to.not.exist;
+    
+    console.log(`✅ No showdown occurred: ${response.showdownStatus.reason}`);
+});
+
 module.exports = {
     automaticTransitionEvents,
     lastGameState,

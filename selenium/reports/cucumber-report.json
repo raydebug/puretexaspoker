@@ -14,7 +14,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 388785708
+              "duration": 27754625
             }
           },
           {
@@ -27,7 +27,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 12546974624
+              "duration": 12771603874
             }
           },
           {
@@ -73,7 +73,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 6089400166
+              "duration": 6092392708
             }
           },
           {
@@ -86,7 +86,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 43118791
+              "duration": 44627208
             }
           },
           {
@@ -99,7 +99,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 16261915
+              "duration": 16742291
             }
           },
           {
@@ -112,7 +112,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 24218499
+              "duration": 23297750
             }
           },
           {
@@ -120,7 +120,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 252457
+              "duration": 156041
             }
           },
           {
@@ -128,7 +128,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 421041
+              "duration": 433000
             }
           },
           {
@@ -136,7 +136,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 13826750
+              "duration": 14307291
             }
           }
         ],
@@ -155,7 +155,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 1807082
+              "duration": 2429833
             }
           },
           {
@@ -168,7 +168,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 12566603959
+              "duration": 12313089833
             }
           },
           {
@@ -214,7 +214,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 6072655666
+              "duration": 6068444833
             }
           },
           {
@@ -227,7 +227,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 9509040
+              "duration": 13047750
             }
           },
           {
@@ -240,7 +240,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 10096572208
+              "duration": 10104572749
             }
           },
           {
@@ -253,7 +253,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 10002071416,
+              "duration": 10001836332,
               "error_message": "Error: function timed out, ensure the promise resolves within 10000 milliseconds\n    at Timeout.<anonymous> (/Users/leiyao/work/puretexaspoker/node_modules/@cucumber/cucumber/lib/time.js:54:20)\n    at listOnTimeout (node:internal/timers:614:17)\n    at process.processTimers (node:internal/timers:549:7)"
             }
           },
@@ -340,7 +340,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 127416
+              "duration": 97374
             }
           },
           {
@@ -348,7 +348,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 104042
+              "duration": 84332
             }
           },
           {
@@ -356,7 +356,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 6303157874
+              "duration": 6284248166
             }
           }
         ],
@@ -8944,7 +8944,7 @@
             "line": 10,
             "name": "I have 3 players seated for basic action testing:",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:14"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:16"
             },
             "result": {
               "status": "skipped",
@@ -8970,7 +8970,7 @@
             "line": 18,
             "name": "\"ActionTest1\" should be able to \"check\" when no bet is pending",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:56"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:58"
             },
             "result": {
               "status": "skipped",
@@ -8983,7 +8983,7 @@
             "line": 19,
             "name": "the action should be processed correctly",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:76"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:78"
             },
             "result": {
               "status": "skipped",
@@ -9009,7 +9009,7 @@
             "line": 23,
             "name": "the bet should be processed and pot should increase",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:86"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:88"
             },
             "result": {
               "status": "skipped",
@@ -9022,7 +9022,7 @@
             "line": 24,
             "name": "\"ActionTest2\" chip count should decrease by \"50\"",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:98"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:100"
             },
             "result": {
               "status": "skipped",
@@ -9047,11 +9047,8 @@
             "keyword": "Then ",
             "line": 28,
             "name": "the call should be processed correctly",
-            "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:569"
-            },
             "result": {
-              "status": "skipped",
+              "status": "undefined",
               "duration": 0
             }
           },
@@ -9061,7 +9058,7 @@
             "line": 29,
             "name": "\"ActionTest3\" chip count should decrease by \"50\"",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:98"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:100"
             },
             "result": {
               "status": "skipped",
@@ -9086,11 +9083,8 @@
             "keyword": "Then ",
             "line": 33,
             "name": "the raise should be processed correctly",
-            "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:573"
-            },
             "result": {
-              "status": "skipped",
+              "status": "undefined",
               "duration": 0
             }
           },
@@ -9149,7 +9143,7 @@
             "line": 40,
             "name": "\"ActionTest2\" should not participate in further betting",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:579"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:734"
             },
             "result": {
               "status": "skipped",
@@ -9258,7 +9252,7 @@
             "line": 43,
             "name": "I have 4 players with different chip amounts for all-in testing:",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:114"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:116"
             },
             "result": {
               "status": "skipped",
@@ -9284,7 +9278,7 @@
             "line": 52,
             "name": "\"AllInShort\" performs an \"allIn\" action",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:120"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:122"
             },
             "result": {
               "status": "skipped",
@@ -9297,7 +9291,7 @@
             "line": 53,
             "name": "\"AllInShort\" should go all-in with \"50\" chips",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:140"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:142"
             },
             "result": {
               "status": "skipped",
@@ -9310,7 +9304,7 @@
             "line": 54,
             "name": "\"AllInShort\" chip count should be \"0\"",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:154"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:156"
             },
             "result": {
               "status": "skipped",
@@ -9323,7 +9317,7 @@
             "line": 55,
             "name": "the all-in should be processed correctly",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:169"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:171"
             },
             "result": {
               "status": "skipped",
@@ -9372,7 +9366,7 @@
             "line": 63,
             "name": "\"AllInLarge\" performs an \"allIn\" action",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:120"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:122"
             },
             "result": {
               "status": "skipped",
@@ -9385,7 +9379,7 @@
             "line": 64,
             "name": "\"AllInLarge\" should go all-in with \"500\" chips",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:140"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:142"
             },
             "result": {
               "status": "skipped",
@@ -9398,7 +9392,7 @@
             "line": 65,
             "name": "this should create a side pot scenario",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:181"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:183"
             },
             "result": {
               "status": "skipped",
@@ -9411,7 +9405,7 @@
             "line": 66,
             "name": "\"AllInLarge\" chip count should be \"0\"",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:154"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:156"
             },
             "result": {
               "status": "skipped",
@@ -9460,7 +9454,7 @@
             "line": 74,
             "name": "side pots should be created correctly",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:194"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:196"
             },
             "result": {
               "status": "skipped",
@@ -9473,7 +9467,7 @@
             "line": 75,
             "name": "the main pot should include all players",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:206"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:208"
             },
             "result": {
               "status": "skipped",
@@ -9486,7 +9480,7 @@
             "line": 76,
             "name": "the side pot should exclude the shortest stack",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:215"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:217"
             },
             "result": {
               "status": "skipped",
@@ -9602,7 +9596,7 @@
             "line": 79,
             "name": "I have 5 players with escalating chip amounts:",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:224"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:226"
             },
             "result": {
               "status": "skipped",
@@ -9615,7 +9609,7 @@
             "line": 86,
             "name": "the game starts and multiple all-ins occur",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:230"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:232"
             },
             "result": {
               "status": "skipped",
@@ -9628,7 +9622,7 @@
             "line": 89,
             "name": "\"Micro1\" performs an \"allIn\" action",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:120"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:122"
             },
             "result": {
               "status": "skipped",
@@ -9641,7 +9635,7 @@
             "line": 90,
             "name": "\"Micro1\" goes all-in with \"25\" chips",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:237"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:239"
             },
             "result": {
               "status": "skipped",
@@ -9654,7 +9648,7 @@
             "line": 93,
             "name": "\"Small2\" performs an \"allIn\" action",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:120"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:122"
             },
             "result": {
               "status": "skipped",
@@ -9667,7 +9661,7 @@
             "line": 94,
             "name": "\"Small2\" goes all-in with \"100\" chips",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:237"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:239"
             },
             "result": {
               "status": "skipped",
@@ -9680,7 +9674,7 @@
             "line": 95,
             "name": "a side pot should be created",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:251"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:253"
             },
             "result": {
               "status": "skipped",
@@ -9693,7 +9687,7 @@
             "line": 98,
             "name": "\"Medium3\" performs an \"allIn\" action",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:120"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:122"
             },
             "result": {
               "status": "skipped",
@@ -9706,7 +9700,7 @@
             "line": 99,
             "name": "\"Medium3\" goes all-in with \"300\" chips",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:237"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:239"
             },
             "result": {
               "status": "skipped",
@@ -9719,7 +9713,7 @@
             "line": 100,
             "name": "another side pot should be created",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:256"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:258"
             },
             "result": {
               "status": "skipped",
@@ -9758,7 +9752,7 @@
             "line": 107,
             "name": "multiple side pots should exist",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:261"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:263"
             },
             "result": {
               "status": "skipped",
@@ -9771,7 +9765,7 @@
             "line": 108,
             "name": "pot eligibility should be calculated correctly",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:266"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:268"
             },
             "result": {
               "status": "skipped",
@@ -9784,7 +9778,7 @@
             "line": 109,
             "name": "all players should be assigned to appropriate pots",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:271"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:273"
             },
             "result": {
               "status": "skipped",
@@ -9886,7 +9880,7 @@
             "line": 112,
             "name": "I have 3 players for edge case testing:",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:278"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:280"
             },
             "result": {
               "status": "skipped",
@@ -9899,7 +9893,7 @@
             "line": 117,
             "name": "the game starts with big blind \"20\"",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:284"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:286"
             },
             "result": {
               "status": "skipped",
@@ -9925,7 +9919,7 @@
             "line": 121,
             "name": "\"EdgeCase1\" performs an \"allIn\" action",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:120"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:122"
             },
             "result": {
               "status": "skipped",
@@ -9938,7 +9932,7 @@
             "line": 122,
             "name": "\"EdgeCase1\" should go all-in with \"15\" chips even though call is \"50\"",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:303"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:305"
             },
             "result": {
               "status": "skipped",
@@ -9951,7 +9945,7 @@
             "line": 123,
             "name": "this should be allowed per professional poker rules",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:315"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:317"
             },
             "result": {
               "status": "skipped",
@@ -9964,7 +9958,7 @@
             "line": 124,
             "name": "a side pot should be created correctly",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:320"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:322"
             },
             "result": {
               "status": "skipped",
@@ -9977,7 +9971,7 @@
             "line": 127,
             "name": "\"EdgeCase3\" performs an \"allIn\" action",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:120"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:122"
             },
             "result": {
               "status": "skipped",
@@ -10109,7 +10103,7 @@
             "line": 133,
             "name": "I have 3 players for validation testing:",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:327"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:329"
             },
             "result": {
               "status": "skipped",
@@ -10122,7 +10116,7 @@
             "line": 138,
             "name": "the game starts and betting validation is tested",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:333"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:335"
             },
             "result": {
               "status": "skipped",
@@ -10135,7 +10129,7 @@
             "line": 141,
             "name": "\"Valid1\" attempts to bet below minimum",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:338"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:340"
             },
             "result": {
               "status": "skipped",
@@ -10148,7 +10142,7 @@
             "line": 142,
             "name": "the bet should be rejected with appropriate error",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:356"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:358"
             },
             "result": {
               "status": "skipped",
@@ -10161,7 +10155,7 @@
             "line": 145,
             "name": "\"Valid1\" attempts to bet more than chip stack",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:366"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:368"
             },
             "result": {
               "status": "skipped",
@@ -10174,7 +10168,7 @@
             "line": 146,
             "name": "the bet should be rejected or converted to all-in",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:384"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:386"
             },
             "result": {
               "status": "skipped",
@@ -10329,7 +10323,7 @@
             "line": 158,
             "name": "I have 3 players for showdown testing:",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:394"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:396"
             },
             "result": {
               "status": "skipped",
@@ -10342,7 +10336,7 @@
             "line": 163,
             "name": "the game progresses to showdown with multiple players",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:400"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:402"
             },
             "result": {
               "status": "skipped",
@@ -10355,7 +10349,7 @@
             "line": 166,
             "name": "all remaining players' cards should be revealed",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:415"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:417"
             },
             "result": {
               "status": "skipped",
@@ -10368,7 +10362,7 @@
             "line": 167,
             "name": "hand strengths should be evaluated correctly",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:424"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:426"
             },
             "result": {
               "status": "skipped",
@@ -10381,7 +10375,7 @@
             "line": 170,
             "name": "the best hand should be identified",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:429"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:431"
             },
             "result": {
               "status": "skipped",
@@ -10394,7 +10388,7 @@
             "line": 171,
             "name": "the winner should be declared correctly",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:437"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:439"
             },
             "result": {
               "status": "skipped",
@@ -10407,7 +10401,7 @@
             "line": 172,
             "name": "the pot should be awarded to the proper winner",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:442"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:444"
             },
             "result": {
               "status": "skipped",
@@ -10729,7 +10723,7 @@
             "line": 198,
             "name": "I have 6 players for position testing:",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:512"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:514"
             },
             "result": {
               "status": "skipped",
@@ -10742,7 +10736,7 @@
             "line": 206,
             "name": "the game starts with proper position setup",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:517"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:519"
             },
             "result": {
               "status": "skipped",
@@ -10755,7 +10749,7 @@
             "line": 209,
             "name": "the turn order should follow poker position rules",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:522"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:524"
             },
             "result": {
               "status": "skipped",
@@ -10768,7 +10762,7 @@
             "line": 210,
             "name": "UTG should act first preflop",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:527"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:529"
             },
             "result": {
               "status": "skipped",
@@ -10781,7 +10775,7 @@
             "line": 211,
             "name": "action should proceed clockwise",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:532"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:534"
             },
             "result": {
               "status": "skipped",
@@ -11172,7 +11166,7 @@
             "line": 250,
             "name": "I have 3 players for real-time testing:",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:538"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:540"
             },
             "result": {
               "status": "skipped",
@@ -11185,7 +11179,7 @@
             "line": 255,
             "name": "real-time poker actions are performed",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:543"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:545"
             },
             "result": {
               "status": "skipped",
@@ -11198,7 +11192,7 @@
             "line": 258,
             "name": "each action should update the UI immediately",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:548"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:550"
             },
             "result": {
               "status": "skipped",
@@ -11211,7 +11205,7 @@
             "line": 259,
             "name": "chip counts should reflect changes instantly",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:553"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:555"
             },
             "result": {
               "status": "skipped",
@@ -11224,7 +11218,7 @@
             "line": 260,
             "name": "pot amounts should update in real-time",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:558"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:560"
             },
             "result": {
               "status": "skipped",
@@ -11237,7 +11231,7 @@
             "line": 261,
             "name": "current player indicators should move correctly",
             "match": {
-              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:563"
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:565"
             },
             "result": {
               "status": "skipped",
@@ -11249,8 +11243,11 @@
             "keyword": "Then ",
             "line": 264,
             "name": "all connected clients should receive updates",
+            "match": {
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:580"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -11259,8 +11256,11 @@
             "keyword": "And ",
             "line": 265,
             "name": "game state should remain synchronized",
+            "match": {
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:610"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -11269,8 +11269,11 @@
             "keyword": "And ",
             "line": 266,
             "name": "observer mode should work correctly",
+            "match": {
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:646"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -11279,8 +11282,11 @@
             "keyword": "Then ",
             "line": 269,
             "name": "invalid actions should be rejected immediately",
+            "match": {
+              "location": "selenium/step_definitions/comprehensive-poker-actions-steps.js:689"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
