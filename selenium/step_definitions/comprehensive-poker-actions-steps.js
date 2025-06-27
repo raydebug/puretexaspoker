@@ -2220,6 +2220,128 @@ When('I verify the card order using the original hash', async function () {
   }
 });
 
+// CSV Download of Card Order History step definitions  
+Then('I should receive a CSV file with card order data', async function () {
+  try {
+    // Initiate CSV download request
+    const downloadResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/card-order/download-csv');
+    assert.strictEqual(downloadResponse.status, 200, 'CSV download should be successful');
+    
+    // Verify response contains CSV content
+    assert.ok(downloadResponse.data, 'CSV download should contain data');
+    assert.ok(downloadResponse.headers['content-type'].includes('text/csv') || 
+              downloadResponse.headers['content-type'].includes('application/csv'),
+              'Response should have CSV content type');
+    
+    // Verify CSV file is properly formatted
+    const csvContent = downloadResponse.data;
+    assert.ok(csvContent.includes(','), 'CSV should contain comma separators');
+    assert.ok(csvContent.includes('\n'), 'CSV should contain line breaks');
+    
+    // Store CSV data for subsequent validation
+    this.csvData = csvContent;
+    this.csvLines = csvContent.split('\n').filter(line => line.trim());
+    
+    console.log('✅ CSV file with card order data received successfully');
+  } catch (error) {
+    console.error('❌ CSV download failed:', error);
+    throw error;
+  }
+});
+
+Then('the CSV should contain game ID, hash, seed, and card sequence', async function () {
+  try {
+    assert.ok(this.csvData, 'CSV data should be available from previous step');
+    assert.ok(this.csvLines.length > 1, 'CSV should contain header and data rows');
+    
+    // Verify CSV header contains required columns
+    const headerLine = this.csvLines[0];
+    const headers = headerLine.split(',').map(h => h.trim().toLowerCase());
+    
+    assert.ok(headers.includes('game_id') || headers.includes('gameid'), 'CSV should contain game ID column');
+    assert.ok(headers.includes('hash') || headers.includes('card_hash'), 'CSV should contain hash column');
+    assert.ok(headers.includes('seed') || headers.includes('shuffle_seed'), 'CSV should contain seed column');
+    assert.ok(headers.includes('card_sequence') || headers.includes('cards'), 'CSV should contain card sequence column');
+    
+    // Verify data rows contain valid data
+    if (this.csvLines.length > 1) {
+      const dataLine = this.csvLines[1];
+      const dataFields = dataLine.split(',');
+      
+      assert.ok(dataFields.length >= 4, 'Data rows should contain at least 4 fields');
+      assert.ok(dataFields[0].trim(), 'Game ID should not be empty');
+      assert.ok(dataFields[1].trim().length >= 32, 'Hash should be properly formatted');
+      assert.ok(dataFields[2].trim(), 'Seed should not be empty');
+      assert.ok(dataFields[3].trim(), 'Card sequence should not be empty');
+    }
+    
+    // Validate data integrity
+    const integrityResponse = await webdriverHelpers.makeApiCall(this.driver, 'POST', '/api/test/card-order/validate-csv-data', {
+      csvContent: this.csvData
+    });
+    assert.strictEqual(integrityResponse.status, 200, 'CSV data validation should succeed');
+    assert.strictEqual(integrityResponse.data.isValid, true, 'CSV data should be valid');
+    
+    console.log('✅ CSV contains all required columns with valid data');
+  } catch (error) {
+    console.error('❌ CSV column validation failed:', error);
+    throw error;
+  }
+});
+
+Then('only revealed card orders should be included in the download', async function () {
+  try {
+    assert.ok(this.csvData, 'CSV data should be available from previous step');
+    
+    // Get list of revealed card orders for comparison
+    const revealedResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/card-order/revealed-list');
+    assert.strictEqual(revealedResponse.status, 200, 'Revealed orders list should be accessible');
+    
+    const revealedGameIds = revealedResponse.data.revealedGameIds || [];
+    const csvGameIds = [];
+    
+    // Extract game IDs from CSV data
+    for (let i = 1; i < this.csvLines.length; i++) {
+      const line = this.csvLines[i];
+      if (line.trim()) {
+        const gameId = line.split(',')[0].trim();
+        if (gameId) {
+          csvGameIds.push(gameId);
+        }
+      }
+    }
+    
+    // Verify all CSV game IDs are in revealed list
+    for (const csvGameId of csvGameIds) {
+      assert.ok(revealedGameIds.includes(csvGameId), 
+                `Game ID ${csvGameId} in CSV should be in revealed list`);
+    }
+    
+    // Verify no non-revealed games are included
+    const allGamesResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/card-order/all-games');
+    assert.strictEqual(allGamesResponse.status, 200, 'All games list should be accessible');
+    
+    const nonRevealedGames = allGamesResponse.data.gameIds.filter(id => !revealedGameIds.includes(id));
+    for (const nonRevealedGame of nonRevealedGames) {
+      assert.ok(!csvGameIds.includes(nonRevealedGame), 
+                `Non-revealed game ${nonRevealedGame} should not be in CSV`);
+    }
+    
+    // Verify privacy compliance
+    const privacyResponse = await webdriverHelpers.makeApiCall(this.driver, 'POST', '/api/test/card-order/verify-privacy-compliance', {
+      csvGameIds: csvGameIds,
+      revealedGameIds: revealedGameIds
+    });
+    assert.strictEqual(privacyResponse.status, 200, 'Privacy compliance check should succeed');
+    assert.strictEqual(privacyResponse.data.compliant, true, 'CSV should be privacy compliant');
+    
+    console.log('✅ CSV contains only revealed card orders, privacy compliant');
+  } catch (error) {
+    console.error('❌ Revealed orders verification failed:', error);
+    throw error;
+  }
+});
+
 module.exports = {
   comprehensiveTestPlayers,
   comprehensiveGameId,
