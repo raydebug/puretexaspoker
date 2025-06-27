@@ -403,6 +403,49 @@ Then('a connection log entry should be recorded', async function () {
     console.log('✅ Connection log entry confirmed to be recorded');
 });
 
+Then('the current player turn should be preserved', async function () {
+    console.log('⚡ Verifying current player turn is preserved...');
+    
+    const gameId = Object.keys(testGames)[0];
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/get_saved_game_state',
+        'POST',
+        { gameId }
+    );
+    
+    expect(response.success).to.be.true;
+    expect(response.gameState.currentPlayer).to.exist;
+    expect(response.gameState.turnOrder).to.exist;
+    expect(response.gameState.turnIndex).to.exist;
+    
+    // Verify that the current player matches the turn order at the current index
+    const currentPlayerFromTurn = response.gameState.turnOrder[response.gameState.turnIndex];
+    expect(response.gameState.currentPlayer).to.equal(currentPlayerFromTurn);
+    
+    console.log(`✅ Current player turn preserved: ${response.gameState.currentPlayer} (turn index: ${response.gameState.turnIndex})`);
+});
+
+Then('the pot amount should be exactly {int} chips', async function (expectedPotAmount) {
+    console.log(`⚡ Verifying pot amount is exactly ${expectedPotAmount} chips...`);
+    
+    const gameId = Object.keys(testGames)[0];
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/get_saved_game_state',
+        'POST',
+        { gameId }
+    );
+    
+    expect(response.success).to.be.true;
+    expect(response.gameState.pot).to.exist;
+    expect(response.gameState.pot).to.equal(expectedPotAmount);
+    
+    console.log(`✅ Pot amount confirmed to be exactly ${expectedPotAmount} chips`);
+});
+
 module.exports = {
     testGames,
     testSessions,

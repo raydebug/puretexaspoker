@@ -55,7 +55,7 @@
     "concurrently": "^8.2.2",
     "geckodriver": "^4.3.3",
     "jquery": "^3.7.1",
-    "rimraf": "^5.0.5",
+    "rimraf": "^5.0.10",
     "selenium-webdriver": "^4.21.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
