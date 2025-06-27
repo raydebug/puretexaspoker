@@ -933,6 +933,174 @@ Given('the game starts with blinds {string}', async function (blindAmounts) {
     console.log(`✅ Game started with blinds ${blindAmounts}`);
 });
 
+// Ante Collection with Mixed Stack Sizes scenario steps
+Then('{string} should post an all-in ante of {int} chips', async function (playerName, anteAmount) {
+    console.log(`⚡ Verifying ${playerName} posts all-in ante of ${anteAmount} chips...`);
+    
+    const gameId = Object.keys(gameState || {})[0] || 'test-game-ante';
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_all_in_ante_posting',
+        'POST',
+        {
+            gameId,
+            playerName,
+            expectedAnteAmount: anteAmount
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to verify all-in ante posting: ${response.error}`);
+    }
+    
+    expect(response.antePosted).to.exist;
+    expect(response.antePosted.playerName).to.equal(playerName);
+    expect(response.antePosted.amount).to.equal(anteAmount);
+    expect(response.antePosted.isAllIn).to.be.true;
+    
+    console.log(`✅ ${playerName} correctly posted all-in ante of ${anteAmount} chips`);
+});
+
+Then('the total ante collection should be {int} chips', async function (expectedTotal) {
+    console.log(`⚡ Verifying total ante collection is ${expectedTotal} chips...`);
+    
+    const gameId = Object.keys(gameState || {})[0] || 'test-game-ante';
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/get_total_ante_collection',
+        'POST',
+        {
+            gameId
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to get total ante collection: ${response.error}`);
+    }
+    
+    expect(response.totalAnteCollection).to.exist;
+    expect(response.totalAnteCollection).to.be.a('number');
+    expect(response.totalAnteCollection).to.equal(expectedTotal);
+    
+    expect(response.anteBreakdown).to.exist;
+    expect(response.anteBreakdown).to.be.an('array');
+    
+    // Verify the sum of individual antes equals the total
+    const calculatedTotal = response.anteBreakdown.reduce((sum, ante) => sum + ante.amount, 0);
+    expect(calculatedTotal).to.equal(expectedTotal);
+    
+    console.log(`✅ Total ante collection confirmed: ${expectedTotal} chips from ${response.anteBreakdown.length} players`);
+});
+
+Then('the pot should reflect all ante contributions', async function () {
+    console.log('⚡ Verifying pot reflects all ante contributions...');
+    
+    const gameId = Object.keys(gameState || {})[0] || 'test-game-ante';
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_pot_ante_contributions',
+        'POST',
+        {
+            gameId
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to verify pot ante contributions: ${response.error}`);
+    }
+    
+    expect(response.potTotal).to.exist;
+    expect(response.potTotal).to.be.a('number');
+    expect(response.potTotal).to.be.greaterThan(0);
+    
+    expect(response.anteContribution).to.exist;
+    expect(response.anteContribution).to.be.a('number');
+    expect(response.anteContribution).to.be.greaterThan(0);
+    
+    expect(response.blindContribution).to.exist;
+    expect(response.blindContribution).to.be.a('number');
+    
+    // Verify pot total includes ante contributions
+    expect(response.potTotal).to.be.greaterThanOrEqual(response.anteContribution);
+    
+    // Verify ante contributions are properly tracked
+    expect(response.anteDetails).to.exist;
+    expect(response.anteDetails).to.be.an('array');
+    expect(response.anteDetails.length).to.be.greaterThan(0);
+    
+    // Verify each ante detail
+    response.anteDetails.forEach(ante => {
+        expect(ante.playerName).to.exist;
+        expect(ante.amount).to.be.a('number');
+        expect(ante.amount).to.be.greaterThan(0);
+    });
+    
+    console.log(`✅ Pot correctly reflects ante contributions - Total: ${response.potTotal}, Antes: ${response.anteContribution}, Blinds: ${response.blindContribution}`);
+});
+
+// Tournament Late Entry Deadline scenario steps
+Given('I have a tournament with late entry deadline of {int} minutes', async function (deadlineMinutes) {
+    console.log(`🏆 Creating tournament with late entry deadline of ${deadlineMinutes} minutes...`);
+    
+    const tournamentId = `tournament-late-entry-${Date.now()}`;
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/create_tournament_with_deadline',
+        'POST',
+        {
+            tournamentId,
+            lateEntryDeadlineMinutes: deadlineMinutes,
+            blindLevels: [
+                { level: 1, smallBlind: 10, bigBlind: 20, ante: 0, duration: 15 },
+                { level: 2, smallBlind: 20, bigBlind: 40, ante: 5, duration: 15 }
+            ]
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to create tournament: ${response.error}`);
+    }
+    
+    testTournaments[tournamentId] = {
+        id: tournamentId,
+        lateEntryDeadlineMinutes: deadlineMinutes
+    };
+    
+    console.log(`✅ Created tournament with late entry deadline of ${deadlineMinutes} minutes`);
+});
+
+Then('{string} should be allowed to join', async function (playerName) {
+    console.log(`⚡ Verifying ${playerName} is allowed to join...`);
+    
+    expect(this.joinAttemptResponse).to.exist;
+    expect(this.joinAttemptResponse.success).to.be.true;
+    expect(this.joinAttemptResponse.gameId || this.joinAttemptResponse.tournamentId).to.exist;
+    
+    console.log(`✅ ${playerName} was successfully allowed to join`);
+});
+
+Then('they should receive appropriate late entry dead blind obligations', async function () {
+    console.log('⚡ Verifying late entry player receives appropriate dead blind obligations...');
+    
+    expect(this.joinAttemptResponse).to.exist;
+    expect(this.joinAttemptResponse.success).to.be.true;
+    expect(this.joinAttemptResponse.deadBlindObligations).to.exist;
+    expect(this.joinAttemptResponse.deadBlindObligations).to.be.an('array');
+    expect(this.joinAttemptResponse.deadBlindObligations.length).to.be.greaterThan(0);
+    
+    // Verify late entry obligations include big blind at minimum
+    const hasDeadBigBlind = this.joinAttemptResponse.deadBlindObligations.some(
+        obligation => obligation.blindType === 'big' && obligation.reason === 'late_entry'
+    );
+    expect(hasDeadBigBlind).to.be.true;
+    
+    console.log(`✅ Late entry player correctly assigned ${this.joinAttemptResponse.deadBlindObligations.length} dead blind obligations`);
+});
+
 module.exports = {
     tournamentSchedule,
     gameState,
