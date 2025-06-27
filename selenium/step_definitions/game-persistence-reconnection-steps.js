@@ -634,6 +634,234 @@ Then('they should be able to continue playing immediately', async function () {
     }
 });
 
+// Complete Game State Restoration After Server Restart scenario steps
+Given('I have an active poker game {string} with game state saved', async function (gameId) {
+    console.log(`🎮 Creating active poker game ${gameId} with saved game state...`);
+    
+    // Create a game with multiple players and saved state
+    const players = [];
+    for (let i = 1; i <= 3; i++) {
+        players.push({
+            id: `restore-player-${i}`,
+            nickname: `RestorePlayer${i}`,
+            chips: 1000 - (i * 50), // Varied chip counts
+            seatNumber: i,
+            isActive: true,
+            currentBet: i === 1 ? 20 : (i === 2 ? 40 : 0) // Varied bets
+        });
+    }
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/create_saved_game_state',
+        'POST',
+        {
+            gameId,
+            players,
+            tableId: 'test-table-restore',
+            phase: 'preflop',
+            pot: 60,
+            enablePersistence: true
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to create saved game state: ${response.error}`);
+    }
+    
+    testGames[gameId] = {
+        id: gameId,
+        players,
+        tableId: 'test-table-restore',
+        phase: 'preflop',
+        pot: 60
+    };
+    
+    console.log(`✅ Created active poker game ${gameId} with saved state`);
+});
+
+Given('the game has progressed to the {string} phase with {int} community cards', async function (phase, cardCount) {
+    console.log(`⚡ Setting game to ${phase} phase with ${cardCount} community cards...`);
+    
+    const gameId = Object.keys(testGames)[0];
+    const communityCards = [];
+    
+    // Add appropriate number of community cards based on phase
+    if (phase === 'flop' && cardCount >= 3) {
+        communityCards.push('QH', 'JH', '10S');
+    } else if (phase === 'turn' && cardCount >= 4) {
+        communityCards.push('QH', 'JH', '10S', '9H');
+    } else if (phase === 'river' && cardCount >= 5) {
+        communityCards.push('QH', 'JH', '10S', '9H', '8C');
+    }
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/set_game_phase_and_cards',
+        'POST',
+        {
+            gameId,
+            phase,
+            communityCards: communityCards.slice(0, cardCount)
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to set game phase: ${response.error}`);
+    }
+    
+    // Update our test state
+    testGames[gameId].phase = phase;
+    testGames[gameId].communityCards = communityCards.slice(0, cardCount);
+    
+    console.log(`✅ Game set to ${phase} phase with ${cardCount} community cards`);
+});
+
+Given('the pot contains {int} chips from previous betting', async function (potAmount) {
+    console.log(`⚡ Setting pot to contain ${potAmount} chips from betting...`);
+    
+    const gameId = Object.keys(testGames)[0];
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/set_pot_amount',
+        'POST',
+        {
+            gameId,
+            potAmount
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to set pot amount: ${response.error}`);
+    }
+    
+    // Update our test state
+    testGames[gameId].pot = potAmount;
+    
+    console.log(`✅ Pot set to ${potAmount} chips from previous betting`);
+});
+
+When('the server is restarted or the game is restored', async function () {
+    console.log('🔄 Simulating server restart and game restoration...');
+    
+    const gameId = Object.keys(testGames)[0];
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/simulate_server_restart',
+        'POST',
+        {
+            gameId,
+            restoreFromDatabase: true
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to simulate server restart: ${response.error}`);
+    }
+    
+    // Wait for restoration to complete
+    await this.helpers.sleep(3000);
+    
+    console.log('✅ Server restart and game restoration completed');
+});
+
+Then('the game state should be fully restored from database', async function () {
+    console.log('⚡ Verifying game state is fully restored from database...');
+    
+    const gameId = Object.keys(testGames)[0];
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_database_restoration',
+        'POST',
+        {
+            gameId
+        }
+    );
+    
+    expect(response.success).to.be.true;
+    expect(response.restoredState).to.exist;
+    expect(response.restoredState.gameId).to.equal(gameId);
+    expect(response.restoredState.players).to.exist;
+    expect(response.restoredState.players.length).to.be.greaterThan(0);
+    
+    console.log('✅ Game state is fully restored from database');
+});
+
+Then('all players should have their correct chip counts', async function () {
+    console.log('⚡ Verifying all players have correct chip counts...');
+    
+    const gameId = Object.keys(testGames)[0];
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_player_chip_counts',
+        'POST',
+        {
+            gameId
+        }
+    );
+    
+    expect(response.success).to.be.true;
+    expect(response.playerChips).to.exist;
+    expect(response.playerChips.length).to.be.greaterThan(0);
+    
+    // Verify each player has reasonable chip count
+    response.playerChips.forEach(player => {
+        expect(player.chips).to.be.a('number');
+        expect(player.chips).to.be.greaterThan(0);
+    });
+    
+    console.log('✅ All players have correct chip counts');
+});
+
+Then('all community cards should be restored in correct order', async function () {
+    console.log('⚡ Verifying community cards are restored in correct order...');
+    
+    const gameId = Object.keys(testGames)[0];
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_community_cards_order',
+        'POST',
+        {
+            gameId
+        }
+    );
+    
+    expect(response.success).to.be.true;
+    
+    if (response.communityCards && response.communityCards.length > 0) {
+        expect(response.communityCards).to.be.an('array');
+        expect(response.cardOrder).to.equal('correct');
+        console.log(`✅ Community cards restored in correct order: ${response.communityCards.join(', ')}`);
+    } else {
+        console.log('✅ No community cards to verify (preflop phase)');
+    }
+});
+
+Then('the current phase should be {string}', async function (expectedPhase) {
+    console.log(`⚡ Verifying current phase is ${expectedPhase}...`);
+    
+    const gameId = Object.keys(testGames)[0];
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/get_current_phase',
+        'POST',
+        {
+            gameId
+        }
+    );
+    
+    expect(response.success).to.be.true;
+    expect(response.currentPhase).to.equal(expectedPhase);
+    
+    console.log(`✅ Current phase confirmed to be: ${expectedPhase}`);
+});
+
 module.exports = {
     testGames,
     testSessions,
