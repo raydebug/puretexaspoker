@@ -1,22 +1,60 @@
 const { Before, After, BeforeAll, AfterAll, Status } = require('@cucumber/cucumber')
 const { seleniumManager } = require('../config/selenium.config.js')
 const { WebDriverHelpers } = require('../utils/webdriverHelpers.js')
+const axios = require('axios')
 
 let helpers
 
+// Helper function to check if servers are running
+async function checkServersRunning() {
+  const maxAttempts = 10
+  const delay = 2000
+  
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      console.log(`🔍 Checking servers (attempt ${attempt}/${maxAttempts})...`)
+      
+      // Check backend
+      const backendResponse = await axios.get('http://localhost:3001/api/lobby-tables', { timeout: 3000 })
+      console.log(`✅ Backend server is running (${backendResponse.status})`)
+      
+      // Check frontend
+      const frontendResponse = await axios.get('http://localhost:3000', { timeout: 3000 })
+      console.log(`✅ Frontend server is running (${frontendResponse.status})`)
+      
+      return true
+    } catch (error) {
+      console.log(`⚠️ Servers not ready yet (attempt ${attempt}): ${error.message}`)
+      if (attempt < maxAttempts) {
+        console.log(`⏳ Waiting ${delay/1000}s before retry...`)
+        await new Promise(resolve => setTimeout(resolve, delay))
+      }
+    }
+  }
+  
+  throw new Error('❌ Servers are not running after 10 attempts. Please start both frontend (npm start in frontend/) and backend (npm start in backend/) servers.')
+}
+
 // Global setup - runs once before all scenarios
-BeforeAll({timeout: 30000}, async function() {
+BeforeAll({timeout: 60000}, async function() {
   console.log('🚀 Setting up Selenium test environment...')
   
   try {
-    // Initialize WebDriver with timeout protection
+    // First check if servers are running
+    await checkServersRunning()
+    console.log('✅ Both servers are confirmed to be running')
+    
+    // Initialize WebDriver with improved timeout handling
+    console.log('🔧 Initializing WebDriver...')
     const driver = await Promise.race([
       seleniumManager.getDriver(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('WebDriver initialization timed out')), 25000))
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('WebDriver initialization timed out after 45 seconds')), 45000)
+      )
     ]);
-    console.log(`✅ WebDriver initialized with browser: ${seleniumManager.getConfig().browser}`)
+    console.log(`✅ WebDriver initialized successfully with browser: ${seleniumManager.getConfig().browser}`)
   } catch (error) {
-    console.error('❌ Failed to initialize WebDriver:', error.message)
+    console.error('❌ Failed to initialize Selenium environment:', error.message)
     throw error
   }
 })
