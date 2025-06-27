@@ -4,7 +4,7 @@
   "description": "Backend for Texas Hold'em Poker Game",
   "main": "dist/server.js",
   "scripts": {
-    "pretest": "rimraf cypress/screenshots cypress/videos",
+
     "start": "ts-node src/server.ts",
     "build": "tsc",
     "test": "jest",
