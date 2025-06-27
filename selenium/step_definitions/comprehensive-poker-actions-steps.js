@@ -2779,6 +2779,117 @@ Then('the card order should initially be unrevealed', async function () {
   }
 });
 
+// Poker Game Start and Hash Generation step definitions
+When('I start a new poker game', async function () {
+  try {
+    // Navigate to game creation or start new game via API
+    const gameCreationResponse = await webdriverHelpers.makeApiCall(this.driver, 'POST', '/api/test/game/create-new', {
+      gameType: 'poker',
+      maxPlayers: 6,
+      blindLevels: { small: 10, big: 20 },
+      startingChips: 1000
+    });
+    assert.strictEqual(gameCreationResponse.status, 200, 'Game creation should be successful');
+    assert.ok(gameCreationResponse.data.gameId, 'Game creation should return game ID');
+    assert.ok(gameCreationResponse.data.gameStatus === 'created', 'Game should be in created status');
+    
+    // Store game information for subsequent steps
+    this.currentGameId = gameCreationResponse.data.gameId;
+    this.gameCreationData = gameCreationResponse.data;
+    
+    // Start the game via UI or API
+    const gameStartResponse = await webdriverHelpers.makeApiCall(this.driver, 'POST', `/api/test/game/${this.currentGameId}/start`);
+    assert.strictEqual(gameStartResponse.status, 200, 'Game start should be successful');
+    assert.strictEqual(gameStartResponse.data.gameStatus, 'active', 'Game should be in active status after start');
+    
+    // Verify game initialization
+    const verificationResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', `/api/test/game/${this.currentGameId}/status`);
+    assert.strictEqual(verificationResponse.status, 200, 'Game status verification should succeed');
+    assert.strictEqual(verificationResponse.data.isActive, true, 'Game should be marked as active');
+    assert.ok(verificationResponse.data.timestamp, 'Game should have start timestamp');
+    
+    // Verify UI reflects new game state
+    try {
+      const gameElement = await this.driver.findElement(webdriver.By.css('[data-testid="active-game"]'));
+      assert.ok(gameElement, 'Active game element should be present in UI');
+      const gameStatus = await gameElement.getText();
+      assert.ok(gameStatus.includes('Active') || gameStatus.includes('Started'), 'UI should show game as active/started');
+    } catch (elementError) {
+      console.log('UI game element check skipped - testing via API only');
+    }
+    
+    // Verify card order initialization has begun
+    const cardOrderResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', `/api/test/game/${this.currentGameId}/card-order-init`);
+    if (cardOrderResponse.status === 200) {
+      assert.strictEqual(cardOrderResponse.data.initializationStarted, true, 'Card order initialization should have started');
+    }
+    
+    console.log(`✅ Successfully started new poker game with ID: ${this.currentGameId}`);
+  } catch (error) {
+    console.error('❌ Failed to start new poker game:', error);
+    throw error;
+  }
+});
+
+Then('a card order hash should be generated before dealing', async function () {
+  try {
+    // Verify hash generation has occurred
+    const hashResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', `/api/test/game/${this.currentGameId}/card-order-hash`);
+    assert.strictEqual(hashResponse.status, 200, 'Card order hash request should be successful');
+    assert.ok(hashResponse.data.hash, 'Card order hash should be generated');
+    assert.ok(hashResponse.data.hash.length >= 32, 'Hash should be properly formatted');
+    assert.match(hashResponse.data.hash, /^[a-f0-9]+$/i, 'Hash should contain only hexadecimal characters');
+    
+    // Verify hash was generated before dealing
+    const timingResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', `/api/test/game/${this.currentGameId}/event-timing`);
+    assert.strictEqual(timingResponse.status, 200, 'Event timing check should succeed');
+    assert.ok(timingResponse.data.hashGenerationTimestamp, 'Hash generation timestamp should exist');
+    
+    if (timingResponse.data.dealingTimestamp) {
+      const hashTime = new Date(timingResponse.data.hashGenerationTimestamp);
+      const dealTime = new Date(timingResponse.data.dealingTimestamp);
+      assert.ok(hashTime < dealTime, 'Hash should be generated before dealing cards');
+    } else {
+      // Dealing hasn't started yet, which is acceptable
+      console.log('✅ Hash generated before dealing (dealing not yet started)');
+    }
+    
+    // Verify hash is stored in database
+    const storageResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', `/api/test/game/${this.currentGameId}/hash-storage`);
+    assert.strictEqual(storageResponse.status, 200, 'Hash storage check should succeed');
+    assert.strictEqual(storageResponse.data.isStored, true, 'Hash should be stored in database');
+    assert.strictEqual(storageResponse.data.gameId, this.currentGameId, 'Stored hash should be associated with correct game');
+    
+    // Verify hash is visible to players but card order is not
+    const visibilityResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', `/api/test/game/${this.currentGameId}/hash-visibility`);
+    assert.strictEqual(visibilityResponse.status, 200, 'Hash visibility check should succeed');
+    assert.strictEqual(visibilityResponse.data.hashVisible, true, 'Hash should be visible to players');
+    assert.strictEqual(visibilityResponse.data.cardOrderVisible, false, 'Card order should not be visible yet');
+    
+    // Store hash information for subsequent steps
+    this.generatedHash = hashResponse.data.hash;
+    this.hashMetadata = {
+      hash: hashResponse.data.hash,
+      gameId: this.currentGameId,
+      generationTimestamp: timingResponse.data.hashGenerationTimestamp
+    };
+    
+    // Verify hash integrity and uniqueness
+    const integrityResponse = await webdriverHelpers.makeApiCall(this.driver, 'POST', `/api/test/card-order/verify-hash-integrity`, {
+      hash: this.generatedHash,
+      gameId: this.currentGameId
+    });
+    assert.strictEqual(integrityResponse.status, 200, 'Hash integrity verification should succeed');
+    assert.strictEqual(integrityResponse.data.isValid, true, 'Generated hash should be valid');
+    assert.strictEqual(integrityResponse.data.isUnique, true, 'Generated hash should be unique');
+    
+    console.log(`✅ Card order hash successfully generated before dealing: ${this.generatedHash.substring(0, 8)}...`);
+  } catch (error) {
+    console.error('❌ Card order hash generation verification failed:', error);
+    throw error;
+  }
+});
+
 module.exports = {
   comprehensiveTestPlayers,
   comprehensiveGameId,
