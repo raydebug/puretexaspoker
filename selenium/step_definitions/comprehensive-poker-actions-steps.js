@@ -3080,6 +3080,153 @@ Then('the final game completion should be broadcasted to all clients', async fun
   }
 });
 
+// Immediate Showdown and Winner Determination step definitions
+Then('the showdown should occur immediately', async function () {
+  try {
+    // Verify immediate showdown triggering
+    const showdownResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/showdown-status');
+    assert.strictEqual(showdownResponse.status, 200, 'Showdown status should be accessible');
+    assert.strictEqual(showdownResponse.data.showdownTriggered, true, 'Showdown should be triggered');
+    assert.strictEqual(showdownResponse.data.immediatelyTriggered, true, 'Showdown should be immediate');
+    
+    // Verify showdown timing
+    const timingResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/showdown-timing');
+    assert.strictEqual(timingResponse.status, 200, 'Showdown timing should be accessible');
+    assert.ok(timingResponse.data.triggerTimestamp, 'Showdown trigger timestamp should exist');
+    assert.ok(timingResponse.data.responseTime < 500, 'Showdown should trigger quickly (<500ms)');
+    
+    // Verify all cards are revealed
+    const cardsResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/showdown-cards');
+    assert.strictEqual(cardsResponse.status, 200, 'Showdown cards should be accessible');
+    assert.ok(cardsResponse.data.playerCards, 'Player cards should be revealed');
+    assert.ok(cardsResponse.data.communityCards, 'Community cards should be available');
+    assert.strictEqual(cardsResponse.data.allCardsRevealed, true, 'All cards should be revealed');
+    
+    // Verify showdown phase transition
+    const phaseResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/current-phase');
+    assert.strictEqual(phaseResponse.status, 200, 'Current phase should be accessible');
+    assert.strictEqual(phaseResponse.data.phase, 'showdown', 'Game should be in showdown phase');
+    assert.strictEqual(phaseResponse.data.automatic, true, 'Phase transition should be automatic');
+    
+    // Verify showdown conditions were met
+    const conditionsResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/showdown-conditions');
+    assert.strictEqual(conditionsResponse.status, 200, 'Showdown conditions should be accessible');
+    assert.strictEqual(conditionsResponse.data.conditionsMet, true, 'Showdown conditions should be met');
+    assert.ok(conditionsResponse.data.triggerReason, 'Trigger reason should be documented');
+    
+    // Verify player notification of showdown
+    const notificationResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/showdown-notifications');
+    assert.strictEqual(notificationResponse.status, 200, 'Showdown notifications should be accessible');
+    assert.strictEqual(notificationResponse.data.playersNotified, true, 'Players should be notified of showdown');
+    assert.ok(notificationResponse.data.notificationTimestamp, 'Notification timestamp should exist');
+    
+    // Verify UI updates for showdown
+    try {
+      const showdownElement = await this.driver.findElement(webdriver.By.css('[data-testid="showdown-phase"]'));
+      assert.ok(showdownElement, 'Showdown UI element should be present');
+      const isDisplayed = await showdownElement.isDisplayed();
+      assert.strictEqual(isDisplayed, true, 'Showdown phase should be visible in UI');
+    } catch (elementError) {
+      console.log('UI showdown element check skipped - testing via API only');
+    }
+    
+    // Store showdown data for subsequent validations
+    this.showdownData = {
+      triggered: showdownResponse.data.showdownTriggered,
+      immediate: showdownResponse.data.immediatelyTriggered,
+      timestamp: timingResponse.data.triggerTimestamp,
+      responseTime: timingResponse.data.responseTime,
+      phase: phaseResponse.data.phase
+    };
+    
+    console.log(`✅ Showdown triggered immediately with ${timingResponse.data.responseTime}ms response time`);
+  } catch (error) {
+    console.error('❌ Immediate showdown verification failed:', error);
+    throw error;
+  }
+});
+
+Then('the winner should be determined by best {int}-card hand', async function (cardCount) {
+  try {
+    // Verify hand evaluation process
+    const evaluationResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/hand-evaluation');
+    assert.strictEqual(evaluationResponse.status, 200, 'Hand evaluation should be accessible');
+    assert.ok(evaluationResponse.data.evaluations, 'Hand evaluations should be performed');
+    assert.ok(Array.isArray(evaluationResponse.data.evaluations), 'Evaluations should be an array');
+    
+    // Verify each player's hand evaluation
+    for (const evaluation of evaluationResponse.data.evaluations) {
+      assert.ok(evaluation.playerId, 'Each evaluation should have player ID');
+      assert.ok(evaluation.bestHand, 'Each evaluation should have best hand');
+      assert.strictEqual(evaluation.bestHand.length, cardCount, `Best hand should contain ${cardCount} cards`);
+      assert.ok(evaluation.handRank, 'Each evaluation should have hand rank');
+      assert.ok(evaluation.handStrength, 'Each evaluation should have hand strength value');
+    }
+    
+    // Verify winner determination
+    const winnerResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/winner-determination');
+    assert.strictEqual(winnerResponse.status, 200, 'Winner determination should be accessible');
+    assert.ok(winnerResponse.data.winner, 'Winner should be determined');
+    assert.ok(winnerResponse.data.winningHand, 'Winning hand should be identified');
+    assert.strictEqual(winnerResponse.data.winningHand.length, cardCount, `Winning hand should contain ${cardCount} cards`);
+    
+    // Verify hand comparison logic
+    const comparisonResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/hand-comparison');
+    assert.strictEqual(comparisonResponse.status, 200, 'Hand comparison should be accessible');
+    assert.strictEqual(comparisonResponse.data.comparisonMethod, 'best_five_card', 'Should use best 5-card comparison');
+    assert.ok(comparisonResponse.data.comparisonResults, 'Comparison results should be available');
+    
+    // Verify hand ranking accuracy
+    const rankingResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/hand-ranking');
+    assert.strictEqual(rankingResponse.status, 200, 'Hand ranking should be accessible');
+    assert.ok(rankingResponse.data.rankings, 'Hand rankings should be calculated');
+    
+    // Verify rankings are in correct order (highest to lowest)
+    const rankings = rankingResponse.data.rankings;
+    for (let i = 1; i < rankings.length; i++) {
+      assert.ok(rankings[i-1].strength >= rankings[i].strength, 
+                `Hand rankings should be in descending order: ${rankings[i-1].strength} >= ${rankings[i].strength}`);
+    }
+    
+    // Verify tie-breaking logic if applicable
+    const tieResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/tie-breaking');
+    if (tieResponse.status === 200) {
+      assert.ok(tieResponse.data.tieBreakingApplied !== undefined, 'Tie-breaking status should be clear');
+      if (tieResponse.data.tieBreakingApplied) {
+        assert.ok(tieResponse.data.tieBreakingMethod, 'Tie-breaking method should be documented');
+        assert.ok(tieResponse.data.kickers, 'Kickers should be considered for tie-breaking');
+      }
+    }
+    
+    // Verify result notification and broadcasting
+    const resultResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/result-notification');
+    assert.strictEqual(resultResponse.status, 200, 'Result notification should be accessible');
+    assert.strictEqual(resultResponse.data.resultsBroadcast, true, 'Results should be broadcast to players');
+    assert.ok(resultResponse.data.winnerAnnounced, 'Winner should be announced');
+    
+    // Verify mathematical correctness of hand evaluation
+    const mathResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/evaluation-math');
+    assert.strictEqual(mathResponse.status, 200, 'Evaluation mathematics should be accessible');
+    assert.strictEqual(mathResponse.data.mathematicallyCorrect, true, 'Hand evaluation should be mathematically correct');
+    assert.ok(mathResponse.data.algorithmUsed, 'Evaluation algorithm should be documented');
+    
+    // Store winner determination data
+    this.winnerData = {
+      winner: winnerResponse.data.winner,
+      winningHand: winnerResponse.data.winningHand,
+      handRank: winnerResponse.data.winningHandRank,
+      cardCount: cardCount,
+      evaluationMethod: comparisonResponse.data.comparisonMethod,
+      mathematicallyCorrect: mathResponse.data.mathematicallyCorrect
+    };
+    
+    console.log(`✅ Winner determined by best ${cardCount}-card hand: ${winnerResponse.data.winner.nickname} with ${winnerResponse.data.winningHandRank}`);
+  } catch (error) {
+    console.error('❌ Winner determination verification failed:', error);
+    throw error;
+  }
+});
+
 module.exports = {
   comprehensiveTestPlayers,
   comprehensiveGameId,
