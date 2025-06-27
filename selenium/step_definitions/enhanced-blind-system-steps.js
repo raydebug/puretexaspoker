@@ -1799,6 +1799,218 @@ Then('no additional dead blind should be required', async function () {
     console.log(`✅ No additional dead blind required - only regular blind posted`);
 });
 
+// Late Entry Dead Blind Requirements scenario step definitions
+Given('the game has been running for {int} hands', async function (handCount) {
+    console.log(`🃏 Setting up game that has been running for ${handCount} hands...`);
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/simulate_game_history',
+        'POST',
+        {
+            tableId: 'Enhanced Blind Test Table',
+            handsPlayed: handCount
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to simulate game history: ${response.error}`);
+    }
+    
+    // Store game history for later verification
+    this.gameHistory = response.gameHistory;
+    
+    console.log(`✅ Game setup with ${handCount} hands played`);
+});
+
+Given('the current dealer is in seat {int}', async function (seatNumber) {
+    console.log(`🎯 Setting current dealer to seat ${seatNumber}...`);
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/set_dealer_position',
+        'POST',
+        {
+            tableId: 'Enhanced Blind Test Table',
+            dealerSeat: seatNumber
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to set dealer position: ${response.error}`);
+    }
+    
+    // Store dealer position for later verification
+    this.dealerPosition = seatNumber;
+    
+    console.log(`✅ Current dealer set to seat ${seatNumber}`);
+});
+
+When('{string} joins the game in seat {int}', async function (playerName, seatNumber) {
+    console.log(`👤 ${playerName} joining game in seat ${seatNumber}...`);
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/join_game_late_entry',
+        'POST',
+        {
+            tableId: 'Enhanced Blind Test Table',
+            playerName,
+            seatNumber
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to join game as late entry: ${response.error}`);
+    }
+    
+    // Store the join result for later verification
+    this.lateEntryJoinResult = response.result;
+    
+    console.log(`✅ ${playerName} joined as late entry in seat ${seatNumber}`);
+});
+
+When('the seat is after the current blind positions', async function () {
+    console.log('⚡ Verifying seat is after current blind positions...');
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_seat_position_relative_to_blinds',
+        'POST',
+        {
+            tableId: 'Enhanced Blind Test Table',
+            seatNumber: this.lateEntryJoinResult.seatNumber,
+            dealerPosition: this.dealerPosition
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to verify seat position: ${response.error}`);
+    }
+    
+    expect(response.positionAnalysis).to.exist;
+    expect(response.positionAnalysis.isAfterBlinds).to.be.true;
+    expect(response.positionAnalysis.requiresDeadBlind).to.be.true;
+    expect(response.positionAnalysis.blindPositions).to.exist;
+    
+    console.log(`✅ Seat ${this.lateEntryJoinResult.seatNumber} confirmed to be after blind positions`);
+});
+
+Then('{string} should have a late entry dead blind obligation', async function (playerName) {
+    console.log(`⚡ Verifying ${playerName} has late entry dead blind obligation...`);
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_late_entry_dead_blind_obligation',
+        'POST',
+        {
+            tableId: 'Enhanced Blind Test Table',
+            playerName
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to verify late entry dead blind obligation: ${response.error}`);
+    }
+    
+    expect(response.deadBlindObligation).to.exist;
+    expect(response.deadBlindObligation.playerName).to.equal(playerName);
+    expect(response.deadBlindObligation.obligationType).to.equal('late_entry');
+    expect(response.deadBlindObligation.blindType).to.be.oneOf(['big', 'small']);
+    expect(response.deadBlindObligation.amount).to.be.a('number');
+    expect(response.deadBlindObligation.amount).to.be.greaterThan(0);
+    expect(response.deadBlindObligation.reason).to.equal('late_entry');
+    expect(response.deadBlindObligation.isDead).to.be.true;
+    
+    console.log(`✅ ${playerName} has late entry dead blind obligation: ${response.deadBlindObligation.blindType} blind (${response.deadBlindObligation.amount} chips)`);
+});
+
+When('{string} is dealt into the next hand', async function (playerName) {
+    console.log(`🃏 Dealing ${playerName} into the next hand...`);
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/deal_player_into_hand',
+        'POST',
+        {
+            tableId: 'Enhanced Blind Test Table',
+            playerName
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to deal player into hand: ${response.error}`);
+    }
+    
+    // Store the deal result for later verification
+    this.dealResult = response.result;
+    
+    console.log(`✅ ${playerName} dealt into hand ${response.result.handId}`);
+});
+
+Then('they should post a dead big blind before receiving cards', async function () {
+    console.log('⚡ Verifying dead big blind is posted before receiving cards...');
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_dead_blind_posting_sequence',
+        'POST',
+        {
+            tableId: 'Enhanced Blind Test Table',
+            handId: this.dealResult.handId
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to verify dead blind posting sequence: ${response.error}`);
+    }
+    
+    expect(response.postingSequence).to.exist;
+    expect(response.postingSequence.deadBlindPosted).to.be.true;
+    expect(response.postingSequence.deadBlindType).to.equal('big');
+    expect(response.postingSequence.cardsDealt).to.be.true;
+    expect(response.postingSequence.deadBlindBeforeCards).to.be.true;
+    
+    // Verify timing - dead blind should be posted before cards
+    expect(response.timeline).to.exist;
+    expect(response.timeline.deadBlindTimestamp).to.be.lessThan(response.timeline.cardDealTimestamp);
+    
+    console.log(`✅ Dead big blind posted before cards dealt (dead blind: ${response.timeline.deadBlindTimestamp}, cards: ${response.timeline.cardDealTimestamp})`);
+});
+
+Then('their chip count should decrease by the big blind amount', async function () {
+    console.log('⚡ Verifying chip count decreased by big blind amount...');
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_chip_count_change',
+        'POST',
+        {
+            tableId: 'Enhanced Blind Test Table',
+            playerName: this.lateEntryJoinResult.playerName,
+            expectedDecrease: 'big_blind'
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to verify chip count change: ${response.error}`);
+    }
+    
+    expect(response.chipChange).to.exist;
+    expect(response.chipChange.playerName).to.equal(this.lateEntryJoinResult.playerName);
+    expect(response.chipChange.previousChips).to.be.a('number');
+    expect(response.chipChange.currentChips).to.be.a('number');
+    expect(response.chipChange.difference).to.be.a('number');
+    expect(response.chipChange.difference).to.be.greaterThan(0);
+    
+    // Verify the decrease equals the big blind amount
+    expect(response.chipChange.blindAmountDeducted).to.exist;
+    expect(response.chipChange.blindAmountDeducted.type).to.equal('big');
+    expect(response.chipChange.difference).to.equal(response.chipChange.blindAmountDeducted.amount);
+    
+    console.log(`✅ Chip count decreased by ${response.chipChange.difference} chips (big blind amount: ${response.chipChange.blindAmountDeducted.amount})`);
+});
+
 module.exports = {
     tournamentSchedule,
     gameState,
