@@ -2095,6 +2095,96 @@ When('the game starts and progresses to completion', async function () {
   }
 });
 
+// Card Order Integrity and Verification step definitions
+Then('the verification should confirm the card order is authentic', async function () {
+  try {
+    // Make API call to verify card order authenticity  
+    const response = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/card-order/verify-authenticity');
+    assert.strictEqual(response.status, 200, 'Card order verification API should be accessible');
+    assert.strictEqual(response.data.isAuthentic, true, 'Card order should be verified as authentic');
+    assert.ok(response.data.verificationDetails, 'Verification should include detailed authenticity confirmation');
+    
+    // Verify integrity through hashing
+    const hashResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/card-order/hash-verification');
+    assert.strictEqual(hashResponse.status, 200, 'Hash verification should be successful');
+    assert.strictEqual(hashResponse.data.hashMatches, true, 'Card order hash should match expected');
+    
+    console.log('✅ Card order authenticity verification confirmed');
+  } catch (error) {
+    console.error('❌ Card order authenticity verification failed:', error);
+    throw error;
+  }
+});
+
+Then('the computed hash should match the stored hash', async function () {
+  try {
+    // Retrieve both computed and stored hashes for comparison
+    const response = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/card-order/hash-comparison');
+    assert.strictEqual(response.status, 200, 'Hash comparison API should be accessible');
+    
+    const { computedHash, storedHash, matches } = response.data;
+    assert.ok(computedHash, 'Computed hash should be available');
+    assert.ok(storedHash, 'Stored hash should be available');
+    assert.strictEqual(matches, true, 'Computed hash should match stored hash exactly');
+    
+    // Verify hash format and algorithm consistency
+    assert.ok(computedHash.length >= 32, 'Hash should be properly formatted with adequate length');
+    assert.strictEqual(computedHash, storedHash, 'Hash values should be identical');
+    
+    // Additional integrity checks
+    const integrityResponse = await webdriverHelpers.makeApiCall(this.driver, 'POST', '/api/test/card-order/verify-integrity', {
+      hashToVerify: computedHash
+    });
+    assert.strictEqual(integrityResponse.status, 200, 'Hash integrity verification should succeed');
+    assert.strictEqual(integrityResponse.data.isValid, true, 'Hash should pass integrity validation');
+    
+    console.log('✅ Computed hash matches stored hash exactly');
+  } catch (error) {
+    console.error('❌ Hash matching verification failed:', error);
+    throw error;
+  }
+});
+
+Then('the card sequence should be verifiable against the seed', async function () {
+  try {
+    // Retrieve seed and verify card sequence generation
+    const response = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/card-order/seed-verification');
+    assert.strictEqual(response.status, 200, 'Seed verification API should be accessible');
+    
+    const { seed, cardSequence, verificationResult } = response.data;
+    assert.ok(seed, 'Seed should be available for verification');
+    assert.ok(cardSequence, 'Card sequence should be provided');
+    assert.strictEqual(verificationResult.isValid, true, 'Card sequence should be verifiable against seed');
+    
+    // Verify seed-based regeneration produces same sequence
+    const regenerationResponse = await webdriverHelpers.makeApiCall(this.driver, 'POST', '/api/test/card-order/regenerate-from-seed', {
+      seed: seed
+    });
+    assert.strictEqual(regenerationResponse.status, 200, 'Seed regeneration should be successful');
+    
+    const regeneratedSequence = regenerationResponse.data.cardSequence;
+    assert.deepStrictEqual(regeneratedSequence, cardSequence, 'Regenerated sequence should match original');
+    
+    // Verify sequence completeness and uniqueness
+    assert.strictEqual(cardSequence.length, 52, 'Card sequence should contain all 52 cards');
+    const uniqueCards = new Set(cardSequence);
+    assert.strictEqual(uniqueCards.size, 52, 'All cards in sequence should be unique');
+    
+    // Verify deterministic properties
+    const deterministicResponse = await webdriverHelpers.makeApiCall(this.driver, 'POST', '/api/test/card-order/verify-deterministic', {
+      seed: seed,
+      expectedSequence: cardSequence
+    });
+    assert.strictEqual(deterministicResponse.status, 200, 'Deterministic verification should succeed');
+    assert.strictEqual(deterministicResponse.data.isDeterministic, true, 'Card sequence should be deterministically generated from seed');
+    
+    console.log('✅ Card sequence successfully verified against seed');
+  } catch (error) {
+    console.error('❌ Seed verification failed:', error);
+    throw error;
+  }
+});
+
 module.exports = {
   comprehensiveTestPlayers,
   comprehensiveGameId,
