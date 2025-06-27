@@ -7,6 +7,10 @@ let tournamentSchedule = null;
 let gameState = null;
 let deadBlindObligations = [];
 
+// Store test state for blind system validation
+let testTournaments = {};
+let blindSchedules = {};
+
 // Enhanced Blind System Step Definitions
 
 Given('I create a tournament blind schedule:', async function (dataTable) {
@@ -447,8 +451,182 @@ Given('I have an active cash game with blinds {string}', async function (blinds)
     console.log(`✅ Cash game setup with blinds ${smallBlind}/${bigBlind}`);
 });
 
+Given('I have a tournament with a {int}-level blind schedule', async function (levels) {
+    console.log(`🏆 Creating tournament with ${levels}-level blind schedule...`);
+    
+    const tournamentId = `tournament-${Date.now()}`;
+    
+    // Create blind schedule with specified levels
+    const blindLevels = [];
+    for (let i = 1; i <= levels; i++) {
+        blindLevels.push({
+            level: i,
+            smallBlind: i * 10,
+            bigBlind: i * 20,
+            ante: i >= 3 ? i * 5 : 0,
+            duration: 15 // 15 minutes per level
+        });
+    }
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/create_tournament_with_blinds',
+        'POST',
+        {
+            tournamentId,
+            blindLevels,
+            totalLevels: levels
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to create tournament: ${response.error}`);
+    }
+    
+    testTournaments[tournamentId] = {
+        id: tournamentId,
+        blindLevels,
+        totalLevels: levels
+    };
+    
+    blindSchedules[tournamentId] = blindLevels;
+    
+    console.log(`✅ Created tournament with ${levels}-level blind schedule`);
+});
+
+Given('the tournament is currently at level {int}', async function (currentLevel) {
+    console.log(`⚡ Setting tournament to level ${currentLevel}...`);
+    
+    const tournamentId = Object.keys(testTournaments)[0];
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/set_tournament_level',
+        'POST',
+        {
+            tournamentId,
+            currentLevel
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to set tournament level: ${response.error}`);
+    }
+    
+    testTournaments[tournamentId].currentLevel = currentLevel;
+    
+    console.log(`✅ Tournament set to level ${currentLevel}`);
+});
+
+Given('there are {int} minutes remaining in the current level', async function (minutes) {
+    console.log(`⏰ Setting ${minutes} minutes remaining in current level...`);
+    
+    const tournamentId = Object.keys(testTournaments)[0];
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/set_level_time_remaining',
+        'POST',
+        {
+            tournamentId,
+            minutesRemaining: minutes
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to set time remaining: ${response.error}`);
+    }
+    
+    testTournaments[tournamentId].timeRemaining = minutes;
+    
+    console.log(`✅ Set ${minutes} minutes remaining in current level`);
+});
+
+When('I request the blind schedule summary', async function () {
+    console.log('📊 Requesting blind schedule summary...');
+    
+    const tournamentId = Object.keys(testTournaments)[0];
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/get_blind_schedule_summary',
+        'POST',
+        {
+            tournamentId
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to get blind schedule summary: ${response.error}`);
+    }
+    
+    this.blindSummary = response.summary;
+    
+    console.log('✅ Retrieved blind schedule summary');
+});
+
+Then('the response should include current level information', async function () {
+    console.log('⚡ Verifying current level information is included...');
+    
+    expect(this.blindSummary).to.exist;
+    expect(this.blindSummary.currentLevel).to.exist;
+    expect(this.blindSummary.currentLevel.level).to.be.a('number');
+    expect(this.blindSummary.currentLevel.smallBlind).to.be.a('number');
+    expect(this.blindSummary.currentLevel.bigBlind).to.be.a('number');
+    
+    console.log(`✅ Current level information confirmed: Level ${this.blindSummary.currentLevel.level} (${this.blindSummary.currentLevel.smallBlind}/${this.blindSummary.currentLevel.bigBlind})`);
+});
+
+Then('the response should include time remaining in current level', async function () {
+    console.log('⚡ Verifying time remaining information is included...');
+    
+    expect(this.blindSummary).to.exist;
+    expect(this.blindSummary.timeRemaining).to.exist;
+    expect(this.blindSummary.timeRemaining).to.be.a('number');
+    expect(this.blindSummary.timeRemaining).to.be.greaterThan(0);
+    
+    console.log(`✅ Time remaining confirmed: ${this.blindSummary.timeRemaining} minutes`);
+});
+
+Then('the response should include next level blind amounts', async function () {
+    console.log('⚡ Verifying next level blind amounts are included...');
+    
+    expect(this.blindSummary).to.exist;
+    expect(this.blindSummary.nextLevel).to.exist;
+    expect(this.blindSummary.nextLevel.smallBlind).to.be.a('number');
+    expect(this.blindSummary.nextLevel.bigBlind).to.be.a('number');
+    expect(this.blindSummary.nextLevel.smallBlind).to.be.greaterThan(this.blindSummary.currentLevel.smallBlind);
+    expect(this.blindSummary.nextLevel.bigBlind).to.be.greaterThan(this.blindSummary.currentLevel.bigBlind);
+    
+    console.log(`✅ Next level blinds confirmed: ${this.blindSummary.nextLevel.smallBlind}/${this.blindSummary.nextLevel.bigBlind}`);
+});
+
+Then('the response should include total hands played', async function () {
+    console.log('⚡ Verifying total hands played is included...');
+    
+    expect(this.blindSummary).to.exist;
+    expect(this.blindSummary.handsPlayed).to.exist;
+    expect(this.blindSummary.handsPlayed).to.be.a('number');
+    expect(this.blindSummary.handsPlayed).to.be.greaterThanOrEqual(0);
+    
+    console.log(`✅ Total hands played confirmed: ${this.blindSummary.handsPlayed}`);
+});
+
+Then('the response should include number of pending dead blinds', async function () {
+    console.log('⚡ Verifying pending dead blinds count is included...');
+    
+    expect(this.blindSummary).to.exist;
+    expect(this.blindSummary.pendingDeadBlinds).to.exist;
+    expect(this.blindSummary.pendingDeadBlinds).to.be.a('number');
+    expect(this.blindSummary.pendingDeadBlinds).to.be.greaterThanOrEqual(0);
+    
+    console.log(`✅ Pending dead blinds confirmed: ${this.blindSummary.pendingDeadBlinds}`);
+});
+
 module.exports = {
     tournamentSchedule,
     gameState,
-    deadBlindObligations
+    deadBlindObligations,
+    testTournaments,
+    blindSchedules
 }; 
