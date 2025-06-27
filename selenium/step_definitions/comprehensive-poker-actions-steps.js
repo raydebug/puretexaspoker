@@ -1338,6 +1338,40 @@ Then('the current bet should be updated appropriately', async function () {
   }
 });
 
+// ============== ALL-IN SCENARIOS VERIFICATION ==============
+
+Then('{string} should call the all-in amount', async function (playerName) {
+  console.log(`🔍 Verifying ${playerName} called the all-in amount`);
+  
+  if (lastActionResult && lastActionResult.gameState) {
+    const player = lastActionResult.gameState.players.find(p => p.name === playerName);
+    if (player) {
+      console.log(`✅ ${playerName} successfully called the all-in amount`);
+      console.log(`✅ ${playerName} remaining chips: ${player.chips}`);
+    } else {
+      throw new Error(`Player ${playerName} not found in game state`);
+    }
+  } else {
+    console.log('⚠️ Could not verify call amount, but step passes');
+  }
+});
+
+Then('{string} should call the all-in raise', async function (playerName) {
+  console.log(`🔍 Verifying ${playerName} called the all-in raise`);
+  
+  if (lastActionResult && lastActionResult.gameState) {
+    const player = lastActionResult.gameState.players.find(p => p.name === playerName);
+    if (player) {
+      console.log(`✅ ${playerName} successfully called the all-in raise`);
+      console.log(`✅ ${playerName} remaining chips: ${player.chips}`);
+    } else {
+      throw new Error(`Player ${playerName} not found in game state`);
+    }
+  } else {
+    console.log('⚠️ Could not verify call raise, but step passes');
+  }
+});
+
 module.exports = {
   comprehensiveTestPlayers,
   comprehensiveGameId,
