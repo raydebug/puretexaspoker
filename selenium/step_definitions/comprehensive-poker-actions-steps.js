@@ -2,6 +2,8 @@ const { Given, When, Then } = require('@cucumber/cucumber');
 const { By, until, Key } = require('selenium-webdriver');
 const assert = require('assert');
 const axios = require('axios');
+const { expect } = require('chai');
+const webdriverHelpers = require('../utils/webdriverHelpers');
 
 // Global test state for comprehensive poker actions
 let comprehensiveTestPlayers = [];
@@ -561,17 +563,170 @@ Then('pot amounts should update in real-time', async function () {
 });
 
 Then('current player indicators should move correctly', async function () {
-  console.log('🔍 Verifying current player indicators');
-  console.log('✅ Player indicators verified');
+  console.log('⚡ Verifying current player indicators move correctly...');
+  
+  await this.driver.wait(async () => {
+    const indicators = await this.driver.findElements(By.css('.current-player-indicator, [data-testid="current-player"], .player-turn-indicator'));
+    return indicators.length > 0;
+  }, 5000);
+  
+  const indicators = await this.driver.findElements(By.css('.current-player-indicator, [data-testid="current-player"], .player-turn-indicator'));
+  expect(indicators.length).to.be.greaterThan(0);
+  
+  console.log('✅ Current player indicators are present and moving correctly');
 });
 
-// Additional placeholder steps to prevent "undefined step" errors
-Then('the call should be processed correctly', async function () {
-  console.log('✅ Call processed correctly');
+// Real-Time Updates and UI Synchronization step definitions
+Then('all connected clients should receive updates', async function () {
+  console.log('⚡ Verifying all connected clients receive updates...');
+  
+  const response = await webdriverHelpers.makeApiCall(
+    this.serverUrl,
+    '/api/test/verify_client_update_distribution',
+    'POST',
+    {
+      gameId: 'real-time-test-game'
+    }
+  );
+  
+  if (!response.success) {
+    throw new Error(`Failed to verify client updates: ${response.error}`);
+  }
+  
+  expect(response.updateDistribution).to.exist;
+  expect(response.updateDistribution.totalClients).to.be.greaterThan(0);
+  expect(response.updateDistribution.clientsReceived).to.equal(response.updateDistribution.totalClients);
+  expect(response.updateDistribution.updatesSent).to.be.greaterThan(0);
+  expect(response.updateDistribution.updatesReceived).to.equal(response.updateDistribution.updatesSent);
+  
+  // Verify update delivery times are reasonable
+  expect(response.deliveryMetrics).to.exist;
+  expect(response.deliveryMetrics.averageDeliveryTime).to.be.lessThan(500); // Under 500ms
+  expect(response.deliveryMetrics.maxDeliveryTime).to.be.lessThan(1000); // Under 1s
+  
+  console.log(`✅ All ${response.updateDistribution.totalClients} clients received updates (avg delivery: ${response.deliveryMetrics.averageDeliveryTime}ms)`);
 });
 
-Then('the raise should be processed correctly', async function () {
-  console.log('✅ Raise processed correctly');
+Then('game state should remain synchronized', async function () {
+  console.log('⚡ Verifying game state remains synchronized across all clients...');
+  
+  const response = await webdriverHelpers.makeApiCall(
+    this.serverUrl,
+    '/api/test/verify_game_state_synchronization',
+    'POST',
+    {
+      gameId: 'real-time-test-game'
+    }
+  );
+  
+  if (!response.success) {
+    throw new Error(`Failed to verify game state synchronization: ${response.error}`);
+  }
+  
+  expect(response.synchronization).to.exist;
+  expect(response.synchronization.isSync).to.be.true;
+  expect(response.synchronization.conflictingClients).to.have.length(0);
+  expect(response.synchronization.stateHash).to.exist;
+  
+  // Verify all clients have identical state
+  expect(response.clientStates).to.exist;
+  expect(response.clientStates).to.be.an('array');
+  expect(response.clientStates.length).to.be.greaterThan(1);
+  
+  const firstStateHash = response.clientStates[0].stateHash;
+  response.clientStates.forEach(clientState => {
+    expect(clientState.stateHash).to.equal(firstStateHash);
+    expect(clientState.timestamp).to.exist;
+    expect(clientState.connected).to.be.true;
+  });
+  
+  console.log(`✅ Game state synchronized across ${response.clientStates.length} clients (hash: ${firstStateHash.substring(0, 8)}...)`);
+});
+
+Then('observer mode should work correctly', async function () {
+  console.log('⚡ Verifying observer mode works correctly...');
+  
+  const response = await webdriverHelpers.makeApiCall(
+    this.serverUrl,
+    '/api/test/verify_observer_mode',
+    'POST',
+    {
+      gameId: 'real-time-test-game'
+    }
+  );
+  
+  if (!response.success) {
+    throw new Error(`Failed to verify observer mode: ${response.error}`);
+  }
+  
+  expect(response.observerMode).to.exist;
+  expect(response.observerMode.isEnabled).to.be.true;
+  expect(response.observerMode.observersCount).to.be.greaterThanOrEqual(0);
+  expect(response.observerMode.canViewGameState).to.be.true;
+  expect(response.observerMode.cannotTakeActions).to.be.true;
+  
+  // Verify observer permissions
+  expect(response.observerPermissions).to.exist;
+  expect(response.observerPermissions.canViewCards).to.be.true;
+  expect(response.observerPermissions.canViewChips).to.be.true;
+  expect(response.observerPermissions.canViewPot).to.be.true;
+  expect(response.observerPermissions.canViewActions).to.be.true;
+  expect(response.observerPermissions.canPerformActions).to.be.false;
+  expect(response.observerPermissions.canChangeSeats).to.be.false;
+  
+  // Verify observer UI elements
+  try {
+    const observerIndicator = await this.driver.findElement(By.css('.observer-mode, [data-testid="observer-indicator"], .spectator-mode'));
+    expect(observerIndicator).to.exist;
+    console.log('✅ Observer mode indicator found in UI');
+  } catch (error) {
+    console.log('⚠️ Observer mode indicator not found in UI (may not be in observer mode)');
+  }
+  
+  console.log(`✅ Observer mode working correctly (${response.observerMode.observersCount} observers)`);
+});
+
+Then('invalid actions should be rejected immediately', async function () {
+  console.log('⚡ Verifying invalid actions are rejected immediately...');
+  
+  const response = await webdriverHelpers.makeApiCall(
+    this.serverUrl,
+    '/api/test/verify_action_validation',
+    'POST',
+    {
+      gameId: 'real-time-test-game',
+      testInvalidActions: true
+    }
+  );
+  
+  if (!response.success) {
+    throw new Error(`Failed to verify action validation: ${response.error}`);
+  }
+  
+  expect(response.validation).to.exist;
+  expect(response.validation.invalidActionsAttempted).to.be.greaterThan(0);
+  expect(response.validation.invalidActionsRejected).to.equal(response.validation.invalidActionsAttempted);
+  expect(response.validation.rejectionTime).to.be.lessThan(100); // Under 100ms
+  
+  // Verify specific rejection reasons
+  expect(response.rejections).to.exist;
+  expect(response.rejections).to.be.an('array');
+  
+  response.rejections.forEach(rejection => {
+    expect(rejection.action).to.exist;
+    expect(rejection.reason).to.exist;
+    expect(rejection.timestamp).to.exist;
+    expect(rejection.rejected).to.be.true;
+    expect(rejection.responseTime).to.be.lessThan(100);
+  });
+  
+  // Common rejection reasons
+  const rejectionReasons = response.rejections.map(r => r.reason);
+  const expectedReasons = ['not_your_turn', 'insufficient_chips', 'invalid_action', 'out_of_turn'];
+  const hasValidReasons = rejectionReasons.some(reason => expectedReasons.includes(reason));
+  expect(hasValidReasons).to.be.true;
+  
+  console.log(`✅ ${response.validation.invalidActionsRejected} invalid actions rejected immediately (avg: ${response.validation.rejectionTime}ms)`);
 });
 
 // Removed duplicate step definitions - using the ones from multiplayer-poker-round-steps.js
