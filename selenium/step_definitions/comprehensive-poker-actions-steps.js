@@ -2185,6 +2185,41 @@ Then('the card sequence should be verifiable against the seed', async function (
   }
 });
 
+// Card order verification using original hash
+When('I verify the card order using the original hash', async function () {
+  try {
+    // Retrieve the original hash for verification
+    const hashResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/card-order/original-hash');
+    assert.strictEqual(hashResponse.status, 200, 'Original hash retrieval should be successful');
+    assert.ok(hashResponse.data.originalHash, 'Original hash should be available');
+    
+    const originalHash = hashResponse.data.originalHash;
+    
+    // Perform verification using the original hash
+    const verificationResponse = await webdriverHelpers.makeApiCall(this.driver, 'POST', '/api/test/card-order/verify-with-hash', {
+      hashToVerify: originalHash
+    });
+    assert.strictEqual(verificationResponse.status, 200, 'Hash verification should be successful');
+    assert.strictEqual(verificationResponse.data.verified, true, 'Card order should be verified with original hash');
+    
+    // Validate hash format and integrity
+    assert.ok(originalHash.length >= 32, 'Hash should be properly formatted');
+    assert.match(originalHash, /^[a-f0-9]+$/i, 'Hash should contain only hexadecimal characters');
+    
+    // Store verification result for subsequent steps
+    this.verificationResult = {
+      originalHash: originalHash,
+      verified: verificationResponse.data.verified,
+      details: verificationResponse.data.details
+    };
+    
+    console.log('✅ Card order verification using original hash completed successfully');
+  } catch (error) {
+    console.error('❌ Card order verification using original hash failed:', error);
+    throw error;
+  }
+});
+
 module.exports = {
   comprehensiveTestPlayers,
   comprehensiveGameId,
