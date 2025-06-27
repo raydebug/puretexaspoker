@@ -2342,6 +2342,70 @@ Then('only revealed card orders should be included in the download', async funct
   }
 });
 
+// CSV Download Setup step definitions
+Given('there are completed games with revealed card orders', async function () {
+  try {
+    // Create test games with completed status and revealed card orders
+    const setupResponse = await webdriverHelpers.makeApiCall(this.driver, 'POST', '/api/test/card-order/setup-revealed-games', {
+      numberOfGames: 3,
+      includeCardOrders: true,
+      revealOrders: true
+    });
+    assert.strictEqual(setupResponse.status, 200, 'Test games setup should be successful');
+    assert.ok(setupResponse.data.gameIds, 'Setup should return created game IDs');
+    assert.ok(setupResponse.data.gameIds.length >= 2, 'Should create multiple test games');
+    
+    // Verify games are marked as completed
+    const completedResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/card-order/completed-games');
+    assert.strictEqual(completedResponse.status, 200, 'Completed games check should succeed');
+    assert.ok(completedResponse.data.completedGames.length >= 2, 'Should have multiple completed games');
+    
+    // Verify card orders are revealed
+    const revealedResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/card-order/revealed-games');
+    assert.strictEqual(revealedResponse.status, 200, 'Revealed games check should succeed');
+    assert.ok(revealedResponse.data.revealedGames.length >= 2, 'Should have multiple revealed card orders');
+    
+    // Store game IDs for subsequent steps
+    this.testGameIds = setupResponse.data.gameIds;
+    this.completedGames = completedResponse.data.completedGames;
+    this.revealedGames = revealedResponse.data.revealedGames;
+    
+    console.log('✅ Test games with revealed card orders created successfully');
+  } catch (error) {
+    console.error('❌ Failed to setup test games with revealed card orders:', error);
+    throw error;
+  }
+});
+
+When('I request to download the card order history', async function () {
+  try {
+    // Initiate download request
+    const downloadRequest = await webdriverHelpers.makeApiCall(this.driver, 'POST', '/api/test/card-order/request-download', {
+      format: 'csv',
+      includeOnlyRevealed: true
+    });
+    assert.strictEqual(downloadRequest.status, 200, 'Download request should be successful');
+    assert.ok(downloadRequest.data.downloadId, 'Download request should return download ID');
+    
+    // Wait for download preparation (simulated)
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Verify download is ready
+    const downloadStatus = await webdriverHelpers.makeApiCall(this.driver, 'GET', `/api/test/card-order/download-status/${downloadRequest.data.downloadId}`);
+    assert.strictEqual(downloadStatus.status, 200, 'Download status check should succeed');
+    assert.strictEqual(downloadStatus.data.status, 'ready', 'Download should be ready for retrieval');
+    
+    // Store download information for subsequent steps
+    this.downloadId = downloadRequest.data.downloadId;
+    this.downloadStatus = downloadStatus.data;
+    
+    console.log('✅ Card order history download requested successfully');
+  } catch (error) {
+    console.error('❌ Failed to request card order history download:', error);
+    throw error;
+  }
+});
+
 module.exports = {
   comprehensiveTestPlayers,
   comprehensiveGameId,
