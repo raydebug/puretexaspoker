@@ -2406,6 +2406,141 @@ When('I request to download the card order history', async function () {
   }
 });
 
+// Record Validation step definitions
+Then('each record should contain game ID, hash, and reveal status', async function () {
+  try {
+    // Get records for validation
+    const recordsResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/card-order/all-records');
+    assert.strictEqual(recordsResponse.status, 200, 'Records retrieval should be successful');
+    assert.ok(recordsResponse.data.records, 'Records should be available');
+    assert.ok(recordsResponse.data.records.length > 0, 'Should have at least one record');
+    
+    // Validate each record structure
+    for (const record of recordsResponse.data.records) {
+      assert.ok(record.gameId, 'Each record should contain game ID');
+      assert.ok(record.hash, 'Each record should contain hash');
+      assert.ok(record.hash.length >= 32, 'Hash should be properly formatted');
+      assert.ok(record.hasOwnProperty('revealStatus'), 'Each record should contain reveal status');
+      assert.ok(['revealed', 'hidden', 'pending'].includes(record.revealStatus), 'Reveal status should be valid');
+      
+      // Validate additional required fields
+      assert.ok(record.timestamp, 'Each record should have timestamp');
+      assert.ok(record.gameStatus, 'Each record should have game status');
+    }
+    
+    // Verify data consistency
+    const validationResponse = await webdriverHelpers.makeApiCall(this.driver, 'POST', '/api/test/card-order/validate-records', {
+      records: recordsResponse.data.records
+    });
+    assert.strictEqual(validationResponse.status, 200, 'Record validation should succeed');
+    assert.strictEqual(validationResponse.data.allValid, true, 'All records should be valid');
+    
+    // Store records for subsequent validations
+    this.validationRecords = recordsResponse.data.records;
+    
+    console.log('✅ All records contain required fields with valid structure');
+  } catch (error) {
+    console.error('❌ Record structure validation failed:', error);
+    throw error;
+  }
+});
+
+Then('revealed records should include the actual card order', async function () {
+  try {
+    assert.ok(this.validationRecords, 'Records should be available from previous step');
+    
+    // Filter revealed records
+    const revealedRecords = this.validationRecords.filter(record => record.revealStatus === 'revealed');
+    assert.ok(revealedRecords.length > 0, 'Should have at least one revealed record');
+    
+    // Validate revealed records contain card order data
+    for (const revealedRecord of revealedRecords) {
+      assert.ok(revealedRecord.cardOrder, 'Revealed record should contain card order');
+      assert.ok(Array.isArray(revealedRecord.cardOrder), 'Card order should be an array');
+      assert.strictEqual(revealedRecord.cardOrder.length, 52, 'Card order should contain all 52 cards');
+      
+      // Validate card order completeness
+      const uniqueCards = new Set(revealedRecord.cardOrder);
+      assert.strictEqual(uniqueCards.size, 52, 'All cards should be unique');
+      
+      // Verify card format
+      for (const card of revealedRecord.cardOrder) {
+        assert.match(card, /^[2-9TJQKA][SHDC]$/, 'Card should be in valid format (e.g., AS, KH, 2C)');
+      }
+      
+      // Additional revealed record fields
+      assert.ok(revealedRecord.seed, 'Revealed record should contain seed');
+      assert.ok(revealedRecord.shuffleAlgorithm, 'Revealed record should contain shuffle algorithm');
+      assert.ok(revealedRecord.revealTimestamp, 'Revealed record should contain reveal timestamp');
+    }
+    
+    // Verify revealed data integrity
+    const integrityResponse = await webdriverHelpers.makeApiCall(this.driver, 'POST', '/api/test/card-order/verify-revealed-integrity', {
+      revealedRecords: revealedRecords
+    });
+    assert.strictEqual(integrityResponse.status, 200, 'Revealed records integrity check should succeed');
+    assert.strictEqual(integrityResponse.data.integrityValid, true, 'Revealed records should have valid integrity');
+    
+    console.log('✅ All revealed records include complete and valid card order data');
+  } catch (error) {
+    console.error('❌ Revealed records validation failed:', error);
+    throw error;
+  }
+});
+
+Then('unrevealed records should hide the card order details', async function () {
+  try {
+    assert.ok(this.validationRecords, 'Records should be available from previous step');
+    
+    // Filter unrevealed records (hidden or pending)
+    const unrevealedRecords = this.validationRecords.filter(record => 
+      record.revealStatus === 'hidden' || record.revealStatus === 'pending'
+    );
+    
+    if (unrevealedRecords.length > 0) {
+      // Validate unrevealed records hide sensitive data
+      for (const unrevealedRecord of unrevealedRecords) {
+        assert.ok(!unrevealedRecord.cardOrder, 'Unrevealed record should NOT contain card order');
+        assert.ok(!unrevealedRecord.seed, 'Unrevealed record should NOT contain seed');
+        assert.ok(!unrevealedRecord.shuffleAlgorithm, 'Unrevealed record should NOT contain shuffle algorithm');
+        
+        // Should only contain non-sensitive information
+        assert.ok(unrevealedRecord.gameId, 'Unrevealed record should contain game ID');
+        assert.ok(unrevealedRecord.hash, 'Unrevealed record should contain hash (for verification)');
+        assert.ok(unrevealedRecord.revealStatus, 'Unrevealed record should contain reveal status');
+        assert.ok(unrevealedRecord.gameStatus, 'Unrevealed record should contain game status');
+        
+        // Verify placeholder values for hidden data
+        if (unrevealedRecord.hasOwnProperty('cardOrderPreview')) {
+          assert.strictEqual(unrevealedRecord.cardOrderPreview, 'HIDDEN', 'Card order preview should be hidden');
+        }
+      }
+      
+      // Verify privacy compliance
+      const privacyResponse = await webdriverHelpers.makeApiCall(this.driver, 'POST', '/api/test/card-order/verify-privacy-compliance', {
+        unrevealedRecords: unrevealedRecords
+      });
+      assert.strictEqual(privacyResponse.status, 200, 'Privacy compliance check should succeed');
+      assert.strictEqual(privacyResponse.data.compliant, true, 'Unrevealed records should be privacy compliant');
+      
+      console.log('✅ All unrevealed records properly hide sensitive card order details');
+    } else {
+      console.log('✅ No unrevealed records found - all records are revealed');
+    }
+    
+    // Verify access control
+    const accessResponse = await webdriverHelpers.makeApiCall(this.driver, 'POST', '/api/test/card-order/verify-access-control', {
+      allRecords: this.validationRecords
+    });
+    assert.strictEqual(accessResponse.status, 200, 'Access control verification should succeed');
+    assert.strictEqual(accessResponse.data.accessControlValid, true, 'Access control should be properly enforced');
+    
+  } catch (error) {
+    console.error('❌ Unrevealed records privacy validation failed:', error);
+    throw error;
+  }
+});
+
 module.exports = {
   comprehensiveTestPlayers,
   comprehensiveGameId,
