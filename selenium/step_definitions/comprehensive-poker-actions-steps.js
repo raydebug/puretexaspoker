@@ -2613,6 +2613,54 @@ Then('I should receive up to {int} card order records', async function (maxRecor
   }
 });
 
+// Multiple Completed Games Setup step definition
+Given('there are multiple completed games with card orders', async function () {
+  try {
+    // Create multiple completed games with card orders for testing
+    const setupResponse = await webdriverHelpers.makeApiCall(this.driver, 'POST', '/api/test/card-order/setup-multiple-games', {
+      numberOfGames: 5,
+      gameStatus: 'completed',
+      includeCardOrders: true,
+      revealedGames: 3,
+      hiddenGames: 2
+    });
+    assert.strictEqual(setupResponse.status, 200, 'Multiple games setup should be successful');
+    assert.ok(setupResponse.data.gameIds, 'Setup should return created game IDs');
+    assert.strictEqual(setupResponse.data.gameIds.length, 5, 'Should create exactly 5 test games');
+    
+    // Verify games are properly created and completed
+    const verificationResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/card-order/verify-setup');
+    assert.strictEqual(verificationResponse.status, 200, 'Setup verification should succeed');
+    assert.ok(verificationResponse.data.completedGames >= 5, 'Should have at least 5 completed games');
+    assert.ok(verificationResponse.data.gamesWithCardOrders >= 5, 'Should have games with card orders');
+    
+    // Verify mix of revealed and hidden games
+    assert.ok(verificationResponse.data.revealedGames >= 3, 'Should have at least 3 revealed games');
+    assert.ok(verificationResponse.data.hiddenGames >= 2, 'Should have at least 2 hidden games');
+    
+    // Store setup data for subsequent steps
+    this.setupGameIds = setupResponse.data.gameIds;
+    this.setupData = {
+      totalGames: setupResponse.data.gameIds.length,
+      revealedCount: verificationResponse.data.revealedGames,
+      hiddenCount: verificationResponse.data.hiddenGames,
+      allGameIds: setupResponse.data.gameIds
+    };
+    
+    // Ensure games have proper timestamps for ordering
+    const timestampResponse = await webdriverHelpers.makeApiCall(this.driver, 'POST', '/api/test/card-order/verify-timestamps', {
+      gameIds: setupResponse.data.gameIds
+    });
+    assert.strictEqual(timestampResponse.status, 200, 'Timestamp verification should succeed');
+    assert.strictEqual(timestampResponse.data.allGamesHaveTimestamps, true, 'All games should have valid timestamps');
+    
+    console.log('✅ Successfully created multiple completed games with card orders for testing');
+  } catch (error) {
+    console.error('❌ Failed to setup multiple completed games with card orders:', error);
+    throw error;
+  }
+});
+
 module.exports = {
   comprehensiveTestPlayers,
   comprehensiveGameId,
