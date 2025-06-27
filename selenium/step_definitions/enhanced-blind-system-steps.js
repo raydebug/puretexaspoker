@@ -623,6 +623,220 @@ Then('the response should include number of pending dead blinds', async function
     console.log(`✅ Pending dead blinds confirmed: ${this.blindSummary.pendingDeadBlinds}`);
 });
 
+// Complex Dead Blind Obligations scenario steps
+When('{string} joins as late entry in seat {int}', async function (playerName, seatNumber) {
+    console.log(`👤 ${playerName} joining as late entry in seat ${seatNumber}...`);
+    
+    const gameId = Object.keys(gameState || {})[0] || 'test-game-complex';
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/add_late_entry_player',
+        'POST',
+        {
+            gameId,
+            playerName,
+            seatNumber,
+            chips: 1000,
+            entryType: 'late'
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to add late entry player: ${response.error}`);
+    }
+    
+    // Track the player's dead blind obligation
+    deadBlindObligations.push({
+        player: playerName,
+        blindType: 'big',
+        reason: 'late_entry',
+        seatNumber
+    });
+    
+    console.log(`✅ ${playerName} joined as late entry in seat ${seatNumber}`);
+});
+
+When('{string} misses a blind due to temporary disconnection', async function (playerName) {
+    console.log(`📡 ${playerName} missing blind due to temporary disconnection...`);
+    
+    const gameId = Object.keys(gameState || {})[0] || 'test-game-complex';
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/simulate_missed_blind',
+        'POST',
+        {
+            gameId,
+            playerName,
+            reason: 'temporary_disconnection'
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to simulate missed blind: ${response.error}`);
+    }
+    
+    // Track the missed blind obligation
+    deadBlindObligations.push({
+        player: playerName,
+        blindType: 'big',
+        reason: 'missed_blind'
+    });
+    
+    console.log(`✅ ${playerName} missed blind due to temporary disconnection`);
+});
+
+Then('{string} should have dead blind obligation for {string} due to {string}', async function (playerName, blindType, reason) {
+    console.log(`⚡ Verifying ${playerName} has dead blind obligation for ${blindType} due to ${reason}...`);
+    
+    const gameId = Object.keys(gameState || {})[0] || 'test-game-complex';
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/check_dead_blind_obligations',
+        'POST',
+        {
+            gameId,
+            playerName
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to check dead blind obligations: ${response.error}`);
+    }
+    
+    expect(response.obligations).to.exist;
+    expect(response.obligations).to.be.an('array');
+    
+    // Find obligation for this player
+    const playerObligation = response.obligations.find(ob => ob.playerName === playerName);
+    expect(playerObligation).to.exist;
+    
+    // Verify blind type
+    if (blindType === 'both') {
+        expect(playerObligation.blindTypes).to.include('small');
+        expect(playerObligation.blindTypes).to.include('big');
+    } else {
+        expect(playerObligation.blindTypes).to.include(blindType);
+    }
+    
+    // Verify reason
+    expect(playerObligation.reason).to.equal(reason);
+    
+    console.log(`✅ ${playerName} confirmed to have dead blind obligation for ${blindType} due to ${reason}`);
+});
+
+Then('all players should post their respective dead blinds', async function () {
+    console.log('⚡ Verifying all players post their respective dead blinds...');
+    
+    const gameId = Object.keys(gameState || {})[0] || 'test-game-complex';
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/execute_dead_blind_posting',
+        'POST',
+        {
+            gameId
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to execute dead blind posting: ${response.error}`);
+    }
+    
+    expect(response.deadBlindsPosted).to.exist;
+    expect(response.deadBlindsPosted).to.be.an('array');
+    expect(response.deadBlindsPosted.length).to.be.greaterThan(0);
+    
+    // Verify each dead blind posting
+    response.deadBlindsPosted.forEach(posting => {
+        expect(posting.playerName).to.exist;
+        expect(posting.amount).to.be.a('number');
+        expect(posting.amount).to.be.greaterThan(0);
+        expect(posting.blindType).to.exist;
+    });
+    
+    console.log(`✅ All players posted dead blinds: ${response.deadBlindsPosted.length} postings`);
+});
+
+Then('the pot should reflect all dead blind contributions', async function () {
+    console.log('⚡ Verifying pot reflects all dead blind contributions...');
+    
+    const gameId = Object.keys(gameState || {})[0] || 'test-game-complex';
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_pot_with_dead_blinds',
+        'POST',
+        {
+            gameId
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to verify pot with dead blinds: ${response.error}`);
+    }
+    
+    expect(response.potTotal).to.exist;
+    expect(response.potTotal).to.be.a('number');
+    expect(response.potTotal).to.be.greaterThan(0);
+    
+    expect(response.deadBlindContribution).to.exist;
+    expect(response.deadBlindContribution).to.be.a('number');
+    expect(response.deadBlindContribution).to.be.greaterThan(0);
+    
+    expect(response.regularBlindContribution).to.exist;
+    expect(response.regularBlindContribution).to.be.a('number');
+    
+    // Verify pot total equals sum of contributions
+    const expectedTotal = response.deadBlindContribution + response.regularBlindContribution;
+    expect(response.potTotal).to.equal(expectedTotal);
+    
+    console.log(`✅ Pot correctly reflects contributions - Dead: ${response.deadBlindContribution}, Regular: ${response.regularBlindContribution}, Total: ${response.potTotal}`);
+});
+
+Then('the regular blinds should be posted by the appropriate players', async function () {
+    console.log('⚡ Verifying regular blinds are posted by appropriate players...');
+    
+    const gameId = Object.keys(gameState || {})[0] || 'test-game-complex';
+    
+    const response = await webdriverHelpers.makeApiCall(
+        this.serverUrl,
+        '/api/test/verify_regular_blind_posting',
+        'POST',
+        {
+            gameId
+        }
+    );
+    
+    if (!response.success) {
+        throw new Error(`Failed to verify regular blind posting: ${response.error}`);
+    }
+    
+    expect(response.regularBlinds).to.exist;
+    expect(response.regularBlinds).to.be.an('array');
+    
+    // Verify small blind posting
+    const smallBlind = response.regularBlinds.find(blind => blind.blindType === 'small');
+    expect(smallBlind).to.exist;
+    expect(smallBlind.playerName).to.exist;
+    expect(smallBlind.amount).to.be.a('number');
+    expect(smallBlind.amount).to.be.greaterThan(0);
+    
+    // Verify big blind posting
+    const bigBlind = response.regularBlinds.find(blind => blind.blindType === 'big');
+    expect(bigBlind).to.exist;
+    expect(bigBlind.playerName).to.exist;
+    expect(bigBlind.amount).to.be.a('number');
+    expect(bigBlind.amount).to.be.greaterThan(smallBlind.amount);
+    
+    // Verify different players for small and big blind
+    expect(smallBlind.playerName).to.not.equal(bigBlind.playerName);
+    
+    console.log(`✅ Regular blinds posted correctly - Small: ${smallBlind.playerName} (${smallBlind.amount}), Big: ${bigBlind.playerName} (${bigBlind.amount})`);
+});
+
 module.exports = {
     tournamentSchedule,
     gameState,

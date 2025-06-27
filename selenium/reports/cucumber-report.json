@@ -14,7 +14,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 343504624
+              "duration": 358485499
             }
           },
           {
@@ -27,7 +27,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 12649060832
+              "duration": 12621963541
             }
           },
           {
@@ -73,7 +73,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 6083259042
+              "duration": 6119938165
             }
           },
           {
@@ -86,7 +86,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 46366333
+              "duration": 43959875
             }
           },
           {
@@ -99,7 +99,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 15984874
+              "duration": 17114874
             }
           },
           {
@@ -112,7 +112,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 22575875
+              "duration": 30333665
             }
           },
           {
@@ -120,7 +120,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 168915
+              "duration": 253249
             }
           },
           {
@@ -128,7 +128,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 416916
+              "duration": 547041
             }
           },
           {
@@ -136,7 +136,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 13804584
+              "duration": 14476375
             }
           }
         ],
@@ -155,7 +155,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 1727833
+              "duration": 3739334
             }
           },
           {
@@ -168,7 +168,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 12311647792
+              "duration": 12321643583
             }
           },
           {
@@ -214,7 +214,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 6072888833
+              "duration": 6088529083
             }
           },
           {
@@ -227,7 +227,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 11087500
+              "duration": 21255582
             }
           },
           {
@@ -240,7 +240,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 10096260542
+              "duration": 10111924458
             }
           },
           {
@@ -253,7 +253,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 10004123333,
+              "duration": 10003720000,
               "error_message": "Error: function timed out, ensure the promise resolves within 10000 milliseconds\n    at Timeout.<anonymous> (/Users/leiyao/work/puretexaspoker/node_modules/@cucumber/cucumber/lib/time.js:54:20)\n    at listOnTimeout (node:internal/timers:614:17)\n    at process.processTimers (node:internal/timers:549:7)"
             }
           },
@@ -340,7 +340,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 563583
+              "duration": 172124
             }
           },
           {
@@ -348,7 +348,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 422666
+              "duration": 265249
             }
           },
           {
@@ -356,7 +356,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 6326608249
+              "duration": 6308868333
             }
           }
         ],
@@ -11450,7 +11450,7 @@
             "line": 12,
             "name": "I create a tournament blind schedule:",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:12"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:16"
             },
             "result": {
               "status": "skipped",
@@ -11489,7 +11489,7 @@
             "line": 19,
             "name": "I initialize the tournament with the blind schedule",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:39"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:43"
             },
             "result": {
               "status": "skipped",
@@ -11502,7 +11502,7 @@
             "line": 20,
             "name": "the game starts with the tournament schedule",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:64"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:68"
             },
             "result": {
               "status": "skipped",
@@ -11515,7 +11515,7 @@
             "line": 21,
             "name": "the current blind level should be 1",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:90"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:94"
             },
             "result": {
               "status": "skipped",
@@ -11528,7 +11528,7 @@
             "line": 22,
             "name": "the small blind should be 25",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:104"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:108"
             },
             "result": {
               "status": "skipped",
@@ -11541,7 +11541,7 @@
             "line": 23,
             "name": "the big blind should be 50",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:118"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:122"
             },
             "result": {
               "status": "skipped",
@@ -11554,7 +11554,7 @@
             "line": 24,
             "name": "the ante should be 0",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:132"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:136"
             },
             "result": {
               "status": "skipped",
@@ -11567,7 +11567,7 @@
             "line": 25,
             "name": "the blind level timer should be running",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:146"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:150"
             },
             "result": {
               "status": "skipped",
@@ -11662,7 +11662,7 @@
             "line": 28,
             "name": "I have an active tournament with blind schedule",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:160"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:164"
             },
             "result": {
               "status": "skipped",
@@ -11675,7 +11675,7 @@
             "line": 29,
             "name": "the current blind level is 1 with blinds \"25/50\"",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:186"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:190"
             },
             "result": {
               "status": "skipped",
@@ -11688,7 +11688,7 @@
             "line": 30,
             "name": "the blind level duration has elapsed",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:208"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:212"
             },
             "result": {
               "status": "skipped",
@@ -11701,7 +11701,7 @@
             "line": 31,
             "name": "the system checks for blind level increase",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:225"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:229"
             },
             "result": {
               "status": "skipped",
@@ -11714,7 +11714,7 @@
             "line": 32,
             "name": "the blind level should increase to 2",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:242"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:246"
             },
             "result": {
               "status": "skipped",
@@ -11727,7 +11727,7 @@
             "line": 33,
             "name": "the small blind should be 50",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:104"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:108"
             },
             "result": {
               "status": "skipped",
@@ -11740,7 +11740,7 @@
             "line": 34,
             "name": "the big blind should be 100",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:118"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:122"
             },
             "result": {
               "status": "skipped",
@@ -11753,7 +11753,7 @@
             "line": 35,
             "name": "the ante should be 10",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:132"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:136"
             },
             "result": {
               "status": "skipped",
@@ -11766,7 +11766,7 @@
             "line": 36,
             "name": "all active players should post the ante",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:258"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:262"
             },
             "result": {
               "status": "skipped",
@@ -11779,7 +11779,7 @@
             "line": 37,
             "name": "the new blind level timer should start",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:277"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:281"
             },
             "result": {
               "status": "skipped",
@@ -11913,7 +11913,7 @@
             "line": 43,
             "name": "\"SeatChangePlayer3\" changes from seat 5 to seat 7",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:294"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:298"
             },
             "result": {
               "status": "skipped",
@@ -11926,7 +11926,7 @@
             "line": 44,
             "name": "the seat change moves the player past the blind positions",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:316"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:320"
             },
             "result": {
               "status": "skipped",
@@ -11939,7 +11939,7 @@
             "line": 45,
             "name": "\"SeatChangePlayer3\" should have a dead blind obligation",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:325"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:329"
             },
             "result": {
               "status": "skipped",
@@ -11952,7 +11952,7 @@
             "line": 46,
             "name": "the dead blind type should be \"both\"",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:345"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:349"
             },
             "result": {
               "status": "skipped",
@@ -11965,7 +11965,7 @@
             "line": 47,
             "name": "the dead blind reason should be \"seat_change\"",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:355"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:359"
             },
             "result": {
               "status": "skipped",
@@ -11978,7 +11978,7 @@
             "line": 48,
             "name": "the next hand begins",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:365"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:369"
             },
             "result": {
               "status": "skipped",
@@ -11991,7 +11991,7 @@
             "line": 49,
             "name": "\"SeatChangePlayer3\" should be required to post dead blinds",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:382"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:386"
             },
             "result": {
               "status": "skipped",
@@ -12004,7 +12004,7 @@
             "line": 50,
             "name": "the dead blind amount should be posted to the pot",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:414"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:418"
             },
             "result": {
               "status": "skipped",
@@ -12099,7 +12099,7 @@
             "line": 53,
             "name": "I have an active cash game with blinds \"10/20\"",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:431"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:435"
             },
             "result": {
               "status": "skipped",
@@ -12162,7 +12162,7 @@
             "line": 59,
             "name": "the dead blind type should be \"big\"",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:345"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:349"
             },
             "result": {
               "status": "skipped",
@@ -12175,7 +12175,7 @@
             "line": 60,
             "name": "the dead blind reason should be \"late_entry\"",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:355"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:359"
             },
             "result": {
               "status": "skipped",
@@ -12300,7 +12300,7 @@
             "line": 66,
             "name": "I have an active cash game with blinds \"10/20\"",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:431"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:435"
             },
             "result": {
               "status": "skipped",
@@ -12353,7 +12353,7 @@
             "line": 71,
             "name": "the dead blind reason should be \"late_entry\"",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:355"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:359"
             },
             "result": {
               "status": "skipped",
@@ -12528,8 +12528,11 @@
             "keyword": "And ",
             "line": 82,
             "name": "the tournament is currently at level 2",
+            "match": {
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:497"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -12589,7 +12592,7 @@
             "line": 88,
             "name": "the blind level should increase to 3",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:242"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:246"
             },
             "result": {
               "status": "skipped",
@@ -13232,7 +13235,7 @@
             "line": 126,
             "name": "\"Complex2\" changes from seat 3 to seat 6",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:294"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:298"
             },
             "result": {
               "status": "skipped",
@@ -13295,7 +13298,7 @@
             "line": 132,
             "name": "the next hand begins",
             "match": {
-              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:365"
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:369"
             },
             "result": {
               "status": "skipped",
@@ -13419,8 +13422,11 @@
             "keyword": "Given ",
             "line": 138,
             "name": "I have a tournament with a 5-level blind schedule",
+            "match": {
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:454"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -13429,8 +13435,11 @@
             "keyword": "And ",
             "line": 139,
             "name": "the tournament is currently at level 3",
+            "match": {
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:497"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -13439,8 +13448,11 @@
             "keyword": "And ",
             "line": 140,
             "name": "there are 8 minutes remaining in the current level",
+            "match": {
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:521"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -13449,8 +13461,11 @@
             "keyword": "When ",
             "line": 141,
             "name": "I request the blind schedule summary",
+            "match": {
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:545"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -13459,8 +13474,11 @@
             "keyword": "Then ",
             "line": 142,
             "name": "the response should include current level information",
+            "match": {
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:568"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -13469,8 +13487,11 @@
             "keyword": "And ",
             "line": 143,
             "name": "the response should include time remaining in current level",
+            "match": {
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:580"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -13479,8 +13500,11 @@
             "keyword": "And ",
             "line": 144,
             "name": "the response should include next level blind amounts",
+            "match": {
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:591"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -13489,8 +13513,11 @@
             "keyword": "And ",
             "line": 145,
             "name": "the response should include total hands played",
+            "match": {
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:604"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -13499,8 +13526,11 @@
             "keyword": "And ",
             "line": 146,
             "name": "the response should include number of pending dead blinds",
+            "match": {
+              "location": "selenium/step_definitions/enhanced-blind-system-steps.js:615"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
