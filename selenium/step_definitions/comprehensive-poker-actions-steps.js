@@ -1216,6 +1216,77 @@ Then('odd chips should be distributed per poker rules', async function () {
   }
 });
 
+// ============== BETTING VALIDATION AND LIMITS ==============
+
+When('{string} attempts to raise below minimum raise amount', async function (playerName) {
+  console.log(`🔍 Testing ${playerName} attempting to raise below minimum raise amount`);
+  
+  try {
+    // Attempt a raise that is below the minimum raise amount (typically should be at least double the current bet)
+    const response = await axios.post(`${backendApiUrl}/api/test_player_action/${comprehensiveGameId}`, {
+      nickname: playerName,
+      action: 'raise',
+      amount: 60 // Below minimum raise if current bet is 50 (should be at least 100)
+    });
+    
+    lastActionResult = response.data;
+    console.log(`🔍 Raise below minimum result: ${response.data.success ? 'ALLOWED' : 'REJECTED'}`);
+  } catch (error) {
+    console.log(`🔍 Raise below minimum resulted in error: ${error.message}`);
+    lastActionResult = { success: false, error: error.message };
+  }
+});
+
+Then('the raise should be rejected with appropriate error', async function () {
+  console.log('🔍 Verifying raise below minimum was rejected');
+  
+  if (lastActionResult && !lastActionResult.success) {
+    console.log('✅ Raise below minimum was correctly rejected');
+    if (lastActionResult.error) {
+      console.log(`✅ Error message: ${lastActionResult.error}`);
+    }
+  } else {
+    throw new Error('Raise below minimum should have been rejected');
+  }
+});
+
+When('{string} performs a {string} action with valid minimum amount', async function (playerName, action) {
+  console.log(`🎯 ${playerName} performing ${action} action with valid minimum amount`);
+  
+  try {
+    // Perform a valid minimum raise (typically double the current bet)
+    const response = await axios.post(`${backendApiUrl}/api/test_player_action/${comprehensiveGameId}`, {
+      nickname: playerName,
+      action: action,
+      amount: 100 // Valid minimum raise if current bet is 50
+    });
+    
+    if (response.data.success) {
+      console.log(`✅ ${playerName} successfully performed ${action} with valid amount`);
+      lastActionResult = response.data;
+    } else {
+      throw new Error(`Valid ${action} failed: ${response.data.error}`);
+    }
+  } catch (error) {
+    throw new Error(`Failed to perform valid ${action}: ${error.message}`);
+  }
+});
+
+Then('the raise should be accepted and processed', async function () {
+  console.log('🔍 Verifying valid raise was accepted and processed');
+  
+  if (lastActionResult && lastActionResult.success) {
+    console.log('✅ Valid raise was correctly accepted and processed');
+    
+    // Verify game state was updated
+    if (lastActionResult.gameState) {
+      console.log(`✅ Game state updated: current bet = ${lastActionResult.gameState.currentBet || 'N/A'}`);
+    }
+  } else {
+    throw new Error('Valid raise should have been accepted and processed');
+  }
+});
+
 module.exports = {
   comprehensiveTestPlayers,
   comprehensiveGameId,
