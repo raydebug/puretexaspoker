@@ -2661,6 +2661,124 @@ Given('there are multiple completed games with card orders', async function () {
   }
 });
 
+// Hash Display and Card Order Storage step definitions
+Then('the hash should be displayed to all players', async function () {
+  try {
+    // Check hash display via UI elements
+    const hashElement = await this.driver.findElement(webdriver.By.css('[data-testid="card-order-hash"]'));
+    assert.ok(hashElement, 'Hash display element should be present');
+    
+    const hashValue = await hashElement.getText();
+    assert.ok(hashValue, 'Hash value should be displayed');
+    assert.ok(hashValue.length >= 32, 'Hash should be properly formatted');
+    assert.match(hashValue, /^[a-f0-9]+$/i, 'Hash should contain only hexadecimal characters');
+    
+    // Verify hash is visible to all players via API
+    const displayResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/card-order/hash-display-status');
+    assert.strictEqual(displayResponse.status, 200, 'Hash display status should be accessible');
+    assert.strictEqual(displayResponse.data.isDisplayed, true, 'Hash should be marked as displayed');
+    assert.strictEqual(displayResponse.data.visibleToAllPlayers, true, 'Hash should be visible to all players');
+    
+    // Verify hash display in UI for all player perspectives
+    const playersResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/players/current-game');
+    if (playersResponse.status === 200 && playersResponse.data.players) {
+      for (const player of playersResponse.data.players) {
+        const playerHashResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', `/api/test/card-order/hash-visibility/${player.id}`);
+        assert.strictEqual(playerHashResponse.status, 200, `Hash visibility check should succeed for player ${player.nickname}`);
+        assert.strictEqual(playerHashResponse.data.canSeeHash, true, `Player ${player.nickname} should be able to see hash`);
+      }
+    }
+    
+    console.log('✅ Hash is successfully displayed to all players');
+  } catch (error) {
+    console.error('❌ Hash display verification failed:', error);
+    throw error;
+  }
+});
+
+Then('the card order should be stored in the database', async function () {
+  try {
+    // Verify card order is stored in database
+    const storageResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/card-order/database-storage-status');
+    assert.strictEqual(storageResponse.status, 200, 'Storage status check should be successful');
+    assert.strictEqual(storageResponse.data.isStored, true, 'Card order should be stored in database');
+    assert.ok(storageResponse.data.gameId, 'Storage should include game ID');
+    assert.ok(storageResponse.data.timestamp, 'Storage should include timestamp');
+    
+    // Verify card order data integrity
+    const integrityResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/card-order/data-integrity');
+    assert.strictEqual(integrityResponse.status, 200, 'Data integrity check should succeed');
+    assert.strictEqual(integrityResponse.data.isIntact, true, 'Stored card order should have data integrity');
+    assert.ok(integrityResponse.data.cardSequence, 'Stored data should include card sequence');
+    assert.strictEqual(integrityResponse.data.cardSequence.length, 52, 'Stored sequence should contain all 52 cards');
+    
+    // Verify database constraints and relationships
+    const constraintsResponse = await webdriverHelpers.makeApiCall(this.driver, 'POST', '/api/test/card-order/verify-constraints', {
+      gameId: storageResponse.data.gameId
+    });
+    assert.strictEqual(constraintsResponse.status, 200, 'Database constraints verification should succeed');
+    assert.strictEqual(constraintsResponse.data.constraintsValid, true, 'Database constraints should be valid');
+    assert.strictEqual(constraintsResponse.data.foreignKeysValid, true, 'Foreign key relationships should be valid');
+    
+    // Verify backup and recovery capabilities
+    const backupResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/card-order/backup-status');
+    if (backupResponse.status === 200) {
+      assert.strictEqual(backupResponse.data.isBackedUp, true, 'Card order should be backed up');
+      assert.ok(backupResponse.data.backupTimestamp, 'Backup should have timestamp');
+    }
+    
+    console.log('✅ Card order is successfully stored in database with integrity');
+  } catch (error) {
+    console.error('❌ Database storage verification failed:', error);
+    throw error;
+  }
+});
+
+Then('the card order should initially be unrevealed', async function () {
+  try {
+    // Verify card order starts as unrevealed
+    const revealStatusResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/card-order/reveal-status');
+    assert.strictEqual(revealStatusResponse.status, 200, 'Reveal status check should be successful');
+    assert.strictEqual(revealStatusResponse.data.isRevealed, false, 'Card order should initially be unrevealed');
+    assert.strictEqual(revealStatusResponse.data.status, 'hidden', 'Card order status should be hidden');
+    
+    // Verify card order details are not accessible
+    const detailsResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/card-order/details');
+    assert.strictEqual(detailsResponse.status, 200, 'Details request should succeed');
+    assert.ok(!detailsResponse.data.cardSequence, 'Card sequence should not be accessible when unrevealed');
+    assert.ok(!detailsResponse.data.seed, 'Seed should not be accessible when unrevealed');
+    assert.strictEqual(detailsResponse.data.access, 'restricted', 'Access should be restricted');
+    
+    // Verify UI hides card order information
+    try {
+      const cardOrderElement = await this.driver.findElement(webdriver.By.css('[data-testid="card-order-sequence"]'));
+      const isDisplayed = await cardOrderElement.isDisplayed();
+      assert.strictEqual(isDisplayed, false, 'Card order sequence should not be displayed in UI');
+    } catch (noSuchElementError) {
+      // Element not found is acceptable - means it's properly hidden
+      console.log('✅ Card order sequence element properly hidden');
+    }
+    
+    // Verify reveal protection mechanisms
+    const protectionResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/card-order/reveal-protection');
+    assert.strictEqual(protectionResponse.status, 200, 'Protection mechanism check should succeed');
+    assert.strictEqual(protectionResponse.data.isProtected, true, 'Card order should be protected from premature reveal');
+    assert.ok(protectionResponse.data.revealConditions, 'Reveal conditions should be defined');
+    
+    // Verify only hash is available
+    const hashOnlyResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/card-order/public-info');
+    assert.strictEqual(hashOnlyResponse.status, 200, 'Public info request should succeed');
+    assert.ok(hashOnlyResponse.data.hash, 'Hash should be available in public info');
+    assert.ok(!hashOnlyResponse.data.cardOrder, 'Card order should not be in public info');
+    assert.ok(!hashOnlyResponse.data.seed, 'Seed should not be in public info');
+    
+    console.log('✅ Card order is properly unrevealed with appropriate protections');
+  } catch (error) {
+    console.error('❌ Unrevealed status verification failed:', error);
+    throw error;
+  }
+});
+
 module.exports = {
   comprehensiveTestPlayers,
   comprehensiveGameId,
