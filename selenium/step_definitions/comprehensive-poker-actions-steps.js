@@ -2890,6 +2890,196 @@ Then('a card order hash should be generated before dealing', async function () {
   }
 });
 
+// Advanced Automated Betting and Game Completion step definitions
+Then('side pots should be calculated and distributed correctly', async function () {
+  try {
+    // Verify side pot calculation API
+    const sidePotResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/side-pot-calculation');
+    assert.strictEqual(sidePotResponse.status, 200, 'Side pot calculation should be accessible');
+    assert.ok(sidePotResponse.data.sidePots, 'Side pots should be calculated');
+    assert.ok(Array.isArray(sidePotResponse.data.sidePots), 'Side pots should be an array');
+    
+    // Verify side pot calculation logic
+    for (const sidePot of sidePotResponse.data.sidePots) {
+      assert.ok(sidePot.amount > 0, 'Each side pot should have positive amount');
+      assert.ok(sidePot.eligiblePlayers, 'Each side pot should have eligible players');
+      assert.ok(Array.isArray(sidePot.eligiblePlayers), 'Eligible players should be an array');
+      assert.ok(sidePot.eligiblePlayers.length > 0, 'Each side pot should have at least one eligible player');
+      assert.ok(sidePot.potId, 'Each side pot should have unique ID');
+    }
+    
+    // Verify side pot distribution integrity
+    const distributionResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/side-pot-distribution');
+    assert.strictEqual(distributionResponse.status, 200, 'Side pot distribution should be accessible');
+    assert.ok(distributionResponse.data.totalDistributed, 'Total distributed amount should be tracked');
+    assert.ok(distributionResponse.data.playerAllocations, 'Player allocations should be calculated');
+    
+    // Verify mathematical correctness
+    let totalCalculated = 0;
+    for (const allocation of distributionResponse.data.playerAllocations) {
+      assert.ok(allocation.playerId, 'Each allocation should have player ID');
+      assert.ok(allocation.amount >= 0, 'Allocation amount should be non-negative');
+      assert.ok(allocation.source, 'Allocation should specify source pot');
+      totalCalculated += allocation.amount;
+    }
+    
+    // Verify conservation of chips
+    const conservationResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/chip-conservation');
+    assert.strictEqual(conservationResponse.status, 200, 'Chip conservation check should succeed');
+    assert.strictEqual(conservationResponse.data.conservationValid, true, 'Chip conservation should be maintained');
+    assert.strictEqual(conservationResponse.data.totalBefore, conservationResponse.data.totalAfter, 'Total chips should be conserved');
+    
+    // Verify side pot handling for all-in scenarios
+    const allInResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/all-in-side-pots');
+    if (allInResponse.status === 200) {
+      assert.ok(allInResponse.data.allInHandled, 'All-in scenarios should be properly handled');
+      assert.ok(allInResponse.data.sidePotsCreated, 'Side pots should be created for all-in players');
+    }
+    
+    console.log('✅ Side pots calculated and distributed correctly with full integrity validation');
+  } catch (error) {
+    console.error('❌ Side pot calculation/distribution failed:', error);
+    throw error;
+  }
+});
+
+Then('I should receive multiple automatic phase transition events', async function () {
+  try {
+    // Verify phase transition event tracking
+    const eventsResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/phase-transition-events');
+    assert.strictEqual(eventsResponse.status, 200, 'Phase transition events should be accessible');
+    assert.ok(eventsResponse.data.events, 'Phase transition events should be tracked');
+    assert.ok(Array.isArray(eventsResponse.data.events), 'Events should be an array');
+    assert.ok(eventsResponse.data.events.length >= 2, 'Should have multiple phase transition events');
+    
+    // Verify event structure and sequencing
+    const phaseOrder = ['preflop', 'flop', 'turn', 'river', 'showdown'];
+    let lastPhaseIndex = -1;
+    
+    for (const event of eventsResponse.data.events) {
+      assert.ok(event.eventType, 'Each event should have type');
+      assert.ok(event.timestamp, 'Each event should have timestamp');
+      assert.ok(event.phase, 'Each event should have phase information');
+      assert.ok(['phase_transition', 'auto_transition', 'betting_complete'].includes(event.eventType), 'Event type should be valid');
+      
+      // Verify phase sequencing
+      const currentPhaseIndex = phaseOrder.indexOf(event.phase);
+      if (currentPhaseIndex !== -1) {
+        assert.ok(currentPhaseIndex > lastPhaseIndex, `Phase transitions should be in correct order: ${event.phase}`);
+        lastPhaseIndex = currentPhaseIndex;
+      }
+    }
+    
+    // Verify automatic transition triggers
+    const triggersResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/transition-triggers');
+    assert.strictEqual(triggersResponse.status, 200, 'Transition triggers should be accessible');
+    assert.ok(triggersResponse.data.triggers, 'Automatic triggers should be documented');
+    
+    for (const trigger of triggersResponse.data.triggers) {
+      assert.ok(trigger.condition, 'Each trigger should have condition');
+      assert.ok(trigger.action, 'Each trigger should have action');
+      assert.ok(trigger.executed, 'Trigger execution status should be tracked');
+    }
+    
+    // Verify real-time event broadcasting
+    const broadcastResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/event-broadcast-status');
+    assert.strictEqual(broadcastResponse.status, 200, 'Event broadcast status should be accessible');
+    assert.strictEqual(broadcastResponse.data.eventsWereBroadcast, true, 'Events should be broadcast to clients');
+    assert.ok(broadcastResponse.data.broadcastTimestamps, 'Broadcast timestamps should be tracked');
+    
+    // Verify event timing and performance
+    const timingResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/transition-timing');
+    assert.strictEqual(timingResponse.status, 200, 'Transition timing should be accessible');
+    assert.ok(timingResponse.data.averageTransitionTime < 1000, 'Average transition time should be reasonable (<1s)');
+    assert.ok(timingResponse.data.allTransitionsCompleted, 'All transitions should be completed');
+    
+    // Store event data for subsequent validations
+    this.phaseTransitionEvents = eventsResponse.data.events;
+    this.transitionMetadata = {
+      eventCount: eventsResponse.data.events.length,
+      phases: eventsResponse.data.events.map(e => e.phase),
+      broadcastStatus: broadcastResponse.data.eventsWereBroadcast
+    };
+    
+    console.log(`✅ Received ${eventsResponse.data.events.length} automatic phase transition events with proper sequencing`);
+  } catch (error) {
+    console.error('❌ Phase transition events verification failed:', error);
+    throw error;
+  }
+});
+
+Then('the final game completion should be broadcasted to all clients', async function () {
+  try {
+    // Verify game completion broadcasting
+    const completionResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/completion-broadcast');
+    assert.strictEqual(completionResponse.status, 200, 'Game completion broadcast should be accessible');
+    assert.strictEqual(completionResponse.data.gameCompleted, true, 'Game should be marked as completed');
+    assert.strictEqual(completionResponse.data.broadcastSent, true, 'Completion broadcast should be sent');
+    
+    // Verify broadcast content and structure
+    assert.ok(completionResponse.data.broadcastData, 'Broadcast should contain completion data');
+    const broadcastData = completionResponse.data.broadcastData;
+    assert.ok(broadcastData.gameId, 'Broadcast should include game ID');
+    assert.ok(broadcastData.winnerInfo, 'Broadcast should include winner information');
+    assert.ok(broadcastData.finalPots, 'Broadcast should include final pot distribution');
+    assert.ok(broadcastData.gameResults, 'Broadcast should include game results');
+    assert.ok(broadcastData.timestamp, 'Broadcast should include completion timestamp');
+    
+    // Verify all clients received the broadcast
+    const clientsResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/broadcast-recipients');
+    assert.strictEqual(clientsResponse.status, 200, 'Broadcast recipients should be accessible');
+    assert.ok(clientsResponse.data.recipients, 'Broadcast recipients should be tracked');
+    assert.ok(Array.isArray(clientsResponse.data.recipients), 'Recipients should be an array');
+    assert.ok(clientsResponse.data.recipients.length > 0, 'Should have at least one recipient');
+    
+    for (const recipient of clientsResponse.data.recipients) {
+      assert.ok(recipient.clientId, 'Each recipient should have client ID');
+      assert.strictEqual(recipient.received, true, 'Each client should have received the broadcast');
+      assert.ok(recipient.timestamp, 'Receipt timestamp should be recorded');
+    }
+    
+    // Verify broadcast delivery confirmation
+    const deliveryResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/broadcast-delivery');
+    assert.strictEqual(deliveryResponse.status, 200, 'Broadcast delivery should be tracked');
+    assert.strictEqual(deliveryResponse.data.deliveryComplete, true, 'Broadcast delivery should be complete');
+    assert.ok(deliveryResponse.data.deliveryRate >= 95, 'Delivery rate should be high (>=95%)');
+    
+    // Verify game state finalization
+    const finalizationResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/finalization-status');
+    assert.strictEqual(finalizationResponse.status, 200, 'Game finalization should be accessible');
+    assert.strictEqual(finalizationResponse.data.gameFinalized, true, 'Game should be finalized');
+    assert.strictEqual(finalizationResponse.data.resultsRecorded, true, 'Results should be recorded');
+    assert.strictEqual(finalizationResponse.data.cleanupCompleted, true, 'Cleanup should be completed');
+    
+    // Verify post-game statistics and reporting
+    const statsResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/completion-statistics');
+    if (statsResponse.status === 200) {
+      assert.ok(statsResponse.data.gameDuration, 'Game duration should be recorded');
+      assert.ok(statsResponse.data.totalHands, 'Total hands should be recorded');
+      assert.ok(statsResponse.data.playerStatistics, 'Player statistics should be available');
+    }
+    
+    // Verify WebSocket connection cleanup
+    const connectionResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/connection-cleanup');
+    assert.strictEqual(connectionResponse.status, 200, 'Connection cleanup should be accessible');
+    assert.strictEqual(connectionResponse.data.connectionsCleanedUp, true, 'WebSocket connections should be cleaned up');
+    
+    // Store completion data for verification
+    this.gameCompletionData = {
+      completed: completionResponse.data.gameCompleted,
+      broadcasted: completionResponse.data.broadcastSent,
+      recipients: clientsResponse.data.recipients.length,
+      deliveryRate: deliveryResponse.data.deliveryRate,
+      finalized: finalizationResponse.data.gameFinalized
+    };
+    
+    console.log(`✅ Game completion successfully broadcasted to all ${clientsResponse.data.recipients.length} clients with ${deliveryResponse.data.deliveryRate}% delivery rate`);
+  } catch (error) {
+    console.error('❌ Game completion broadcast verification failed:', error);
+    throw error;
+  }
+});
+
 module.exports = {
   comprehensiveTestPlayers,
   comprehensiveGameId,
