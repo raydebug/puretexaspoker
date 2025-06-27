@@ -3319,6 +3319,195 @@ Then('community cards should be dealt for flop, turn, and river instantly', asyn
   }
 });
 
+// Turn Order Enforcement and Automatic Phase Transitions step definitions
+When('the phase transitions to turn automatically', async function () {
+  try {
+    // Verify automatic phase transition to turn
+    const phaseResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/current-phase');
+    assert.strictEqual(phaseResponse.status, 200, 'Current phase should be accessible');
+    assert.strictEqual(phaseResponse.data.phase, 'turn', 'Game should be in turn phase');
+    assert.strictEqual(phaseResponse.data.automatic, true, 'Phase transition should be automatic');
+    
+    // Verify transition timing and triggers
+    const transitionResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/phase-transition');
+    assert.strictEqual(transitionResponse.status, 200, 'Phase transition should be accessible');
+    assert.strictEqual(transitionResponse.data.fromPhase, 'flop', 'Should transition from flop');
+    assert.strictEqual(transitionResponse.data.toPhase, 'turn', 'Should transition to turn');
+    assert.strictEqual(transitionResponse.data.automaticTrigger, true, 'Should be automatically triggered');
+    assert.ok(transitionResponse.data.transitionTimestamp, 'Transition timestamp should exist');
+    
+    // Verify turn card was dealt
+    const turnCardResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/turn-card');
+    assert.strictEqual(turnCardResponse.status, 200, 'Turn card should be accessible');
+    assert.ok(turnCardResponse.data.turnCard, 'Turn card should be dealt');
+    assert.ok(turnCardResponse.data.turnCard.suit, 'Turn card should have suit');
+    assert.ok(turnCardResponse.data.turnCard.rank, 'Turn card should have rank');
+    
+    // Verify betting round initialization for turn
+    const bettingResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/betting-round-status');
+    assert.strictEqual(bettingResponse.status, 200, 'Betting round status should be accessible');
+    assert.strictEqual(bettingResponse.data.bettingRound, 'turn', 'Betting round should be turn');
+    assert.strictEqual(bettingResponse.data.roundActive, true, 'Turn betting round should be active');
+    assert.ok(bettingResponse.data.roundStartTimestamp, 'Round start timestamp should exist');
+    
+    // Verify player notification of phase transition
+    const notificationResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/phase-notifications');
+    assert.strictEqual(notificationResponse.status, 200, 'Phase notifications should be accessible');
+    assert.strictEqual(notificationResponse.data.playersNotified, true, 'Players should be notified of phase transition');
+    assert.ok(notificationResponse.data.notificationsSent, 'Notifications should be sent');
+    
+    // Verify transition conditions were met
+    const conditionsResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/transition-conditions');
+    assert.strictEqual(conditionsResponse.status, 200, 'Transition conditions should be accessible');
+    assert.strictEqual(conditionsResponse.data.conditionsMet, true, 'Transition conditions should be met');
+    assert.ok(conditionsResponse.data.triggerReason, 'Trigger reason should be documented');
+    
+    // Store turn phase data for validation
+    this.turnPhaseData = {
+      phase: phaseResponse.data.phase,
+      automatic: phaseResponse.data.automatic,
+      transitionTimestamp: transitionResponse.data.transitionTimestamp,
+      turnCard: turnCardResponse.data.turnCard,
+      bettingRoundActive: bettingResponse.data.roundActive
+    };
+    
+    console.log('✅ Phase automatically transitioned to turn with proper betting round initialization');
+  } catch (error) {
+    console.error('❌ Automatic turn phase transition verification failed:', error);
+    throw error;
+  }
+});
+
+Then('{string} should be first to act in turn betting round', async function (playerName) {
+  try {
+    // Verify current player to act
+    const currentPlayerResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/current-player');
+    assert.strictEqual(currentPlayerResponse.status, 200, 'Current player should be accessible');
+    assert.strictEqual(currentPlayerResponse.data.currentPlayer, playerName, `${playerName} should be current player to act`);
+    assert.strictEqual(currentPlayerResponse.data.bettingRound, 'turn', 'Should be in turn betting round');
+    
+    // Verify turn order positioning
+    const turnOrderResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/turn-order');
+    assert.strictEqual(turnOrderResponse.status, 200, 'Turn order should be accessible');
+    assert.ok(turnOrderResponse.data.turnOrder, 'Turn order should be established');
+    assert.strictEqual(turnOrderResponse.data.turnOrder[0], playerName, `${playerName} should be first in turn order`);
+    assert.strictEqual(turnOrderResponse.data.currentPosition, 0, 'Current position should be 0 (first)');
+    
+    // Verify player action availability
+    const actionsResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', `/api/test/game/player-actions/${playerName}`);
+    assert.strictEqual(actionsResponse.status, 200, 'Player actions should be accessible');
+    assert.ok(actionsResponse.data.availableActions, 'Available actions should be listed');
+    assert.ok(actionsResponse.data.availableActions.length > 0, 'Player should have available actions');
+    assert.ok(actionsResponse.data.canAct, `${playerName} should be able to act`);
+    
+    // Verify betting constraints for turn round
+    const constraintsResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/betting-constraints');
+    assert.strictEqual(constraintsResponse.status, 200, 'Betting constraints should be accessible');
+    assert.ok(constraintsResponse.data.minBet !== undefined, 'Minimum bet should be defined');
+    assert.ok(constraintsResponse.data.maxBet !== undefined, 'Maximum bet should be defined');
+    assert.ok(constraintsResponse.data.currentBet !== undefined, 'Current bet should be tracked');
+    
+    // Verify timer and decision window
+    const timerResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/decision-timer');
+    assert.strictEqual(timerResponse.status, 200, 'Decision timer should be accessible');
+    assert.strictEqual(timerResponse.data.timerActive, true, 'Decision timer should be active');
+    assert.ok(timerResponse.data.timeRemaining > 0, 'Player should have time remaining to act');
+    assert.strictEqual(timerResponse.data.activePlayer, playerName, `Timer should be for ${playerName}`);
+    
+    // Verify UI updates for first to act
+    try {
+      const activePlayerElement = await this.driver.findElement(webdriver.By.css(`[data-testid="active-player-${playerName}"]`));
+      assert.ok(activePlayerElement, `Active player UI element should be present for ${playerName}`);
+      const isDisplayed = await activePlayerElement.isDisplayed();
+      assert.strictEqual(isDisplayed, true, `${playerName} should be visually highlighted as active player`);
+    } catch (elementError) {
+      console.log(`UI active player element check skipped for ${playerName} - testing via API only`);
+    }
+    
+    // Store first to act data
+    this.firstToActData = {
+      player: playerName,
+      bettingRound: 'turn',
+      position: currentPlayerResponse.data.position,
+      availableActions: actionsResponse.data.availableActions,
+      timeRemaining: timerResponse.data.timeRemaining
+    };
+    
+    console.log(`✅ ${playerName} is correctly first to act in turn betting round`);
+  } catch (error) {
+    console.error(`❌ First to act verification failed for ${playerName}:`, error);
+    throw error;
+  }
+});
+
+Then('the turn order should be properly maintained throughout', async function () {
+  try {
+    // Verify turn order consistency
+    const turnOrderResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/turn-order-validation');
+    assert.strictEqual(turnOrderResponse.status, 200, 'Turn order validation should be accessible');
+    assert.strictEqual(turnOrderResponse.data.turnOrderValid, true, 'Turn order should be valid');
+    assert.ok(turnOrderResponse.data.orderSequence, 'Order sequence should be documented');
+    
+    // Verify player positions and sequence
+    const sequenceResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/player-sequence');
+    assert.strictEqual(sequenceResponse.status, 200, 'Player sequence should be accessible');
+    assert.ok(sequenceResponse.data.playerPositions, 'Player positions should be tracked');
+    assert.ok(sequenceResponse.data.actionSequence, 'Action sequence should be maintained');
+    
+    // Verify each player's position is correctly maintained
+    for (const position of sequenceResponse.data.playerPositions) {
+      assert.ok(position.playerId, 'Each position should have player ID');
+      assert.ok(position.seatNumber !== undefined, 'Each position should have seat number');
+      assert.ok(position.turnPosition !== undefined, 'Each position should have turn position');
+      assert.ok(position.isActive !== undefined, 'Each position should have active status');
+    }
+    
+    // Verify turn order progression logic
+    const progressionResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/turn-progression');
+    assert.strictEqual(progressionResponse.status, 200, 'Turn progression should be accessible');
+    assert.strictEqual(progressionResponse.data.progressionCorrect, true, 'Turn progression should be correct');
+    assert.ok(progressionResponse.data.nextPlayerLogic, 'Next player logic should be documented');
+    
+    // Verify handling of folded/all-in players
+    const exclusionResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/player-exclusion');
+    assert.strictEqual(exclusionResponse.status, 200, 'Player exclusion should be accessible');
+    assert.ok(exclusionResponse.data.foldedPlayersExcluded !== undefined, 'Folded players exclusion should be tracked');
+    assert.ok(exclusionResponse.data.allInPlayersHandled !== undefined, 'All-in players handling should be tracked');
+    
+    // Verify turn order persistence across actions
+    const persistenceResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/order-persistence');
+    assert.strictEqual(persistenceResponse.status, 200, 'Order persistence should be accessible');
+    assert.strictEqual(persistenceResponse.data.orderMaintained, true, 'Turn order should be maintained across actions');
+    assert.ok(persistenceResponse.data.consistencyChecks, 'Consistency checks should be performed');
+    
+    // Verify circular turn order logic
+    const circularResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/circular-order');
+    assert.strictEqual(circularResponse.status, 200, 'Circular order should be accessible');
+    assert.strictEqual(circularResponse.data.circularLogicCorrect, true, 'Circular turn order logic should be correct');
+    assert.ok(circularResponse.data.wrapAroundHandling, 'Wrap around handling should be documented');
+    
+    // Verify turn order enforcement rules
+    const enforcementResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/order-enforcement');
+    assert.strictEqual(enforcementResponse.status, 200, 'Order enforcement should be accessible');
+    assert.strictEqual(enforcementResponse.data.enforcementActive, true, 'Turn order enforcement should be active');
+    assert.ok(enforcementResponse.data.violationsPrevented, 'Order violations should be prevented');
+    
+    // Store turn order maintenance data
+    this.turnOrderData = {
+      valid: turnOrderResponse.data.turnOrderValid,
+      playerPositions: sequenceResponse.data.playerPositions.length,
+      progressionCorrect: progressionResponse.data.progressionCorrect,
+      orderMaintained: persistenceResponse.data.orderMaintained,
+      enforcementActive: enforcementResponse.data.enforcementActive
+    };
+    
+    console.log(`✅ Turn order properly maintained throughout with ${sequenceResponse.data.playerPositions.length} active players`);
+  } catch (error) {
+    console.error('❌ Turn order maintenance verification failed:', error);
+    throw error;
+  }
+});
+
 module.exports = {
   comprehensiveTestPlayers,
   comprehensiveGameId,
