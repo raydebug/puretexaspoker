@@ -141,10 +141,17 @@ export class GameManager {
     // Generate card order before starting the game
     const cardOrderData = this.cardOrderService.generateCardOrder(gameId);
 
-    // Create card order record in database
-    await prisma.cardOrder.create({
-      data: {
+    // Create or update card order record in database
+    await prisma.cardOrder.upsert({
+      where: { gameId },
+      create: {
         gameId,
+        seed: cardOrderData.seed,
+        cardOrder: JSON.stringify(cardOrderData.cardOrder),
+        hash: cardOrderData.hash,
+        isRevealed: false
+      },
+      update: {
         seed: cardOrderData.seed,
         cardOrder: JSON.stringify(cardOrderData.cardOrder),
         hash: cardOrderData.hash,
