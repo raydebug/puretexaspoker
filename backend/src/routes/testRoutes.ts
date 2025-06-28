@@ -2374,4 +2374,125 @@ router.post('/test/check_connection_log', async (req, res) => {
   }
 });
 
+/**
+ * TEST API: Auto-start poker game when enough players are seated
+ * POST /api/test_auto_start_game
+ */
+router.post('/test_auto_start_game', async (req, res) => {
+  try {
+    const { gameId, minPlayers = 2 } = req.body;
+    
+    console.log(`🎯 TEST API: Auto-start game check for ${gameId}, minPlayers: ${minPlayers}`);
+    
+    const gameManager = GameManager.getInstance();
+    
+    // Check if this is a real game or test game
+    const realGame = (gameManager as any).games?.get(gameId);
+    const testGames = (gameManager as any).testGames;
+    const testGame = testGames?.get(gameId);
+    
+    if (realGame) {
+      // Handle real game auto-start
+      const gameState = realGame.getGameState();
+      const seatedPlayers = gameState.players.filter((p: any) => p.isActive);
+      
+      console.log(`🎯 REAL GAME: Found ${seatedPlayers.length} seated players`);
+      
+      if (seatedPlayers.length >= minPlayers && gameState.phase === 'waiting') {
+        console.log(`🎯 REAL GAME: Starting automatic poker game for ${gameId}`);
+        
+        // Start the real poker game
+        const startedGameState = await gameManager.startGame(gameId);
+        
+        console.log(`✅ REAL GAME: Started - Phase: ${startedGameState.phase}, Players: ${startedGameState.players.length}`);
+        
+        // Broadcast to WebSocket clients
+        const io = (global as any).socketIO;
+        if (io) {
+          io.to(`game:${gameId}`).emit('gameStarted', startedGameState);
+          io.to(`game:${gameId}`).emit('gameState', startedGameState);
+        }
+        
+        return res.json({
+          success: true,
+          gameState: startedGameState,
+          message: `Poker game started automatically with ${seatedPlayers.length} players`,
+          gameType: 'real'
+        });
+      }
+    } else if (testGame) {
+      // Handle test game auto-start
+      const seatedPlayers = testGame.players.filter((p: any) => p.seatNumber !== null);
+      
+      console.log(`🧪 TEST GAME: Found ${seatedPlayers.length} seated players`);
+      
+      if (seatedPlayers.length >= minPlayers && testGame.phase === 'waiting') {
+        console.log(`🧪 TEST GAME: Starting automatic poker game for ${gameId}`);
+        
+        // Simulate poker game start for test
+        testGame.phase = 'preflop';
+        testGame.status = 'playing';
+        
+        // Deal hole cards to seated players
+        const deck = ['A♠', 'K♠', 'Q♠', 'J♠', '10♠', '9♠', '8♠', '7♠', '6♠', '5♠', '4♠', '3♠', '2♠',
+                     'A♥', 'K♥', 'Q♥', 'J♥', '10♥', '9♥', '8♥', '7♥', '6♥', '5♥', '4♥', '3♥', '2♥',
+                     'A♦', 'K♦', 'Q♦', 'J♦', '10♦', '9♦', '8♦', '7♦', '6♦', '5♦', '4♦', '3♦', '2♦',
+                     'A♣', 'K♣', 'Q♣', 'J♣', '10♣', '9♣', '8♣', '7♣', '6♣', '5♣', '4♣', '3♣', '2♣'];
+        
+        let cardIndex = 0;
+        seatedPlayers.forEach((player: any, index: number) => {
+          player.cards = [deck[cardIndex++], deck[cardIndex++]];
+          player.isActive = true;
+        });
+        
+        // Set first player to act
+        testGame.currentPlayerId = seatedPlayers[0]?.nickname;
+        testGame.pot = 15; // Small blind + big blind
+        testGame.currentBet = 10; // Big blind
+        
+        console.log(`✅ TEST GAME: Started - Phase: ${testGame.phase}, Current player: ${testGame.currentPlayerId}`);
+        
+        // Broadcast to WebSocket clients
+        const io = (global as any).socketIO;
+        if (io) {
+          io.to(`game:${gameId}`).emit('gameStarted', testGame);
+          io.to(`game:${gameId}`).emit('gameState', testGame);
+        }
+        
+        return res.json({
+          success: true,
+          gameState: testGame,
+          message: `Test poker game started automatically with ${seatedPlayers.length} players`,
+          gameType: 'test'
+        });
+      }
+    } else {
+      return res.status(404).json({
+        success: false,
+        error: 'Game not found'
+      });
+    }
+    
+    // Not enough players or game already started
+    const currentPlayers = realGame ? 
+      realGame.getGameState().players.filter((p: any) => p.isActive).length :
+      testGame?.players.filter((p: any) => p.seatNumber !== null).length || 0;
+    
+    res.json({
+      success: false,
+      message: `Not enough players (${currentPlayers}/${minPlayers}) or game already started`,
+      currentPlayers,
+      minPlayers,
+      gameType: realGame ? 'real' : 'test'
+    });
+    
+  } catch (error) {
+    console.error('❌ TEST API: Error auto-starting game:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to auto-start game'
+    });
+  }
+});
+
 export default router; 

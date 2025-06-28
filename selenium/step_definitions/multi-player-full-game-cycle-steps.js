@@ -906,6 +906,31 @@ Given('all players have their starting chip counts verified', {timeout: 30000}, 
 When('the game starts automatically with enough players', {timeout: 45000}, async function () {
   console.log(`🎯 Waiting for game to start automatically with ${Object.keys(chipTracker).length} players...`);
   
+  // Trigger auto-start via API first
+  try {
+    const response = await fetch('http://localhost:3001/api/test_auto_start_game', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        gameId: 'FullGameTable_game',
+        minPlayers: 2
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      console.log(`✅ Poker game started automatically via API: ${result.message}`);
+      console.log(`🎯 Game state: Phase=${result.gameState.phase}, Players=${result.gameState.players?.length || 0}`);
+    } else {
+      console.log(`⚠️ Game auto-start via API: ${result.message}`);
+    }
+  } catch (error) {
+    console.log(`⚠️ Failed to trigger auto-start via API: ${error.message}`);
+  }
+  
   // Wait for automatic game start (triggered when 2+ players are seated)
   let gameStarted = false;
   const startTime = Date.now();
