@@ -3508,6 +3508,233 @@ Then('the turn order should be properly maintained throughout', async function (
   }
 });
 
+// Automated Betting Completion and Phase Transitions step definitions
+When('the preflop betting completes automatically', async function () {
+  try {
+    // Verify preflop betting completion
+    const bettingResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/betting-round-completion');
+    assert.strictEqual(bettingResponse.status, 200, 'Betting round completion should be accessible');
+    assert.strictEqual(bettingResponse.data.roundCompleted, true, 'Preflop betting round should be completed');
+    assert.strictEqual(bettingResponse.data.phase, 'preflop', 'Should be completing preflop phase');
+    
+    // Verify automatic completion conditions
+    const completionResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/auto-completion-conditions');
+    assert.strictEqual(completionResponse.status, 200, 'Auto-completion conditions should be accessible');
+    assert.strictEqual(completionResponse.data.conditionsMet, true, 'Auto-completion conditions should be met');
+    assert.ok(completionResponse.data.completionReason, 'Completion reason should be documented');
+    
+    // Verify all players have acted or are excluded
+    const playerActionsResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/player-action-status');
+    assert.strictEqual(playerActionsResponse.status, 200, 'Player action status should be accessible');
+    assert.strictEqual(playerActionsResponse.data.allPlayersActed, true, 'All eligible players should have acted');
+    assert.ok(playerActionsResponse.data.playerStatuses, 'Player statuses should be tracked');
+    
+    // Verify betting constraints were satisfied
+    const constraintsResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/betting-constraints-satisfied');
+    assert.strictEqual(constraintsResponse.status, 200, 'Betting constraints should be accessible');
+    assert.strictEqual(constraintsResponse.data.constraintsSatisfied, true, 'All betting constraints should be satisfied');
+    
+    // Verify pot calculation and side pot handling
+    const potResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/pot-calculation');
+    assert.strictEqual(potResponse.status, 200, 'Pot calculation should be accessible');
+    assert.ok(potResponse.data.totalPot >= 0, 'Total pot should be calculated');
+    assert.ok(potResponse.data.sidePots !== undefined, 'Side pots should be handled');
+    
+    // Verify timing of automatic completion
+    const timingResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/completion-timing');
+    assert.strictEqual(timingResponse.status, 200, 'Completion timing should be accessible');
+    assert.ok(timingResponse.data.completionTimestamp, 'Completion timestamp should exist');
+    assert.ok(timingResponse.data.timingAccurate, 'Completion timing should be accurate');
+    
+    // Store preflop completion data
+    this.preflopCompletionData = {
+      completed: bettingResponse.data.roundCompleted,
+      automatic: completionResponse.data.conditionsMet,
+      allPlayersActed: playerActionsResponse.data.allPlayersActed,
+      totalPot: potResponse.data.totalPot,
+      completionTimestamp: timingResponse.data.completionTimestamp
+    };
+    
+    console.log('✅ Preflop betting completed automatically with all constraints satisfied');
+  } catch (error) {
+    console.error('❌ Preflop betting completion verification failed:', error);
+    throw error;
+  }
+});
+
+When('the phase transitions to flop automatically', async function () {
+  try {
+    // Verify automatic phase transition to flop
+    const phaseResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/current-phase');
+    assert.strictEqual(phaseResponse.status, 200, 'Current phase should be accessible');
+    assert.strictEqual(phaseResponse.data.phase, 'flop', 'Game should be in flop phase');
+    assert.strictEqual(phaseResponse.data.automatic, true, 'Phase transition should be automatic');
+    
+    // Verify transition from preflop to flop
+    const transitionResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/phase-transition');
+    assert.strictEqual(transitionResponse.status, 200, 'Phase transition should be accessible');
+    assert.strictEqual(transitionResponse.data.fromPhase, 'preflop', 'Should transition from preflop');
+    assert.strictEqual(transitionResponse.data.toPhase, 'flop', 'Should transition to flop');
+    assert.strictEqual(transitionResponse.data.automaticTrigger, true, 'Should be automatically triggered');
+    
+    // Verify flop cards were dealt
+    const flopCardsResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/flop-cards');
+    assert.strictEqual(flopCardsResponse.status, 200, 'Flop cards should be accessible');
+    assert.ok(flopCardsResponse.data.flopCards, 'Flop cards should be dealt');
+    assert.strictEqual(flopCardsResponse.data.flopCards.length, 3, 'Flop should contain exactly 3 cards');
+    
+    // Verify flop betting round initialization
+    const bettingResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/betting-round-status');
+    assert.strictEqual(bettingResponse.status, 200, 'Betting round status should be accessible');
+    assert.strictEqual(bettingResponse.data.bettingRound, 'flop', 'Betting round should be flop');
+    assert.strictEqual(bettingResponse.data.roundActive, true, 'Flop betting round should be active');
+    
+    // Verify turn order reset for flop
+    const turnOrderResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/turn-order-reset');
+    assert.strictEqual(turnOrderResponse.status, 200, 'Turn order reset should be accessible');
+    assert.strictEqual(turnOrderResponse.data.resetForNewPhase, true, 'Turn order should be reset for flop');
+    assert.ok(turnOrderResponse.data.newTurnOrder, 'New turn order should be established');
+    
+    // Verify game state consistency
+    const stateResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/state-consistency');
+    assert.strictEqual(stateResponse.status, 200, 'State consistency should be accessible');
+    assert.strictEqual(stateResponse.data.stateConsistent, true, 'Game state should be consistent');
+    assert.ok(stateResponse.data.validationChecks, 'State validation checks should be performed');
+    
+    // Store flop transition data
+    this.flopTransitionData = {
+      phase: phaseResponse.data.phase,
+      automatic: phaseResponse.data.automatic,
+      flopCards: flopCardsResponse.data.flopCards,
+      bettingRoundActive: bettingResponse.data.roundActive,
+      turnOrderReset: turnOrderResponse.data.resetForNewPhase
+    };
+    
+    console.log('✅ Phase automatically transitioned to flop with proper initialization');
+  } catch (error) {
+    console.error('❌ Automatic flop phase transition verification failed:', error);
+    throw error;
+  }
+});
+
+Then('{string} should be first to act in flop betting round', async function (playerName) {
+  try {
+    // Verify current player to act in flop
+    const currentPlayerResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/current-player');
+    assert.strictEqual(currentPlayerResponse.status, 200, 'Current player should be accessible');
+    assert.strictEqual(currentPlayerResponse.data.currentPlayer, playerName, `${playerName} should be current player to act`);
+    assert.strictEqual(currentPlayerResponse.data.bettingRound, 'flop', 'Should be in flop betting round');
+    
+    // Verify flop turn order positioning
+    const turnOrderResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/turn-order');
+    assert.strictEqual(turnOrderResponse.status, 200, 'Turn order should be accessible');
+    assert.ok(turnOrderResponse.data.turnOrder, 'Turn order should be established');
+    assert.strictEqual(turnOrderResponse.data.turnOrder[0], playerName, `${playerName} should be first in flop turn order`);
+    assert.strictEqual(turnOrderResponse.data.currentPosition, 0, 'Current position should be 0 (first)');
+    
+    // Verify player can act in flop
+    const actionsResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', `/api/test/game/player-actions/${playerName}`);
+    assert.strictEqual(actionsResponse.status, 200, 'Player actions should be accessible');
+    assert.ok(actionsResponse.data.availableActions, 'Available actions should be listed');
+    assert.ok(actionsResponse.data.availableActions.length > 0, 'Player should have available actions');
+    assert.ok(actionsResponse.data.canAct, `${playerName} should be able to act`);
+    
+    // Verify flop-specific betting constraints
+    const constraintsResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/flop-betting-constraints');
+    assert.strictEqual(constraintsResponse.status, 200, 'Flop betting constraints should be accessible');
+    assert.ok(constraintsResponse.data.minBet !== undefined, 'Minimum bet should be defined for flop');
+    assert.ok(constraintsResponse.data.maxBet !== undefined, 'Maximum bet should be defined for flop');
+    
+    // Verify decision timer for flop
+    const timerResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/decision-timer');
+    assert.strictEqual(timerResponse.status, 200, 'Decision timer should be accessible');
+    assert.strictEqual(timerResponse.data.timerActive, true, 'Decision timer should be active');
+    assert.ok(timerResponse.data.timeRemaining > 0, 'Player should have time remaining to act');
+    assert.strictEqual(timerResponse.data.activePlayer, playerName, `Timer should be for ${playerName}`);
+    
+    // Verify position relative to button/blinds
+    const positionResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/position-analysis');
+    assert.strictEqual(positionResponse.status, 200, 'Position analysis should be accessible');
+    assert.ok(positionResponse.data.playerPosition, 'Player position should be calculated');
+    assert.ok(positionResponse.data.relativeToButton !== undefined, 'Position relative to button should be known');
+    
+    // Store first to act flop data
+    this.firstToActFlopData = {
+      player: playerName,
+      bettingRound: 'flop',
+      position: currentPlayerResponse.data.position,
+      availableActions: actionsResponse.data.availableActions,
+      timeRemaining: timerResponse.data.timeRemaining,
+      relativeToButton: positionResponse.data.relativeToButton
+    };
+    
+    console.log(`✅ ${playerName} is correctly first to act in flop betting round`);
+  } catch (error) {
+    console.error(`❌ First to act flop verification failed for ${playerName}:`, error);
+    throw error;
+  }
+});
+
+When('the flop betting completes automatically', async function () {
+  try {
+    // Verify flop betting completion
+    const bettingResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/betting-round-completion');
+    assert.strictEqual(bettingResponse.status, 200, 'Betting round completion should be accessible');
+    assert.strictEqual(bettingResponse.data.roundCompleted, true, 'Flop betting round should be completed');
+    assert.strictEqual(bettingResponse.data.phase, 'flop', 'Should be completing flop phase');
+    
+    // Verify automatic completion triggers
+    const completionResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/auto-completion-conditions');
+    assert.strictEqual(completionResponse.status, 200, 'Auto-completion conditions should be accessible');
+    assert.strictEqual(completionResponse.data.conditionsMet, true, 'Auto-completion conditions should be met');
+    assert.ok(completionResponse.data.completionReason, 'Completion reason should be documented');
+    
+    // Verify all eligible players acted in flop
+    const playerActionsResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/player-action-status');
+    assert.strictEqual(playerActionsResponse.status, 200, 'Player action status should be accessible');
+    assert.strictEqual(playerActionsResponse.data.allPlayersActed, true, 'All eligible players should have acted in flop');
+    
+    // Verify flop pot calculations
+    const potResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/flop-pot-calculation');
+    assert.strictEqual(potResponse.status, 200, 'Flop pot calculation should be accessible');
+    assert.ok(potResponse.data.flopPotSize >= 0, 'Flop pot size should be calculated');
+    assert.ok(potResponse.data.contributionsSummed, 'Player contributions should be summed');
+    
+    // Verify betting round closure procedures
+    const closureResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/round-closure');
+    assert.strictEqual(closureResponse.status, 200, 'Round closure should be accessible');
+    assert.strictEqual(closureResponse.data.roundClosed, true, 'Flop round should be properly closed');
+    assert.ok(closureResponse.data.closureTimestamp, 'Closure timestamp should exist');
+    
+    // Verify preparation for next phase
+    const preparationResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/next-phase-preparation');
+    assert.strictEqual(preparationResponse.status, 200, 'Next phase preparation should be accessible');
+    assert.strictEqual(preparationResponse.data.preparedForNext, true, 'Should be prepared for next phase');
+    assert.strictEqual(preparationResponse.data.nextPhase, 'turn', 'Next phase should be turn');
+    
+    // Verify game flow continuity
+    const flowResponse = await webdriverHelpers.makeApiCall(this.driver, 'GET', '/api/test/game/flow-continuity');
+    assert.strictEqual(flowResponse.status, 200, 'Flow continuity should be accessible');
+    assert.strictEqual(flowResponse.data.flowMaintained, true, 'Game flow should be maintained');
+    assert.ok(flowResponse.data.transitionReady, 'Should be ready for phase transition');
+    
+    // Store flop completion data
+    this.flopCompletionData = {
+      completed: bettingResponse.data.roundCompleted,
+      automatic: completionResponse.data.conditionsMet,
+      potSize: potResponse.data.flopPotSize,
+      roundClosed: closureResponse.data.roundClosed,
+      nextPhase: preparationResponse.data.nextPhase,
+      transitionReady: flowResponse.data.transitionReady
+    };
+    
+    console.log('✅ Flop betting completed automatically with proper closure procedures');
+  } catch (error) {
+    console.error('❌ Flop betting completion verification failed:', error);
+    throw error;
+  }
+});
+
 module.exports = {
   comprehensiveTestPlayers,
   comprehensiveGameId,
