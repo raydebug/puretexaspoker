@@ -16,7 +16,7 @@ export class WebSocketService {
         methods: ['GET', 'POST']
       }
     });
-    this.gameService = new GameService();
+    this.gameService = new GameService('websocket-game-id');
     this.chatService = createChatService(this.io);
     this.setupSocketHandlers();
   }

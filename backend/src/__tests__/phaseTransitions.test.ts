@@ -11,7 +11,7 @@ describe('Enhanced Game Phase Transitions', () => {
   let tableId: string;
 
   beforeEach(async () => {
-    gameService = new GameService();
+    gameService = new GameService('test-game-id');
     
     // Create test players
     player1 = {
@@ -209,7 +209,7 @@ describe('Enhanced Game Phase Transitions', () => {
     });
 
     it('should throw error when trying to deal before game starts', () => {
-      const newGameService = new GameService();
+      const newGameService = new GameService('test-game-id-2');
       expect(() => newGameService.dealCommunityCards())
         .toThrow('Cannot deal community cards: game not started');
     });

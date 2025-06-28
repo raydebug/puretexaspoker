@@ -12,7 +12,7 @@ describe('Advanced Hand Evaluation & Showdown', () => {
   beforeEach(() => {
     handEvaluator = new HandEvaluator();
     sidePotManager = new SidePotManager();
-    gameService = new GameService();
+    gameService = new GameService('test-game-id');
   });
 
   describe('Enhanced Hand Evaluation', () => {

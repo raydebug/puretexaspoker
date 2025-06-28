@@ -7,6 +7,7 @@ import { registerConsolidatedHandlers } from './socketHandlers/consolidatedHandl
 import { errorHandler } from './middleware/errorHandler';
 import errorRoutes from './routes/errorRoutes';
 import cardOrderRoutes from './routes/cardOrders';
+import testRoutes from './routes/testRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -35,6 +36,7 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/errors', errorRoutes);
 app.use('/api/card-orders', cardOrderRoutes);
+app.use('/api', testRoutes);
 
 // Basic route
 app.get('/', (req, res) => {
