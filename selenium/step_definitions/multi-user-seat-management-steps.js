@@ -1351,10 +1351,29 @@ async function changeSeat(driver, fromSeat, toSeat) {
       );
       await changeSeatOption.click();
     } catch (error) {
-      // Try alternative method - direct seat click
-      const targetSeatElement = await driver.findElement(
-        By.css(`[data-testid="seat-${toSeat}"]`)
-      );
+      // Try alternative method - direct seat click on available seat
+      // Available seats use "available-seat-{number}" testid format
+      const targetSeatSelectors = [
+        `[data-testid="available-seat-${toSeat}"]`,
+        `[data-testid="seat-${toSeat}"]`
+      ];
+      
+      let targetSeatElement = null;
+      for (const selector of targetSeatSelectors) {
+        try {
+          targetSeatElement = await driver.findElement(By.css(selector));
+          console.log(`✅ Found target seat ${toSeat} using selector: ${selector}`);
+          break;
+        } catch (selectorError) {
+          console.log(`⚠️ Target seat selector failed: ${selector}`);
+          continue;
+        }
+      }
+      
+      if (!targetSeatElement) {
+        throw new Error(`Could not find target seat ${toSeat} with any selector`);
+      }
+      
       await targetSeatElement.click();
     }
     
