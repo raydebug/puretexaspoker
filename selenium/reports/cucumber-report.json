@@ -14,7 +14,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 21334249
+              "duration": 442613584
             }
           },
           {
@@ -27,7 +27,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 12713195791
+              "duration": 12556703583
             }
           },
           {
@@ -73,7 +73,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 6062572833
+              "duration": 6102241541
             }
           },
           {
@@ -86,7 +86,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 45029625
+              "duration": 43021125
             }
           },
           {
@@ -99,7 +99,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 15459249
+              "duration": 17344209
             }
           },
           {
@@ -112,7 +112,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 27009042
+              "duration": 26119833
             }
           },
           {
@@ -120,7 +120,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 171082
+              "duration": 211999
             }
           },
           {
@@ -128,7 +128,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 423333
+              "duration": 474375
             }
           },
           {
@@ -136,7 +136,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 13912374
+              "duration": 15726209
             }
           }
         ],
@@ -155,7 +155,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2133083
+              "duration": 4454125
             }
           },
           {
@@ -168,7 +168,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 12311117041
+              "duration": 12343220332
             }
           },
           {
@@ -214,7 +214,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 6068094292
+              "duration": 6086834208
             }
           },
           {
@@ -227,7 +227,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 10737958
+              "duration": 8460082
             }
           },
           {
@@ -240,7 +240,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 10081425332
+              "duration": 10081977207
             }
           },
           {
@@ -253,7 +253,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 10001320790,
+              "duration": 10002509792,
               "error_message": "Error: function timed out, ensure the promise resolves within 10000 milliseconds\n    at Timeout.<anonymous> (/Users/leiyao/work/puretexaspoker/node_modules/@cucumber/cucumber/lib/time.js:54:20)\n    at listOnTimeout (node:internal/timers:614:17)\n    at process.processTimers (node:internal/timers:549:7)"
             }
           },
@@ -340,7 +340,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 65791
+              "duration": 176625
             }
           },
           {
@@ -348,7 +348,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 88499
+              "duration": 103958
             }
           },
           {
@@ -356,7 +356,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 6305762291
+              "duration": 6298804999
             }
           }
         ],
@@ -1847,7 +1847,7 @@
             "line": 19,
             "name": "the preflop betting round should be automatically complete",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:12"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:65"
             },
             "result": {
               "status": "skipped",
@@ -1860,7 +1860,7 @@
             "line": 20,
             "name": "the phase should automatically transition to \"flop\"",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:41"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:102"
             },
             "result": {
               "status": "skipped",
@@ -1873,7 +1873,7 @@
             "line": 21,
             "name": "I should see 3 community cards dealt automatically",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:67"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:128"
             },
             "result": {
               "status": "skipped",
@@ -1886,7 +1886,7 @@
             "line": 22,
             "name": "I should receive automatic phase transition event \"automaticFlop\"",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:87"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:148"
             },
             "result": {
               "status": "skipped",
@@ -1899,7 +1899,7 @@
             "line": 23,
             "name": "the system message should show \"🎴 Automatic Flop: 3 community cards dealt (betting round completed)\"",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:109"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:170"
             },
             "result": {
               "status": "skipped",
@@ -2020,7 +2020,7 @@
             "line": 28,
             "name": "the game starts and reaches flop phase",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:121"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:182"
             },
             "result": {
               "status": "skipped",
@@ -2095,7 +2095,7 @@
             "line": 34,
             "name": "the phase should automatically transition to \"turn\"",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:41"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:102"
             },
             "result": {
               "status": "skipped",
@@ -2108,7 +2108,7 @@
             "line": 35,
             "name": "I should see 4 community cards displayed automatically",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:160"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:221"
             },
             "result": {
               "status": "skipped",
@@ -2121,7 +2121,7 @@
             "line": 36,
             "name": "I should receive automatic phase transition event \"automaticTurn\"",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:87"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:148"
             },
             "result": {
               "status": "skipped",
@@ -2134,7 +2134,7 @@
             "line": 37,
             "name": "the turn order should reset for the new betting round",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:176"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:237"
             },
             "result": {
               "status": "skipped",
@@ -2255,7 +2255,7 @@
             "line": 42,
             "name": "the game starts and reaches turn phase",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:199"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:260"
             },
             "result": {
               "status": "skipped",
@@ -2314,7 +2314,7 @@
             "line": 47,
             "name": "the turn betting round should be automatically complete",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:242"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:303"
             },
             "result": {
               "status": "skipped",
@@ -2327,7 +2327,7 @@
             "line": 48,
             "name": "the phase should automatically transition to \"river\"",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:41"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:102"
             },
             "result": {
               "status": "skipped",
@@ -2340,7 +2340,7 @@
             "line": 49,
             "name": "I should see 5 community cards displayed automatically",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:160"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:221"
             },
             "result": {
               "status": "skipped",
@@ -2353,7 +2353,7 @@
             "line": 50,
             "name": "I should receive automatic phase transition event \"automaticRiver\"",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:87"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:148"
             },
             "result": {
               "status": "skipped",
@@ -2366,7 +2366,7 @@
             "line": 51,
             "name": "only 2 players should remain active",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:261"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:322"
             },
             "result": {
               "status": "skipped",
@@ -2487,7 +2487,7 @@
             "line": 56,
             "name": "the game starts and reaches river phase",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:277"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:338"
             },
             "result": {
               "status": "skipped",
@@ -2539,7 +2539,7 @@
             "line": 60,
             "name": "the river betting round should be automatically complete",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:301"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:362"
             },
             "result": {
               "status": "skipped",
@@ -2552,7 +2552,7 @@
             "line": 61,
             "name": "the phase should automatically transition to \"showdown\"",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:41"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:102"
             },
             "result": {
               "status": "skipped",
@@ -2565,7 +2565,7 @@
             "line": 62,
             "name": "I should receive automatic phase transition event \"automaticShowdown\"",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:87"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:148"
             },
             "result": {
               "status": "skipped",
@@ -2578,7 +2578,7 @@
             "line": 63,
             "name": "the showdown should determine winner automatically",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:318"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:379"
             },
             "result": {
               "status": "skipped",
@@ -2591,7 +2591,7 @@
             "line": 64,
             "name": "I should receive game completion event \"gameComplete\"",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:336"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:397"
             },
             "result": {
               "status": "skipped",
@@ -2777,7 +2777,7 @@
             "line": 74,
             "name": "the preflop betting round should be automatically complete",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:12"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:65"
             },
             "result": {
               "status": "skipped",
@@ -2790,7 +2790,7 @@
             "line": 75,
             "name": "all remaining phases should automatically advance",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:355"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:416"
             },
             "result": {
               "status": "skipped",
@@ -2803,7 +2803,7 @@
             "line": 76,
             "name": "I should see community cards dealt for flop, turn, and river",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:374"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:435"
             },
             "result": {
               "status": "skipped",
@@ -2816,7 +2816,7 @@
             "line": 77,
             "name": "the game should automatically reach showdown",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:388"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:449"
             },
             "result": {
               "status": "skipped",
@@ -2829,7 +2829,7 @@
             "line": 78,
             "name": "the pot should be distributed to the winner automatically",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:402"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:463"
             },
             "result": {
               "status": "skipped",
@@ -3025,7 +3025,7 @@
             "line": 89,
             "name": "the preflop betting round should be automatically complete",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:12"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:65"
             },
             "result": {
               "status": "skipped",
@@ -3038,7 +3038,7 @@
             "line": 90,
             "name": "the phase should automatically transition to \"flop\"",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:41"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:102"
             },
             "result": {
               "status": "skipped",
@@ -3427,8 +3427,11 @@
             "keyword": "Then ",
             "line": 113,
             "name": "I should receive WebSocket event \"automaticFlop\" with game state",
+            "match": {
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:827"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -3437,8 +3440,11 @@
             "keyword": "And ",
             "line": 114,
             "name": "the event should contain phase transition details",
+            "match": {
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:866"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -3447,8 +3453,11 @@
             "keyword": "And ",
             "line": 115,
             "name": "the event should have isAutomatic flag set to true",
+            "match": {
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:897"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -3457,8 +3466,11 @@
             "keyword": "And ",
             "line": 116,
             "name": "all connected clients should receive the same automatic transition",
+            "match": {
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:908"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -3467,8 +3479,11 @@
             "keyword": "And ",
             "line": 117,
             "name": "the game state should be synchronized across all clients",
+            "match": {
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:941"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -3811,7 +3826,7 @@
             "line": 135,
             "name": "all players go all-in during preflop",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:420"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:481"
             },
             "result": {
               "status": "skipped",
@@ -3824,7 +3839,7 @@
             "line": 136,
             "name": "all betting rounds should be skipped automatically",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:450"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:511"
             },
             "result": {
               "status": "skipped",
@@ -11284,7 +11299,7 @@
             "line": 235,
             "name": "the betting round should complete automatically",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:492"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:553"
             },
             "result": {
               "status": "skipped",
@@ -11297,7 +11312,7 @@
             "line": 236,
             "name": "the next phase should begin",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:521"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:582"
             },
             "result": {
               "status": "skipped",
@@ -11310,7 +11325,7 @@
             "line": 239,
             "name": "some players go all-in",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:554"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:615"
             },
             "result": {
               "status": "skipped",
@@ -11323,7 +11338,7 @@
             "line": 240,
             "name": "the betting round should complete when appropriate",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:589"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:650"
             },
             "result": {
               "status": "skipped",
@@ -11336,7 +11351,7 @@
             "line": 241,
             "name": "remaining players should be able to continue betting",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:619"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:680"
             },
             "result": {
               "status": "skipped",
@@ -11349,7 +11364,7 @@
             "line": 244,
             "name": "all but one player folds",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:651"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:712"
             },
             "result": {
               "status": "skipped",
@@ -11362,7 +11377,7 @@
             "line": 245,
             "name": "the hand should end immediately",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:679"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:740"
             },
             "result": {
               "status": "skipped",
@@ -11375,7 +11390,7 @@
             "line": 246,
             "name": "the remaining player should win the pot",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:707"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:768"
             },
             "result": {
               "status": "skipped",
@@ -11388,7 +11403,7 @@
             "line": 247,
             "name": "no showdown should occur",
             "match": {
-              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:737"
+              "location": "selenium/step_definitions/automated-betting-round-completion-steps.js:798"
             },
             "result": {
               "status": "skipped",
@@ -20061,7 +20076,7 @@
             "line": 57,
             "name": "seat 1 should be available in all browser instances",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:581"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:624"
             },
             "result": {
               "status": "skipped",
@@ -20074,7 +20089,7 @@
             "line": 58,
             "name": "seat 4 should be occupied by \"Player1\" in all browser instances",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:591"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:634"
             },
             "result": {
               "status": "skipped",
@@ -20126,7 +20141,7 @@
             "line": 63,
             "name": "seat 3 should be available in all browser instances",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:581"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:624"
             },
             "result": {
               "status": "skipped",
@@ -20139,7 +20154,7 @@
             "line": 64,
             "name": "seat 6 should be occupied by \"Player2\" in all browser instances",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:591"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:634"
             },
             "result": {
               "status": "skipped",
@@ -20191,7 +20206,7 @@
             "line": 69,
             "name": "seat 5 should be available in all browser instances",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:581"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:624"
             },
             "result": {
               "status": "skipped",
@@ -20204,7 +20219,7 @@
             "line": 70,
             "name": "seat 1 should be occupied by \"Player3\" in all browser instances",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:591"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:634"
             },
             "result": {
               "status": "skipped",
@@ -20250,7 +20265,7 @@
             "line": 72,
             "name": "the final seating arrangement should be:",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:603"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:646"
             },
             "result": {
               "status": "skipped",
@@ -20263,7 +20278,7 @@
             "line": 77,
             "name": "seats 2, 3, and 5 should be available in all browser instances",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:630"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:673"
             },
             "result": {
               "status": "skipped",
@@ -20430,7 +20445,7 @@
             "line": 88,
             "name": "the action should be rejected with \"Seat is already taken\"",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:644"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:687"
             },
             "result": {
               "status": "skipped",
@@ -20443,7 +20458,7 @@
             "line": 89,
             "name": "\"Player1\" should remain at seat 1",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:658"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:701"
             },
             "result": {
               "status": "skipped",
@@ -20456,7 +20471,7 @@
             "line": 90,
             "name": "\"Player2\" should remain at seat 3",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:658"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:701"
             },
             "result": {
               "status": "skipped",
@@ -20469,7 +20484,7 @@
             "line": 91,
             "name": "the error should be displayed in browser instance 1",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:769"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:812"
             },
             "result": {
               "status": "skipped",
@@ -20495,7 +20510,7 @@
             "line": 94,
             "name": "only one of them should succeed in taking seat 2",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:786"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:829"
             },
             "result": {
               "status": "skipped",
@@ -20508,7 +20523,7 @@
             "line": 95,
             "name": "the other should receive \"Seat is already taken\" error",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:805"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:848"
             },
             "result": {
               "status": "skipped",
@@ -20521,7 +20536,7 @@
             "line": 96,
             "name": "the seat assignment should be consistent across all browser instances",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:809"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:852"
             },
             "result": {
               "status": "skipped",
@@ -20534,7 +20549,7 @@
             "line": 97,
             "name": "no user should lose their original seat until successfully moved",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:826"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:869"
             },
             "result": {
               "status": "skipped",
@@ -20706,7 +20721,7 @@
             "line": 108,
             "name": "seat 2 should be available in all browser instances",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:581"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:624"
             },
             "result": {
               "status": "skipped",
@@ -20745,7 +20760,7 @@
             "line": 112,
             "name": "seat 4 should be available in all browser instances",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:581"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:624"
             },
             "result": {
               "status": "skipped",
@@ -20797,7 +20812,7 @@
             "line": 117,
             "name": "seat 6 should be available in all browser instances",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:581"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:624"
             },
             "result": {
               "status": "skipped",
@@ -20849,7 +20864,7 @@
             "line": 122,
             "name": "seat 2 should be available in all browser instances",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:581"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:624"
             },
             "result": {
               "status": "skipped",
@@ -20885,7 +20900,7 @@
             "line": 124,
             "name": "the final arrangement should show:",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:664"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:707"
             },
             "result": {
               "status": "skipped",
@@ -21049,7 +21064,7 @@
             "line": 135,
             "name": "all browser instances should immediately show:",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:842"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:885"
             },
             "result": {
               "status": "skipped",
@@ -21104,7 +21119,7 @@
             "line": 140,
             "name": "all browser instances should immediately show:",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:842"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:885"
             },
             "result": {
               "status": "skipped",
@@ -21167,7 +21182,7 @@
             "line": 146,
             "name": "all browser instances should immediately show:",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:842"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:885"
             },
             "result": {
               "status": "skipped",
@@ -21230,7 +21245,7 @@
             "line": 153,
             "name": "all browser instances should immediately show:",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:842"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:885"
             },
             "result": {
               "status": "skipped",
@@ -21400,7 +21415,7 @@
             "line": 169,
             "name": "the minimum players requirement is met (2+ players)",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:885"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:928"
             },
             "result": {
               "status": "skipped",
@@ -21413,7 +21428,7 @@
             "line": 170,
             "name": "the \"Start Game\" button should be enabled in all browser instances",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:898"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:941"
             },
             "result": {
               "status": "skipped",
@@ -21426,7 +21441,7 @@
             "line": 171,
             "name": "all seated players should see their ready status",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:913"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:956"
             },
             "result": {
               "status": "skipped",
@@ -21452,7 +21467,7 @@
             "line": 174,
             "name": "the game should start for all players",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:929"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:972"
             },
             "result": {
               "status": "skipped",
@@ -21495,7 +21510,7 @@
             "line": 178,
             "name": "blinds should be assigned correctly",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:947"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:990"
             },
             "result": {
               "status": "skipped",
@@ -21508,7 +21523,7 @@
             "line": 179,
             "name": "all players should receive hole cards",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:962"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:1005"
             },
             "result": {
               "status": "skipped",
@@ -21521,7 +21536,7 @@
             "line": 180,
             "name": "the game state should be synchronized across all browser instances",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:978"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:1021"
             },
             "result": {
               "status": "skipped",
@@ -21746,7 +21761,7 @@
             "line": 199,
             "name": "the final seating arrangement should be consistent across all browser instances",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:692"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:735"
             },
             "result": {
               "status": "skipped",
@@ -21759,7 +21774,7 @@
             "line": 200,
             "name": "no seat should have multiple occupants",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:709"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:752"
             },
             "result": {
               "status": "skipped",
@@ -21772,7 +21787,7 @@
             "line": 201,
             "name": "no user should be assigned to multiple seats",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:722"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:765"
             },
             "result": {
               "status": "skipped",
@@ -21785,7 +21800,7 @@
             "line": 202,
             "name": "all seat changes should be properly logged",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:735"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:778"
             },
             "result": {
               "status": "skipped",
@@ -21798,7 +21813,7 @@
             "line": 203,
             "name": "the UI should reflect the correct final state in all browser instances",
             "match": {
-              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:752"
+              "location": "selenium/step_definitions/multi-user-seat-management-steps.js:795"
             },
             "result": {
               "status": "skipped",
