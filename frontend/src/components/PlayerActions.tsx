@@ -209,6 +209,18 @@ export const PlayerActions: React.FC<PlayerActionsProps> = ({
   const isPlayerTurn = gameState.currentPlayerId === currentPlayer.id || 
                       gameState.currentPlayerId === currentPlayer.name ||
                       (isTestMode && currentPlayer.name && gameState.currentPlayerId === currentPlayer.name);
+
+  // CRITICAL DEBUGGING for test mode
+  console.log(`🎯 PlayerActions DEBUG:`, {
+    playerName: currentPlayer.name,
+    playerId: currentPlayer.id, 
+    currentPlayerId: gameState.currentPlayerId,
+    isPlayerTurn,
+    isTestMode,
+    gameStatus: gameState.status,
+    gamePhase: gameState.phase,
+    componentVisible: true
+  });
   const toCall = Math.max(0, gameState.currentBet - currentPlayer.currentBet);
   const canCheck = toCall === 0;
   const canCall = toCall > 0 && toCall <= currentPlayer.chips;

@@ -580,16 +580,31 @@ const GamePage: React.FC = () => {
       </TableContainer>
 
       {/* 🎯 POKER ACTION BUTTONS - Bottom Center Positioning */}
-      {currentPlayer && (
-        (gameState.status === 'playing' || gameState.phase === 'preflop' || gameState.phase === 'flop' || gameState.phase === 'turn' || gameState.phase === 'river') && 
-        (gameState.currentPlayerId === currentPlayer.id || gameState.currentPlayerId === currentPlayer.name) && (
+      {(() => {
+        const shouldShow = currentPlayer && 
+          (gameState.status === 'playing' || gameState.phase === 'preflop' || gameState.phase === 'flop' || gameState.phase === 'turn' || gameState.phase === 'river') && 
+          (gameState.currentPlayerId === currentPlayer.id || gameState.currentPlayerId === currentPlayer.name);
+        
+        console.log(`🎯 GamePage PlayerActions visibility:`, {
+          hasCurrentPlayer: !!currentPlayer,
+          playerName: currentPlayer?.name,
+          playerId: currentPlayer?.id,
+          gameStatus: gameState.status,
+          gamePhase: gameState.phase,
+          currentPlayerId: gameState.currentPlayerId,
+          shouldShow,
+          idMatch: currentPlayer && gameState.currentPlayerId === currentPlayer.id,
+          nameMatch: currentPlayer && gameState.currentPlayerId === currentPlayer.name
+        });
+        
+        return shouldShow ? (
           <PlayerActions
             gameState={gameState}
             currentPlayer={currentPlayer}
             onAction={handleAction}
           />
-        )
-      )}
+        ) : null;
+      })()}
 
       {/* Seat Selection Dialog for seat changes */}
       {showSeatDialog && selectedSeat !== null && (
