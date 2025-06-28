@@ -513,21 +513,63 @@ Then('the total seated players should be {int} in all browser instances', async 
 });
 
 Then('all users can see the current seating arrangement', async function () {
-  // Verify all users can see the current state
-  await this.step('all users should see the same table state');
+  // Verify all users can see the current state - check consistency across browsers
+  const referenceState = await getTableState(Object.values(userSessions)[0].driver);
+  
+  for (const [username, session] of Object.entries(userSessions)) {
+    const currentState = await getTableState(session.driver);
+    
+    // Compare seated players
+    assert.deepEqual(currentState.seatedPlayers, referenceState.seatedPlayers,
+      `${username}'s view should match reference state for seated players`);
+    
+    // Compare available seats
+    assert.deepEqual(currentState.availableSeats, referenceState.availableSeats,
+      `${username}'s view should match reference state for available seats`);
+  }
 });
 
 Then('the seat change should be successful in all browser instances', async function () {
   // Wait for changes to propagate
   await new Promise(resolve => setTimeout(resolve, 1000));
   
-  // Verify consistency across all browsers
-  await this.step('all users should see the same table state');
+  // Verify consistency across all browsers - check that all users see the same state
+  const referenceState = await getTableState(Object.values(userSessions)[0].driver);
+  
+  for (const [username, session] of Object.entries(userSessions)) {
+    const currentState = await getTableState(session.driver);
+    
+    // Compare seated players
+    assert.deepEqual(currentState.seatedPlayers, referenceState.seatedPlayers,
+      `${username}'s view should match reference state for seated players`);
+    
+    // Compare available seats
+    assert.deepEqual(currentState.availableSeats, referenceState.availableSeats,
+      `${username}'s view should match reference state for available seats`);
+  }
 });
 
 Then('{string} should now be at seat {int} with {int} chips', async function (username, seatNumber, chips) {
-  await this.step(`"${username}" should be seated at seat ${seatNumber} in all browser instances`);
-  await this.step(`"${username}" should have ${chips} chips displayed`);
+  // Verify user is seated at the specified seat in all browser instances
+  for (const [viewerName, session] of Object.entries(userSessions)) {
+    const seatElement = await session.driver.findElement(By.css(`[data-testid="seat-${seatNumber}"]`));
+    const playerNameElement = await seatElement.findElement(By.css('.player-name'));
+    const actualPlayerName = await playerNameElement.getText();
+    
+    assert.equal(actualPlayerName, username, 
+      `${username} should be seated at seat ${seatNumber} as seen by ${viewerName}`);
+  }
+  
+  // Verify chips display
+  for (const [viewerName, session] of Object.entries(userSessions)) {
+    const seatElement = await session.driver.findElement(By.css(`[data-testid="seat-${seatNumber}"]`));
+    const chipsElement = await seatElement.findElement(By.css('.chips'));
+    const chipsText = await chipsElement.getText();
+    const displayedChips = parseInt(chipsText.replace(/[^\d]/g, ''));
+    
+    assert.equal(displayedChips, chips, 
+      `${username} should have ${chips} chips displayed as seen by ${viewerName}`);
+  }
   
   // Update our tracking
   if (userSessions[username]) {
@@ -547,7 +589,15 @@ Then('seat {int} should be available in all browser instances', async function (
 });
 
 Then('seat {int} should be occupied by {string} in all browser instances', async function (seatNumber, username) {
-  await this.step(`"${username}" should be seated at seat ${seatNumber} in all browser instances`);
+  // Verify user is seated at the specified seat in all browser instances
+  for (const [viewerName, session] of Object.entries(userSessions)) {
+    const seatElement = await session.driver.findElement(By.css(`[data-testid="seat-${seatNumber}"]`));
+    const playerNameElement = await seatElement.findElement(By.css('.player-name'));
+    const actualPlayerName = await playerNameElement.getText();
+    
+    assert.equal(actualPlayerName, username, 
+      `${username} should be seated at seat ${seatNumber} as seen by ${viewerName}`);
+  }
 });
 
 Then('the final seating arrangement should be:', async function (dataTable) {
@@ -579,7 +629,14 @@ Then('the final seating arrangement should be:', async function (dataTable) {
 
 Then('seats {int}, {int}, and {int} should be available in all browser instances', async function (seat1, seat2, seat3) {
   for (const seatNumber of [seat1, seat2, seat3]) {
-    await this.step(`seat ${seatNumber} should be available in all browser instances`);
+    // Check that seat is available in all browser instances
+    for (const [username, session] of Object.entries(userSessions)) {
+      const seatElement = await session.driver.findElement(By.css(`[data-testid="seat-${seatNumber}"]`));
+      const seatClass = await seatElement.getAttribute('class');
+      
+      assert.notInclude(seatClass, 'occupied', 
+        `Seat ${seatNumber} should be available in ${username}'s browser`);
+    }
   }
 });
 
@@ -605,11 +662,48 @@ Then('{string} should remain at seat {int}', async function (username, seatNumbe
 });
 
 Then('the final arrangement should show:', async function (dataTable) {
-  await this.step('the final seating arrangement should be:', dataTable);
+  // Verify the final seating arrangement
+  const expectedArrangement = dataTable.hashes();
+  
+  for (const [username, session] of Object.entries(userSessions)) {
+    for (const expected of expectedArrangement) {
+      const seatNumber = parseInt(expected.seat);
+      const expectedPlayer = expected.player;
+      const expectedChips = parseInt(expected.chips);
+      
+      const seatElement = await session.driver.findElement(By.css(`[data-testid="seat-${seatNumber}"]`));
+      const playerName = await seatElement.findElement(By.css('.player-name')).getText();
+      
+      assert.equal(playerName, expectedPlayer, 
+        `Seat ${seatNumber} should have ${expectedPlayer} in ${username}'s browser`);
+      
+      if (expectedChips) {
+        const chipsElement = await seatElement.findElement(By.css('.chips'));
+        const chipsText = await chipsElement.getText();
+        const actualChips = parseInt(chipsText.replace(/[^\d]/g, ''));
+        
+        assert.equal(actualChips, expectedChips, 
+          `${expectedPlayer} should have ${expectedChips} chips in ${username}'s browser`);
+      }
+    }
+  }
 });
 
 Then('the final seating arrangement should be consistent across all browser instances', async function () {
-  await this.step('all users should see the same table state');
+  // Check that all users see the same table state
+  const referenceState = await getTableState(Object.values(userSessions)[0].driver);
+  
+  for (const [username, session] of Object.entries(userSessions)) {
+    const currentState = await getTableState(session.driver);
+    
+    // Compare seated players
+    assert.deepEqual(currentState.seatedPlayers, referenceState.seatedPlayers,
+      `${username}'s view should match reference state for seated players`);
+    
+    // Compare available seats
+    assert.deepEqual(currentState.availableSeats, referenceState.availableSeats,
+      `${username}'s view should match reference state for available seats`);
+  }
 });
 
 Then('no seat should have multiple occupants', async function () {
@@ -640,11 +734,36 @@ Then('no user should be assigned to multiple seats', async function () {
 
 Then('all seat changes should be properly logged', async function () {
   // This would typically verify audit logs, but for now we just verify state consistency
-  await this.step('all users should see the same table state');
+  const referenceState = await getTableState(Object.values(userSessions)[0].driver);
+  
+  for (const [username, session] of Object.entries(userSessions)) {
+    const currentState = await getTableState(session.driver);
+    
+    // Compare seated players
+    assert.deepEqual(currentState.seatedPlayers, referenceState.seatedPlayers,
+      `${username}'s view should match reference state for seated players`);
+    
+    // Compare available seats
+    assert.deepEqual(currentState.availableSeats, referenceState.availableSeats,
+      `${username}'s view should match reference state for available seats`);
+  }
 });
 
 Then('the UI should reflect the correct final state in all browser instances', async function () {
-  await this.step('all users should see the same table state');
+  // Check that all users see the same table state
+  const referenceState = await getTableState(Object.values(userSessions)[0].driver);
+  
+  for (const [username, session] of Object.entries(userSessions)) {
+    const currentState = await getTableState(session.driver);
+    
+    // Compare seated players
+    assert.deepEqual(currentState.seatedPlayers, referenceState.seatedPlayers,
+      `${username}'s view should match reference state for seated players`);
+    
+    // Compare available seats
+    assert.deepEqual(currentState.availableSeats, referenceState.availableSeats,
+      `${username}'s view should match reference state for available seats`);
+  }
 });
 
 Then('the error should be displayed in browser instance {int}', async function (instanceNum) {
@@ -688,7 +807,20 @@ Then('the other should receive {string} error', async function (expectedError) {
 });
 
 Then('the seat assignment should be consistent across all browser instances', async function () {
-  await this.step('all users should see the same table state');
+  // Check that all users see the same table state
+  const referenceState = await getTableState(Object.values(userSessions)[0].driver);
+  
+  for (const [username, session] of Object.entries(userSessions)) {
+    const currentState = await getTableState(session.driver);
+    
+    // Compare seated players
+    assert.deepEqual(currentState.seatedPlayers, referenceState.seatedPlayers,
+      `${username}'s view should match reference state for seated players`);
+    
+    // Compare available seats
+    assert.deepEqual(currentState.availableSeats, referenceState.availableSeats,
+      `${username}'s view should match reference state for available seats`);
+  }
 });
 
 Then('no user should lose their original seat until successfully moved', async function () {
@@ -844,7 +976,20 @@ Then('all players should receive hole cards', async function () {
 });
 
 Then('the game state should be synchronized across all browser instances', async function () {
-  await this.step('all users should see the same table state');
+  // Check that all users see the same table state
+  const referenceState = await getTableState(Object.values(userSessions)[0].driver);
+  
+  for (const [username, session] of Object.entries(userSessions)) {
+    const currentState = await getTableState(session.driver);
+    
+    // Compare seated players
+    assert.deepEqual(currentState.seatedPlayers, referenceState.seatedPlayers,
+      `${username}'s view should match reference state for seated players`);
+    
+    // Compare available seats
+    assert.deepEqual(currentState.availableSeats, referenceState.availableSeats,
+      `${username}'s view should match reference state for available seats`);
+  }
 });
 
 // Helper functions
