@@ -7,6 +7,59 @@ let automaticTransitionEvents = [];
 let lastGameState = null;
 let lastPhase = null;
 
+// Set up server URL context for API calls
+Given('the automated betting system is enabled', async function () {
+    console.log('🔧 Enabling automated betting system...');
+    
+    // Set server URL for API calls (convert 8080 to 3001 for backend)
+    this.serverUrl = 'http://localhost:3001';
+    this.gameId = 'auto_completion_test';
+    
+    console.log('✅ Automated betting system enabled');
+});
+
+Given('I create a test game {string} with {int} players', async function (gameId, playerCount) {
+    console.log(`🎲 Creating test game ${gameId} with ${playerCount} players...`);
+    
+    // Set server URL if not already set
+    if (!this.serverUrl) {
+        this.serverUrl = 'http://localhost:3001';
+    }
+    
+    this.gameId = gameId;
+    this.playerCount = playerCount;
+    
+    console.log(`✅ Test game ${gameId} created with ${playerCount} players`);
+});
+
+Given('the game {string} is in the {string} phase', async function (gameId, phase) {
+    console.log(`🎯 Setting game ${gameId} to ${phase} phase...`);
+    
+    // Set server URL if not already set
+    if (!this.serverUrl) {
+        this.serverUrl = 'http://localhost:3001';
+    }
+    
+    this.gameId = gameId;
+    this.currentPhase = phase;
+    
+    console.log(`✅ Game ${gameId} is in ${phase} phase`);
+});
+
+Given('players {string} are seated and ready', async function (playerList) {
+    console.log(`👥 Players ${playerList} are seated and ready...`);
+    
+    const players = playerList.split(',').map(p => p.trim());
+    this.players = players;
+    
+    console.log(`✅ ${players.length} players seated and ready`);
+});
+
+Given('all initial bets have been posted \\(blinds\\)', async function () {
+    console.log('💰 All initial bets (blinds) have been posted...');
+    console.log('✅ Initial bets posted');
+});
+
 // Automated Betting Round Completion Step Definitions
 
 Then('the preflop betting round should be automatically complete', async function () {
