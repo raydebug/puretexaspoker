@@ -580,12 +580,15 @@ const GamePage: React.FC = () => {
       </TableContainer>
 
       {/* 🎯 POKER ACTION BUTTONS - Bottom Center Positioning */}
-      {currentPlayer && gameState.status === 'playing' && gameState.currentPlayerId === currentPlayer.id && (
-        <PlayerActions
-          gameState={gameState}
-          currentPlayer={currentPlayer}
-          onAction={handleAction}
-        />
+      {currentPlayer && (
+        (gameState.status === 'playing' || gameState.phase === 'preflop' || gameState.phase === 'flop' || gameState.phase === 'turn' || gameState.phase === 'river') && 
+        (gameState.currentPlayerId === currentPlayer.id || gameState.currentPlayerId === currentPlayer.name) && (
+          <PlayerActions
+            gameState={gameState}
+            currentPlayer={currentPlayer}
+            onAction={handleAction}
+          />
+        )
       )}
 
       {/* Seat Selection Dialog for seat changes */}
