@@ -1377,51 +1377,88 @@ async function takeSeat(driver, seatNumber, buyIn) {
 
 async function changeSeat(driver, fromSeat, toSeat) {
   try {
-    // Right-click on current seat to open context menu
-    const currentSeatElement = await driver.findElement(
-      By.css(`[data-testid="seat-${fromSeat}"]`)
-    );
+    console.log(`🔄 Starting seat change from ${fromSeat} to ${toSeat}...`);
     
-    // Use Actions to right-click
-    const actions = driver.actions();
-    await actions.contextClick(currentSeatElement).perform();
+    // Step 1: Click on target seat to open the seat selection dialog
+    // Available seats use "available-seat-{number}" testid format
+    const targetSeatSelectors = [
+      `[data-testid="available-seat-${toSeat}"]`,
+      `[data-testid="seat-${toSeat}"]`
+    ];
     
-    // Look for "Change Seat" option
-    try {
-      const changeSeatOption = await driver.wait(
-        until.elementLocated(By.xpath('//div[contains(text(), "Change Seat") or contains(text(), "Move")]')),
-        2000
-      );
-      await changeSeatOption.click();
-    } catch (error) {
-      // Try alternative method - direct seat click on available seat
-      // Available seats use "available-seat-{number}" testid format
-      const targetSeatSelectors = [
-        `[data-testid="available-seat-${toSeat}"]`,
-        `[data-testid="seat-${toSeat}"]`
-      ];
-      
-      let targetSeatElement = null;
-      for (const selector of targetSeatSelectors) {
-        try {
-          targetSeatElement = await driver.findElement(By.css(selector));
-          console.log(`✅ Found target seat ${toSeat} using selector: ${selector}`);
-          break;
-        } catch (selectorError) {
-          console.log(`⚠️ Target seat selector failed: ${selector}`);
-          continue;
-        }
+    let targetSeatElement = null;
+    for (const selector of targetSeatSelectors) {
+      try {
+        targetSeatElement = await driver.findElement(By.css(selector));
+        console.log(`✅ Found target seat ${toSeat} using selector: ${selector}`);
+        break;
+      } catch (selectorError) {
+        console.log(`⚠️ Target seat selector failed: ${selector}`);
+        continue;
       }
-      
-      if (!targetSeatElement) {
-        throw new Error(`Could not find target seat ${toSeat} with any selector`);
-      }
-      
-      await targetSeatElement.click();
     }
     
-    // Wait for seat change to complete
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    if (!targetSeatElement) {
+      throw new Error(`Could not find target seat ${toSeat} with any selector`);
+    }
+    
+    // Click the target seat to open seat selection dialog
+    await targetSeatElement.click();
+    console.log(`🎯 Clicked on seat ${toSeat} to open dialog`);
+    
+    // Step 2: Wait for seat selection dialog to appear
+    console.log(`⏳ Waiting for seat selection dialog to appear...`);
+    const dialogElement = await driver.wait(
+      until.elementLocated(By.css('[data-testid="seat-dialog"], .dialog-overlay, [role="dialog"]')),
+      5000
+    );
+    console.log(`✅ Seat selection dialog appeared`);
+    
+    // Step 3: Find and click the confirm button
+    console.log(`🔍 Looking for confirm button...`);
+    const confirmButtonSelectors = [
+      '[data-testid="confirm-seat-btn"]',
+      'button:contains("Confirm")',
+      'button:contains("Take Seat")'
+    ];
+    
+    let confirmButton = null;
+    for (const selector of confirmButtonSelectors) {
+      try {
+        if (selector.includes(':contains')) {
+          // Use XPath for text-based selectors
+          const xpath = `//button[contains(text(), '${selector.split(':contains("')[1].replace('")', '')}')]`;
+          confirmButton = await driver.findElement(By.xpath(xpath));
+        } else {
+          confirmButton = await driver.findElement(By.css(selector));
+        }
+        console.log(`✅ Found confirm button using selector: ${selector}`);
+        break;
+      } catch (selectorError) {
+        console.log(`⚠️ Confirm button selector failed: ${selector}`);
+        continue;
+      }
+    }
+    
+    if (!confirmButton) {
+      throw new Error(`Could not find confirm button in seat dialog`);
+    }
+    
+    // Click the confirm button
+    await confirmButton.click();
+    console.log(`🔘 Clicked confirm button for seat ${toSeat}`);
+    
+    // Step 4: Wait for dialog to close (indicates seat change completed)
+    console.log(`⏳ Waiting for dialog to close...`);
+    await driver.wait(
+      until.stalenessOf(dialogElement),
+      10000
+    );
+    console.log(`✅ Dialog closed - seat change to ${toSeat} completed`);
+    
+    // Give a bit more time for UI to update
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
   } catch (error) {
     throw new Error(`Failed to change from seat ${fromSeat} to seat ${toSeat}: ${error.message}`);
   }
