@@ -65,6 +65,14 @@ Given('all initial bets have been posted \\(blinds\\)', async function () {
 Then('the preflop betting round should be automatically complete', async function () {
     console.log('⚡ Verifying preflop betting round completion...');
     
+    // Set server URL if not already set
+    if (!this.serverUrl) {
+        this.serverUrl = 'http://localhost:3001';
+    }
+    if (!this.gameId) {
+        this.gameId = 'auto_completion_test';
+    }
+    
     // Wait for the betting round to complete automatically
     await webdriverHelpers.sleep(3000);
     
