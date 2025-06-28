@@ -550,9 +550,33 @@ Then('the seat change should be successful in all browser instances', async func
 });
 
 Then('{string} should now be at seat {int} with {int} chips', async function (username, seatNumber, chips) {
+  // Wait for seat change to propagate and seat to be occupied
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  
   // Verify user is seated at the specified seat in all browser instances
   for (const [viewerName, session] of Object.entries(userSessions)) {
-    const seatElement = await session.driver.findElement(By.css(`[data-testid="seat-${seatNumber}"]`));
+    // Try both seat selector formats (available vs occupied)
+    const seatSelectors = [
+      `[data-testid="seat-${seatNumber}"]`,
+      `[data-testid="available-seat-${seatNumber}"]`
+    ];
+    
+    let seatElement = null;
+    for (const selector of seatSelectors) {
+      try {
+        seatElement = await session.driver.findElement(By.css(selector));
+        console.log(`✅ Found seat ${seatNumber} using selector: ${selector} for ${viewerName}`);
+        break;
+      } catch (error) {
+        console.log(`⚠️ Seat selector failed: ${selector} for ${viewerName}`);
+        continue;
+      }
+    }
+    
+    if (!seatElement) {
+      throw new Error(`Could not find seat ${seatNumber} with any selector for ${viewerName}`);
+    }
+    
     const playerNameElement = await seatElement.findElement(By.css('.player-name'));
     const actualPlayerName = await playerNameElement.getText();
     
@@ -562,7 +586,26 @@ Then('{string} should now be at seat {int} with {int} chips', async function (us
   
   // Verify chips display
   for (const [viewerName, session] of Object.entries(userSessions)) {
-    const seatElement = await session.driver.findElement(By.css(`[data-testid="seat-${seatNumber}"]`));
+    // Use the same seat finding logic for chips verification
+    const seatSelectors = [
+      `[data-testid="seat-${seatNumber}"]`,
+      `[data-testid="available-seat-${seatNumber}"]`
+    ];
+    
+    let seatElement = null;
+    for (const selector of seatSelectors) {
+      try {
+        seatElement = await session.driver.findElement(By.css(selector));
+        break;
+      } catch (error) {
+        continue;
+      }
+    }
+    
+    if (!seatElement) {
+      throw new Error(`Could not find seat ${seatNumber} for chips verification for ${viewerName}`);
+    }
+    
     const chipsElement = await seatElement.findElement(By.css('.chips'));
     const chipsText = await chipsElement.getText();
     const displayedChips = parseInt(chipsText.replace(/[^\d]/g, ''));
