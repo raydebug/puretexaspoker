@@ -3,6 +3,7 @@ import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { OnlineList } from '../components/OnlineList';
 import { ActionHistory } from '../components/ActionHistory';
+import { PlayerActions } from '../components/PlayerActions';
 import { socketService } from '../services/socketService';
 import { GameState, Player } from '../types/game';
 import { TableData } from '../types/table';
@@ -72,8 +73,6 @@ const ErrorMessage = styled.h2`
   font-size: 24px;
 `;
 
-
-
 const GameLayout = styled.div`
   display: flex;
   width: 100%;
@@ -98,8 +97,6 @@ const TableContainer = styled.div`
   align-items: center;
   position: relative;
 `;
-
-
 
 const GamePage: React.FC = () => {
   const navigate = useNavigate();
@@ -397,10 +394,6 @@ const GamePage: React.FC = () => {
     socketService.emitGameAction(action, amount);
   };
 
-
-
-
-
   // Function to handle seat selection for observers
   const handleSeatSelection = (seatNumber: number) => {
     setSelectedSeat(seatNumber);
@@ -585,6 +578,15 @@ const GamePage: React.FC = () => {
           onSeatSelect={handleSeatSelection}
         />
       </TableContainer>
+
+      {/* 🎯 POKER ACTION BUTTONS - Bottom Center Positioning */}
+      {currentPlayer && gameState.status === 'playing' && gameState.currentPlayerId === currentPlayer.id && (
+        <PlayerActions
+          gameState={gameState}
+          currentPlayer={currentPlayer}
+          onAction={handleAction}
+        />
+      )}
 
       {/* Seat Selection Dialog for seat changes */}
       {showSeatDialog && selectedSeat !== null && (

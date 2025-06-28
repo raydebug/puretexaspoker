@@ -851,37 +851,7 @@ export const PokerTable: React.FC<PokerTableProps> = ({
         )}
 
         {/* Action Buttons */}
-        {currentPlayer && gameState.status === 'playing' && gameState.phase !== 'finished' && !(gameState.phase as string).includes('showdown') && (
-          <ActionButtons 
-            data-testid="betting-controls"
-            className="betting-controls action-buttons"
-          >
-            <ActionButton 
-              variant="fold" 
-              onClick={() => onAction('fold')}
-              data-testid="fold-button"
-              disabled={(gameState.phase as string).includes('showdown')}
-            >
-              FOLD
-            </ActionButton>
-            <ActionButton 
-              variant="call" 
-              onClick={() => onAction('call')}
-              data-testid="call-button"
-              disabled={(gameState.phase as string).includes('showdown')}
-            >
-              CALL
-            </ActionButton>
-            <ActionButton 
-              variant="raise" 
-              onClick={() => onAction('raise', 20)}
-              data-testid="raise-button"
-              disabled={(gameState.phase as string).includes('showdown')}
-            >
-              RAISE
-            </ActionButton>
-          </ActionButtons>
-        )}
+        {/* Action buttons moved to PlayerActions component at bottom center */}
 
         {/* Current Player Indicator */}
         {gameState.currentPlayerId && !(gameState.phase as string).includes('showdown') && (
