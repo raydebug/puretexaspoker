@@ -15,7 +15,7 @@ const backend = spawn('npm', ['start'], {
 
 // Start frontend server
 const frontendDir = path.join(__dirname, '..', 'frontend');
-const frontend = spawn('npm', ['start'], {
+const frontend = spawn('npm', ['run', 'dev'], {
   cwd: frontendDir,
   stdio: 'inherit',
   shell: true
