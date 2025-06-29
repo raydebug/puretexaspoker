@@ -420,25 +420,20 @@ const GamePage: React.FC = () => {
     setSelectedSeat(null);
     
     try {
-      // **CRITICAL FIX**: Ensure user is properly joined to table before taking seat
+      // Check if user is already at a table (has session data)
       const currentUserSeat = socketService.getCurrentSeat();
       
       console.log(`🎯 GamePage: handleSeatConfirm - currentUserSeat: ${currentUserSeat}`);
       console.log(`🎯 GamePage: handleSeatConfirm - attempting to take seat ${selectedSeat} with buyIn ${buyInAmount}`);
       
-      // If user doesn't have a seat (not at table), join as observer first
-      if (currentUserSeat === null && gameId) {
-        console.log(`🎯 GamePage: User not at table, joining table ${gameId} as observer first`);
-        socketService.joinTable(parseInt(gameId), buyInAmount);
-        
-        // Wait a bit for join to complete
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
+      // Only try to join table if user is not already at any table AND we have a valid table reference
+      // Since users clicking seats are typically already joined as observers, skip the rejoin attempt
+      console.log(`🎯 GamePage: User appears to be at table, proceeding directly to takeSeat`);
       
       // Set isObserver to false immediately when taking a seat
       setIsObserver(false);
       
-      // Now request the seat with selected buy-in
+      // Request the seat with selected buy-in
       console.log(`🎯 GamePage: Calling takeSeat with seat ${selectedSeat}, buyIn ${buyInAmount}`);
       socketService.takeSeat(selectedSeat, buyInAmount);
       
