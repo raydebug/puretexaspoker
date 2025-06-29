@@ -575,20 +575,29 @@ export function registerConsolidatedHandlers(io: Server) {
 
         // **CRITICAL FIX**: Use database transaction for atomic seat management
         await prisma.$transaction(async (tx) => {
-          // Check seat availability within transaction
-          const existingPlayerTable = await tx.playerTable.findFirst({
-            where: { tableId: socket.data.dbTableId, seatNumber }
-          });
-
-          if (existingPlayerTable && existingPlayerTable.playerId !== socket.data.playerId) {
-            throw new Error(`Seat ${seatNumber} is already taken`);
-          }
-
-          // Clean up any existing seat for this player at this table (within transaction)
+          // **ENHANCED**: Clean up ANY existing seat for this player at this table FIRST
           await tx.playerTable.deleteMany({
             where: { 
               playerId: socket.data.playerId,
               tableId: socket.data.dbTableId 
+            }
+          });
+
+          // Check seat availability AFTER cleanup (within transaction)
+          const existingPlayerTable = await tx.playerTable.findFirst({
+            where: { tableId: socket.data.dbTableId, seatNumber }
+          });
+
+          // **FIX**: Only block if another player (not this player) has the seat
+          if (existingPlayerTable && existingPlayerTable.playerId !== socket.data.playerId) {
+            throw new Error(`Seat ${seatNumber} is already taken by another player`);
+          }
+
+          // **SAFETY**: Remove any stale records at this specific seat
+          await tx.playerTable.deleteMany({
+            where: { 
+              tableId: socket.data.dbTableId,
+              seatNumber 
             }
           });
 
