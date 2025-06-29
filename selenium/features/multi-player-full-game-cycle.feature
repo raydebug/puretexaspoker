@@ -103,6 +103,13 @@ Feature: Multi-Player Full Game Cycle with Comprehensive Actions
     Then the winner should be determined and pot distributed
     And all chip counts should be accurate in all browser instances
 
+    # 15-Second Break Before Next Game
+    Then there should be a 15-second countdown break before the next game
+    And all players should see the countdown timer
+    And the countdown should display remaining time
+    When the countdown reaches zero
+    Then the next game should be ready to start
+
     # GAME 2: All-In Scenarios
     When the second game begins
     Then the dealer button should move appropriately
@@ -131,6 +138,46 @@ Feature: Multi-Player Full Game Cycle with Comprehensive Actions
       | game_state_sync   | true           |
       | ui_accuracy       | true           |
     And all browser instances should show identical final states
+
+  @multi-browser @countdown-break
+  Scenario: 15-Second Countdown Break Between Games
+    Given I have 3 browser instances with players seated:
+      | player   | browser | seat | initial_chips |
+      | Alpha    | 1       | 1    | 200          |
+      | Beta     | 2       | 2    | 200          |
+      | Gamma    | 3       | 3    | 200          |
+    And all players can see the initial seating arrangement
+    And all players have their starting chip counts verified
+
+    # Complete First Game Quickly
+    When the game starts automatically with enough players
+    Then the game should start in all browser instances
+    And blinds should be posted correctly:
+      | player | blind_type | amount | remaining_chips |
+      | Alpha  | small      | 5      | 195            |
+      | Beta   | big        | 10     | 190            |
+    
+    # Fast-track to game completion for countdown testing
+    When all players fold except one
+    Then the hand should complete quickly
+    And the winner should be determined and pot distributed
+
+    # Test 15-Second Countdown Break
+    Then there should be a 15-second countdown break before the next game
+    And all players should see the countdown timer
+    And the countdown should display remaining time
+    And the countdown should show approximately 15 seconds initially
+    And the countdown should decrease over time
+    When the countdown reaches zero
+    Then the next game should be ready to start
+    And the dealer button should have moved to the next position
+    And all players should be ready for the next hand
+
+    # Verify Second Game Starts Properly
+    When the second game begins automatically
+    Then blinds should be posted for the new hand
+    And all players should receive new hole cards
+    And the game state should be fresh and ready
 
   @multi-browser @stress-test-actions
   Scenario: High-Frequency Action Execution Across Multiple Games
