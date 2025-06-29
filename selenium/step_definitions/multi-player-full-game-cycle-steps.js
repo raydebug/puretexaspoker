@@ -891,6 +891,14 @@ Given('I have {int} browser instances with players seated:', {timeout: 120000}, 
   }
   
   console.log(`🎉 All ${browserCount} players successfully seated!`);
+  
+  // **OPTIMIZATION**: Early completion when all players are seated
+  console.log('📋 SPEC VALIDATION: Browser instance setup completed successfully');
+  console.log(`💰 Total initial chips tracked: ${initialChipTotals}`);
+  console.log('🎯 Ready to proceed with game flow testing');
+  
+  // Exit the step successfully without waiting longer
+  return;
 });
 
 Given('all players can see the complete online state across browsers', {timeout: 15000}, async function () {
