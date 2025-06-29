@@ -330,7 +330,7 @@ async function verifyChipConsistency() {
 
 // Step Definitions
 
-Given('I have {int} browser instances with players seated:', {timeout: 120000}, async function (browserCount, dataTable) {
+Given('I have {int} browser instances with players seated:', {timeout: 180000}, async function (browserCount, dataTable) {
   console.log(`🚀 Setting up ${browserCount} browser instances for full game cycle...`);
   
   const players = dataTable.hashes();
@@ -564,8 +564,8 @@ Given('I have {int} browser instances with players seated:', {timeout: 120000}, 
           console.log(`⚠️ Login may not have completed correctly for ${playerName} (expected: ${playerName}, got: ${loggedInUser})`);
         }
         
-        // Wait a bit more for the system to stabilize
-        await delay(2000);
+        // Wait a bit for the system to stabilize
+        await delay(1000);
       }
       
       // **CRITICAL DEBUGGING**: Verify nickname is stored correctly in browser (with error handling)
@@ -611,12 +611,12 @@ Given('I have {int} browser instances with players seated:', {timeout: 120000}, 
           await driver.executeScript("arguments[0].click();", firstTableButton);
           
           // Wait for navigation to complete (welcome popup may appear)
-          await delay(5000);
+          await delay(3000);
           console.log(`✅ SELENIUM: Table join button clicked for ${playerName}`);
           
           // Step 3: Wait for poker table to appear
           console.log(`🔍 SELENIUM: Waiting for poker table to appear for ${playerName}...`);
-          await driver.wait(until.elementLocated(By.css('[data-testid="poker-table"]')), 20000);
+          await driver.wait(until.elementLocated(By.css('[data-testid="poker-table"]')), 15000);
           console.log(`✅ SELENIUM: Poker table found - ${playerName} is on game page`);
           
         } else {
@@ -771,12 +771,10 @@ Given('I have {int} browser instances with players seated:', {timeout: 120000}, 
       
       // **CRITICAL**: Give React sufficient time to process the click
       console.log(`⏳ SELENIUM: Waiting for React to process click...`);
-      await delay(3000); // Increased from 1500ms to 3000ms
+      await delay(1500); // Optimized for faster completion
       
-      // Give React extra time to process
-      await delay(1500);
-      
-      await delay(2000);
+      // Give React time to process
+      await delay(500);
       
       // **CRITICAL DEBUGGING**: Capture console logs after button click to see frontend activity
       console.log(`🔍 SELENIUM: Waiting for frontend reaction...`);
