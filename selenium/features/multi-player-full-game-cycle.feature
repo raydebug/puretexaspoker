@@ -248,4 +248,73 @@ Feature: Multi-Player Full Game Cycle with Comprehensive Actions
       | browser_sync_delay     | < 1s      |
       | memory_usage_stable    | true      |
     And all browser instances should remain responsive
-    And no memory leaks should occur 
+    And no memory leaks should occur
+
+  @multi-browser @page-refresh-persistence
+  Scenario: Cross-Browser Online State Consistency During Page Refresh
+    Given I have 4 browser instances with players online:
+      | player    | browser | seat | status    | chips |
+      | Refresh1  | 1       | 1    | seated    | 300   |
+      | Refresh2  | 2       | 3    | seated    | 250   |
+      | Observer1 | 3       | null | observing | 0     |
+      | Observer2 | 4       | null | observing | 0     |
+    And all players can see the complete online state across browsers
+    And the online user count shows 4 users in all browser instances
+    And all seated players are visible in all browsers
+    And all observers are visible in all browsers
+
+    # Test 1: Seated Player Page Refresh
+    When "Refresh1" refreshes their browser page
+    Then "Refresh1" should be automatically reconnected to their seat
+    And "Refresh1" should still be in seat 1 with 300 chips
+    And the online user count should remain 4 in all browsers
+    And all other browsers should show "Refresh1" as still seated
+    And no players should appear as disconnected in any browser
+    And the game state should be identical across all browsers
+
+    # Test 2: Observer Page Refresh  
+    When "Observer1" refreshes their browser page
+    Then "Observer1" should be automatically reconnected as observer
+    And the online user count should remain 4 in all browsers
+    And all browsers should show "Observer1" in the observers list
+    And seated players should remain unchanged in all browsers
+    And the UI state should be consistent across all browsers
+
+    # Test 3: Multiple Simultaneous Refreshes
+    When "Refresh2" and "Observer2" refresh their browsers simultaneously
+    Then both should be automatically reconnected within 5 seconds
+    And the online user count should remain 4 in all browsers
+    And "Refresh2" should still be in seat 3 with 250 chips
+    And "Observer2" should still be in the observers list
+    And no temporary disconnections should be visible in any browser
+    And all game data should remain synchronized
+
+    # Test 4: Refresh During Active Game
+    Given the game is actively running with current player "Refresh1"
+    When "Refresh1" refreshes during their turn
+    Then "Refresh1" should be reconnected and it's still their turn
+    And action buttons should be immediately available to "Refresh1"
+    And other browsers should show "Refresh1" as the current player
+    And the turn timer should continue correctly in all browsers
+    And the game flow should not be interrupted
+
+    # Test 5: Network Quality Variations
+    When "Refresh1" has a slow page reload (simulated 8-second load)
+    Then other browsers should show "Refresh1" as temporarily away
+    And the online count should remain 4 but with status indicators
+    When "Refresh1" fully reconnects after the slow load
+    Then all browsers should show "Refresh1" as fully connected
+    And the status indicators should clear in all browsers
+    And the game state should be perfectly restored
+
+    # Final Verification
+    Then after all refresh tests:
+      | verification_type        | expected_result |
+      | total_online_users       | 4              |
+      | seated_players_count     | 2              |
+      | observers_count          | 2              |
+      | ui_consistency          | true           |
+      | no_phantom_disconnects  | true           |
+      | state_synchronization   | perfect        |
+    And all browser instances should show identical online states
+    And no refresh artifacts should be visible in any browser 
