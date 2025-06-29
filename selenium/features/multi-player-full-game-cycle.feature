@@ -317,4 +317,139 @@ Feature: Multi-Player Full Game Cycle with Comprehensive Actions
       | no_phantom_disconnects  | true           |
       | state_synchronization   | perfect        |
     And all browser instances should show identical online states
-    And no refresh artifacts should be visible in any browser 
+    And no refresh artifacts should be visible in any browser
+
+  @multi-browser @action-history-consistency
+  Scenario: Cross-Browser Action History Consistency and Updates
+    Given I have 3 browser instances with players seated:
+      | player     | browser | seat | initial_chips |
+      | ActionTest1| 1       | 1    | 400          |
+      | ActionTest2| 2       | 2    | 400          |
+      | ActionTest3| 3       | 3    | 400          |
+    And all players can see the initial seating arrangement
+    And all players have their starting chip counts verified
+    And all browser instances show empty action history
+
+    # Test 1: Basic Action History Cross-Browser Verification
+    When the game starts automatically with enough players
+    Then the game should start in all browser instances
+    And action history should be initialized in all browsers
+    
+    When blinds are posted correctly:
+      | player      | blind_type | amount |
+      | ActionTest1 | small      | 5      |
+      | ActionTest2 | big        | 10     |
+    Then all browser instances should show identical action history:
+      | action_type | player      | amount | description              |
+      | blind       | ActionTest1 | 5      | ActionTest1 posts small blind |
+      | blind       | ActionTest2 | 10     | ActionTest2 posts big blind   |
+    And action history timestamps should be synchronized across browsers
+    And action history order should be identical in all browsers
+
+    # Test 2: Player Actions Cross-Browser Real-Time Updates
+    When "ActionTest3" performs a "call" action with amount 10
+    Then all browser instances should immediately show:
+      | player      | action | amount | position_in_history |
+      | ActionTest3 | call   | 10     | 3                   |
+    And action history should be updated within 2 seconds in all browsers
+    And no browser should show stale action history
+    
+    When "ActionTest1" performs a "raise" action with amount 25
+    Then all browser instances should immediately show:
+      | player      | action | amount | position_in_history |
+      | ActionTest1 | raise  | 25     | 4                   |
+    And all browsers should show total 4 actions in history
+    And action timestamps should be identical across browsers
+    And action sequence should be preserved across browsers
+
+    # Test 3: Multiple Rapid Actions Consistency
+    When players perform rapid actions sequence:
+      | player      | action | amount | delay_ms |
+      | ActionTest2 | call   | 25     | 500      |
+      | ActionTest3 | call   | 15     | 300      |
+      | ActionTest1 | check  | 0      | 200      |
+    Then all browser instances should show consistent action history:
+      | sequence | player      | action | amount |
+      | 5        | ActionTest2 | call   | 25     |
+      | 6        | ActionTest3 | call   | 15     |
+      | 7        | ActionTest1 | check  | 0      |
+    And no race conditions should occur in action history updates
+    And action history should be synchronized within 1 second across browsers
+    And all browsers should show identical total action count
+
+    # Test 4: Game Phase Transitions with Action History
+    When the flop is dealt with 3 community cards
+    Then all browser instances should show flop phase in action history
+    And previous preflop actions should remain visible in all browsers
+    And action history should clearly separate phases in all browsers
+    
+    When "ActionTest1" performs a "bet" action with amount 50
+    And "ActionTest2" performs a "fold" action
+    And "ActionTest3" performs a "call" action with amount 50
+    Then all browser instances should show complete action sequence:
+      | phase   | player      | action | amount |
+      | preflop | ActionTest1 | small  | 5      |
+      | preflop | ActionTest2 | big    | 10     |
+      | preflop | ActionTest3 | call   | 10     |
+      | preflop | ActionTest1 | raise  | 25     |
+      | preflop | ActionTest2 | call   | 25     |
+      | preflop | ActionTest3 | call   | 15     |
+      | preflop | ActionTest1 | check  | 0      |
+      | flop    | ActionTest1 | bet    | 50     |
+      | flop    | ActionTest2 | fold   | 0      |
+      | flop    | ActionTest3 | call   | 50     |
+    And action history should preserve chronological order across phases
+    And all browsers should show identical multi-phase action history
+
+    # Test 5: Action History During Page Refresh
+    When "ActionTest1" refreshes their browser page
+    Then "ActionTest1" should see complete action history after reconnection
+    And action history should be identical to other browsers
+    And no actions should be missing from "ActionTest1" browser
+    And action timestamps should remain consistent after refresh
+    And action sequence should be preserved after refresh
+
+    # Test 6: Observer Action History Verification
+    Given "Observer1" joins as observer
+    Then "Observer1" should see complete action history from game start
+    And "Observer1" action history should match seated players' history
+    When "ActionTest3" performs a "raise" action with amount 100
+    Then "Observer1" should see the raise action immediately
+    And observer action history should update in real-time
+
+    # Test 7: Action History During Disconnection Scenarios
+    When "ActionTest2" temporarily disconnects for 3 seconds
+    And "ActionTest3" performs a "check" action during disconnection
+    And "ActionTest2" reconnects
+    Then "ActionTest2" should see all actions that occurred during disconnection
+    And action history should be complete and consistent across all browsers
+    And no phantom actions should appear in any browser
+
+    # Test 8: Complex Betting Round Action History
+    When the turn card is dealt
+    And players execute complex betting sequence:
+      | player      | action | amount | creates_side_pot |
+      | ActionTest1 | all-in | 320    | false           |
+      | ActionTest3 | call   | 320    | true            |
+    Then all browser instances should show side pot actions correctly:
+      | action_type | player      | amount | side_pot_info       |
+      | all-in      | ActionTest1 | 320    | main pot: $470      |
+      | call        | ActionTest3 | 320    | side pot created    |
+    And side pot information should be consistent across browsers
+    And action history should clearly indicate pot distributions
+
+    # Final Comprehensive Verification
+    Then after all action history tests:
+      | verification_type              | expected_result |
+      | total_actions_all_browsers     | identical       |
+      | action_timestamps_sync         | synchronized    |
+      | action_sequence_order          | identical       |
+      | phase_separation               | clear           |
+      | side_pot_tracking              | accurate        |
+      | observer_history_completeness  | 100%            |
+      | refresh_history_persistence    | complete        |
+      | disconnection_recovery         | seamless        |
+    And all browser instances should show identical final action history
+    And action history data integrity should be maintained
+    And no duplicate or missing actions should exist in any browser
+    And action history performance should be optimal across browsers 
