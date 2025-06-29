@@ -15,6 +15,36 @@ import { prisma } from './db';
 import { tableManager } from './services/TableManager';
 import { locationManager } from './services/LocationManager';
 
+// Clean up stale test data from previous runs
+async function cleanupTestData() {
+  try {
+    console.log('🧹 Cleaning up stale test data from previous runs...');
+    
+    // Clear all player-table relationships that might be stale
+    const deletedPlayerTables = await prisma.playerTable.deleteMany({
+      where: {}
+    });
+    console.log(`🗑️ Deleted ${deletedPlayerTables.count} stale player-table records`);
+    
+    // Clear any test-related games that might be stale (keep only active games)
+    const deletedGames = await prisma.game.deleteMany({
+      where: {
+        OR: [
+          { status: 'waiting' },
+          { status: 'finished' },
+          { status: 'cancelled' }
+        ]
+      }
+    });
+    console.log(`🗑️ Deleted ${deletedGames.count} stale game records`);
+    
+    console.log('✅ Test data cleanup completed successfully!');
+  } catch (error) {
+    console.error('❌ Error during test data cleanup:', error);
+    // Don't fail server startup for cleanup issues
+  }
+}
+
 // Create default tables for testing
 async function createDefaultTables() {
   try {
@@ -105,16 +135,28 @@ registerConsolidatedHandlers(io);
 // Standardized error handling middleware
 app.use(errorHandler);
 
-// Initialize default tables and start server
-createDefaultTables().then(async () => {
-  // Initialize location manager
-  await locationManager.initialize();
-  
-  httpServer.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
-    console.log('Using consolidated WebSocket handler system');
-  });
-}).catch(error => {
-  console.error('Failed to initialize server:', error);
-  process.exit(1);
-});
+// Initialize server with cleanup, tables, and location manager
+async function initializeServer() {
+  try {
+    // Step 1: Clean up stale test data
+    await cleanupTestData();
+    
+    // Step 2: Create default tables if needed
+    await createDefaultTables();
+    
+    // Step 3: Initialize location manager
+    await locationManager.initialize();
+    
+    // Step 4: Start server
+    httpServer.listen(port, () => {
+      console.log(`Server is running on port ${port}`);
+      console.log('Using consolidated WebSocket handler system');
+    });
+  } catch (error) {
+    console.error('Failed to initialize server:', error);
+    process.exit(1);
+  }
+}
+
+// Start the server
+initializeServer();

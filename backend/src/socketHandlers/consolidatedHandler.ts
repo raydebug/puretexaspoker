@@ -573,36 +573,50 @@ export function registerConsolidatedHandlers(io: Server) {
           throw new Error(`Buy-in must be between ${lobbyTable.minBuyIn} and ${lobbyTable.maxBuyIn}`);
         }
 
-        // **CRITICAL FIX**: Use database transaction for atomic seat management
+        // **CRITICAL FIX**: Use database transaction for atomic seat management with comprehensive debugging
+        console.log(`[CONSOLIDATED] Starting database transaction for ${socket.data.nickname} taking seat ${seatNumber}`);
+        
         await prisma.$transaction(async (tx) => {
-          // **ENHANCED**: Clean up ANY existing seat for this player at this table FIRST
-          await tx.playerTable.deleteMany({
+          // **STEP 1**: Log what exists before cleanup
+          const beforeCleanup = await tx.playerTable.findMany({
+            where: { tableId: socket.data.dbTableId },
+            select: { playerId: true, seatNumber: true }
+          });
+          console.log(`[CONSOLIDATED] Before cleanup - existing seats at table:`, beforeCleanup);
+          
+          // **STEP 2**: Clean up ANY existing seat for this player at this table FIRST
+          const deletedPlayerRecords = await tx.playerTable.deleteMany({
             where: { 
               playerId: socket.data.playerId,
               tableId: socket.data.dbTableId 
             }
           });
+          console.log(`[CONSOLIDATED] Deleted ${deletedPlayerRecords.count} existing records for player ${socket.data.nickname}`);
 
-          // Check seat availability AFTER cleanup (within transaction)
-          const existingPlayerTable = await tx.playerTable.findFirst({
-            where: { tableId: socket.data.dbTableId, seatNumber }
+          // **STEP 3**: Check what exists at the target seat specifically
+          const seatOccupant = await tx.playerTable.findFirst({
+            where: { tableId: socket.data.dbTableId, seatNumber },
+            select: { playerId: true, seatNumber: true }
           });
+          console.log(`[CONSOLIDATED] Seat ${seatNumber} current occupant:`, seatOccupant);
 
-          // **FIX**: Only block if another player (not this player) has the seat
-          if (existingPlayerTable && existingPlayerTable.playerId !== socket.data.playerId) {
+          // **STEP 4**: Only block if another player (not this player) has the seat
+          if (seatOccupant && seatOccupant.playerId !== socket.data.playerId) {
+            console.log(`[CONSOLIDATED] BLOCKING: Seat ${seatNumber} is occupied by different player ${seatOccupant.playerId}`);
             throw new Error(`Seat ${seatNumber} is already taken by another player`);
           }
 
-          // **SAFETY**: Remove any stale records at this specific seat
-          await tx.playerTable.deleteMany({
+          // **STEP 5**: Remove any remaining stale records at this specific seat (redundant but safe)
+          const deletedSeatRecords = await tx.playerTable.deleteMany({
             where: { 
               tableId: socket.data.dbTableId,
               seatNumber 
             }
           });
+          console.log(`[CONSOLIDATED] Cleaned ${deletedSeatRecords.count} stale records from seat ${seatNumber}`);
 
-          // Create new seat record (within transaction)
-          await tx.playerTable.create({
+          // **STEP 6**: Create new seat record
+          const newRecord = await tx.playerTable.create({
             data: {
               playerId: socket.data.playerId,
               tableId: socket.data.dbTableId,
@@ -610,7 +624,17 @@ export function registerConsolidatedHandlers(io: Server) {
               buyIn
             }
           });
+          console.log(`[CONSOLIDATED] Created new seat record:`, { playerId: newRecord.playerId, seatNumber: newRecord.seatNumber, buyIn: newRecord.buyIn });
+          
+          // **STEP 7**: Verify final state
+          const afterTransaction = await tx.playerTable.findMany({
+            where: { tableId: socket.data.dbTableId },
+            select: { playerId: true, seatNumber: true }
+          });
+          console.log(`[CONSOLIDATED] After transaction - all seats at table:`, afterTransaction);
         });
+        
+        console.log(`[CONSOLIDATED] Database transaction completed successfully for ${socket.data.nickname} at seat ${seatNumber}`);
 
         // Get game service (gameManager is source of truth)
         const gameService = gameManager.getGame(socket.data.gameId);
