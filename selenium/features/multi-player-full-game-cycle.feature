@@ -323,9 +323,9 @@ Feature: Multi-Player Full Game Cycle with Comprehensive Actions
   Scenario: Cross-Browser Action History Consistency and Updates
     Given I have 3 browser instances with players seated:
       | player     | browser | seat | initial_chips |
-      | ActionTest1| 1       | 1    | 400          |
-      | ActionTest2| 2       | 2    | 400          |
-      | ActionTest3| 3       | 3    | 400          |
+      | ActionTest1| 1       | 1    | 150          |
+      | ActionTest2| 2       | 2    | 150          |
+      | ActionTest3| 3       | 3    | 150          |
     And all players can see the initial seating arrangement
     And all players have their starting chip counts verified
     And all browser instances show empty action history
