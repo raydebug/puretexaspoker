@@ -486,8 +486,11 @@ export function registerConsolidatedHandlers(io: Server) {
         if (!gameId || !tableId || !dbTableId || !nickname || !playerId) {
           console.log(`[CONSOLIDATED] Missing session data, attempting to recover...`);
           
-          // Try to recover session data from authenticated users
+          // Enhanced session recovery attempt
           let recoveredNickname = null;
+          let sessionRecovered = false;
+          
+          // Method 1: Try to recover from authenticated users
           for (const [nick, user] of authenticatedUsers.entries()) {
             if (user.socketId === socket.id) {
               recoveredNickname = nick;
@@ -498,10 +501,12 @@ export function registerConsolidatedHandlers(io: Server) {
           if (recoveredNickname) {
             console.log(`[CONSOLIDATED] Found authenticated user: ${recoveredNickname}, attempting session recovery`);
             
-            // Try to find active table/game for this user
+            // Try to find user's current location
             const userLocation = await locationManager.getUserLocation(socket.id);
             if (userLocation && userLocation.table) {
-              // Reconstruct session data
+              console.log(`[CONSOLIDATED] Found user location: table ${userLocation.table}`);
+              
+              // Reconstruct session data from location
               const lobbyTable = tableManager.getTable(userLocation.table);
               if (lobbyTable) {
                 // Find database table
@@ -528,17 +533,93 @@ export function registerConsolidatedHandlers(io: Server) {
                     socket.data.nickname = recoveredNickname;
                     socket.data.playerId = socket.id;
                     
+                    sessionRecovered = true;
                     console.log(`[CONSOLIDATED] Session data recovered successfully for ${recoveredNickname}`);
+                  } else {
+                    console.log(`[CONSOLIDATED] No active game found for table ${dbTable.id}`);
+                  }
+                } else {
+                  console.log(`[CONSOLIDATED] Database table not found: ${dbTableName}`);
+                }
+              } else {
+                console.log(`[CONSOLIDATED] Lobby table not found: ${userLocation.table}`);
+              }
+            } else {
+              console.log(`[CONSOLIDATED] User location not found or user not at a table`);
+            }
+          } else {
+            console.log(`[CONSOLIDATED] No authenticated user found for socket ${socket.id}`);
+          }
+          
+          // Method 2: If no authenticated user found, try to find any existing player record
+          if (!sessionRecovered && !recoveredNickname) {
+            console.log(`[CONSOLIDATED] Attempting alternative recovery method...`);
+            
+            try {
+              const playerRecord = await prisma.player.findUnique({
+                where: { id: socket.id }
+              });
+              
+              if (playerRecord) {
+                console.log(`[CONSOLIDATED] Found player record: ${playerRecord.nickname}`);
+                
+                // Check if player has any active table assignments
+                const playerTable = await prisma.playerTable.findFirst({
+                  where: { playerId: socket.id },
+                  include: { table: true }
+                });
+                
+                if (playerTable) {
+                  // Find the lobby table ID from database table name
+                  const tableNameMatch = playerTable.table.name.match(/\(ID: (\d+)\)$/);
+                  if (tableNameMatch) {
+                    const lobbyTableId = parseInt(tableNameMatch[1]);
+                    
+                    // Find active game for this table
+                    const existingGame = await prisma.game.findFirst({
+                      where: {
+                        tableId: playerTable.table.id,
+                        status: { in: ['waiting', 'active'] }
+                      }
+                    });
+                    
+                    if (existingGame) {
+                      // Restore session data
+                      socket.data.buyIn = buyIn || playerTable.buyIn || 200;
+                      socket.data.gameId = existingGame.id;
+                      socket.data.tableId = lobbyTableId;
+                      socket.data.dbTableId = playerTable.table.id;
+                      socket.data.nickname = playerRecord.nickname;
+                      socket.data.playerId = socket.id;
+                      
+                      sessionRecovered = true;
+                      console.log(`[CONSOLIDATED] Session data recovered via player table for ${playerRecord.nickname}`);
+                    }
                   }
                 }
               }
+            } catch (recoveryError) {
+              console.log(`[CONSOLIDATED] Alternative recovery failed: ${recoveryError}`);
             }
           }
           
-          // Final validation after recovery attempt
+          // Final validation after enhanced recovery attempt
           const { gameId: finalGameId, tableId: finalTableId, dbTableId: finalDbTableId, nickname: finalNickname, playerId: finalPlayerId } = socket.data;
           if (!finalGameId || !finalTableId || !finalDbTableId || !finalNickname || !finalPlayerId) {
-            throw new Error('Invalid session data. Please rejoin the table.');
+            // Provide detailed error information
+            const missingFields = [];
+            if (!finalGameId) missingFields.push('gameId');
+            if (!finalTableId) missingFields.push('tableId');
+            if (!finalDbTableId) missingFields.push('dbTableId');
+            if (!finalNickname) missingFields.push('nickname');
+            if (!finalPlayerId) missingFields.push('playerId');
+            
+            console.log(`[CONSOLIDATED] Session recovery failed. Missing fields: ${missingFields.join(', ')}`);
+            console.log(`[CONSOLIDATED] User must join a table first before taking a seat`);
+            
+            throw new Error(`Invalid session data. Please rejoin the table first. Missing: ${missingFields.join(', ')}`);
+          } else {
+            console.log(`[CONSOLIDATED] Session recovery successful!`);
           }
         }
 

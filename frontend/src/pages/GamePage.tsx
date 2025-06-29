@@ -258,6 +258,15 @@ const GamePage: React.FC = () => {
         
         socketService.onError(errorHandler);
         
+        // Set up seat error handler
+        const seatErrorHandler = (error: string) => {
+          console.log('DEBUG: GamePage seatErrorHandler called with:', error);
+          setError(`Seat Error: ${error}`);
+          setIsObserver(true); // Reset to observer state on seat error
+        };
+        
+        socketService.onSeatError(seatErrorHandler);
+        
         // Listen for observer updates
         socketService.onOnlineUsersUpdate((playersOrTotal: Player[] | number, observerList?: string[]) => {
           console.log('🎯 GamePage: Received online users update:', { playersOrTotal, observerList });
@@ -401,7 +410,7 @@ const GamePage: React.FC = () => {
   };
 
   // Function to handle buy-in confirmation from dialog
-  const handleSeatConfirm = (buyInAmount: number) => {
+  const handleSeatConfirm = async (buyInAmount: number) => {
     if (selectedSeat === null) return;
     
     const nickname = localStorage.getItem('nickname') || 'Player' + Math.floor(Math.random() * 1000);
@@ -410,11 +419,35 @@ const GamePage: React.FC = () => {
     setShowSeatDialog(false);
     setSelectedSeat(null);
     
-    // Set isObserver to false immediately when taking a seat
-    setIsObserver(false);
-    
-    // Request the seat with selected buy-in using the new takeSeat method
-    socketService.takeSeat(selectedSeat, buyInAmount);
+    try {
+      // **CRITICAL FIX**: Ensure user is properly joined to table before taking seat
+      const currentUserSeat = socketService.getCurrentSeat();
+      
+      console.log(`🎯 GamePage: handleSeatConfirm - currentUserSeat: ${currentUserSeat}`);
+      console.log(`🎯 GamePage: handleSeatConfirm - attempting to take seat ${selectedSeat} with buyIn ${buyInAmount}`);
+      
+      // If user doesn't have a seat (not at table), join as observer first
+      if (currentUserSeat === null && gameId) {
+        console.log(`🎯 GamePage: User not at table, joining table ${gameId} as observer first`);
+        socketService.joinTable(parseInt(gameId), buyInAmount);
+        
+        // Wait a bit for join to complete
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
+      // Set isObserver to false immediately when taking a seat
+      setIsObserver(false);
+      
+      // Now request the seat with selected buy-in
+      console.log(`🎯 GamePage: Calling takeSeat with seat ${selectedSeat}, buyIn ${buyInAmount}`);
+      socketService.takeSeat(selectedSeat, buyInAmount);
+      
+    } catch (error) {
+      console.error('🎯 GamePage: Error in handleSeatConfirm:', error);
+      setError(`Failed to take seat: ${error}`);
+      setIsObserver(true); // Reset to observer if seat taking fails
+      return;
+    }
     
     // In test mode, simulate taking the seat
     const isTestMode = (typeof navigator !== 'undefined' && navigator.webdriver);
