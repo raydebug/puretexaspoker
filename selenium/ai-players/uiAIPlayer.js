@@ -446,9 +446,93 @@ class UIAIPlayer {
       const logsBefore = await this.driver.manage().logs().get('browser');
       console.log(`🔍 Browser logs before confirm click: ${logsBefore.length} entries`);
       
-      // Click the confirm button
-      await confirmButton.click();
-      console.log(`✅ AI ${this.config.name} clicked confirm button`);
+      // Check button state before clicking
+      const buttonState = await this.driver.executeScript(`
+        const button = arguments[0];
+        return {
+          disabled: button.disabled,
+          textContent: button.textContent,
+          hasOnClick: typeof button.onclick === 'function',
+          hasEventListeners: button._reactInternalFiber ? 'react-fiber-present' : 'no-react-fiber',
+          className: button.className,
+          dataTestId: button.getAttribute('data-testid')
+        };
+      `, confirmButton);
+      
+      console.log(`🔍 Button state before click:`, buttonState);
+      
+      // Add extra delay to ensure React event handlers are attached
+      await this.delay(1000);
+      
+      // Click the confirm button with JavaScript to ensure event firing
+      await this.driver.executeScript(`
+        const button = arguments[0];
+        console.log('🔘 AI: About to click confirm button via JavaScript');
+        console.log('🔘 AI: Button element:', button);
+        console.log('🔘 AI: Button disabled:', button.disabled);
+        console.log('🔘 AI: Button text:', button.textContent);
+        
+        // Try multiple approaches to trigger the React onClick handler
+        
+        // Method 1: Standard click
+        button.click();
+        
+        // Method 2: Dispatch synthetic click event
+        const clickEvent = new MouseEvent('click', {
+          view: window,
+          bubbles: true,
+          cancelable: true
+        });
+        button.dispatchEvent(clickEvent);
+        
+        // Method 3: Try to find and call React event handlers directly
+        try {
+          // Look for React fiber and event handlers
+          const reactFiber = button._reactInternalFiber || 
+                            button._reactInternalInstance ||
+                            Object.keys(button).find(key => key.startsWith('__reactInternalInstance'));
+          
+          if (reactFiber) {
+            console.log('🔘 AI: Found React fiber, attempting direct handler call');
+            
+            // Try to find onClick handler in props
+            let fiberNode = typeof reactFiber === 'string' ? button[reactFiber] : reactFiber;
+            while (fiberNode) {
+              if (fiberNode.memoizedProps && fiberNode.memoizedProps.onClick) {
+                console.log('🔘 AI: Found onClick in memoizedProps, calling directly');
+                fiberNode.memoizedProps.onClick({ preventDefault: () => {}, stopPropagation: () => {} });
+                break;
+              }
+              if (fiberNode.return) {
+                fiberNode = fiberNode.return;
+              } else {
+                break;
+              }
+            }
+          } else {
+            console.log('🔘 AI: No React fiber found, trying DOM event listeners');
+            
+            // Try to trigger any event listeners on the button
+            const listeners = button.getEventListeners ? button.getEventListeners('click') : [];
+            if (listeners && listeners.length > 0) {
+              console.log('🔘 AI: Found DOM event listeners, calling first one');
+              listeners[0].listener({ preventDefault: () => {}, stopPropagation: () => {} });
+            }
+          }
+        } catch (reactError) {
+          console.log('🔘 AI: React handler search failed:', reactError.message);
+        }
+        
+        // Method 4: Try jQuery-style trigger if available
+        if (window.$ && window.$(button).trigger) {
+          console.log('🔘 AI: Trying jQuery trigger');
+          window.$(button).trigger('click');
+        }
+        
+        console.log('🔘 AI: All confirm button click methods attempted');
+      `, confirmButton);
+      
+      console.log(`✅ AI ${this.config.name} clicked confirm button with enhanced event dispatch`);
       
       // Wait a bit for any WebSocket responses
       await this.delay(2000);
@@ -458,17 +542,24 @@ class UIAIPlayer {
       const newLogs = logsAfter.slice(logsBefore.length);
       console.log(`🔍 New browser logs after confirm click: ${newLogs.length} entries`);
       
-      // Show relevant logs
+      // Show relevant logs with detailed error information
       newLogs.forEach(log => {
         if (log.message.includes('takeSeat') || 
             log.message.includes('seatTaken') || 
             log.message.includes('seatError') ||
             log.message.includes('WebSocket') ||
             log.message.includes('socket') ||
-            log.level.name === 'SEVERE') {
-          console.log(`🔍 Relevant log: ${log.level.name}: ${log.message}`);
+            log.message.includes('error') ||
+            log.level.name === 'SEVERE' ||
+            log.level.name === 'WARNING') {
+          console.log(`🔍 Relevant log [${log.level.name}]: ${log.message}`);
         }
       });
+      
+      // Capture any socket error details
+      if (newLogs.length === 0) {
+        console.log(`🔍 No new browser console logs - this might indicate the takeSeat event was not processed`);
+      }
       
       // **CRITICAL**: Manually trigger takeSeat via the existing authenticated WebSocket
       // Use the existing socketService connection instead of creating a new one
@@ -508,8 +599,37 @@ class UIAIPlayer {
         }
       `, seatNumber, 150); // Pass seat number and buy-in
       
-      // Wait for WebSocket response
+      // Wait for WebSocket response and capture any errors
       await this.delay(3000);
+      
+      // Check for specific socket errors or responses
+      const socketResponse = await this.driver.executeScript(`
+        const logs = [];
+        
+        // Check for any recent socket events or errors
+        if (window.socketService && window.socketService.getSocket) {
+          const socket = window.socketService.getSocket();
+          logs.push('Socket connected: ' + socket.connected);
+          logs.push('Socket ID: ' + socket.id);
+        }
+        
+        // Check localStorage for any error states
+        const errorStates = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (key.includes('error') || key.includes('seat') || key.includes('game'))) {
+            errorStates.push(key + ': ' + localStorage.getItem(key));
+          }
+        }
+        
+        return {
+          socketInfo: logs,
+          errorStates: errorStates,
+          timestamp: new Date().toISOString()
+        };
+      `);
+      
+      console.log(`🔍 Post-takeSeat socket analysis:`, socketResponse);
       
     } catch (error) {
       console.error(`❌ Seat confirmation failed for ${this.config.name}: ${error.message}`);
