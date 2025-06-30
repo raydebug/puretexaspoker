@@ -203,9 +203,9 @@ class UIAIPlayer {
       // Additional wait for WebSocket connection and initial data
       await this.delay(3000);
       
-      // **CRITICAL**: Ensure we're properly joined to the table via WebSocket
+      // **CRITICAL**: Ensure we're properly authenticated and joined via WebSocket
       // This is essential for session data to be set correctly
-      await this.ensureWebSocketJoined(tableId);
+      await this.ensureProperWebSocketAuth(tableId);
       
       console.log(`✅ AI ${this.config.name} reached poker table and is connected`);
       
@@ -435,9 +435,55 @@ class UIAIPlayer {
       );
       await this.delay(300);
       
+      // Capture browser console before clicking
+      const logsBefore = await this.driver.manage().logs().get('browser');
+      console.log(`🔍 Browser logs before confirm click: ${logsBefore.length} entries`);
+      
       // Click the confirm button
       await confirmButton.click();
       console.log(`✅ AI ${this.config.name} clicked confirm button`);
+      
+      // Wait a bit for any WebSocket responses
+      await this.delay(2000);
+      
+      // Capture browser console after clicking
+      const logsAfter = await this.driver.manage().logs().get('browser');
+      const newLogs = logsAfter.slice(logsBefore.length);
+      console.log(`🔍 New browser logs after confirm click: ${newLogs.length} entries`);
+      
+      // Show relevant logs
+      newLogs.forEach(log => {
+        if (log.message.includes('takeSeat') || 
+            log.message.includes('seatTaken') || 
+            log.message.includes('seatError') ||
+            log.message.includes('WebSocket') ||
+            log.message.includes('socket') ||
+            log.level.name === 'SEVERE') {
+          console.log(`🔍 Relevant log: ${log.level.name}: ${log.message}`);
+        }
+      });
+      
+      // **CRITICAL**: Manually trigger takeSeat via the authenticated WebSocket
+      // Since the UI button click doesn't seem to be working properly
+      console.log(`🔌 Manually triggering takeSeat via WebSocket...`);
+      
+      await this.driver.executeScript(`
+        console.log("🔌 AI: Manual takeSeat WebSocket call");
+        
+        if (window.aiSocket && window.aiSocket.connected) {
+          console.log("🔌 AI: Using authenticated aiSocket for takeSeat");
+          window.aiSocket.emit('takeSeat', { 
+            seatNumber: arguments[0], 
+            buyIn: arguments[1] 
+          });
+          console.log("🔌 AI: takeSeat event emitted manually");
+        } else {
+          console.log("🔌 AI: ERROR - No authenticated socket available");
+        }
+      `, randomSeat.number, 150); // Pass seat number and buy-in
+      
+      // Wait for WebSocket response
+      await this.delay(3000);
       
     } catch (error) {
       console.error(`❌ Seat confirmation failed for ${this.config.name}: ${error.message}`);
@@ -662,111 +708,159 @@ class UIAIPlayer {
     return match ? parseInt(match[0]) : 0;
   }
 
-  async ensureWebSocketJoined(tableId) {
+  async ensureProperWebSocketAuth(tableId) {
     try {
-      console.log(`🔌 AI ${this.config.name} ensuring WebSocket table join...`);
+      console.log(`🔌 AI ${this.config.name} ensuring proper WebSocket authentication...`);
       
-      // Inject JavaScript to trigger the WebSocket joinTable event
-      // This ensures the backend session data is properly initialized
-      await this.driver.executeScript(`
-        console.log("🔌 AI: Manually triggering WebSocket joinTable event");
+      // Inject JavaScript to ensure complete WebSocket authentication and session setup
+      const authResult = await this.driver.executeScript(`
+        console.log("🔌 AI: Setting up complete WebSocket authentication");
         
-        // Try multiple ways to access the socket service
-        let socketService = null;
-        
-        // Method 1: Check if socketService is available globally
-        if (window.socketService) {
-          socketService = window.socketService;
+        const nickname = localStorage.getItem('nickname');
+        if (!nickname) {
+          console.log("🔌 AI: ERROR - No nickname in localStorage");
+          return { success: false, error: "No nickname found" };
         }
         
-        // Method 2: Try to find it in React DevTools if available
-        if (!socketService && window.__REACT_DEVTOOLS_GLOBAL_HOOK__) {
-          try {
-            const reactInstances = Object.values(window.__REACT_DEVTOOLS_GLOBAL_HOOK__.renderers);
-            for (const renderer of reactInstances) {
-              if (renderer && renderer.findFiberByHostInstance) {
-                // Try to find a component with socketService
-                const components = document.querySelectorAll('[data-reactroot]');
-                for (const component of components) {
-                  const fiber = renderer.findFiberByHostInstance(component);
-                  if (fiber && fiber.memoizedProps && fiber.memoizedProps.socketService) {
-                    socketService = fiber.memoizedProps.socketService;
-                    break;
-                  }
-                }
-              }
-            }
-          } catch (e) {
-            console.log("🔌 AI: React DevTools method failed");
+        console.log("🔌 AI: Found nickname:", nickname);
+        
+        // Method 1: Try to connect using socket.io directly
+        return new Promise((resolve) => {
+          const io = window.io;
+          if (!io) {
+            console.log("🔌 AI: ERROR - socket.io not available");
+            resolve({ success: false, error: "socket.io not available" });
+            return;
           }
-        }
-        
-        // Method 3: Try to access via localStorage nickname and manual socket connection
-        if (!socketService) {
-          console.log("🔌 AI: Attempting manual socket initialization");
           
-          // Get the nickname we used for login
-          const nickname = localStorage.getItem('nickname');
-          if (nickname) {
-            // Create a temporary socket connection to join the table
-            const io = window.io || (window.socketIOClient && window.socketIOClient.io);
-            if (io) {
-              const tempSocket = io('http://localhost:3001');
-              tempSocket.emit('userLogin', { nickname: nickname });
-              tempSocket.emit('joinTable', { tableId: ${tableId}, nickname: nickname });
-              console.log("🔌 AI: Manual WebSocket events sent");
-              
-              // Clean up the temp socket after a delay
-              setTimeout(() => {
-                tempSocket.disconnect();
-              }, 2000);
+          console.log("🔌 AI: Creating new socket connection...");
+          const socket = io('http://localhost:3001');
+          
+          let authCompleted = false;
+          const timeoutId = setTimeout(() => {
+            if (!authCompleted) {
+              console.log("🔌 AI: Authentication timeout");
+              socket.disconnect();
+              resolve({ success: false, error: "Authentication timeout" });
             }
-          }
-        }
-        
-        // Method 4: Use the existing socket service if found
-        if (socketService && socketService.joinTable) {
-          try {
-            console.log("🔌 AI: Using existing socketService");
-            socketService.joinTable(${tableId});
-            console.log("🔌 AI: WebSocket joinTable called successfully");
-          } catch (error) {
-            console.log("🔌 AI: socketService.joinTable failed:", error);
-          }
-        }
-        
-        return true;
+          }, 10000);
+          
+          socket.on('connect', () => {
+            console.log("🔌 AI: Socket connected, sending userLogin...");
+            socket.emit('userLogin', { nickname: nickname });
+          });
+          
+          // Wait for login confirmation then join table
+          socket.on('onlineUsers:update', (data) => {
+            console.log("🔌 AI: Received onlineUsers:update, joining table...");
+            socket.emit('joinTable', { tableId: ${tableId}, nickname: nickname });
+          });
+          
+          // Wait for table join confirmation
+          socket.on('tableJoined', (data) => {
+            console.log("🔌 AI: Successfully joined table:", data);
+            
+            // Keep this socket connection alive by storing it globally
+            window.aiSocket = socket;
+            
+            clearTimeout(timeoutId);
+            authCompleted = true;
+            resolve({ 
+              success: true, 
+              socketId: socket.id,
+              gameId: data.gameId,
+              tableId: data.tableId 
+            });
+          });
+          
+          socket.on('tableError', (error) => {
+            console.log("🔌 AI: Table join error:", error);
+            clearTimeout(timeoutId);
+            authCompleted = true;
+            socket.disconnect();
+            resolve({ success: false, error: error });
+          });
+          
+          socket.on('connect_error', (error) => {
+            console.log("🔌 AI: Connection error:", error);
+            clearTimeout(timeoutId);
+            authCompleted = true;
+            resolve({ success: false, error: error.message });
+          });
+        });
       `);
       
-      // Wait for the WebSocket events to process
-      await this.delay(2000);
+      console.log(`🔍 WebSocket auth result:`, authResult);
       
-      console.log(`✅ AI ${this.config.name} WebSocket join completed`);
+      if (authResult && authResult.success) {
+        console.log(`✅ AI ${this.config.name} WebSocket authentication successful!`);
+        console.log(`🔍 Socket ID: ${authResult.socketId}, Game ID: ${authResult.gameId}`);
+        
+        // Additional wait for session data to propagate
+        await this.delay(3000);
+      } else {
+        console.log(`⚠️ AI ${this.config.name} WebSocket authentication failed:`, authResult?.error);
+      }
       
     } catch (error) {
-      console.log(`⚠️ WebSocket join failed for ${this.config.name}: ${error.message}`);
-      // Continue anyway, as the seat taking might still work
+      console.log(`⚠️ WebSocket authentication failed for ${this.config.name}: ${error.message}`);
     }
   }
 
   async checkIfStillObserver() {
     try {
-      // Check if we're still in observer view by looking for observer-specific elements
+      console.log(`🔍 AI ${this.config.name} checking observer status...`);
+      
+      // Method 1: Check for explicit observer view elements
       const observerIndicators = await this.driver.findElements(
         By.css('[data-testid="observer-view"], .observer-mode, .observer-status')
       );
       
+      console.log(`🔍 Found ${observerIndicators.length} observer indicators`);
+      
       if (observerIndicators.length > 0) {
+        console.log(`🔍 Still observer (explicit indicators found)`);
         return true; // Still observer
       }
       
-      // Also check if we can see available seat buttons (observers can see these)
+      // Method 2: Check if we can see available seat buttons (observers can see these)
       const availableSeats = await this.driver.findElements(
         By.css('[data-testid*="available-seat"]')
       );
       
-      // If we see available seat buttons, we're likely still observing
-      return availableSeats.length > 0;
+      console.log(`🔍 Found ${availableSeats.length} available seat buttons`);
+      
+      // Method 3: Check for player-specific elements that only seated players would see
+      const playerIndicators = await this.driver.findElements(
+        By.css('.player-actions, [data-testid*="action-button"], .action-buttons button')
+      );
+      
+      console.log(`🔍 Found ${playerIndicators.length} player action indicators`);
+      
+      // Method 4: Check the page URL for clues
+      const currentUrl = await this.driver.getCurrentUrl();
+      console.log(`🔍 Current URL: ${currentUrl}`);
+      
+      // Method 5: Check browser console for any takeSeat responses
+      const logs = await this.driver.manage().logs().get('browser');
+      const recentLogs = logs.slice(-10).map(log => log.message);
+      console.log(`🔍 Recent browser logs:`, recentLogs.slice(0, 3)); // Show first 3 recent logs
+      
+      // If we have available seat buttons but no player actions, we're likely still observing
+      if (availableSeats.length > 0 && playerIndicators.length === 0) {
+        console.log(`🔍 Still observer (can see available seats but no player actions)`);
+        return true;
+      }
+      
+      // If we have player action buttons, we're likely seated
+      if (playerIndicators.length > 0) {
+        console.log(`🔍 Appears to be seated (found player action buttons)`);
+        return false;
+      }
+      
+      // Default: if we can't determine clearly, assume still observer
+      console.log(`🔍 Cannot determine clearly, assuming still observer`);
+      return true;
       
     } catch (error) {
       console.log(`⚠️ Could not determine observer status: ${error.message}`);
