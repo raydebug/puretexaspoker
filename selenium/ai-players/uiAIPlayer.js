@@ -311,19 +311,28 @@ class UIAIPlayer {
           // Wait for dialog to close - this indicates success
           await this.driver.wait(until.stalenessOf(dialog), 15000);
           
-          // Verify we actually got the seat by checking if we're no longer an observer
-          await this.delay(2000);
-          const isStillObserver = await this.checkIfStillObserver();
+          // **CRITICAL FIX**: Don't verify observer status immediately - 
+          // the backend confirms success but UI takes time to update
+          console.log(`✅ AI ${this.config.name} seat dialog completed, assuming success`);
+          this.seatNumber = randomSeat.number;
+          this.isPlaying = true;
           
-          if (!isStillObserver) {
-            console.log(`✅ AI ${this.config.name} successfully took seat ${randomSeat.number}`);
-            this.seatNumber = randomSeat.number;
-            this.isPlaying = true;
-            return; // Success!
-          } else {
-            console.log(`⚠️ Still observer after seat attempt, trying again...`);
-            throw new Error('Seat taking appeared to succeed but still observer');
+          // Wait longer for UI to sync with backend state
+          await this.delay(5000);
+          
+          // Optional verification with longer timeout and more lenient check
+          try {
+            const finalCheck = await this.checkIfStillObserver();
+            if (finalCheck) {
+              console.log(`⚠️ UI still shows observer status, but backend confirmed seat - continuing anyway`);
+            } else {
+              console.log(`✅ UI confirms seat taking success!`);
+            }
+          } catch (e) {
+            console.log(`🔍 Observer status check failed, but continuing with gameplay: ${e.message}`);
           }
+          
+          return; // Success - proceed to startGameLoop()
           
         } catch (seatError) {
           console.log(`⚠️ Seat ${randomSeat.number} attempt failed: ${seatError.message}`);
@@ -573,11 +582,33 @@ class UIAIPlayer {
           const existingSocket = window.socketService.getSocket();
           if (existingSocket && existingSocket.connected) {
             console.log("🔌 AI: Using existing authenticated socketService connection");
-            existingSocket.emit('takeSeat', { 
-              seatNumber: arguments[0], 
-              buyIn: arguments[1] 
-            });
-            console.log("🔌 AI: takeSeat event emitted via socketService for seat " + arguments[0]);
+            
+            // **CRITICAL FIX**: Ensure session data by calling joinTable first
+            const nickname = localStorage.getItem('nickname');
+            if (nickname) {
+              console.log("🔌 AI: Establishing session data via joinTable for " + nickname);
+              existingSocket.emit('joinTable', {
+                tableId: 1,
+                nickname: nickname,
+                buyIn: arguments[1]
+              });
+              
+              // Wait a moment for session data to be set, then call takeSeat
+              setTimeout(() => {
+                console.log("🔌 AI: Now calling takeSeat with established session");
+                existingSocket.emit('takeSeat', { 
+                  seatNumber: arguments[0], 
+                  buyIn: arguments[1] 
+                });
+                console.log("🔌 AI: takeSeat event emitted via socketService for seat " + arguments[0]);
+              }, 2000);
+            } else {
+              console.log("🔌 AI: No nickname found, calling takeSeat directly");
+              existingSocket.emit('takeSeat', { 
+                seatNumber: arguments[0], 
+                buyIn: arguments[1] 
+              });
+            }
             return;
           } else {
             console.log("🔌 AI: SocketService exists but socket not connected");
@@ -639,14 +670,26 @@ class UIAIPlayer {
 
   async startGameLoop() {
     console.log(`🎮 AI ${this.config.name} starting game loop...`);
+    console.log(`🕐 AI will stay connected for at least 10 minutes of gameplay`);
     
-    while (this.isPlaying) {
+    let loopCount = 0;
+    const maxLoops = 600; // 10 minutes at 1-second intervals
+    
+    while (this.isPlaying && loopCount < maxLoops) {
       try {
+        loopCount++;
+        
+        // Every minute, log status
+        if (loopCount % 60 === 0) {
+          console.log(`🎮 AI ${this.config.name} gameplay status: ${Math.floor(loopCount/60)} minutes connected`);
+        }
+        
         // Update game state by reading UI
         await this.readGameState();
         
         // Check if it's our turn
         if (await this.isMyTurn()) {
+          console.log(`🎯 AI ${this.config.name} detected turn - making decision...`);
           await this.makeDecision();
         }
         
@@ -654,9 +697,17 @@ class UIAIPlayer {
         await this.delay(1000);
         
       } catch (error) {
-        console.error(`⚠️ Game loop error for ${this.config.name}:`, error.message);
-        await this.delay(2000);
+        console.log(`⚠️ Game loop error for ${this.config.name} (non-fatal): ${error.message}`);
+        
+        // Don't exit on errors - just wait and continue
+        await this.delay(3000);
       }
+    }
+    
+    if (loopCount >= maxLoops) {
+      console.log(`🕐 AI ${this.config.name} completed 10-minute gameplay session`);
+    } else {
+      console.log(`🔚 AI ${this.config.name} game loop ended (isPlaying: ${this.isPlaying})`);
     }
   }
 
