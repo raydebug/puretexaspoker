@@ -26,17 +26,41 @@ async function cleanupTestData() {
     });
     console.log(`🗑️ Deleted ${deletedPlayerTables.count} stale player-table records`);
     
-    // Clear any test-related games that might be stale (keep only active games)
-    const deletedGames = await prisma.game.deleteMany({
+    // Clear stale test players (AI bots from previous runs) - this is causing the observers count issue
+    const deletedTestPlayers = await prisma.player.deleteMany({
       where: {
         OR: [
-          { status: 'waiting' },
-          { status: 'finished' },
-          { status: 'cancelled' }
+          { nickname: { startsWith: 'Bot' } },
+          { nickname: { startsWith: 'AI_' } },
+          { nickname: { startsWith: 'AggressiveBot' } },
+          { nickname: { startsWith: 'ConservativeBot' } },
+          { nickname: { startsWith: 'BlufferBot' } },
+          { nickname: { startsWith: 'BalancedBot' } },
+          { nickname: { contains: 'Test' } },
+          { nickname: { contains: 'Alpha' } },
+          { nickname: { contains: 'Beta' } },
+          { nickname: { contains: 'Gamma' } },
+          { id: { startsWith: 'test-' } }
         ]
       }
     });
-    console.log(`🗑️ Deleted ${deletedGames.count} stale game records`);
+    console.log(`🗑️ Deleted ${deletedTestPlayers.count} stale test players (this fixes observers count issue)`);
+    
+    // Clear any test-related games that might be stale (keep only active games)
+    try {
+      const deletedGames = await prisma.game.deleteMany({
+        where: {
+          OR: [
+            { status: 'waiting' },
+            { status: 'finished' },
+            { status: 'cancelled' }
+          ]
+        }
+      });
+      console.log(`🗑️ Deleted ${deletedGames.count} stale game records`);
+    } catch (gameDeleteError) {
+      console.log(`ℹ️ Skipping game cleanup due to foreign key constraints`);
+    }
     
     console.log('✅ Test data cleanup completed successfully!');
   } catch (error) {

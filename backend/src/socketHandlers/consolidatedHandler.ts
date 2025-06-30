@@ -731,6 +731,12 @@ export function registerConsolidatedHandlers(io: Server) {
         const players = locationManager.getPlayersAtTable(socket.data.tableId);
         const totalUsers = observers.length + players.length;
         
+        // **DEBUG**: Log detailed observer/player information
+        console.log(`[CONSOLIDATED] DEBUGGING - Table ${socket.data.tableId} user details:`);
+        console.log(`[CONSOLIDATED] Observers (${observers.length}):`, observers.map(o => `${o.nickname} (ID: ${o.playerId})`));
+        console.log(`[CONSOLIDATED] Players (${players.length}):`, players.map(p => `${p.nickname} (ID: ${p.playerId}, seat: ${p.seat})`));
+        console.log(`[CONSOLIDATED] Player ${socket.data.nickname} just took seat ${seatNumber} - should be in players list now`);
+        
         io.to(`game:${socket.data.gameId}`).emit('location:usersAtTable', {
           tableId: socket.data.tableId,
           totalUsers,
