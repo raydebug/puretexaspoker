@@ -203,6 +203,10 @@ class UIAIPlayer {
       // Additional wait for WebSocket connection and initial data
       await this.delay(3000);
       
+      // **CRITICAL**: Ensure we're properly joined to the table via WebSocket
+      // This is essential for session data to be set correctly
+      await this.ensureWebSocketJoined(tableId);
+      
       console.log(`✅ AI ${this.config.name} reached poker table and is connected`);
       
     } catch (error) {
@@ -656,6 +660,93 @@ class UIAIPlayer {
   extractNumber(text) {
     const match = text.match(/\d+/);
     return match ? parseInt(match[0]) : 0;
+  }
+
+  async ensureWebSocketJoined(tableId) {
+    try {
+      console.log(`🔌 AI ${this.config.name} ensuring WebSocket table join...`);
+      
+      // Inject JavaScript to trigger the WebSocket joinTable event
+      // This ensures the backend session data is properly initialized
+      await this.driver.executeScript(`
+        console.log("🔌 AI: Manually triggering WebSocket joinTable event");
+        
+        // Try multiple ways to access the socket service
+        let socketService = null;
+        
+        // Method 1: Check if socketService is available globally
+        if (window.socketService) {
+          socketService = window.socketService;
+        }
+        
+        // Method 2: Try to find it in React DevTools if available
+        if (!socketService && window.__REACT_DEVTOOLS_GLOBAL_HOOK__) {
+          try {
+            const reactInstances = Object.values(window.__REACT_DEVTOOLS_GLOBAL_HOOK__.renderers);
+            for (const renderer of reactInstances) {
+              if (renderer && renderer.findFiberByHostInstance) {
+                // Try to find a component with socketService
+                const components = document.querySelectorAll('[data-reactroot]');
+                for (const component of components) {
+                  const fiber = renderer.findFiberByHostInstance(component);
+                  if (fiber && fiber.memoizedProps && fiber.memoizedProps.socketService) {
+                    socketService = fiber.memoizedProps.socketService;
+                    break;
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            console.log("🔌 AI: React DevTools method failed");
+          }
+        }
+        
+        // Method 3: Try to access via localStorage nickname and manual socket connection
+        if (!socketService) {
+          console.log("🔌 AI: Attempting manual socket initialization");
+          
+          // Get the nickname we used for login
+          const nickname = localStorage.getItem('nickname');
+          if (nickname) {
+            // Create a temporary socket connection to join the table
+            const io = window.io || (window.socketIOClient && window.socketIOClient.io);
+            if (io) {
+              const tempSocket = io('http://localhost:3001');
+              tempSocket.emit('userLogin', { nickname: nickname });
+              tempSocket.emit('joinTable', { tableId: ${tableId}, nickname: nickname });
+              console.log("🔌 AI: Manual WebSocket events sent");
+              
+              // Clean up the temp socket after a delay
+              setTimeout(() => {
+                tempSocket.disconnect();
+              }, 2000);
+            }
+          }
+        }
+        
+        // Method 4: Use the existing socket service if found
+        if (socketService && socketService.joinTable) {
+          try {
+            console.log("🔌 AI: Using existing socketService");
+            socketService.joinTable(${tableId});
+            console.log("🔌 AI: WebSocket joinTable called successfully");
+          } catch (error) {
+            console.log("🔌 AI: socketService.joinTable failed:", error);
+          }
+        }
+        
+        return true;
+      `);
+      
+      // Wait for the WebSocket events to process
+      await this.delay(2000);
+      
+      console.log(`✅ AI ${this.config.name} WebSocket join completed`);
+      
+    } catch (error) {
+      console.log(`⚠️ WebSocket join failed for ${this.config.name}: ${error.message}`);
+      // Continue anyway, as the seat taking might still work
+    }
   }
 
   async checkIfStillObserver() {
