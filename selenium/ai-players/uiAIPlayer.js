@@ -726,10 +726,18 @@ class UIAIPlayer {
       try {
         loopCount++;
         
-                 // Every 5 minutes, log status
-         if (loopCount % 300 === 0 && loopCount > 0) {
-           console.log(`🎮 AI ${this.config.name} gameplay status: ${Math.floor(loopCount/60)} minutes connected`);
-         }
+        // Every 5 minutes, log status and check connection
+        if (loopCount % 300 === 0 && loopCount > 0) {
+          console.log(`🎮 AI ${this.config.name} gameplay status: ${Math.floor(loopCount/60)} minutes connected`);
+          
+          // CRITICAL FIX: Periodic connection health check
+          await this.checkConnectionHealth();
+        }
+        
+        // Every 30 seconds, verify we're still properly seated
+        if (loopCount % 30 === 0 && loopCount > 0) {
+          await this.verifySeatStatus();
+        }
         
         // Update game state by reading UI
         await this.readGameState();
@@ -754,16 +762,145 @@ class UIAIPlayer {
       } catch (error) {
         console.log(`⚠️ Game loop error for ${this.config.name} (non-fatal): ${error.message}`);
         
+        // Check if error is connection-related
+        if (error.message.includes('disconnect') || error.message.includes('connection')) {
+          console.log(`🔌 AI ${this.config.name} connection error detected, attempting recovery...`);
+          await this.attemptConnectionRecovery();
+        }
+        
         // Don't exit on errors - just wait and continue
         await this.delay(3000);
       }
     }
     
-         if (loopCount >= maxLoops) {
-       console.log(`🕐 AI ${this.config.name} reached maximum session duration`);
-     } else {
-       console.log(`🔚 AI ${this.config.name} game loop ended (isPlaying: ${this.isPlaying})`);
-     }
+    if (loopCount >= maxLoops) {
+      console.log(`🕐 AI ${this.config.name} reached maximum session duration`);
+    } else {
+      console.log(`🔚 AI ${this.config.name} game loop ended (isPlaying: ${this.isPlaying})`);
+    }
+  }
+
+  async checkConnectionHealth() {
+    try {
+      console.log(`🔍 AI ${this.config.name} checking connection health...`);
+      
+      const healthCheck = await this.driver.executeScript(`
+        console.log("🔍 AI: Checking connection health");
+        
+        // Check primary connection (socketService)
+        if (window.socketService && window.socketService.getSocket) {
+          const socket = window.socketService.getSocket();
+          if (socket && socket.connected) {
+            console.log("🔍 AI: Primary connection healthy");
+            return { healthy: true, method: 'primary', socketId: socket.id };
+          } else {
+            console.log("🔍 AI: Primary connection not healthy");
+          }
+        }
+        
+        // Check fallback connection
+        if (window.aiSocket && window.aiSocket.connected) {
+          console.log("🔍 AI: Fallback connection healthy");
+          return { healthy: true, method: 'fallback', socketId: window.aiSocket.id };
+        }
+        
+        console.log("🔍 AI: No healthy connections found");
+        return { healthy: false };
+      `);
+      
+      if (healthCheck.healthy) {
+        console.log(`✅ AI ${this.config.name} connection health OK via ${healthCheck.method}`);
+      } else {
+        console.log(`⚠️ AI ${this.config.name} connection health check failed - attempting recovery`);
+        await this.attemptConnectionRecovery();
+      }
+      
+    } catch (error) {
+      console.log(`⚠️ Connection health check failed: ${error.message}`);
+    }
+  }
+
+  async verifySeatStatus() {
+    try {
+      // Check if we still appear to be seated (have player action buttons)
+      const playerActions = await this.driver.findElements(
+        By.css('.player-actions button, .action-buttons button')
+      );
+      
+      if (playerActions.length === 0) {
+        console.log(`⚠️ AI ${this.config.name} may have lost seat - no action buttons visible`);
+        
+        // Check if we can see seat selection buttons (indicates we're back to observer)
+        const seatButtons = await this.driver.findElements(
+          By.css('[data-testid*="available-seat"], .seat-button')
+        );
+        
+        if (seatButtons.length > 0) {
+          console.log(`🔄 AI ${this.config.name} appears to be observer again - attempting to retake seat`);
+          await this.attemptSeatRecovery();
+        }
+      }
+      
+    } catch (error) {
+      console.log(`⚠️ Seat status verification failed: ${error.message}`);
+    }
+  }
+
+  async attemptConnectionRecovery() {
+    try {
+      console.log(`🔌 AI ${this.config.name} attempting connection recovery...`);
+      
+      const recoveryResult = await this.driver.executeScript(`
+        console.log("🔌 AI: Attempting connection recovery");
+        
+        // Try to reconnect socketService
+        if (window.socketService) {
+          try {
+            window.socketService.connect();
+            console.log("🔌 AI: Attempted socketService reconnection");
+            
+            // Wait a moment and check connection
+            setTimeout(() => {
+              const socket = window.socketService.getSocket();
+              if (socket && socket.connected) {
+                console.log("🔌 AI: SocketService reconnection successful");
+                return { success: true, method: 'socketService' };
+              }
+            }, 2000);
+            
+          } catch (e) {
+            console.log("🔌 AI: SocketService reconnection failed:", e);
+          }
+        }
+        
+        return { success: false };
+      `);
+      
+      // Give it time to reconnect
+      await this.delay(3000);
+      
+      // Verify the connection
+      await this.verifyConnectionStability();
+      
+      console.log(`✅ AI ${this.config.name} connection recovery attempted`);
+      
+    } catch (error) {
+      console.log(`⚠️ Connection recovery failed: ${error.message}`);
+    }
+  }
+
+  async attemptSeatRecovery() {
+    try {
+      console.log(`🪑 AI ${this.config.name} attempting seat recovery...`);
+      
+      // Try to take a seat again
+      await this.takeSeat();
+      
+      console.log(`✅ AI ${this.config.name} seat recovery attempted`);
+      
+    } catch (error) {
+      console.log(`⚠️ Seat recovery failed: ${error.message}`);
+    }
   }
 
   async readGameState() {
@@ -1197,6 +1334,36 @@ class UIAIPlayer {
             console.log("🔌 AI: Existing socketService connection found and connected");
             console.log("🔌 AI: Socket ID:", existingSocket.id);
             
+            // CRITICAL FIX: Add connection keepalive and error handling
+            existingSocket.on('disconnect', (reason) => {
+              console.log("🔌 AI: Socket disconnected, reason:", reason);
+              if (reason === 'io server disconnect') {
+                // Server initiated disconnect, try to reconnect
+                console.log("🔌 AI: Server disconnect detected, attempting reconnection...");
+                setTimeout(() => {
+                  if (!existingSocket.connected) {
+                    existingSocket.connect();
+                  }
+                }, 1000);
+              }
+            });
+            
+            existingSocket.on('connect_error', (error) => {
+              console.log("🔌 AI: Connection error:", error);
+            });
+            
+            // Add heartbeat to keep connection alive
+            const heartbeatInterval = setInterval(() => {
+              if (existingSocket.connected) {
+                existingSocket.emit('heartbeat', { timestamp: Date.now() });
+              } else {
+                clearInterval(heartbeatInterval);
+              }
+            }, 30000); // Send heartbeat every 30 seconds
+            
+            // Store the interval for cleanup
+            window.aiHeartbeatInterval = heartbeatInterval;
+            
             // Check if we're already at the table (session data should be set)
             // The UI navigation flow should have already called joinTable
             return { 
@@ -1232,7 +1399,13 @@ class UIAIPlayer {
           }
           
           console.log("🔌 AI: Found socket.io, creating fallback connection...");
-          const socket = io('http://localhost:3001');
+          const socket = io('http://localhost:3001', {
+            transports: ['websocket'],
+            reconnection: true,
+            reconnectionAttempts: 10,
+            reconnectionDelay: 1000,
+            timeout: 20000
+          });
           
           let authCompleted = false;
           const timeoutId = setTimeout(() => {
@@ -1241,11 +1414,33 @@ class UIAIPlayer {
               socket.disconnect();
               resolve({ success: false, error: "Authentication timeout" });
             }
-          }, 10000);
+          }, 15000); // Increased timeout
           
+          // CRITICAL FIX: Add better error handling and keepalive
           socket.on('connect', () => {
             console.log("🔌 AI: Fallback socket connected, sending userLogin...");
             socket.emit('userLogin', { nickname: nickname });
+          });
+          
+          socket.on('disconnect', (reason) => {
+            console.log("🔌 AI: Fallback socket disconnected, reason:", reason);
+            if (reason === 'io server disconnect' && authCompleted) {
+              // Try to reconnect if auth was successful
+              setTimeout(() => {
+                if (!socket.connected) {
+                  socket.connect();
+                }
+              }, 2000);
+            }
+          });
+          
+          socket.on('connect_error', (error) => {
+            console.log("🔌 AI: Fallback connection error:", error);
+            if (!authCompleted) {
+              clearTimeout(timeoutId);
+              authCompleted = true;
+              resolve({ success: false, error: error.message });
+            }
           });
           
           // Wait for login confirmation then join table
@@ -1261,6 +1456,17 @@ class UIAIPlayer {
             // Store fallback socket connection
             window.aiSocket = socket;
             
+            // Add heartbeat for fallback connection
+            const heartbeatInterval = setInterval(() => {
+              if (socket.connected) {
+                socket.emit('heartbeat', { timestamp: Date.now() });
+              } else {
+                clearInterval(heartbeatInterval);
+              }
+            }, 30000);
+            
+            window.aiHeartbeatInterval = heartbeatInterval;
+            
             clearTimeout(timeoutId);
             authCompleted = true;
             resolve({ 
@@ -1274,17 +1480,12 @@ class UIAIPlayer {
           
           socket.on('tableError', (error) => {
             console.log("🔌 AI: Table join error:", error);
-            clearTimeout(timeoutId);
-            authCompleted = true;
-            socket.disconnect();
-            resolve({ success: false, error: error });
-          });
-          
-          socket.on('connect_error', (error) => {
-            console.log("🔌 AI: Connection error:", error);
-            clearTimeout(timeoutId);
-            authCompleted = true;
-            resolve({ success: false, error: error.message });
+            if (!authCompleted) {
+              clearTimeout(timeoutId);
+              authCompleted = true;
+              socket.disconnect();
+              resolve({ success: false, error: error });
+            }
           });
         });
       `);
@@ -1295,15 +1496,59 @@ class UIAIPlayer {
         console.log(`✅ AI ${this.config.name} WebSocket authentication successful via ${authResult.method}!`);
         console.log(`🔍 Socket ID: ${authResult.socketId}, Game ID: ${authResult.gameId}`);
         
+        // CRITICAL FIX: Add connection verification after auth
+        await this.verifyConnectionStability();
+        
         // Shorter wait for existing connections since they should already be ready
         const waitTime = authResult.method === 'existing-connection' ? 1000 : 3000;
         await this.delay(waitTime);
       } else {
         console.log(`⚠️ AI ${this.config.name} WebSocket authentication failed:`, authResult?.error);
+        throw new Error(`WebSocket authentication failed: ${authResult?.error}`);
       }
       
     } catch (error) {
       console.log(`⚠️ WebSocket authentication failed for ${this.config.name}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  async verifyConnectionStability() {
+    try {
+      console.log(`🔍 AI ${this.config.name} verifying connection stability...`);
+      
+      const stabilityCheck = await this.driver.executeScript(`
+        console.log("🔍 AI: Verifying WebSocket connection stability");
+        
+        // Check if socketService connection is stable
+        if (window.socketService && window.socketService.getSocket) {
+          const socket = window.socketService.getSocket();
+          if (socket && socket.connected) {
+            console.log("🔍 AI: SocketService connection is stable");
+            return { stable: true, method: 'socketService', socketId: socket.id };
+          }
+        }
+        
+        // Check fallback connection
+        if (window.aiSocket && window.aiSocket.connected) {
+          console.log("🔍 AI: Fallback connection is stable");
+          return { stable: true, method: 'fallback', socketId: window.aiSocket.id };
+        }
+        
+        console.log("🔍 AI: No stable connection found");
+        return { stable: false };
+      `);
+      
+      if (stabilityCheck.stable) {
+        console.log(`✅ AI ${this.config.name} connection is stable via ${stabilityCheck.method}`);
+      } else {
+        console.log(`⚠️ AI ${this.config.name} connection is not stable`);
+        throw new Error('WebSocket connection not stable');
+      }
+      
+    } catch (error) {
+      console.log(`⚠️ Connection stability check failed: ${error.message}`);
+      throw error;
     }
   }
 

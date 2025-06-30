@@ -268,6 +268,10 @@ export class SocketService {
       if (data.gameState) {
         this.gameState = data.gameState;
         this.emitGameStateUpdate(data.gameState);
+        
+        // CRITICAL FIX: Ensure UI state consistency across all browser instances
+        console.log('🔄 FRONTEND: Forcing UI state synchronization after seatTaken');
+        this.forceSynchronizeUIState(data.gameState);
       }
       
       // Remove from observers list after player state is set
@@ -1558,6 +1562,44 @@ export class SocketService {
   forceCompletePhase(gameId: string) {
     if (this.socket && this.socket.connected) {
       this.socket.emit('game:forceCompletePhase', { gameId });
+    }
+  }
+
+  /**
+   * Force UI state synchronization across all browser instances
+   */
+  private forceSynchronizeUIState(gameState: GameState) {
+    try {
+      console.log('🔄 FRONTEND: Forcing UI state synchronization');
+      console.log('🔄 FRONTEND: Game state players:', gameState.players?.length || 0);
+      console.log('🔄 FRONTEND: Current observers:', this.observers.length);
+      
+      // Update players list from game state
+      if (gameState.players) {
+        this.players = gameState.players.filter(p => p !== null);
+        console.log('🔄 FRONTEND: Updated players list:', this.players.map(p => `${p.name} (seat ${p.seatNumber})`));
+      }
+      
+      // Emit immediate updates to all UI components
+      this.emitGameStateUpdate(gameState);
+      this.emitOnlineUsersUpdate();
+      
+      // Force component re-render by dispatching custom event
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('forceUISync', { 
+          detail: { 
+            gameState, 
+            players: this.players, 
+            observers: this.observers,
+            timestamp: Date.now()
+          } 
+        }));
+      }
+      
+      console.log('🔄 FRONTEND: UI state synchronization completed');
+      
+    } catch (error) {
+      console.error('❌ FRONTEND: UI state synchronization failed:', error);
     }
   }
 }

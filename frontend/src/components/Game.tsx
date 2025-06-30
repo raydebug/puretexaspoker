@@ -86,6 +86,11 @@ export const Game: React.FC = () => {
 
     // Set up game state listener
     const unsubGameState = socketService.onGameState((newState: GameState) => {
+      console.log('🎮 GAME: Received gameState update:', {
+        players: newState.players?.length || 0,
+        phase: newState.phase,
+        pot: newState.pot
+      });
       setGameState(newState);
       // Find current player in the new state
       const player = newState.players.find(p => p.name === nickname);
@@ -99,10 +104,40 @@ export const Game: React.FC = () => {
       setError(err.message);
     });
 
+    // CRITICAL FIX: Listen for UI sync events to ensure consistent state across browser instances
+    const handleForceUISync = (event: CustomEvent) => {
+      console.log('🔄 GAME: Received forceUISync event:', event.detail);
+      const { gameState: syncedGameState, players, observers, timestamp } = event.detail;
+      
+      if (syncedGameState) {
+        console.log('🔄 GAME: Applying forced UI sync:', {
+          players: syncedGameState.players?.length || 0,
+          observers: observers?.length || 0,
+          timestamp
+        });
+        
+        setGameState(syncedGameState);
+        
+        // Update current player if found in synced state
+        const player = syncedGameState.players?.find((p: Player) => p.name === nickname);
+        if (player) {
+          setCurrentPlayer(player);
+          console.log('🔄 GAME: Updated current player from sync:', player.name);
+        }
+        
+        // Force component re-render
+        setGameState((prev) => ({ ...syncedGameState }));
+      }
+    };
+
+    // Add event listener for UI sync
+    window.addEventListener('forceUISync', handleForceUISync as EventListener);
+
     return () => {
       // Unsubscribe from events
       unsubGameState();
       unsubError();
+      window.removeEventListener('forceUISync', handleForceUISync as EventListener);
       socketService.disconnect();
     };
   }, []);
