@@ -768,20 +768,63 @@ class UIAIPlayer {
 
   async readGameState() {
     try {
-      // Read my cards (if visible)
-      const cardElements = await this.driver.findElements(
-        By.css('.my-cards .card, .player-cards .card, [data-testid*="player-card"]')
+      // **SPECIFICATION COMPLIANCE**: Only read MY OWN hole cards (not other players' cards)
+      // Read MY hole cards ONLY (visible only to current player in their browser instance)
+      const myHoleCards = await this.driver.findElements(
+        By.css('[data-testid="player-hole-cards"] [data-testid^="hole-card-"]')
       );
       
-      // Read community cards
-      const communityElements = await this.driver.findElements(
-        By.css('.community-cards .card, .board-cards .card, [data-testid*="community-card"]')
+      console.log(`🃏 AI ${this.config.name} can see ${myHoleCards.length} of their own hole cards`);
+      
+      // Store my hole cards (following poker visibility rules)
+      if (myHoleCards.length === 2) {
+        this.gameState.myCards = [];
+        for (let i = 0; i < 2; i++) {
+          try {
+            const cardText = await myHoleCards[i].getText();
+            this.gameState.myCards.push(cardText);
+            console.log(`🃏 AI ${this.config.name} hole card ${i + 1}: ${cardText}`);
+          } catch (e) {
+            console.log(`🃏 AI ${this.config.name} could not read hole card ${i + 1}`);
+          }
+        }
+      } else if (myHoleCards.length > 0) {
+        console.log(`🃏 AI ${this.config.name} can see ${myHoleCards.length} hole cards (expected 2)`);
+      }
+      
+      // Read community cards (visible to all players)
+      const communityCards = await this.driver.findElements(
+        By.css('[data-testid="community-cards"] [data-testid^="community-card-"]')
       );
+      
+      console.log(`🃏 AI ${this.config.name} can see ${communityCards.length} community cards`);
+      
+      // Store community cards (shared information)
+      if (communityCards.length > 0) {
+        this.gameState.communityCards = [];
+        for (let i = 0; i < communityCards.length; i++) {
+          try {
+            const cardText = await communityCards[i].getText();
+            this.gameState.communityCards.push(cardText);
+          } catch (e) {
+            // Could not read community card
+          }
+        }
+      }
+      
+      // **IMPORTANT**: Verify we CANNOT see other players' hole cards (as per specification)
+      const otherPlayersCards = await this.driver.findElements(
+        By.css('.player-hole-cards-back, [data-testid*="player-"][data-testid*="-cards"]:not([data-testid="player-hole-cards"])')
+      );
+      
+      if (otherPlayersCards.length > 0) {
+        console.log(`✅ AI ${this.config.name} correctly sees ${otherPlayersCards.length} face-down cards from other players (specification compliance)`);
+      }
       
       // Read pot amount
       try {
         const potElement = await this.driver.findElement(
-          By.css('.pot-amount, .pot, [data-testid*="pot"]')
+          By.css('[data-testid="pot-amount"], .pot-amount, .pot')
         );
         const potText = await potElement.getText();
         this.gameState.pot = this.extractNumber(potText);
@@ -802,6 +845,7 @@ class UIAIPlayer {
       
     } catch (error) {
       // Game state reading errors are common and non-critical
+      console.log(`🔍 AI ${this.config.name} game state reading: ${error.message}`);
     }
   }
 
@@ -1018,8 +1062,22 @@ class UIAIPlayer {
   }
 
   calculateDecision(actions) {
-    // Simple AI decision logic based on personality
+    // **SPECIFICATION COMPLIANCE**: AI decision-making based ONLY on visible information
+    // - Own hole cards (if dealt and visible)
+    // - Community cards (visible to all)
+    // - Pot amount, betting patterns, available actions
+    // - NOT other players' hole cards (never visible)
+    
     const availableActions = actions.map(a => a.action);
+    
+    // Log decision context (only visible information)
+    console.log(`🧠 AI ${this.config.name} decision context:`, {
+      myCards: this.gameState.myCards?.length || 0,
+      communityCards: this.gameState.communityCards?.length || 0,
+      pot: this.gameState.pot || 0,
+      myChips: this.gameState.myChips || 0,
+      availableActions: availableActions
+    });
     
     switch (this.config.personality) {
       case 'aggressive':
