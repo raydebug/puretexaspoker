@@ -92,6 +92,13 @@ class UIAIPlayer {
       
       await nicknameInput.clear();
       await nicknameInput.sendKeys(this.config.name);
+      
+      // **CRITICAL**: Ensure nickname is saved to localStorage for WebSocket auth
+      await this.driver.executeScript(`
+        localStorage.setItem('nickname', arguments[0]);
+        console.log('🔐 AI: Saved nickname to localStorage:', arguments[0]);
+      `, this.config.name);
+      
       await this.delay(800);
       
       // Find and click login/join button with multiple selectors
@@ -298,8 +305,8 @@ class UIAIPlayer {
           // Handle buy-in selection
           await this.handleSeatDialog();
           
-          // Click confirm button
-          await this.confirmSeatSelection();
+                // Click confirm button
+      await this.confirmSeatSelection(randomSeat.number);
           
           // Wait for dialog to close - this indicates success
           await this.driver.wait(until.stalenessOf(dialog), 15000);
@@ -412,7 +419,7 @@ class UIAIPlayer {
     }
   }
 
-  async confirmSeatSelection() {
+  async confirmSeatSelection(seatNumber) {
     try {
       console.log(`🔘 AI ${this.config.name} looking for confirm button...`);
       
@@ -463,24 +470,43 @@ class UIAIPlayer {
         }
       });
       
-      // **CRITICAL**: Manually trigger takeSeat via the authenticated WebSocket
-      // Since the UI button click doesn't seem to be working properly
-      console.log(`🔌 Manually triggering takeSeat via WebSocket...`);
+      // **CRITICAL**: Manually trigger takeSeat via the existing authenticated WebSocket
+      // Use the existing socketService connection instead of creating a new one
+      console.log(`🔌 Manually triggering takeSeat via existing WebSocket for seat ${seatNumber}...`);
       
       await this.driver.executeScript(`
-        console.log("🔌 AI: Manual takeSeat WebSocket call");
+        console.log("🔌 AI: Manual takeSeat WebSocket call using existing connection");
         
+        // First priority: Use existing socketService connection
+        if (window.socketService && window.socketService.getSocket) {
+          const existingSocket = window.socketService.getSocket();
+          if (existingSocket && existingSocket.connected) {
+            console.log("🔌 AI: Using existing authenticated socketService connection");
+            existingSocket.emit('takeSeat', { 
+              seatNumber: arguments[0], 
+              buyIn: arguments[1] 
+            });
+            console.log("🔌 AI: takeSeat event emitted via socketService for seat " + arguments[0]);
+            return;
+          } else {
+            console.log("🔌 AI: SocketService exists but socket not connected");
+          }
+        } else {
+          console.log("🔌 AI: SocketService not available");
+        }
+        
+        // Fallback: Use aiSocket if it exists (but this should not be needed)
         if (window.aiSocket && window.aiSocket.connected) {
-          console.log("🔌 AI: Using authenticated aiSocket for takeSeat");
+          console.log("🔌 AI: Fallback to aiSocket for takeSeat");
           window.aiSocket.emit('takeSeat', { 
             seatNumber: arguments[0], 
             buyIn: arguments[1] 
           });
-          console.log("🔌 AI: takeSeat event emitted manually");
+          console.log("🔌 AI: takeSeat event emitted manually for seat " + arguments[0]);
         } else {
           console.log("🔌 AI: ERROR - No authenticated socket available");
         }
-      `, randomSeat.number, 150); // Pass seat number and buy-in
+      `, seatNumber, 150); // Pass seat number and buy-in
       
       // Wait for WebSocket response
       await this.delay(3000);
@@ -712,9 +738,9 @@ class UIAIPlayer {
     try {
       console.log(`🔌 AI ${this.config.name} ensuring proper WebSocket authentication...`);
       
-      // Inject JavaScript to ensure complete WebSocket authentication and session setup
+      // Check if existing socketService connection is already authenticated and ready
       const authResult = await this.driver.executeScript(`
-        console.log("🔌 AI: Setting up complete WebSocket authentication");
+        console.log("🔌 AI: Checking existing WebSocket authentication");
         
         const nickname = localStorage.getItem('nickname');
         if (!nickname) {
@@ -724,16 +750,48 @@ class UIAIPlayer {
         
         console.log("🔌 AI: Found nickname:", nickname);
         
-        // Method 1: Try to connect using socket.io directly
+        // Priority 1: Check if socketService is already connected and authenticated
+        if (window.socketService && window.socketService.getSocket) {
+          const existingSocket = window.socketService.getSocket();
+          if (existingSocket && existingSocket.connected) {
+            console.log("🔌 AI: Existing socketService connection found and connected");
+            console.log("🔌 AI: Socket ID:", existingSocket.id);
+            
+            // Check if we're already at the table (session data should be set)
+            // The UI navigation flow should have already called joinTable
+            return { 
+              success: true, 
+              socketId: existingSocket.id,
+              gameId: 'from-existing-session', // Will be determined by backend session
+              tableId: ${tableId},
+              method: 'existing-connection'
+            };
+          } else {
+            console.log("🔌 AI: SocketService exists but not connected");
+          }
+        } else {
+          console.log("🔌 AI: SocketService not available");
+        }
+        
+        // Fallback: Only create new connection if existing one is not available
+        console.log("🔌 AI: Falling back to creating new connection...");
+        
         return new Promise((resolve) => {
-          const io = window.io;
+          // Try multiple ways to access socket.io
+          let io = window.io;
+          if (!io && window.socketService) {
+            // Try to access io through socketService
+            io = window.socketService.io;
+          }
+          
           if (!io) {
-            console.log("🔌 AI: ERROR - socket.io not available");
+            console.log("🔌 AI: ERROR - socket.io not available through any method");
+            console.log("🔌 AI: Available globals:", Object.keys(window).filter(k => k.includes('socket') || k.includes('io')));
             resolve({ success: false, error: "socket.io not available" });
             return;
           }
           
-          console.log("🔌 AI: Creating new socket connection...");
+          console.log("🔌 AI: Found socket.io, creating fallback connection...");
           const socket = io('http://localhost:3001');
           
           let authCompleted = false;
@@ -746,7 +804,7 @@ class UIAIPlayer {
           }, 10000);
           
           socket.on('connect', () => {
-            console.log("🔌 AI: Socket connected, sending userLogin...");
+            console.log("🔌 AI: Fallback socket connected, sending userLogin...");
             socket.emit('userLogin', { nickname: nickname });
           });
           
@@ -758,9 +816,9 @@ class UIAIPlayer {
           
           // Wait for table join confirmation
           socket.on('tableJoined', (data) => {
-            console.log("🔌 AI: Successfully joined table:", data);
+            console.log("🔌 AI: Successfully joined table via fallback:", data);
             
-            // Keep this socket connection alive by storing it globally
+            // Store fallback socket connection
             window.aiSocket = socket;
             
             clearTimeout(timeoutId);
@@ -769,7 +827,8 @@ class UIAIPlayer {
               success: true, 
               socketId: socket.id,
               gameId: data.gameId,
-              tableId: data.tableId 
+              tableId: data.tableId,
+              method: 'fallback-connection'
             });
           });
           
@@ -793,11 +852,12 @@ class UIAIPlayer {
       console.log(`🔍 WebSocket auth result:`, authResult);
       
       if (authResult && authResult.success) {
-        console.log(`✅ AI ${this.config.name} WebSocket authentication successful!`);
+        console.log(`✅ AI ${this.config.name} WebSocket authentication successful via ${authResult.method}!`);
         console.log(`🔍 Socket ID: ${authResult.socketId}, Game ID: ${authResult.gameId}`);
         
-        // Additional wait for session data to propagate
-        await this.delay(3000);
+        // Shorter wait for existing connections since they should already be ready
+        const waitTime = authResult.method === 'existing-connection' ? 1000 : 3000;
+        await this.delay(waitTime);
       } else {
         console.log(`⚠️ AI ${this.config.name} WebSocket authentication failed:`, authResult?.error);
       }

@@ -77,12 +77,17 @@ export class SocketService {
     if (typeof window !== 'undefined' && (window as any).SELENIUM_TEST) {
       console.log('DEBUG: Test mode detected, enabling test mode');
       this.setTestMode(true);
+      // Also expose socket.io for AI access in test mode
+      (window as any).io = io;
+      console.log('🤖 FRONTEND: Socket.io exposed for AI access in test mode');
     }
 
     // Add to window for debugging (non-production only)
     if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
       (window as any).socketService = this;
+      (window as any).io = io;
       console.log('🔧 FRONTEND: SocketService available on window.socketService for debugging');
+      console.log('🔧 FRONTEND: Socket.io available on window.io for AI access');
     }
   }
 
