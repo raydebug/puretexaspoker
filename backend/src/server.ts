@@ -26,25 +26,39 @@ async function cleanupTestData() {
     });
     console.log(`🗑️ Deleted ${deletedPlayerTables.count} stale player-table records`);
     
-    // Clear stale test players (AI bots from previous runs) - this is causing the observers count issue
-    const deletedTestPlayers = await prisma.player.deleteMany({
-      where: {
-        OR: [
-          { nickname: { startsWith: 'Bot' } },
-          { nickname: { startsWith: 'AI_' } },
-          { nickname: { startsWith: 'AggressiveBot' } },
-          { nickname: { startsWith: 'ConservativeBot' } },
-          { nickname: { startsWith: 'BlufferBot' } },
-          { nickname: { startsWith: 'BalancedBot' } },
-          { nickname: { contains: 'Test' } },
-          { nickname: { contains: 'Alpha' } },
-          { nickname: { contains: 'Beta' } },
-          { nickname: { contains: 'Gamma' } },
-          { id: { startsWith: 'test-' } }
-        ]
-      }
-    });
-    console.log(`🗑️ Deleted ${deletedTestPlayers.count} stale test players (this fixes observers count issue)`);
+    // **CRITICAL FIX**: Clear stale test players (AI bots from previous runs) - this is causing the observers count issue
+    try {
+      const deletedTestPlayers = await prisma.player.deleteMany({
+        where: {
+          AND: [
+            {
+              OR: [
+                { nickname: { startsWith: 'Bot' } },
+                { nickname: { startsWith: 'AI_' } },
+                { nickname: { startsWith: 'AggressiveBot' } },
+                { nickname: { startsWith: 'ConservativeBot' } },
+                { nickname: { startsWith: 'BlufferBot' } },
+                { nickname: { startsWith: 'BalancedBot' } },
+                { nickname: { contains: 'Test' } },
+                { nickname: { contains: 'Alpha' } },
+                { nickname: { contains: 'Beta' } },
+                { nickname: { contains: 'Gamma' } },
+                { id: { startsWith: 'test-' } }
+              ]
+            },
+            // Only delete if updated more than 30 minutes ago to prevent deleting active AI bots
+            {
+              updatedAt: {
+                lt: new Date(Date.now() - 30 * 60 * 1000)
+              }
+            }
+          ]
+        }
+      });
+      console.log(`🗑️ Deleted ${deletedTestPlayers.count} stale test players (this fixes observers count issue)`);
+    } catch (playerDeleteError) {
+      console.log('⚠️ Skipping stale player cleanup due to foreign key constraints (LocationManager will filter stale data)');
+    }
     
     // Clear any test-related games that might be stale (keep only active games)
     try {

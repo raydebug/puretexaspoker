@@ -674,8 +674,11 @@ export function registerConsolidatedHandlers(io: Server) {
         // Update session data
         socket.data.buyIn = buyIn;
 
-        // Update location from observer to seated player
-        await locationManager.moveToTableSeat(socket.id, socket.data.nickname, socket.data.tableId, seatNumber);
+        // **CRITICAL FIX**: Use clean seat transition to prevent observers list bugs
+        await locationManager.moveFromObserverToSeat(socket.id, socket.data.nickname, socket.data.tableId, seatNumber);
+        
+        // **CRITICAL FIX**: Deduplicate observers list to prevent duplicate names
+        locationManager.deduplicateObservers(socket.data.tableId);
 
         // Handle reconnection
         handlePlayerReconnection(socket.data.playerId, socket.data.nickname, socket.data.gameId);

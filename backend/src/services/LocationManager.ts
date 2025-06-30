@@ -207,6 +207,49 @@ export class LocationManager {
   }
 
   /**
+   * CRITICAL FIX: Clean seat transition - ensures player is removed from observers when taking seat
+   */
+  async moveFromObserverToSeat(playerId: string, nickname: string, tableId: number, seatNumber: number): Promise<void> {
+    console.log(`LocationManager: Moving ${nickname} from observer to seat ${seatNumber} at table ${tableId}`);
+    
+    // First remove any existing instances of this nickname to prevent duplicates
+    this.removeUserByNickname(nickname);
+    
+    // Then update to seated position
+    await this.updateUserLocation(playerId, nickname, tableId, seatNumber);
+    
+    console.log(`LocationManager: Successfully moved ${nickname} to seat ${seatNumber} (no longer observer)`);
+  }
+
+  /**
+   * CRITICAL FIX: Deduplicate observers list to prevent duplicate name bug
+   */
+  deduplicateObservers(tableId: number): void {
+    const observers = this.getObserversAtTable(tableId);
+    const nicknameSeen = new Set<string>();
+    const toRemove: string[] = [];
+    
+    for (const observer of observers) {
+      if (nicknameSeen.has(observer.nickname)) {
+        // This is a duplicate - mark for removal
+        toRemove.push(observer.playerId);
+        console.log(`LocationManager: Found duplicate observer ${observer.nickname}, removing ${observer.playerId}`);
+      } else {
+        nicknameSeen.add(observer.nickname);
+      }
+    }
+    
+    // Remove duplicates
+    toRemove.forEach(playerId => {
+      this.userLocations.delete(playerId);
+    });
+    
+    if (toRemove.length > 0) {
+      console.log(`LocationManager: Removed ${toRemove.length} duplicate observers from table ${tableId}`);
+    }
+  }
+
+  /**
    * Get location display string for logging/debugging
    */
   getLocationDisplay(playerId: string): string {
@@ -245,20 +288,46 @@ export class LocationManager {
 
   /**
    * Initialize location manager by loading existing players from database
+   * CRITICAL FIX: Only load recent/active players to prevent observers count bugs
    */
   async initialize(): Promise<void> {
     try {
+      // Get only recently active players (within last hour) to prevent stale data accumulation
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
       const players = await prisma.player.findMany({
+        where: {
+          updatedAt: {
+            gte: oneHourAgo
+          }
+        },
         select: {
           id: true,
           nickname: true,
           table: true,
           seat: true,
           updatedAt: true
+        },
+        orderBy: {
+          updatedAt: 'desc'  // Most recent first
         }
       });
 
+      // Clear existing locations to prevent accumulation
+      this.userLocations.clear();
+
+      // Use Map to deduplicate by nickname (keep most recent only)
+      const uniquePlayersByNickname = new Map<string, typeof players[0]>();
+      
       for (const player of players) {
+        const existingPlayer = uniquePlayersByNickname.get(player.nickname);
+        if (!existingPlayer || player.updatedAt > existingPlayer.updatedAt) {
+          uniquePlayersByNickname.set(player.nickname, player);
+        }
+      }
+
+      // Only add unique players to location tracking
+      let addedCount = 0;
+      for (const player of uniquePlayersByNickname.values()) {
         this.userLocations.set(player.id, {
           playerId: player.id,
           nickname: player.nickname,
@@ -266,9 +335,10 @@ export class LocationManager {
           seat: player.seat,
           updatedAt: player.updatedAt
         });
+        addedCount++;
       }
 
-      console.log(`LocationManager: Initialized with ${players.length} users`);
+      console.log(`LocationManager: Initialized with ${addedCount} unique users (filtered from ${players.length} database records)`);
       console.log('LocationManager: Current locations:', this.getLocationSummary());
     } catch (error) {
       console.error('LocationManager: Failed to initialize:', error);
