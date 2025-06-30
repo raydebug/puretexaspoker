@@ -29,14 +29,14 @@ class UIAIPlayer {
   }
 
   async initialize() {
-    console.log(\`🤖 Initializing UI AI Player: \${this.config.name}\`);
+    console.log(`🤖 Initializing UI AI Player: ${this.config.name}`);
     
     // Create unique browser instance
     const chromeOptions = new chrome.Options();
     const timestamp = Date.now();
-    const userDataDir = \`/tmp/ai_player_\${this.config.name}_\${timestamp}\`;
+    const userDataDir = `/tmp/ai_player_${this.config.name}_${timestamp}`;
     
-    chromeOptions.addArguments(\`--user-data-dir=\${userDataDir}\`);
+    chromeOptions.addArguments(`--user-data-dir=${userDataDir}`);
     chromeOptions.addArguments('--no-sandbox');
     chromeOptions.addArguments('--disable-dev-shm-usage');
     chromeOptions.addArguments('--window-size=1280,720');
@@ -52,11 +52,11 @@ class UIAIPlayer {
       .setChromeOptions(chromeOptions)
       .build();
       
-    console.log(\`✅ AI Player \${this.config.name} browser initialized\`);
+    console.log(`✅ AI Player ${this.config.name} browser initialized`);
   }
 
   async joinGame(tableId = 1) {
-    console.log(\`🎯 AI \${this.config.name} joining game on table \${tableId}\`);
+    console.log(`🎯 AI ${this.config.name} joining game on table ${tableId}`);
     
     try {
       // Step 1: Navigate to poker lobby
@@ -76,12 +76,12 @@ class UIAIPlayer {
       await this.startGameLoop();
       
     } catch (error) {
-      console.error(\`❌ AI \${this.config.name} failed to join game:\`, error.message);
+      console.error(`❌ AI ${this.config.name} failed to join game:`, error.message);
     }
   }
 
   async login() {
-    console.log(\`🔐 AI \${this.config.name} logging in...\`);
+    console.log(`🔐 AI ${this.config.name} logging in...`);
     
     try {
       // Look for login elements
@@ -101,19 +101,19 @@ class UIAIPlayer {
       await loginButton.click();
       
       await this.delay(2000);
-      console.log(\`✅ AI \${this.config.name} logged in successfully\`);
+      console.log(`✅ AI ${this.config.name} logged in successfully`);
       
     } catch (error) {
-      console.log(\`⚠️ Login method 1 failed, trying alternative...\`);
+      console.log(`⚠️ Login method 1 failed, trying alternative...`);
       
       // Alternative login method - direct URL with params
-      await this.driver.get(\`http://localhost:3000/join?nickname=\${this.config.name}\`);
+      await this.driver.get(`http://localhost:3000/join?nickname=${this.config.name}`);
       await this.delay(3000);
     }
   }
 
   async navigateToTable(tableId) {
-    console.log(\`🏃 AI \${this.config.name} navigating to table \${tableId}...\`);
+    console.log(`🏃 AI ${this.config.name} navigating to table ${tableId}...`);
     
     try {
       // Look for table selection
@@ -127,7 +127,7 @@ class UIAIPlayer {
         await this.delay(2000);
       } else {
         // Direct navigation to game page
-        await this.driver.get(\`http://localhost:3000/game/\${tableId}\`);
+        await this.driver.get(`http://localhost:3000/game/${tableId}`);
         await this.delay(3000);
       }
       
@@ -137,15 +137,15 @@ class UIAIPlayer {
         15000
       );
       
-      console.log(\`✅ AI \${this.config.name} reached poker table\`);
+      console.log(`✅ AI ${this.config.name} reached poker table`);
       
     } catch (error) {
-      console.error(\`❌ Failed to navigate to table:\`, error.message);
+      console.error(`❌ Failed to navigate to table:`, error.message);
     }
   }
 
   async takeSeat() {
-    console.log(\`💺 AI \${this.config.name} looking for available seat...\`);
+    console.log(`💺 AI ${this.config.name} looking for available seat...`);
     
     try {
       // Look for available seats
@@ -176,11 +176,11 @@ class UIAIPlayer {
       // Confirm seat selection
       await this.confirmSeatSelection();
       
-      console.log(\`✅ AI \${this.config.name} took a seat\`);
+      console.log(`✅ AI ${this.config.name} took a seat`);
       this.isPlaying = true;
       
     } catch (error) {
-      console.error(\`❌ Failed to take seat:\`, error.message);
+      console.error(`❌ Failed to take seat:`, error.message);
     }
   }
 
@@ -197,7 +197,7 @@ class UIAIPlayer {
       
     } catch (error) {
       // Buy-in dialog might not appear
-      console.log(\`💰 No buy-in dialog found for \${this.config.name}\`);
+      console.log(`💰 No buy-in dialog found for ${this.config.name}`);
     }
   }
 
@@ -214,12 +214,12 @@ class UIAIPlayer {
       }
       
     } catch (error) {
-      console.log(\`⚠️ No confirmation needed for \${this.config.name}\`);
+      console.log(`⚠️ No confirmation needed for ${this.config.name}`);
     }
   }
 
   async startGameLoop() {
-    console.log(\`🎮 AI \${this.config.name} starting game loop...\`);
+    console.log(`🎮 AI ${this.config.name} starting game loop...`);
     
     while (this.isPlaying) {
       try {
@@ -235,7 +235,7 @@ class UIAIPlayer {
         await this.delay(1000);
         
       } catch (error) {
-        console.error(\`⚠️ Game loop error for \${this.config.name}:\`, error.message);
+        console.error(`⚠️ Game loop error for ${this.config.name}:`, error.message);
         await this.delay(2000);
       }
     }
@@ -295,7 +295,7 @@ class UIAIPlayer {
   }
 
   async makeDecision() {
-    console.log(\`🧠 AI \${this.config.name} making decision...\`);
+    console.log(`🧠 AI ${this.config.name} making decision...`);
     
     // Add realistic thinking time
     await this.delay(this.config.reactionTime + Math.random() * 1000);
@@ -319,7 +319,7 @@ class UIAIPlayer {
       const decision = this.calculateDecision(actions);
       
       if (decision) {
-        console.log(\`🎯 AI \${this.config.name} decides: \${decision.action}\`);
+        console.log(`🎯 AI ${this.config.name} decides: ${decision.action}`);
         
         // Handle bet/raise amount if needed
         if (decision.action.includes('bet') || decision.action.includes('raise')) {
@@ -332,7 +332,7 @@ class UIAIPlayer {
       }
       
     } catch (error) {
-      console.error(\`❌ Decision making error:\`, error.message);
+      console.error(`❌ Decision making error:`, error.message);
     }
   }
 
@@ -440,7 +440,7 @@ class UIAIPlayer {
   }
 
   async disconnect() {
-    console.log(\`👋 AI \${this.config.name} disconnecting...\`);
+    console.log(`👋 AI ${this.config.name} disconnecting...`);
     this.isPlaying = false;
     
     if (this.driver) {
