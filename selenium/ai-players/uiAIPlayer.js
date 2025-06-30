@@ -588,32 +588,74 @@ class UIAIPlayer {
           if (existingSocket && existingSocket.connected) {
             console.log("🔌 AI: Using existing authenticated socketService connection");
             
-            // **CRITICAL FIX**: Ensure session data by calling joinTable first
-            const nickname = localStorage.getItem('nickname');
-            if (nickname) {
-              console.log("🔌 AI: Establishing session data via joinTable for " + nickname);
-              existingSocket.emit('joinTable', {
-                tableId: 1,
-                nickname: nickname,
-                buyIn: arguments[1]
-              });
-              
-              // Wait a moment for session data to be set, then call takeSeat
-              setTimeout(() => {
-                console.log("🔌 AI: Now calling takeSeat with established session");
+                          // **CRITICAL FIX**: Ensure session data by calling joinTable first
+              const nickname = localStorage.getItem('nickname');
+              if (nickname) {
+                console.log("🔌 AI: Establishing session data via joinTable for " + nickname);
+                existingSocket.emit('joinTable', {
+                  tableId: 1,
+                  nickname: nickname,
+                  buyIn: arguments[1]
+                });
+                
+                // Wait a moment for session data to be set, then call takeSeat
+                setTimeout(() => {
+                  console.log("🔌 AI: Now calling takeSeat with established session");
+                  existingSocket.emit('takeSeat', { 
+                    seatNumber: arguments[0], 
+                    buyIn: arguments[1] 
+                  });
+                  console.log("🔌 AI: takeSeat event emitted via socketService for seat " + arguments[0]);
+                  
+                  // **CRITICAL**: Set up proper player identity for future actions
+                  setTimeout(() => {
+                    console.log("🔌 AI: Setting up multi-browser synchronization");
+                    
+                    // Force join the game room for state synchronization across browsers
+                    existingSocket.emit('joinRoom', 'game:1');
+                    
+                    // Store player identity globally for WebSocket actions
+                    window.currentAIPlayer = {
+                      playerId: existingSocket.id,
+                      nickname: nickname,
+                      socketId: existingSocket.id,
+                      seatNumber: arguments[0],
+                      tableId: 1,
+                      gameId: '1'
+                    };
+                    
+                    // Update localStorage for frontend reference
+                    localStorage.setItem('currentPlayerId', existingSocket.id);
+                    localStorage.setItem('currentPlayerNickname', nickname);
+                    localStorage.setItem('currentPlayerSeat', arguments[0]);
+                    localStorage.setItem('gameId', '1');
+                    
+                    // **CRITICAL**: Monkey patch WebSocket event methods to include player identification
+                    const originalEmit = existingSocket.emit;
+                    existingSocket.emit = function(event, data, ...args) {
+                      // For game action events, ensure player identification is included
+                      if (event && event.startsWith('game:') && data && typeof data === 'object') {
+                        if (!data.playerId && window.currentAIPlayer) {
+                          data.playerId = window.currentAIPlayer.playerId;
+                          data.nickname = window.currentAIPlayer.nickname;
+                          console.log("🔌 AI: Auto-added player identification to " + event + ":", data);
+                        }
+                      }
+                      return originalEmit.call(this, event, data, ...args);
+                    };
+                    
+                    console.log("🔌 AI: Multi-browser synchronization setup completed");
+                    console.log("🔌 AI: Player identity:", window.currentAIPlayer);
+                    
+                  }, 1000);
+                }, 2000);
+              } else {
+                console.log("🔌 AI: No nickname found, calling takeSeat directly");
                 existingSocket.emit('takeSeat', { 
                   seatNumber: arguments[0], 
                   buyIn: arguments[1] 
                 });
-                console.log("🔌 AI: takeSeat event emitted via socketService for seat " + arguments[0]);
-              }, 2000);
-            } else {
-              console.log("🔌 AI: No nickname found, calling takeSeat directly");
-              existingSocket.emit('takeSeat', { 
-                seatNumber: arguments[0], 
-                buyIn: arguments[1] 
-              });
-            }
+              }
             return;
           } else {
             console.log("🔌 AI: SocketService exists but socket not connected");
