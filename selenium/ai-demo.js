@@ -60,18 +60,22 @@ async function runUIAIDemo() {
     console.log('   - ConservativeBot: Plays tight, folds often');
     console.log('   - BlufferBot: Makes big bluffs, unpredictable');
     console.log('   - BalancedBot: Mixed strategy, moderate aggression');
-    console.log('\n⏱️  Demo will run for 5 minutes...\n');
+    console.log('\n🔄 Demo will run endlessly until you stop it (Ctrl+C)...\n');
 
-    // Let the demo run for 5 minutes
-    await new Promise(resolve => setTimeout(resolve, 300000));
+    // Run indefinitely until manually stopped
+    await new Promise(() => {}); // Run forever
 
   } catch (error) {
     console.error('❌ Demo error:', error);
   } finally {
     // Cleanup - disconnect all AI players
-    console.log('\n🛑 Demo complete, disconnecting AI players...');
+    console.log('\n🛑 Demo stopping, disconnecting AI players...');
     for (const player of aiPlayers) {
-      await player.disconnect();
+      try {
+        await player.disconnect();
+      } catch (e) {
+        console.log(`⚠️ Error disconnecting player: ${e.message}`);
+      }
     }
     console.log('✅ All AI players disconnected');
   }
@@ -131,7 +135,17 @@ if (demoType === 'human-vs-ai') {
 }
 
 // Handle graceful shutdown
-process.on('SIGINT', () => {
-  console.log('\n🛑 Shutting down demo...');
+let isShuttingDown = false;
+process.on('SIGINT', async () => {
+  if (isShuttingDown) {
+    console.log('\n⚡ Force quit detected, exiting immediately...');
+    process.exit(1);
+  }
+  
+  isShuttingDown = true;
+  console.log('\n🛑 Graceful shutdown initiated...');
+  console.log('🔄 Press Ctrl+C again to force quit');
+  
+  // The cleanup will be handled by the finally blocks in the running demos
   process.exit(0);
 }); 

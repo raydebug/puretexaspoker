@@ -26,6 +26,11 @@ class UIAIPlayer {
     
     this.isPlaying = false;
     this.seatNumber = null;
+    
+    // Turn detection cooldown to prevent loops
+    this.lastTurnDetection = 0;
+    this.lastActionTime = 0;
+    this.turnCooldownMs = 5000; // 5 second cooldown between turn detections
   }
 
   async initialize() {
@@ -670,27 +675,35 @@ class UIAIPlayer {
 
   async startGameLoop() {
     console.log(`🎮 AI ${this.config.name} starting game loop...`);
-    console.log(`🕐 AI will stay connected for at least 10 minutes of gameplay`);
+    console.log(`🔄 AI will stay connected indefinitely for continuous gameplay`);
     
     let loopCount = 0;
-    const maxLoops = 600; // 10 minutes at 1-second intervals
+    const maxLoops = 999999; // Essentially unlimited (999,999 seconds = ~11.5 days)
     
     while (this.isPlaying && loopCount < maxLoops) {
       try {
         loopCount++;
         
-        // Every minute, log status
-        if (loopCount % 60 === 0) {
-          console.log(`🎮 AI ${this.config.name} gameplay status: ${Math.floor(loopCount/60)} minutes connected`);
-        }
+                 // Every 5 minutes, log status
+         if (loopCount % 300 === 0 && loopCount > 0) {
+           console.log(`🎮 AI ${this.config.name} gameplay status: ${Math.floor(loopCount/60)} minutes connected`);
+         }
         
         // Update game state by reading UI
         await this.readGameState();
         
-        // Check if it's our turn
+        // Check if it's our turn (with cooldown to prevent loops)
+        const currentTime = Date.now();
         if (await this.isMyTurn()) {
-          console.log(`🎯 AI ${this.config.name} detected turn - making decision...`);
-          await this.makeDecision();
+          // Prevent rapid repeated turn detections
+          if (currentTime - this.lastTurnDetection < this.turnCooldownMs) {
+            console.log(`⏳ AI ${this.config.name} turn detected but in cooldown period (${Math.round((this.turnCooldownMs - (currentTime - this.lastTurnDetection))/1000)}s remaining)`);
+          } else {
+            console.log(`🎯 AI ${this.config.name} detected turn - making decision...`);
+            this.lastTurnDetection = currentTime;
+            await this.makeDecisionWithTimeout();
+            this.lastActionTime = Date.now();
+          }
         }
         
         // Wait before next check
@@ -704,11 +717,11 @@ class UIAIPlayer {
       }
     }
     
-    if (loopCount >= maxLoops) {
-      console.log(`🕐 AI ${this.config.name} completed 10-minute gameplay session`);
-    } else {
-      console.log(`🔚 AI ${this.config.name} game loop ended (isPlaying: ${this.isPlaying})`);
-    }
+         if (loopCount >= maxLoops) {
+       console.log(`🕐 AI ${this.config.name} reached maximum session duration`);
+     } else {
+       console.log(`🔚 AI ${this.config.name} game loop ended (isPlaying: ${this.isPlaying})`);
+     }
   }
 
   async readGameState() {
@@ -764,19 +777,42 @@ class UIAIPlayer {
     }
   }
 
-  async makeDecision() {
-    console.log(`🧠 AI ${this.config.name} making decision...`);
-    
-    // Add realistic thinking time
-    await this.delay(this.config.reactionTime + Math.random() * 1000);
+  async makeDecisionWithTimeout() {
+    console.log(`🧠 AI ${this.config.name} making decision with timeout handling...`);
     
     try {
+      // First, check for countdown timer
+      const countdownInfo = await this.checkCountdownTimer();
+      
+      let thinkingTime = this.config.reactionTime + Math.random() * 1000;
+      
+      // If countdown is detected and low, act quickly
+      if (countdownInfo.hasCountdown && countdownInfo.timeLeft < 5000) {
+        console.log(`⚡ AI ${this.config.name} countdown detected: ${countdownInfo.timeLeft}ms left - acting quickly!`);
+        thinkingTime = Math.min(thinkingTime, countdownInfo.timeLeft - 1000); // Leave 1 second buffer
+      }
+      
+      // Cap minimum thinking time
+      thinkingTime = Math.max(thinkingTime, 500); // At least 500ms to think
+      
+      console.log(`🧠 AI ${this.config.name} thinking for ${Math.round(thinkingTime)}ms...`);
+      await this.delay(thinkingTime);
+      
+      // Check if we still have our turn after thinking
+      if (!(await this.isMyTurn())) {
+        console.log(`⏰ AI ${this.config.name} turn expired during thinking - countdown ended`);
+        return;
+      }
+      
       // Get available actions
       const actionButtons = await this.driver.findElements(
         By.css('.action-buttons button:not([disabled]), .player-actions button:not([disabled])')
       );
       
-      if (actionButtons.length === 0) return;
+      if (actionButtons.length === 0) {
+        console.log(`⏰ AI ${this.config.name} no action buttons available - turn ended`);
+        return;
+      }
       
       // Read button text to understand options
       const actions = [];
@@ -785,24 +821,157 @@ class UIAIPlayer {
         actions.push({ button, action: text.toLowerCase() });
       }
       
-      // Make decision based on personality
-      const decision = this.calculateDecision(actions);
+      // Make decision based on personality, but default to safe actions if time is running out
+      let decision;
+      if (countdownInfo.hasCountdown && countdownInfo.timeLeft < 3000) {
+        console.log(`⚡ AI ${this.config.name} using quick decision - time critical!`);
+        decision = this.getQuickDecision(actions);
+      } else {
+        decision = this.calculateDecision(actions);
+      }
       
       if (decision) {
         console.log(`🎯 AI ${this.config.name} decides: ${decision.action}`);
         
-        // Handle bet/raise amount if needed
+        // Handle bet/raise amount if needed (but keep it simple if time is short)
         if (decision.action.includes('bet') || decision.action.includes('raise')) {
           await this.handleBetAmount(decision.amount);
         }
         
         // Click the action button
         await decision.button.click();
+        console.log(`✅ AI ${this.config.name} executed ${decision.action}`);
         await this.delay(1000);
+        
+        // Verify the action was processed by checking if we still have the turn
+        setTimeout(async () => {
+          if (await this.isMyTurn()) {
+            console.log(`⚠️ AI ${this.config.name} action may not have registered - still showing as our turn`);
+          }
+        }, 2000);
       }
       
     } catch (error) {
-      console.error(`❌ Decision making error:`, error.message);
+      console.log(`❌ Decision making error for ${this.config.name}: ${error.message}`);
+      
+      // Emergency action - try to check or fold to avoid timeout
+      try {
+        await this.emergencyAction();
+      } catch (emergencyError) {
+        console.log(`❌ Emergency action failed: ${emergencyError.message}`);
+      }
+    }
+  }
+
+  async checkCountdownTimer() {
+    try {
+      // Look for countdown timer elements with various selectors
+      const timerSelectors = [
+        '[data-testid*="countdown"]',
+        '[data-testid*="timer"]',
+        '.countdown',
+        '.timer',
+        '.decision-timer',
+        '.timeout',
+        '.time-left'
+      ];
+      
+      for (const selector of timerSelectors) {
+        try {
+          const timerElement = await this.driver.findElement(By.css(selector));
+          const timerText = await timerElement.getText();
+          
+          // Extract time from text (look for numbers)
+          const timeMatch = timerText.match(/(\d+)/);
+          if (timeMatch) {
+            const timeLeft = parseInt(timeMatch[1]) * 1000; // Convert to milliseconds
+            console.log(`⏰ AI ${this.config.name} detected countdown: ${timeLeft}ms remaining`);
+            return { hasCountdown: true, timeLeft, element: timerElement };
+          }
+        } catch (e) {
+          // Timer not found with this selector, try next
+        }
+      }
+      
+      return { hasCountdown: false, timeLeft: Infinity };
+      
+    } catch (error) {
+      console.log(`⚠️ Countdown detection error: ${error.message}`);
+      return { hasCountdown: false, timeLeft: Infinity };
+    }
+  }
+
+  getQuickDecision(actions) {
+    // Quick decision logic - prioritize safe actions when time is running out
+    console.log(`⚡ Making quick decision from actions: ${actions.map(a => a.action).join(', ')}`);
+    
+    // First priority: Check (free action)
+    const checkAction = actions.find(a => a.action.includes('check'));
+    if (checkAction) {
+      console.log(`⚡ Quick decision: CHECK (safe and free)`);
+      return checkAction;
+    }
+    
+    // Second priority: Call (if reasonable amount)
+    const callAction = actions.find(a => a.action.includes('call'));
+    if (callAction) {
+      console.log(`⚡ Quick decision: CALL (staying in game)`);
+      return callAction;
+    }
+    
+    // Third priority: Fold (safe exit)
+    const foldAction = actions.find(a => a.action.includes('fold'));
+    if (foldAction) {
+      console.log(`⚡ Quick decision: FOLD (safe exit)`);
+      return foldAction;
+    }
+    
+    // Fallback: First available action
+    console.log(`⚡ Quick decision: First available action (${actions[0]?.action})`);
+    return actions[0] || null;
+  }
+
+  async emergencyAction() {
+    console.log(`🚨 AI ${this.config.name} performing emergency action to avoid timeout!`);
+    
+    try {
+      // Get any available action buttons
+      const actionButtons = await this.driver.findElements(
+        By.css('.action-buttons button:not([disabled]), .player-actions button:not([disabled])')
+      );
+      
+      if (actionButtons.length === 0) {
+        console.log(`🚨 No action buttons available for emergency action`);
+        return;
+      }
+      
+      // Read button text to find safe actions
+      const actions = [];
+      for (let button of actionButtons) {
+        const text = await button.getText().catch(() => '');
+        actions.push({ button, action: text.toLowerCase() });
+      }
+      
+      // Priority order for emergency actions
+      const priorities = ['check', 'fold', 'call'];
+      
+      for (const priority of priorities) {
+        const action = actions.find(a => a.action.includes(priority));
+        if (action) {
+          console.log(`🚨 Emergency action: ${action.action.toUpperCase()}`);
+          await action.button.click();
+          return;
+        }
+      }
+      
+      // If no priority actions found, click first available
+      if (actions.length > 0) {
+        console.log(`🚨 Emergency action: ${actions[0].action.toUpperCase()} (first available)`);
+        await actions[0].button.click();
+      }
+      
+    } catch (error) {
+      console.log(`🚨 Emergency action failed: ${error.message}`);
     }
   }
 
