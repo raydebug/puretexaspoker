@@ -130,14 +130,53 @@ export const Game: React.FC = () => {
       }
     };
 
-    // Add event listener for UI sync
+    // **NEW**: Handle force game state sync from backend
+    const handleForceSyncGameState = (event: CustomEvent) => {
+      console.log('🔄 GAME: Received forceSyncGameState custom event');
+      // Trigger re-render by updating error state
+      setError(null);
+    };
+
+    // **NEW**: Handle players list updates to ensure all browser instances show all players
+    const handlePlayersListUpdate = (event: CustomEvent) => {
+      console.log('👥 GAME: Received playersListUpdate custom event:', event.detail);
+      const { players, totalPlayers, reason } = event.detail;
+      
+      console.log(`👥 GAME: Updating UI with ${totalPlayers} players from ${reason}:`, 
+        players.map((p: any) => `${p.name} (seat ${p.seatNumber})`));
+      
+      // If we have a game state, update it with new players
+      if (gameState) {
+        const updatedGameState = { ...gameState, players: players };
+        console.log(`👥 GAME: Setting game state with ${players.length} players`);
+        setGameState(updatedGameState);
+        
+        // Find current player in updated list
+        const player = players.find((p: any) => p && p.name === nickname);
+        if (player) {
+          console.log(`👥 GAME: Found current player ${nickname} in updated list`);
+          setCurrentPlayer(player);
+        }
+      } else {
+        console.log('👥 GAME: No game state available, cannot update players');
+      }
+    };
+
+    // Add event listeners for all UI sync events
     window.addEventListener('forceUISync', handleForceUISync as EventListener);
+    window.addEventListener('forceSyncGameState', handleForceSyncGameState as EventListener);
+    window.addEventListener('playersListUpdate', handlePlayersListUpdate as EventListener);
 
     return () => {
       // Unsubscribe from events
       unsubGameState();
       unsubError();
+      
+      // Remove all custom event listeners
       window.removeEventListener('forceUISync', handleForceUISync as EventListener);
+      window.removeEventListener('forceSyncGameState', handleForceSyncGameState as EventListener);
+      window.removeEventListener('playersListUpdate', handlePlayersListUpdate as EventListener);
+      
       socketService.disconnect();
     };
   }, []);

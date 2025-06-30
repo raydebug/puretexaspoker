@@ -456,6 +456,66 @@ export class SocketService {
       }
     });
 
+    // **NEW**: Handle force game state sync for AI browser instances
+    socket.on('forceSyncGameState', (data: { gameState: GameState; reason: string; playerId: string; playerName: string; seatNumber: number; timestamp: number }) => {
+      console.log('🔄 FRONTEND: Received forceSyncGameState event:', {
+        reason: data.reason,
+        playerId: data.playerId,
+        playerName: data.playerName,
+        seatNumber: data.seatNumber,
+        playersCount: data.gameState.players?.length || 0
+      });
+      
+      if (data.gameState) {
+        console.log('🔄 FRONTEND: Players in forced sync:', data.gameState.players.map(p => `${p.name} (seat ${p.seatNumber})`));
+        
+        // Update local game state
+        this.gameState = data.gameState;
+        this.players = data.gameState.players.filter(p => p !== null);
+        
+        // Emit the game state update to all listeners
+        this.emitGameStateUpdate(data.gameState);
+        
+        // Force UI synchronization
+        this.forceSynchronizeUIState(data.gameState);
+        
+        console.log('🔄 FRONTEND: Force sync completed - UI should show all players');
+      }
+    });
+
+    // **NEW**: Handle players list updates
+    socket.on('playersListUpdate', (data: { gameId: string; players: any[]; totalPlayers: number; reason: string; timestamp: number }) => {
+      console.log('👥 FRONTEND: Received playersListUpdate event:', {
+        gameId: data.gameId,
+        totalPlayers: data.totalPlayers,
+        reason: data.reason,
+        players: data.players.map(p => `${p.name} (seat ${p.seatNumber})`)
+      });
+      
+      // Update players list
+      this.players = data.players;
+      
+      // Update game state if we have one
+      if (this.gameState) {
+        this.gameState.players = data.players;
+        this.emitGameStateUpdate(this.gameState);
+      }
+      
+      // Force UI synchronization
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('playersListUpdate', { 
+          detail: { 
+            players: data.players,
+            totalPlayers: data.totalPlayers,
+            reason: data.reason,
+            timestamp: data.timestamp
+          } 
+        }));
+      }
+      
+      console.log('👥 FRONTEND: Players list update completed');
+    });
+
     // Also handle direct gameState events for better coverage
     socket.on('gameState', (gameState: GameState) => {
       console.log('🎮 FRONTEND: Received gameState event:', {

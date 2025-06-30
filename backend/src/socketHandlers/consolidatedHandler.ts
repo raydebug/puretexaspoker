@@ -701,8 +701,24 @@ export function registerConsolidatedHandlers(io: Server) {
         socket.emit('tableJoined', { tableId: socket.data.tableId, role: 'player', buyIn, gameId: socket.data.gameId });
         socket.emit('gameJoined', { gameId: socket.data.gameId, playerId: socket.data.playerId, gameState });
 
-        // Broadcast updates
+        // **ENHANCED BROADCAST**: Ensure all browser instances get updated player state
+        console.log(`[CONSOLIDATED] Broadcasting complete game state to all clients in game:${socket.data.gameId}`);
+        console.log(`[CONSOLIDATED] Game state has ${gameState.players.length} players:`, gameState.players.map(p => `${p.name} (seat ${p.seatNumber})`));
+        
+        // Broadcast to ALL sockets in the game room (including the current socket)
         io.to(`game:${socket.data.gameId}`).emit('gameState', gameState);
+        
+        // Force UI sync event for all browser instances
+        io.to(`game:${socket.data.gameId}`).emit('forceSyncGameState', {
+          gameState,
+          reason: 'player_seat_taken',
+          playerId: socket.data.playerId,
+          playerName: socket.data.nickname,
+          seatNumber,
+          timestamp: Date.now()
+        });
+        
+        // Location update
         io.to(`game:${socket.data.gameId}`).emit('location:updated', {
           playerId: socket.id,
           nickname: socket.data.nickname,
@@ -723,6 +739,25 @@ export function registerConsolidatedHandlers(io: Server) {
         });
         
         console.log(`[CONSOLIDATED] Broadcasted table ${socket.data.tableId} user update - Observers: ${observers.length}, Players: ${players.length}, Total: ${totalUsers}`);
+        
+        // **ADDITIONAL BROADCAST**: Send player list update to ensure all browser instances see all players
+        const allPlayersInGame = gameState.players.map(player => ({
+          id: player.id,
+          name: player.name,
+          seatNumber: player.seatNumber,
+          chips: player.chips,
+          isActive: player.isActive
+        }));
+        
+        io.to(`game:${socket.data.gameId}`).emit('playersListUpdate', {
+          gameId: socket.data.gameId,
+          players: allPlayersInGame,
+          totalPlayers: allPlayersInGame.length,
+          reason: 'seat_taken',
+          timestamp: Date.now()
+        });
+        
+        console.log(`[CONSOLIDATED] Broadcasted players list update with ${allPlayersInGame.length} players to all browser instances`);
 
         console.log(`[CONSOLIDATED] Successfully seated ${socket.data.nickname} at seat ${seatNumber}`);
         
