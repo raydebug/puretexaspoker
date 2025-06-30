@@ -215,55 +215,135 @@ class UIAIPlayer {
     console.log(`💺 AI ${this.config.name} looking for available seat...`);
     
     try {
-      // Wait for the poker table to load completely
-      await this.delay(3000);
+      // Wait for the poker table to load completely and WebSocket to sync
+      await this.delay(5000);
       
-      // Look for available seats using the correct data-testid pattern
-      const availableSeats = [];
-      for (let seatNum = 1; seatNum <= 10; seatNum++) {
-        try {
-          const seatElement = await this.driver.findElement(
-            By.css(`[data-testid="available-seat-${seatNum}"]`)
-          );
-          if (await seatElement.isDisplayed()) {
-            availableSeats.push({ element: seatElement, number: seatNum });
+      // Try up to 3 times to find and take a seat (in case of race conditions)
+      let attempts = 0;
+      const maxAttempts = 3;
+      
+      while (attempts < maxAttempts) {
+        attempts++;
+        console.log(`🔄 AI ${this.config.name} seat attempt ${attempts}/${maxAttempts}`);
+        
+        // Refresh the page to get latest seat availability
+        if (attempts > 1) {
+          console.log(`🔄 Refreshing page to get latest seat data...`);
+          await this.driver.navigate().refresh();
+          await this.delay(4000);
+        }
+        
+        // Look for available seats using the correct data-testid pattern
+        const availableSeats = [];
+        for (let seatNum = 1; seatNum <= 10; seatNum++) {
+          try {
+            const seatElement = await this.driver.findElement(
+              By.css(`[data-testid="available-seat-${seatNum}"]`)
+            );
+            if (await seatElement.isDisplayed() && await seatElement.isEnabled()) {
+              // Double-check the seat is actually clickable
+              const isClickable = await this.driver.executeScript(
+                'return arguments[0].offsetParent !== null && !arguments[0].disabled;',
+                seatElement
+              );
+              
+              if (isClickable) {
+                availableSeats.push({ element: seatElement, number: seatNum });
+              }
+            }
+          } catch (e) {
+            // Seat not available or doesn't exist
           }
-        } catch (e) {
-          // Seat not available or doesn't exist
+        }
+        
+        console.log(`🎯 AI ${this.config.name} found ${availableSeats.length} available seats: ${availableSeats.map(s => s.number).join(', ')}`);
+        
+        if (availableSeats.length === 0) {
+          if (attempts < maxAttempts) {
+            console.log(`⏳ No seats available, waiting before retry...`);
+            await this.delay(3000);
+            continue;
+          } else {
+            throw new Error('No available seats found after multiple attempts');
+          }
+        }
+        
+        // Pick a random available seat
+        const randomSeat = availableSeats[Math.floor(Math.random() * availableSeats.length)];
+        console.log(`🎯 AI ${this.config.name} selecting seat ${randomSeat.number}`);
+        
+        try {
+          // Scroll seat into view and click
+          await this.driver.executeScript(
+            'arguments[0].scrollIntoView({behavior: "smooth", block: "center"});',
+            randomSeat.element
+          );
+          await this.delay(500);
+          
+          // Click the seat to open dialog
+          await randomSeat.element.click();
+          await this.delay(2000);
+          
+          // Wait for seat selection dialog to appear
+          console.log(`⏳ Waiting for seat selection dialog...`);
+          const dialog = await this.driver.wait(
+            until.elementLocated(By.css('[data-testid="seat-dialog"]')),
+            8000
+          );
+          
+          // Handle buy-in selection
+          await this.handleSeatDialog();
+          
+          // Click confirm button
+          await this.confirmSeatSelection();
+          
+          // Wait for dialog to close - this indicates success
+          await this.driver.wait(until.stalenessOf(dialog), 15000);
+          
+          // Verify we actually got the seat by checking if we're no longer an observer
+          await this.delay(2000);
+          const isStillObserver = await this.checkIfStillObserver();
+          
+          if (!isStillObserver) {
+            console.log(`✅ AI ${this.config.name} successfully took seat ${randomSeat.number}`);
+            this.seatNumber = randomSeat.number;
+            this.isPlaying = true;
+            return; // Success!
+          } else {
+            console.log(`⚠️ Still observer after seat attempt, trying again...`);
+            throw new Error('Seat taking appeared to succeed but still observer');
+          }
+          
+        } catch (seatError) {
+          console.log(`⚠️ Seat ${randomSeat.number} attempt failed: ${seatError.message}`);
+          
+          // Close any open dialogs
+          try {
+            const dialogsToClose = await this.driver.findElements(By.css('[data-testid="seat-dialog"]'));
+            for (const dialog of dialogsToClose) {
+              try {
+                const closeButton = await dialog.findElement(By.css('button:contains("×"), .close-button'));
+                await closeButton.click();
+                await this.delay(500);
+              } catch (e) {
+                // No close button or dialog already closed
+              }
+            }
+          } catch (e) {
+            // No dialogs to close
+          }
+          
+          if (attempts < maxAttempts) {
+            console.log(`🔄 Retrying with different seat...`);
+            await this.delay(2000);
+            continue;
+          } else {
+            throw seatError;
+          }
         }
       }
       
-      if (availableSeats.length === 0) {
-        throw new Error('No available seats found');
-      }
-      
-      // Pick a random available seat
-      const randomSeat = availableSeats[Math.floor(Math.random() * availableSeats.length)];
-      console.log(`🎯 AI ${this.config.name} selecting seat ${randomSeat.number}`);
-      
-      // Click the seat to open dialog
-      await randomSeat.element.click();
-      await this.delay(1000);
-      
-      // Wait for seat selection dialog to appear
-      console.log(`⏳ Waiting for seat selection dialog...`);
-      const dialog = await this.driver.wait(
-        until.elementLocated(By.css('[data-testid="seat-dialog"]')),
-        10000
-      );
-      
-      // Handle buy-in selection
-      await this.handleSeatDialog();
-      
-      // Click confirm button
-      await this.confirmSeatSelection();
-      
-      // Wait for dialog to close
-      await this.driver.wait(until.stalenessOf(dialog), 10000);
-      
-      console.log(`✅ AI ${this.config.name} took seat ${randomSeat.number}`);
-      this.seatNumber = randomSeat.number;
-      this.isPlaying = true;
+      throw new Error(`Failed to take seat after ${maxAttempts} attempts`);
       
     } catch (error) {
       console.error(`❌ AI ${this.config.name} failed to take seat:`, error.message);
@@ -576,6 +656,31 @@ class UIAIPlayer {
   extractNumber(text) {
     const match = text.match(/\d+/);
     return match ? parseInt(match[0]) : 0;
+  }
+
+  async checkIfStillObserver() {
+    try {
+      // Check if we're still in observer view by looking for observer-specific elements
+      const observerIndicators = await this.driver.findElements(
+        By.css('[data-testid="observer-view"], .observer-mode, .observer-status')
+      );
+      
+      if (observerIndicators.length > 0) {
+        return true; // Still observer
+      }
+      
+      // Also check if we can see available seat buttons (observers can see these)
+      const availableSeats = await this.driver.findElements(
+        By.css('[data-testid*="available-seat"]')
+      );
+      
+      // If we see available seat buttons, we're likely still observing
+      return availableSeats.length > 0;
+      
+    } catch (error) {
+      console.log(`⚠️ Could not determine observer status: ${error.message}`);
+      return true; // Assume still observer if we can't determine
+    }
   }
 
   async handleWelcomePopupAndNavigation(tableId) {

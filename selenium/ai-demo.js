@@ -46,10 +46,11 @@ async function runUIAIDemo() {
       await aiPlayer.initialize();
       aiPlayers.push(aiPlayer);
       
-      // Stagger the joins to avoid conflicts
+      // Stagger the joins more aggressively to avoid conflicts
       setTimeout(() => {
+        console.log(`🚀 Starting ${playerConfigs[i].name} join process...`);
         aiPlayer.joinGame(1);
-      }, i * 3000);
+      }, i * 8000); // Increased from 3000 to 8000ms
     }
 
     console.log('\n🎮 All AI players initialized and joining game...');
@@ -97,8 +98,9 @@ async function runHumanVsAIDemo() {
       aiPlayers.push(aiPlayer);
       
       setTimeout(() => {
+        console.log(`🚀 Starting ${configs[i].name} join process...`);
         aiPlayer.joinGame(1);
-      }, i * 2000);
+      }, i * 6000); // Increased from 2000 to 6000ms
     }
 
     console.log('\n🎮 AI opponents ready! Join the game to play against them.');
