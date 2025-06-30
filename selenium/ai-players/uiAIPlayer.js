@@ -157,14 +157,14 @@ class UIAIPlayer {
         console.log(`⚠️ Failed to load lobby page: ${e.message}`);
       }
       
-      // Look for table selection with more specific selectors
-      const tableSelectors = [
-        `[data-testid="table-${tableId}"]`,
-        '[data-testid*="table"]',
-        '.table-card',
-        '.poker-table-card',
-        '[data-table-id]'
-      ];
+             // Look for table selection with more specific selectors
+       const tableSelectors = [
+         `[data-testid="join-table-${tableId}"]`,
+         '[data-testid*="join-table"]',
+         '[data-testid*="table"]',
+         '.table-card',
+         '.poker-table-card'
+       ];
       
       let foundTable = false;
       for (const selector of tableSelectors) {
@@ -188,12 +188,15 @@ class UIAIPlayer {
         console.log(`🔄 No table card found, navigating directly to game page...`);
         await this.driver.get(`http://localhost:3000/game/${tableId}`);
         await this.delay(4000);
+      } else {
+        // Handle the welcome popup and navigation flow
+        await this.handleWelcomePopupAndNavigation(tableId);
       }
       
       // Wait for poker table to load - be more patient
       console.log(`⏳ Waiting for poker table to load...`);
       await this.driver.wait(
-        until.elementLocated(By.css('[data-testid="poker-table"], [data-testid="observer-view"], .poker-table, .game-board')), 
+        until.elementLocated(By.css('[data-testid="poker-table"]')), 
         20000
       );
       
@@ -573,6 +576,109 @@ class UIAIPlayer {
   extractNumber(text) {
     const match = text.match(/\d+/);
     return match ? parseInt(match[0]) : 0;
+  }
+
+  async handleWelcomePopupAndNavigation(tableId) {
+    try {
+      console.log(`🎉 AI ${this.config.name} handling welcome popup...`);
+      
+      // Wait for welcome popup to appear
+      const welcomePopup = await this.driver.wait(
+        until.elementLocated(By.css('.welcome-popup, [data-testid="welcome-popup"], .popup-overlay')),
+        10000
+      );
+      
+      console.log(`✅ Welcome popup detected`);
+      
+      // Look for the continue/complete button in the popup
+      const continueSelectors = [
+        'button[data-testid="continue-btn"]',
+        'button[data-testid="welcome-continue"]',
+        'button:contains("Continue")',
+        'button:contains("Let\'s Go")',
+        'button:contains("Join Game")',
+        '.popup button',
+        '.welcome-popup button'
+      ];
+      
+      let continueButton = null;
+      for (const selector of continueSelectors) {
+        try {
+          if (selector.includes(':contains')) {
+            continueButton = await this.driver.findElement(
+              By.xpath(`//button[contains(text(), 'Continue') or contains(text(), 'Go') or contains(text(), 'Join')]`)
+            );
+          } else {
+            continueButton = await this.driver.findElement(By.css(selector));
+          }
+          console.log(`✅ Found continue button with selector: ${selector}`);
+          break;
+        } catch (e) {
+          continue;
+        }
+      }
+      
+      if (continueButton) {
+        await continueButton.click();
+        console.log(`🔘 Clicked continue button`);
+        
+        // Wait for navigation to join-table page
+        await this.driver.wait(
+          until.urlContains('/join-table'),
+          10000
+        );
+        console.log(`✅ Navigated to join-table page`);
+        
+        // Wait a bit for the page to load
+        await this.delay(2000);
+        
+        // Look for the final join/enter game button on the join-table page
+        const joinGameSelectors = [
+          'button[data-testid="join-game-btn"]',
+          'button:contains("Join Game")',
+          'button:contains("Enter Game")',
+          'button:contains("Start Playing")',
+          '.join-button',
+          'button[type="submit"]'
+        ];
+        
+        let joinGameButton = null;
+        for (const selector of joinGameSelectors) {
+          try {
+            if (selector.includes(':contains')) {
+              joinGameButton = await this.driver.findElement(
+                By.xpath(`//button[contains(text(), 'Join') or contains(text(), 'Enter') or contains(text(), 'Start')]`)
+              );
+            } else {
+              joinGameButton = await this.driver.findElement(By.css(selector));
+            }
+            console.log(`✅ Found join game button with selector: ${selector}`);
+            break;
+          } catch (e) {
+            continue;
+          }
+        }
+        
+        if (joinGameButton) {
+          await joinGameButton.click();
+          console.log(`🔘 Clicked join game button`);
+          await this.delay(3000);
+        } else {
+          // Fallback: navigate directly to game page
+          console.log(`🔄 No join game button found, navigating directly...`);
+          await this.driver.get(`http://localhost:3000/game/${tableId}`);
+          await this.delay(3000);
+        }
+      } else {
+        console.log(`⚠️ No continue button found in welcome popup`);
+      }
+      
+    } catch (error) {
+      console.log(`⚠️ Welcome popup handling failed: ${error.message}`);
+      // Fallback: navigate directly to game page
+      await this.driver.get(`http://localhost:3000/game/${tableId}`);
+      await this.delay(3000);
+    }
   }
 
   async delay(ms) {
