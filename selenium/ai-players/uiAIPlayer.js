@@ -84,31 +84,64 @@ class UIAIPlayer {
     console.log(`🔐 AI ${this.config.name} logging in...`);
     
     try {
-      // Look for login elements
+      // Look for login elements with more specific selectors
       const nicknameInput = await this.driver.wait(
-        until.elementLocated(By.css('input[placeholder*="nickname"], input[name="nickname"], #nickname')), 
-        10000
+        until.elementLocated(By.css('input[placeholder*="nickname"], input[name="nickname"], #nickname, input[type="text"]')), 
+        15000
       );
       
       await nicknameInput.clear();
       await nicknameInput.sendKeys(this.config.name);
-      await this.delay(500);
+      await this.delay(800);
       
-      // Find and click login/join button
-      const loginButton = await this.driver.findElement(
-        By.css('button[type="submit"], .join-button, .login-button')
-      );
-      await loginButton.click();
+      // Find and click login/join button with multiple selectors
+      let loginButton;
+      const buttonSelectors = [
+        'button[type="submit"]',
+        '.join-button',
+        '.login-button',
+        'button:contains("Join")',
+        'button:contains("Login")',
+        'button'
+      ];
       
-      await this.delay(2000);
-      console.log(`✅ AI ${this.config.name} logged in successfully`);
+      for (const selector of buttonSelectors) {
+        try {
+          if (selector.includes(':contains')) {
+            loginButton = await this.driver.findElement(
+              By.xpath(`//button[contains(text(), 'Join') or contains(text(), 'Login') or contains(text(), 'Enter')]`)
+            );
+          } else {
+            loginButton = await this.driver.findElement(By.css(selector));
+          }
+          break;
+        } catch (e) {
+          continue;
+        }
+      }
+      
+      if (loginButton) {
+        await loginButton.click();
+        await this.delay(3000);
+        console.log(`✅ AI ${this.config.name} logged in successfully`);
+      } else {
+        throw new Error('No login button found');
+      }
       
     } catch (error) {
-      console.log(`⚠️ Login method 1 failed, trying alternative...`);
+      console.log(`⚠️ Standard login failed, trying alternative methods...`);
       
       // Alternative login method - direct URL with params
-      await this.driver.get(`http://localhost:3000/join?nickname=${this.config.name}`);
-      await this.delay(3000);
+      await this.driver.get(`http://localhost:3000/join?nickname=${encodeURIComponent(this.config.name)}`);
+      await this.delay(4000);
+      
+      // If that fails, try the lobby directly
+      try {
+        await this.driver.get('http://localhost:3000/lobby');
+        await this.delay(2000);
+      } catch (e) {
+        console.log(`⚠️ Direct lobby access also failed for ${this.config.name}`);
+      }
     }
   }
 
@@ -116,31 +149,62 @@ class UIAIPlayer {
     console.log(`🏃 AI ${this.config.name} navigating to table ${tableId}...`);
     
     try {
-      // Look for table selection
-      const tableElements = await this.driver.findElements(
-        By.css('[data-testid*="table"], .table-card, .poker-table-card')
-      );
-      
-      if (tableElements.length > 0) {
-        // Click first available table
-        await tableElements[0].click();
+      // First, ensure we're on the lobby page to see tables
+      try {
+        await this.driver.get('http://localhost:3000');
         await this.delay(2000);
-      } else {
-        // Direct navigation to game page
-        await this.driver.get(`http://localhost:3000/game/${tableId}`);
-        await this.delay(3000);
+      } catch (e) {
+        console.log(`⚠️ Failed to load lobby page: ${e.message}`);
       }
       
-      // Wait for poker table to load
+      // Look for table selection with more specific selectors
+      const tableSelectors = [
+        `[data-testid="table-${tableId}"]`,
+        '[data-testid*="table"]',
+        '.table-card',
+        '.poker-table-card',
+        '[data-table-id]'
+      ];
+      
+      let foundTable = false;
+      for (const selector of tableSelectors) {
+        try {
+          const tableElements = await this.driver.findElements(By.css(selector));
+          if (tableElements.length > 0) {
+            // Click first table found
+            await tableElements[0].click();
+            await this.delay(3000);
+            foundTable = true;
+            console.log(`✅ AI ${this.config.name} clicked table with selector: ${selector}`);
+            break;
+          }
+        } catch (e) {
+          continue;
+        }
+      }
+      
+      if (!foundTable) {
+        // Direct navigation to game page as fallback
+        console.log(`🔄 No table card found, navigating directly to game page...`);
+        await this.driver.get(`http://localhost:3000/game/${tableId}`);
+        await this.delay(4000);
+      }
+      
+      // Wait for poker table to load - be more patient
+      console.log(`⏳ Waiting for poker table to load...`);
       await this.driver.wait(
-        until.elementLocated(By.css('[data-testid="poker-table"], .poker-table, .game-board')), 
-        15000
+        until.elementLocated(By.css('[data-testid="poker-table"], [data-testid="observer-view"], .poker-table, .game-board')), 
+        20000
       );
       
-      console.log(`✅ AI ${this.config.name} reached poker table`);
+      // Additional wait for WebSocket connection and initial data
+      await this.delay(3000);
+      
+      console.log(`✅ AI ${this.config.name} reached poker table and is connected`);
       
     } catch (error) {
       console.error(`❌ Failed to navigate to table:`, error.message);
+      throw error;
     }
   }
 
@@ -148,73 +212,149 @@ class UIAIPlayer {
     console.log(`💺 AI ${this.config.name} looking for available seat...`);
     
     try {
-      // Look for available seats
-      const seatElements = await this.driver.findElements(
-        By.css('.seat:not(.occupied), [data-testid*="seat"]:not([data-occupied="true"]), .empty-seat')
-      );
+      // Wait for the poker table to load completely
+      await this.delay(3000);
       
-      if (seatElements.length === 0) {
-        // Try clicking any seat button
-        const seatButtons = await this.driver.findElements(
-          By.css('button[class*="seat"], .seat-button, [data-testid*="seat-button"]')
-        );
-        
-        if (seatButtons.length > 0) {
-          await seatButtons[Math.floor(Math.random() * seatButtons.length)].click();
-          await this.delay(1000);
+      // Look for available seats using the correct data-testid pattern
+      const availableSeats = [];
+      for (let seatNum = 1; seatNum <= 10; seatNum++) {
+        try {
+          const seatElement = await this.driver.findElement(
+            By.css(`[data-testid="available-seat-${seatNum}"]`)
+          );
+          if (await seatElement.isDisplayed()) {
+            availableSeats.push({ element: seatElement, number: seatNum });
+          }
+        } catch (e) {
+          // Seat not available or doesn't exist
         }
-      } else {
-        // Click random available seat
-        const randomSeat = seatElements[Math.floor(Math.random() * seatElements.length)];
-        await randomSeat.click();
-        await this.delay(1000);
       }
       
-      // Handle buy-in dialog if it appears
-      await this.handleBuyInDialog();
+      if (availableSeats.length === 0) {
+        throw new Error('No available seats found');
+      }
       
-      // Confirm seat selection
+      // Pick a random available seat
+      const randomSeat = availableSeats[Math.floor(Math.random() * availableSeats.length)];
+      console.log(`🎯 AI ${this.config.name} selecting seat ${randomSeat.number}`);
+      
+      // Click the seat to open dialog
+      await randomSeat.element.click();
+      await this.delay(1000);
+      
+      // Wait for seat selection dialog to appear
+      console.log(`⏳ Waiting for seat selection dialog...`);
+      const dialog = await this.driver.wait(
+        until.elementLocated(By.css('[data-testid="seat-dialog"]')),
+        10000
+      );
+      
+      // Handle buy-in selection
+      await this.handleSeatDialog();
+      
+      // Click confirm button
       await this.confirmSeatSelection();
       
-      console.log(`✅ AI ${this.config.name} took a seat`);
+      // Wait for dialog to close
+      await this.driver.wait(until.stalenessOf(dialog), 10000);
+      
+      console.log(`✅ AI ${this.config.name} took seat ${randomSeat.number}`);
+      this.seatNumber = randomSeat.number;
       this.isPlaying = true;
       
     } catch (error) {
-      console.error(`❌ Failed to take seat:`, error.message);
+      console.error(`❌ AI ${this.config.name} failed to take seat:`, error.message);
+      throw error;
     }
   }
 
-  async handleBuyInDialog() {
+  async handleSeatDialog() {
     try {
-      // Look for buy-in input
-      const buyInInput = await this.driver.findElement(
-        By.css('input[placeholder*="buy"], input[name*="buyin"], input[type="number"]')
-      );
+      console.log(`💰 AI ${this.config.name} handling seat dialog...`);
       
-      await buyInInput.clear();
-      await buyInInput.sendKeys('150'); // Standard buy-in
-      await this.delay(500);
+      // First, try to use the dropdown with a standard buy-in option
+      try {
+        const buyInDropdown = await this.driver.findElement(
+          By.css('[data-testid="buyin-dropdown"]')
+        );
+        
+        // Select a reasonable buy-in option (usually the first or second option)
+        const options = await buyInDropdown.findElements(By.css('option'));
+        if (options.length > 1) {
+          // Skip first option if it's placeholder, use second option
+          const optionIndex = Math.min(1, options.length - 2);
+          await options[optionIndex].click();
+          console.log(`✅ AI ${this.config.name} selected buy-in option ${optionIndex}`);
+        }
+        
+      } catch (dropdownError) {
+        console.log(`⚠️ Dropdown selection failed, trying custom input...`);
+        
+        // If dropdown fails, try custom input approach
+        try {
+          const buyInDropdown = await this.driver.findElement(
+            By.css('[data-testid="buyin-dropdown"]')
+          );
+          
+          // Select custom option (value = -1)
+          await this.driver.executeScript(
+            "arguments[0].value = '-1'; arguments[0].dispatchEvent(new Event('change', { bubbles: true }));", 
+            buyInDropdown
+          );
+          await this.delay(500);
+          
+          // Fill custom input
+          const customInput = await this.driver.wait(
+            until.elementLocated(By.css('[data-testid="custom-buyin-input"]')),
+            5000
+          );
+          
+          await customInput.clear();
+          await customInput.sendKeys('150'); // Standard AI buy-in
+          await this.delay(500);
+          
+          console.log(`✅ AI ${this.config.name} entered custom buy-in: 150`);
+          
+        } catch (customError) {
+          console.log(`⚠️ Custom input also failed, proceeding with defaults...`);
+        }
+      }
       
     } catch (error) {
-      // Buy-in dialog might not appear
-      console.log(`💰 No buy-in dialog found for ${this.config.name}`);
+      console.log(`💰 Seat dialog handling failed for ${this.config.name}: ${error.message}`);
     }
   }
 
   async confirmSeatSelection() {
     try {
-      // Look for confirmation button
-      const confirmButtons = await this.driver.findElements(
-        By.css('button[class*="confirm"], button[class*="join"], button[class*="sit"], .confirm-button')
+      console.log(`🔘 AI ${this.config.name} looking for confirm button...`);
+      
+      // Wait for confirm button to be available and enabled
+      const confirmButton = await this.driver.wait(
+        until.elementLocated(By.css('[data-testid="confirm-seat-btn"]')),
+        10000
       );
       
-      if (confirmButtons.length > 0) {
-        await confirmButtons[0].click();
-        await this.delay(2000);
-      }
+      // Wait for button to be enabled (buy-in validation to pass)
+      await this.driver.wait(
+        until.elementIsEnabled(confirmButton),
+        5000
+      );
+      
+      // Scroll button into view and click
+      await this.driver.executeScript(
+        "arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", 
+        confirmButton
+      );
+      await this.delay(300);
+      
+      // Click the confirm button
+      await confirmButton.click();
+      console.log(`✅ AI ${this.config.name} clicked confirm button`);
       
     } catch (error) {
-      console.log(`⚠️ No confirmation needed for ${this.config.name}`);
+      console.error(`❌ Seat confirmation failed for ${this.config.name}: ${error.message}`);
+      throw error;
     }
   }
 
