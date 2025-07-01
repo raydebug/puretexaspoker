@@ -3,15 +3,19 @@ import { GameState, Player } from '../types/shared';
 import { prisma } from '../db';
 import { Server } from 'socket.io';
 import { CardOrderService } from './cardOrderService';
+import { GamePersistenceManager } from './gamePersistenceManager';
 
 export class GameManager {
   private games: Map<string, GameService> = new Map();
   private io: Server | null = null;
   private static instance: GameManager;
   private cardOrderService: CardOrderService;
+  private gamePersistenceManager: GamePersistenceManager;
 
   private constructor() {
     this.cardOrderService = new CardOrderService();
+    this.gamePersistenceManager = GamePersistenceManager.getInstance();
+    
     // Initialize with default game for testing
     const testGame = new GameService('test-game-id');
     
@@ -190,24 +194,46 @@ export class GameManager {
       throw new Error('Game not found');
     }
 
+    // Get game state before action
+    const gameStateBefore = gameService.getGameState();
+    const player = gameService.getPlayer(playerId);
+    const playerName = player?.name || 'Unknown';
+
     gameService.placeBet(playerId, amount);
 
-    // Record the action in database
-    await prisma.gameAction.create({
-      data: {
+    // Get game state after action
+    const gameStateAfter = gameService.getGameState();
+
+    // Record the action in both tables
+    await Promise.all([
+      // Original GameAction table
+      prisma.gameAction.create({
+        data: {
+          gameId,
+          playerId,
+          type: 'bet',
+          amount
+        }
+      }),
+      // New GameActionHistory table for Action History UI
+      this.gamePersistenceManager.recordGameAction(
         gameId,
         playerId,
-        type: 'bet',
-        amount
-      }
-    });
+        playerName,
+        'bet',
+        amount,
+        gameStateAfter.phase,
+        1, // Hand number - TODO: implement proper hand tracking
+        gameStateBefore,
+        gameStateAfter
+      )
+    ]);
 
     // Update pot in database
-    const gameState = gameService.getGameState();
     await prisma.game.update({
       where: { id: gameId },
       data: {
-        pot: gameState.pot
+        pot: gameStateAfter.pot
       }
     });
 
@@ -216,10 +242,10 @@ export class GameManager {
       playerId,
       action: 'bet',
       amount,
-      pot: gameState.pot
+      pot: gameStateAfter.pot
     });
 
-    return gameState;
+    return gameStateAfter;
   }
 
   public async fold(gameId: string, playerId: string): Promise<GameState> {
@@ -228,22 +254,44 @@ export class GameManager {
       throw new Error('Game not found');
     }
 
+    // Get game state before action
+    const gameStateBefore = gameService.getGameState();
+    const player = gameService.getPlayer(playerId);
+    const playerName = player?.name || 'Unknown';
+
     gameService.fold(playerId);
 
-    // Record the action in database
-    await prisma.gameAction.create({
-      data: {
+    // Get game state after action
+    const gameStateAfter = gameService.getGameState();
+
+    // Record the action in both tables
+    await Promise.all([
+      // Original GameAction table
+      prisma.gameAction.create({
+        data: {
+          gameId,
+          playerId,
+          type: 'fold'
+        }
+      }),
+      // New GameActionHistory table for Action History UI
+      this.gamePersistenceManager.recordGameAction(
         gameId,
         playerId,
-        type: 'fold'
-      }
-    });
+        playerName,
+        'fold',
+        undefined, // No amount for fold
+        gameStateAfter.phase,
+        1, // Hand number - TODO: implement proper hand tracking
+        gameStateBefore,
+        gameStateAfter
+      )
+    ]);
 
-    const gameState = gameService.getGameState();
     await prisma.game.update({
       where: { id: gameId },
       data: {
-        status: gameState.isHandComplete ? 'finished' : 'active'
+        status: gameStateAfter.isHandComplete ? 'finished' : 'active'
       }
     });
 
@@ -253,7 +301,7 @@ export class GameManager {
       action: 'fold'
     });
 
-    return gameState;
+    return gameStateAfter;
   }
 
   public async call(gameId: string, playerId: string): Promise<GameState> {
@@ -262,22 +310,47 @@ export class GameManager {
       throw new Error('Game not found');
     }
 
+    // Get game state before action
+    const gameStateBefore = gameService.getGameState();
+    const player = gameService.getPlayer(playerId);
+    const playerName = player?.name || 'Unknown';
+
     gameService.call(playerId);
 
-    // Record the action in database
-    await prisma.gameAction.create({
-      data: {
+    // Get game state after action
+    const gameStateAfter = gameService.getGameState();
+
+    // Calculate call amount
+    const callAmount = gameStateBefore.currentBet - (player?.currentBet || 0);
+
+    // Record the action in both tables
+    await Promise.all([
+      // Original GameAction table
+      prisma.gameAction.create({
+        data: {
+          gameId,
+          playerId,
+          type: 'call'
+        }
+      }),
+      // New GameActionHistory table for Action History UI
+      this.gamePersistenceManager.recordGameAction(
         gameId,
         playerId,
-        type: 'call'
-      }
-    });
+        playerName,
+        'call',
+        callAmount > 0 ? callAmount : undefined,
+        gameStateAfter.phase,
+        1, // Hand number - TODO: implement proper hand tracking
+        gameStateBefore,
+        gameStateAfter
+      )
+    ]);
 
-    const gameState = gameService.getGameState();
     await prisma.game.update({
       where: { id: gameId },
       data: {
-        pot: gameState.pot
+        pot: gameStateAfter.pot
       }
     });
 
@@ -285,10 +358,10 @@ export class GameManager {
     this.emitGameUpdate(gameId, 'playerAction', {
       playerId,
       action: 'call',
-      pot: gameState.pot
+      pot: gameStateAfter.pot
     });
 
-    return gameState;
+    return gameStateAfter;
   }
 
   public async check(gameId: string, playerId: string): Promise<GameState> {
@@ -297,16 +370,39 @@ export class GameManager {
       throw new Error('Game not found');
     }
 
+    // Get game state before action
+    const gameStateBefore = gameService.getGameState();
+    const player = gameService.getPlayer(playerId);
+    const playerName = player?.name || 'Unknown';
+
     gameService.check(playerId);
 
-    // Record the action in database
-    await prisma.gameAction.create({
-      data: {
+    // Get game state after action
+    const gameStateAfter = gameService.getGameState();
+
+    // Record the action in both tables
+    await Promise.all([
+      // Original GameAction table
+      prisma.gameAction.create({
+        data: {
+          gameId,
+          playerId,
+          type: 'check'
+        }
+      }),
+      // New GameActionHistory table for Action History UI
+      this.gamePersistenceManager.recordGameAction(
         gameId,
         playerId,
-        type: 'check'
-      }
-    });
+        playerName,
+        'check',
+        undefined, // No amount for check
+        gameStateAfter.phase,
+        1, // Hand number - TODO: implement proper hand tracking
+        gameStateBefore,
+        gameStateAfter
+      )
+    ]);
 
     // Emit real-time update
     this.emitGameUpdate(gameId, 'playerAction', {
@@ -314,7 +410,7 @@ export class GameManager {
       action: 'check'
     });
 
-    return gameService.getGameState();
+    return gameStateAfter;
   }
 
   public async dealCommunityCards(gameId: string): Promise<GameState> {
@@ -484,23 +580,45 @@ export class GameManager {
       throw new Error('Game not found');
     }
 
+    // Get game state before action
+    const gameStateBefore = gameService.getGameState();
+    const player = gameService.getPlayer(playerId);
+    const playerName = player?.name || 'Unknown';
+
     gameService.raise(playerId, totalAmount);
 
-    // Record the action in database
-    await prisma.gameAction.create({
-      data: {
+    // Get game state after action
+    const gameStateAfter = gameService.getGameState();
+
+    // Record the action in both tables
+    await Promise.all([
+      // Original GameAction table
+      prisma.gameAction.create({
+        data: {
+          gameId,
+          playerId,
+          type: 'raise' as any, // Cast to avoid TypeScript enum issues
+          amount: totalAmount
+        }
+      }),
+      // New GameActionHistory table for Action History UI
+      this.gamePersistenceManager.recordGameAction(
         gameId,
         playerId,
-        type: 'raise' as any, // Cast to avoid TypeScript enum issues
-        amount: totalAmount
-      }
-    });
+        playerName,
+        'raise',
+        totalAmount,
+        gameStateAfter.phase,
+        1, // Hand number - TODO: implement proper hand tracking
+        gameStateBefore,
+        gameStateAfter
+      )
+    ]);
 
-    const gameState = gameService.getGameState();
     await prisma.game.update({
       where: { id: gameId },
       data: {
-        pot: gameState.pot
+        pot: gameStateAfter.pot
       }
     });
 
@@ -509,10 +627,10 @@ export class GameManager {
       playerId,
       action: 'raise',
       amount: totalAmount,
-      pot: gameState.pot
+      pot: gameStateAfter.pot
     });
 
-    return gameState;
+    return gameStateAfter;
   }
 
   public async allIn(gameId: string, playerId: string): Promise<GameState> {
@@ -521,30 +639,49 @@ export class GameManager {
       throw new Error('Game not found');
     }
 
-    // Get player's chips before the all-in
+    // Get game state before action
+    const gameStateBefore = gameService.getGameState();
     const player = gameService.getPlayer(playerId);
     if (!player) {
       throw new Error('Player not found');
     }
+    const playerName = player.name || 'Unknown';
 
     const allInAmount = player.chips;
     gameService.allIn(playerId);
 
-    // Record the action in database
-    await prisma.gameAction.create({
-      data: {
+    // Get game state after action
+    const gameStateAfter = gameService.getGameState();
+
+    // Record the action in both tables
+    await Promise.all([
+      // Original GameAction table
+      prisma.gameAction.create({
+        data: {
+          gameId,
+          playerId,
+          type: 'bet' as any, // All-in is recorded as a bet action
+          amount: allInAmount
+        }
+      }),
+      // New GameActionHistory table for Action History UI
+      this.gamePersistenceManager.recordGameAction(
         gameId,
         playerId,
-        type: 'bet' as any, // All-in is recorded as a bet action
-        amount: allInAmount
-      }
-    });
+        playerName,
+        'allIn',
+        allInAmount,
+        gameStateAfter.phase,
+        1, // Hand number - TODO: implement proper hand tracking
+        gameStateBefore,
+        gameStateAfter
+      )
+    ]);
 
-    const gameState = gameService.getGameState();
     await prisma.game.update({
       where: { id: gameId },
       data: {
-        pot: gameState.pot
+        pot: gameStateAfter.pot
       }
     });
 
@@ -553,10 +690,10 @@ export class GameManager {
       playerId,
       action: 'allIn',
       amount: allInAmount,
-      pot: gameState.pot
+      pot: gameStateAfter.pot
     });
 
-    return gameState;
+    return gameStateAfter;
   }
 
   private async revealCardOrder(gameId: string): Promise<void> {
