@@ -276,7 +276,14 @@ export const PlayerActions: React.FC<PlayerActionsProps> = ({
     return (
       <ActionsContainer data-testid="player-actions">
         <GameInfo>
-          <div className="pot">Pot: ${gameState.pot}</div>
+          {/* Only show pot when there are active players and game is playing */}
+          {gameState.phase !== 'waiting' && 
+           gameState.status === 'playing' && 
+           gameState.players.length > 0 && 
+           gameState.players.some(p => p.isActive) && 
+           gameState.pot > 0 && (
+            <div className="pot">Pot: ${gameState.pot}</div>
+          )}
         </GameInfo>
       </ActionsContainer>
     );
@@ -285,7 +292,14 @@ export const PlayerActions: React.FC<PlayerActionsProps> = ({
   return (
     <ActionsContainer data-testid="player-actions">
       <GameInfo>
-        <div className="pot">Pot: ${gameState.pot}</div>
+        {/* Only show pot when there are active players and game is playing */}
+        {gameState.phase !== 'waiting' && 
+         gameState.status === 'playing' && 
+         gameState.players.length > 0 && 
+         gameState.players.some(p => p.isActive) && 
+         gameState.pot > 0 && (
+          <div className="pot">Pot: ${gameState.pot}</div>
+        )}
         {toCall > 0 && <div className="to-call">To Call: ${toCall}</div>}
         <div>Your Chips: ${currentPlayer.chips}</div>
       </GameInfo>

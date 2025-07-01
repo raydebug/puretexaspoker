@@ -791,8 +791,12 @@ export const PokerTable: React.FC<PokerTableProps> = ({
         {/* Render all 9 player seats */}
         {Array.from({ length: 9 }, (_, i) => renderSeat(i + 1))}
 
-        {/* Pot Display - Only show when there are active players */}
-        {gameState.players.length > 0 && gameState.players.some(p => p.isActive) && (
+        {/* Pot Display - Only show during active gameplay with connected players */}
+        {gameState.phase !== 'waiting' && 
+         gameState.status === 'playing' && 
+         gameState.players.length > 0 && 
+         gameState.players.some(p => p.isActive) && 
+         gameState.pot > 0 && (
           <PotDisplay data-testid="pot-amount">
             Pot: ${gameState.pot}
           </PotDisplay>
