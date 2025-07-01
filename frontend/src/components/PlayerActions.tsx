@@ -272,34 +272,14 @@ export const PlayerActions: React.FC<PlayerActionsProps> = ({
     setSliderValue(amount);
   };
 
-  if (!isPlayerTurn) {
-    return (
-      <ActionsContainer data-testid="player-actions">
-        <GameInfo>
-          {/* Only show pot when there are active players and game is playing */}
-          {gameState.phase !== 'waiting' && 
-           gameState.status === 'playing' && 
-           gameState.players.length > 0 && 
-           gameState.players.some(p => p.isActive) && 
-           gameState.pot > 0 && (
-            <div className="pot">Pot: ${gameState.pot}</div>
-          )}
-        </GameInfo>
-      </ActionsContainer>
-    );
+  // Don't show anything for observers or when not player's turn
+  if (!currentPlayer || !isPlayerTurn) {
+    return null;
   }
 
   return (
     <ActionsContainer data-testid="player-actions">
       <GameInfo>
-        {/* Only show pot when there are active players and game is playing */}
-        {gameState.phase !== 'waiting' && 
-         gameState.status === 'playing' && 
-         gameState.players.length > 0 && 
-         gameState.players.some(p => p.isActive) && 
-         gameState.pot > 0 && (
-          <div className="pot">Pot: ${gameState.pot}</div>
-        )}
         {toCall > 0 && <div className="to-call">To Call: ${toCall}</div>}
         <div>Your Chips: ${currentPlayer.chips}</div>
       </GameInfo>
