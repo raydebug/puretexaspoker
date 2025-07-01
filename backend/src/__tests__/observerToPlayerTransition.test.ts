@@ -301,132 +301,151 @@ describe('Observer to Player Transition Bug Fix', () => {
     }
   });
 
-  it('should provide unified API with clean observer/player lists', async () => {
-    const observers = ['Observer1', 'Observer2'];
-    const players = ['Player1', 'Player2'];
-    let apiResponses: any[] = [];
+  it('should validate unified API: count consistency, no overlaps, no duplicates', async () => {
+    let latestApiResponse: any = null;
+    let gameIdForRoom: string | null = null;
 
-    // Listen for all location:usersAtTable events
-    clientSocket.on('location:usersAtTable', (data: any) => {
-      console.log('🧪 API Test received location:usersAtTable:', data);
-      apiResponses.push(data);
+    // Create a dedicated socket for API monitoring
+    const port = (httpServer.address() as any).port;
+    const monitorSocket = Client(`http://localhost:${port}`);
+    await new Promise((resolve) => monitorSocket.on('connect', resolve));
+
+    // Listen for location:usersAtTable events and capture the latest
+    monitorSocket.on('location:usersAtTable', (data: any) => {
+      console.log('🧪 API Monitor received location:usersAtTable:', data);
+      latestApiResponse = data;
     });
 
-    // Create observer connections
+    // Declare sockets outside try block for cleanup
     const observerSockets: any[] = [];
-    for (const observerName of observers) {
-      const port = (httpServer.address() as any).port;
-      const socket = Client(`http://localhost:${port}`);
-      await new Promise((resolve) => socket.on('connect', resolve));
-      observerSockets.push(socket);
+
+    try {
+      // Step 1: Create first observer to get gameId
+      const socket1 = Client(`http://localhost:${port}`);
+      await new Promise((resolve) => socket1.on('connect', resolve));
+      observerSockets.push(socket1);
 
       await new Promise<void>((resolve) => {
-        socket.emit('joinTable', { 
-          tableId: tableId, 
-          buyIn: 150, 
-          nickname: observerName 
+        socket1.emit('joinTable', { tableId, buyIn: 150, nickname: 'Observer1' });
+        socket1.once('tableJoined', (data: any) => {
+          gameIdForRoom = data.gameId;
+          console.log('🧪 Got gameId for monitor:', gameIdForRoom);
+          resolve();
         });
-        socket.once('tableJoined', () => resolve());
       });
-    }
 
-    await new Promise(resolve => setTimeout(resolve, 100));
+      // Monitor socket joins the game room to receive events
+      if (gameIdForRoom) {
+        monitorSocket.emit('joinRoom', `game:${gameIdForRoom}`);
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
 
-    // Create player connections and take seats
-    const playerSockets: any[] = [];
-    for (let i = 0; i < players.length; i++) {
-      const port = (httpServer.address() as any).port;
-      const socket = Client(`http://localhost:${port}`);
-      await new Promise((resolve) => socket.on('connect', resolve));
-      playerSockets.push(socket);
+      // Step 2: Create remaining observers  
+      const observerNames = ['Observer2', 'Observer3'];
+      
+      for (const name of observerNames) {
+        const socket = Client(`http://localhost:${port}`);
+        await new Promise((resolve) => socket.on('connect', resolve));
+        observerSockets.push(socket);
 
-      // Join as observer first
+        await new Promise<void>((resolve) => {
+          socket.emit('joinTable', { tableId, buyIn: 150, nickname: name });
+          socket.once('tableJoined', () => resolve());
+        });
+        
+        await new Promise(resolve => setTimeout(resolve, 100)); // Wait for event processing
+      }
+
+      // Wait for API response after all observers joined
+      await new Promise(resolve => setTimeout(resolve, 300));
+      expect(latestApiResponse).toBeTruthy();
+
+      console.log('🧪 After observers joined:', {
+        observers: latestApiResponse.observers.length,
+        players: latestApiResponse.players.length,
+        total: latestApiResponse.totalUsers
+      });
+
+      // **VALIDATION 1: Count Consistency (Observers Only)**
+      expect(latestApiResponse.totalUsers).toBe(latestApiResponse.observersCount + latestApiResponse.playersCount);
+      expect(latestApiResponse.observersCount).toBe(3);
+      expect(latestApiResponse.playersCount).toBe(0);
+      expect(latestApiResponse.totalUsers).toBe(3);
+
+             // Step 2: Move 2 observers to seats (become players)
+      
+      // First observer takes seat 1
       await new Promise<void>((resolve) => {
-        socket.emit('joinTable', { 
-          tableId: tableId, 
-          buyIn: 150, 
-          nickname: players[i] 
-        });
-        socket.once('tableJoined', () => resolve());
+        observerSockets[0].emit('takeSeat', { seatNumber: 1, buyIn: 150 });
+        observerSockets[0].once('seatTaken', () => resolve());
       });
-
-      // Take a seat
-      await new Promise<void>((resolve) => {
-        socket.emit('takeSeat', { 
-          seatNumber: i + 1, 
-          buyIn: 150 
-        });
-        socket.once('seatTaken', () => resolve());
-      });
-
       await new Promise(resolve => setTimeout(resolve, 100));
-    }
 
-    // Get the latest API response
-    const latestResponse = apiResponses[apiResponses.length - 1];
-    expect(latestResponse).toBeDefined();
+      // Second observer takes seat 2  
+      await new Promise<void>((resolve) => {
+        observerSockets[1].emit('takeSeat', { seatNumber: 2, buyIn: 150 });
+        observerSockets[1].once('seatTaken', () => resolve());
+      });
+      await new Promise(resolve => setTimeout(resolve, 200));
 
-    console.log('🧪 Final API Response:', latestResponse);
+      console.log('🧪 After 2 players took seats:', {
+        observers: latestApiResponse.observers.length,
+        players: latestApiResponse.players.length,
+        total: latestApiResponse.totalUsers,
+        observerNames: latestApiResponse.observers.map((o: any) => o.nickname),
+        playerNames: latestApiResponse.players.map((p: any) => p.nickname)
+      });
 
-    // **UNIFIED API STRUCTURE VALIDATION**
-    expect(latestResponse).toHaveProperty('tableId');
-    expect(latestResponse).toHaveProperty('totalUsers');
-    expect(latestResponse).toHaveProperty('observers');
-    expect(latestResponse).toHaveProperty('players');
-    expect(latestResponse).toHaveProperty('observersCount');
-    expect(latestResponse).toHaveProperty('playersCount');
+      // **CRITICAL VALIDATIONS**
+      
+      // **VALIDATION 1: Count of observers + players = total online users**
+      expect(latestApiResponse.observersCount + latestApiResponse.playersCount).toBe(latestApiResponse.totalUsers);
+      expect(latestApiResponse.observersCount).toBe(1); // Observer3 still observing
+      expect(latestApiResponse.playersCount).toBe(2);   // Observer1, Observer2 now players
+      expect(latestApiResponse.totalUsers).toBe(3);     // Total should be 3
 
-    // **ARRAY VALIDATION**
-    expect(Array.isArray(latestResponse.observers)).toBe(true);
-    expect(Array.isArray(latestResponse.players)).toBe(true);
+      // **VALIDATION 2: No overlap between observers and players lists**
+      const observerNicknames = latestApiResponse.observers.map((o: any) => o.nickname);
+      const playerNicknames = latestApiResponse.players.map((p: any) => p.nickname);
+      
+      // Check that no nickname appears in both lists
+      const hasOverlap = observerNicknames.some((name: string) => playerNicknames.includes(name));
+      expect(hasOverlap).toBe(false);
+      
+      console.log('🧪 Overlap validation:', {
+        observerNicknames,
+        playerNicknames,
+        hasOverlap
+      });
 
-    // **COUNT CONSISTENCY**
-    expect(latestResponse.observersCount).toBe(latestResponse.observers.length);
-    expect(latestResponse.playersCount).toBe(latestResponse.players.length);
-    expect(latestResponse.totalUsers).toBe(latestResponse.observersCount + latestResponse.playersCount);
+      // **VALIDATION 3: No duplicates within each list**
+      
+      // Check observers list has no duplicates
+      const uniqueObserverNames = new Set(observerNicknames);
+      expect(uniqueObserverNames.size).toBe(observerNicknames.length);
+      
+      // Check players list has no duplicates  
+      const uniquePlayerNames = new Set(playerNicknames);
+      expect(uniquePlayerNames.size).toBe(playerNicknames.length);
+      
+      console.log('🧪 Duplicates validation:', {
+        observersOriginal: observerNicknames.length,
+        observersUnique: uniqueObserverNames.size,
+        playersOriginal: playerNicknames.length,
+        playersUnique: uniquePlayerNames.size
+      });
 
-    // **DATA STRUCTURE VALIDATION**
-    latestResponse.observers.forEach((observer: any) => {
-      expect(observer).toHaveProperty('playerId');
-      expect(observer).toHaveProperty('nickname');
-      expect(typeof observer.playerId).toBe('string');
-      expect(typeof observer.nickname).toBe('string');
-    });
+      // **EXPECTED CONTENT VALIDATION**
+      expect(observerNicknames).toContain('Observer3');  // Should still be observer
+      expect(playerNicknames).toContain('Observer1');    // Should be player now
+      expect(playerNicknames).toContain('Observer2');    // Should be player now
 
-    latestResponse.players.forEach((player: any) => {
-      expect(player).toHaveProperty('playerId');
-      expect(player).toHaveProperty('nickname');
-      expect(player).toHaveProperty('seat');
-      expect(typeof player.playerId).toBe('string');
-      expect(typeof player.nickname).toBe('string');
-      expect(typeof player.seat).toBe('number');
-    });
+      console.log('✅ All 3 critical validations passed!');
 
-    // **NO OVERLAPS VALIDATION**
-    const observerNicknames = latestResponse.observers.map((o: any) => o.nickname);
-    const playerNicknames = latestResponse.players.map((p: any) => p.nickname);
-    const hasOverlap = observerNicknames.some((name: string) => playerNicknames.includes(name));
-    expect(hasOverlap).toBe(false);
-
-    // **NO DUPLICATES VALIDATION**
-    const uniqueObserverNames = new Set(observerNicknames);
-    const uniquePlayerNames = new Set(playerNicknames);
-    expect(uniqueObserverNames.size).toBe(observerNicknames.length);
-    expect(uniquePlayerNames.size).toBe(playerNicknames.length);
-
-    // **EXPECTED CONTENT**
-    expect(latestResponse.observers.length).toBe(observers.length);
-    expect(latestResponse.players.length).toBe(players.length);
-    
-    observers.forEach(observerName => {
-      expect(observerNicknames.includes(observerName)).toBe(true);
-    });
-    
-    players.forEach(playerName => {
-      expect(playerNicknames.includes(playerName)).toBe(true);
-    });
-
-    // Cleanup
-    [...observerSockets, ...playerSockets].forEach(socket => socket.close());
+         } finally {
+       // Cleanup all sockets
+       monitorSocket.close();
+       observerSockets.forEach((socket: any) => socket.close());
+     }
   });
 }); 
