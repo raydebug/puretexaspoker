@@ -102,18 +102,42 @@ export class LocationManager {
 
   /**
    * Get all users observing a specific table (table: X, seat: null)
+   * Returns clean list with no duplicates
    */
   getObserversAtTable(tableId: number): UserLocation[] {
-    return Array.from(this.userLocations.values())
+    const observers = Array.from(this.userLocations.values())
       .filter(user => user.table === tableId && user.seat === null);
+    
+    // Deduplicate by nickname (keep most recent)
+    const uniqueObservers = new Map<string, UserLocation>();
+    for (const observer of observers) {
+      const existing = uniqueObservers.get(observer.nickname);
+      if (!existing || observer.updatedAt > existing.updatedAt) {
+        uniqueObservers.set(observer.nickname, observer);
+      }
+    }
+    
+    return Array.from(uniqueObservers.values());
   }
 
   /**
    * Get all users seated at a specific table (table: X, seat: not null)
+   * Returns clean list with no duplicates
    */
   getPlayersAtTable(tableId: number): UserLocation[] {
-    return Array.from(this.userLocations.values())
+    const players = Array.from(this.userLocations.values())
       .filter(user => user.table === tableId && user.seat !== null);
+    
+    // Deduplicate by nickname (keep most recent)
+    const uniquePlayers = new Map<string, UserLocation>();
+    for (const player of players) {
+      const existing = uniquePlayers.get(player.nickname);
+      if (!existing || player.updatedAt > existing.updatedAt) {
+        uniquePlayers.set(player.nickname, player);
+      }
+    }
+    
+    return Array.from(uniquePlayers.values());
   }
 
   /**

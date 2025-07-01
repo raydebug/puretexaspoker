@@ -199,16 +199,32 @@ export function registerConsolidatedHandlers(io: Server) {
 
       io.to(`game:${connectionState.gameId}`).emit('gameState', gameState);
 
-      // **CRITICAL FIX**: Broadcast updated observer/player counts after player moves to observer
+      // **UNIFIED API**: Single API with separate clean lists (no overlaps, no duplicates)
       const observers = locationManager.getObserversAtTable(connectionState.tableId);
       const players = locationManager.getPlayersAtTable(connectionState.tableId);
       const totalUsers = observers.length + players.length;
       
+      // Clean observer list (no duplicates)
+      const observersList = observers.map(o => ({
+        playerId: o.playerId,
+        nickname: o.nickname
+      }));
+      
+      // Clean player list (no duplicates)
+      const playersList = players.map(p => ({
+        playerId: p.playerId,
+        nickname: p.nickname,
+        seat: p.seat
+      }));
+      
+      // Single unified API with actual lists
       io.to(`game:${connectionState.gameId}`).emit('location:usersAtTable', {
         tableId: connectionState.tableId,
         totalUsers,
-        observers: observers.length,
-        players: players.length
+        observers: observersList,      // Array of observer objects
+        players: playersList,          // Array of player objects  
+        observersCount: observers.length,
+        playersCount: players.length
       });
       
       console.log(`[CONSOLIDATED] Broadcasted table ${connectionState.tableId} user update after disconnect - Observers: ${observers.length}, Players: ${players.length}, Total: ${totalUsers}`);
@@ -446,16 +462,32 @@ export function registerConsolidatedHandlers(io: Server) {
           seat: null
         });
 
-        // **CRITICAL FIX**: Broadcast updated observer/player counts after joining as observer
+        // **UNIFIED API**: Single API with separate clean lists (no overlaps, no duplicates)
         const observers = locationManager.getObserversAtTable(tableId);
         const players = locationManager.getPlayersAtTable(tableId);
         const totalUsers = observers.length + players.length;
         
+        // Clean observer list (no duplicates)
+        const observersList = observers.map(o => ({
+          playerId: o.playerId,
+          nickname: o.nickname
+        }));
+        
+        // Clean player list (no duplicates)
+        const playersList = players.map(p => ({
+          playerId: p.playerId,
+          nickname: p.nickname,
+          seat: p.seat
+        }));
+        
+        // Single unified API with actual lists
         io.to(`game:${gameId}`).emit('location:usersAtTable', {
           tableId,
           totalUsers,
-          observers: observers.length,
-          players: players.length
+          observers: observersList,      // Array of observer objects
+          players: playersList,          // Array of player objects  
+          observersCount: observers.length,
+          playersCount: players.length
         });
         
         console.log(`[CONSOLIDATED] Broadcasted table ${tableId} user update after join - Observers: ${observers.length}, Players: ${players.length}, Total: ${totalUsers}`);
@@ -729,7 +761,7 @@ export function registerConsolidatedHandlers(io: Server) {
           seat: seatNumber
         });
 
-        // **CRITICAL FIX**: Broadcast updated observer/player counts after seat change
+        // **UNIFIED API**: Single API with separate clean lists (no overlaps, no duplicates)
         const observers = locationManager.getObserversAtTable(socket.data.tableId);
         const players = locationManager.getPlayersAtTable(socket.data.tableId);
         const totalUsers = observers.length + players.length;
@@ -740,11 +772,27 @@ export function registerConsolidatedHandlers(io: Server) {
         console.log(`[CONSOLIDATED] Players (${players.length}):`, players.map(p => `${p.nickname} (ID: ${p.playerId}, seat: ${p.seat})`));
         console.log(`[CONSOLIDATED] Player ${socket.data.nickname} just took seat ${seatNumber} - should be in players list now`);
         
+        // Clean observer list (no duplicates)
+        const observersList = observers.map(o => ({
+          playerId: o.playerId,
+          nickname: o.nickname
+        }));
+        
+        // Clean player list (no duplicates)
+        const playersList = players.map(p => ({
+          playerId: p.playerId,
+          nickname: p.nickname,
+          seat: p.seat
+        }));
+        
+        // Single unified API with actual lists
         io.to(`game:${socket.data.gameId}`).emit('location:usersAtTable', {
           tableId: socket.data.tableId,
           totalUsers,
-          observers: observers.length,
-          players: players.length
+          observers: observersList,      // Array of observer objects
+          players: playersList,          // Array of player objects  
+          observersCount: observers.length,
+          playersCount: players.length
         });
         
         console.log(`[CONSOLIDATED] Broadcasted table ${socket.data.tableId} user update - Observers: ${observers.length}, Players: ${players.length}, Total: ${totalUsers}`);

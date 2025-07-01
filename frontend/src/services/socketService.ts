@@ -238,9 +238,35 @@ export class SocketService {
       console.log('🎯 FRONTEND: Broadcasting observer update to UI components');
     });
 
-    socket.on('location:usersAtTable', (data: { tableId: number; totalUsers: number }) => {
-      console.log('DEBUG: Frontend received location:usersAtTable event:', data);
-      // Update the total users count in the UI
+    socket.on('location:usersAtTable', (data: { 
+      tableId: number; 
+      totalUsers: number; 
+      observers: Array<{ playerId: string; nickname: string }>; 
+      players: Array<{ playerId: string; nickname: string; seat: number }>; 
+      observersCount: number; 
+      playersCount: number; 
+    }) => {
+      console.log('🔄 FRONTEND: Received unified location:usersAtTable event:', {
+        tableId: data.tableId,
+        totalUsers: data.totalUsers,
+        observersCount: data.observersCount,
+        playersCount: data.playersCount,
+        observersNicknames: data.observers?.map(o => o.nickname) || [],
+        playersNicknames: data.players?.map(p => `${p.nickname}(seat${p.seat})`) || []
+      });
+      
+      // **CLEAN SYNC**: Replace our local arrays with the authoritative server data
+      if (data.observers) {
+        this.observers = data.observers.map(o => o.nickname);
+        console.log('🔄 FRONTEND: Synced observers list from server:', this.observers);
+      }
+      
+      if (data.players && this.gameState) {
+        // Update players list in game state if needed (but gameState is primary source)
+        console.log('🔄 FRONTEND: Players list from server:', data.players.map(p => `${p.nickname}(seat${p.seat})`));
+      }
+      
+      // Emit update with clean lists (no overlaps, no duplicates)
       this.emitOnlineUsersUpdate();
     });
 
