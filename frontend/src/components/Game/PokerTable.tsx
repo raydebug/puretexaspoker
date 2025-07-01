@@ -791,10 +791,12 @@ export const PokerTable: React.FC<PokerTableProps> = ({
         {/* Render all 9 player seats */}
         {Array.from({ length: 9 }, (_, i) => renderSeat(i + 1))}
 
-        {/* Pot Display */}
-        <PotDisplay data-testid="pot-amount">
-          Pot: ${gameState.pot}
-        </PotDisplay>
+        {/* Pot Display - Only show when there are active players */}
+        {gameState.players.length > 0 && gameState.players.some(p => p.isActive) && (
+          <PotDisplay data-testid="pot-amount">
+            Pot: ${gameState.pot}
+          </PotDisplay>
+        )}
 
         {/* Community Cards */}
         <CommunityCardsArea data-testid="community-cards">
