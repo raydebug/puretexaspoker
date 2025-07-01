@@ -45,6 +45,9 @@ export const Navigation: React.FC = () => {
       <NavLink to="/auth-demo" $isActive={location.pathname === '/auth-demo'}>
         Auth Demo
       </NavLink>
+      <NavLink to="/monitor" $isActive={location.pathname === '/monitor'}>
+        Monitor
+      </NavLink>
     </NavContainer>
   );
 }; 
