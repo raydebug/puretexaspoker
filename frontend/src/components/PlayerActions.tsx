@@ -277,7 +277,6 @@ export const PlayerActions: React.FC<PlayerActionsProps> = ({
       <ActionsContainer data-testid="player-actions">
         <GameInfo>
           <div className="pot">Pot: ${gameState.pot}</div>
-          <div>Waiting for your turn...</div>
         </GameInfo>
       </ActionsContainer>
     );
