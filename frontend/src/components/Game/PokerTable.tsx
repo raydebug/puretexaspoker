@@ -274,21 +274,57 @@ const CommunityCardsArea = styled.div`
   gap: 8px;
   align-items: center;
   justify-content: center;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  border: 2px solid rgba(255, 215, 0, 0.4);
 `;
 
-const CommunityCard = styled.div`
+const CommunityCard = styled.div<{ isEmpty?: boolean }>`
   width: 40px;
   height: 56px;
-  background: white;
-  border: 1px solid #ddd;
+  background: ${props => props.isEmpty ? 
+    'linear-gradient(145deg, #2c3e50, #34495e)' : 
+    'white'};
+  border: ${props => props.isEmpty ? 
+    '2px dashed rgba(255, 215, 0, 0.5)' : 
+    '1px solid #ddd'};
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 16px;
   font-weight: bold;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  color: ${props => props.color || 'black'};
+  box-shadow: ${props => props.isEmpty ? 
+    'inset 0 2px 4px rgba(0,0,0,0.3)' : 
+    '0 2px 8px rgba(0,0,0,0.2)'};
+  color: ${props => props.isEmpty ? 
+    'rgba(255, 215, 0, 0.3)' : 
+    (props.color || 'black')};
+  transition: all 0.3s ease;
+  
+  ${props => props.isEmpty && `
+    &::before {
+      content: '?';
+      font-size: 24px;
+      opacity: 0.4;
+    }
+  `}
+`;
+
+const CommunityCardsLabel = styled.div`
+  position: absolute;
+  top: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: #ffd700;
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: bold;
+  white-space: nowrap;
+  border: 1px solid rgba(255, 215, 0, 0.3);
 `;
 
 const PotDisplay = styled.div`
@@ -802,21 +838,29 @@ export const PokerTable: React.FC<PokerTableProps> = ({
           </PotDisplay>
         )}
 
-        {/* Community Cards */}
+        {/* Community Cards - Always show 5 positions */}
         <CommunityCardsArea data-testid="community-cards">
-          {gameState.communityCards.length === 0 ? (
-            <div style={{ color: '#888', fontSize: '12px' }}>Community Cards</div>
-          ) : (
-            gameState.communityCards.map((card, index) => (
+          <CommunityCardsLabel>
+            {gameState.communityCards.length === 0 ? 'Community Cards' : 
+             gameState.communityCards.length === 3 ? 'Flop' :
+             gameState.communityCards.length === 4 ? 'Turn' :
+             gameState.communityCards.length === 5 ? 'River' : 'Community Cards'}
+          </CommunityCardsLabel>
+          {Array.from({ length: 5 }, (_, index) => {
+            const card = gameState.communityCards[index];
+            const isEmpty = !card;
+            
+            return (
               <CommunityCard 
                 key={index} 
                 data-testid={`community-card-${index}`}
-                color={getCardColor(card.suit)}
+                isEmpty={isEmpty}
+                color={card ? getCardColor(card.suit) : undefined}
               >
-                {card.rank}{getSuitSymbol(card.suit)}
+                {card ? `${card.rank}${getSuitSymbol(card.suit)}` : ''}
               </CommunityCard>
-            ))
-          )}
+            );
+          })}
         </CommunityCardsArea>
 
         {/* Player Hole Cards - Enhanced logic to show cards */}
