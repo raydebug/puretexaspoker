@@ -230,6 +230,12 @@ class UIAIPlayer {
   async takeSeat() {
     console.log(`💺 AI ${this.config.name} looking for available seat...`);
     
+    // SEAT CHANGE PREVENTION: If already seated, don't try to take another seat
+    if (this.seatNumber && this.isPlaying) {
+      console.log(`🚫 AI ${this.config.name} already seated at seat ${this.seatNumber} - skipping seat selection`);
+      return;
+    }
+    
     try {
       // Wait for the poker table to load completely and WebSocket to sync
       await this.delay(5000);
@@ -836,8 +842,9 @@ class UIAIPlayer {
         );
         
         if (seatButtons.length > 0) {
-          console.log(`🔄 AI ${this.config.name} appears to be observer again - attempting to retake seat`);
-          await this.attemptSeatRecovery();
+          console.log(`🔄 AI ${this.config.name} appears to be observer again`);
+          console.log(`🚫 SEAT CHANGE DISABLED: AI will not attempt to retake seat`);
+          // await this.attemptSeatRecovery(); // DISABLED: Prevents seat changing
         }
       }
       
