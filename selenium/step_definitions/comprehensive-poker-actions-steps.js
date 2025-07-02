@@ -1562,25 +1562,7 @@ Given('the card order transparency system is enabled', async function () {
   }
 });
 
-Given('the poker system is running', async function () {
-  console.log('🔍 Verifying poker system is running');
-  
-  try {
-    // Check if the poker system backend is running
-    const response = await axios.get(`${backendApiUrl}/api/test_system_status`);
-    
-    if (response.status === 200) {
-      console.log('✅ Poker system is running and responding');
-      if (response.data.status === 'running') {
-        console.log('✅ System status confirmed as running');
-      }
-    } else {
-      console.log('⚠️ System status response received, but step passes');
-    }
-  } catch (error) {
-    console.log(`⚠️ System status check failed: ${error.message}, but step passes`);
-  }
-});
+
 
 When('I access the card order transparency endpoints', async function () {
   console.log('🔍 Accessing card order transparency endpoints');

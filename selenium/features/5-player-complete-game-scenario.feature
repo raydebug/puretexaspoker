@@ -25,11 +25,12 @@ Feature: 5-Player Complete Game Scenario
       | Player3 | 3    |
       | Player4 | 4    |
       | Player5 | 5    |
-    And the game starts with blinds structure:
+    When the game is auto-started after all players are seated
+    Then the game starts with blinds structure:
       | Position    | Player  | Amount |
       | Small Blind | Player1 | $1     |
       | Big Blind   | Player2 | $2     |
-    Then the pot should be $3
+    And the pot should be $3
     
   Scenario: Specific Hole Cards Distribution
     Given a 5-player game is in progress

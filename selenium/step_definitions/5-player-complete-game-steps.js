@@ -1014,6 +1014,77 @@ Then('{word} should have two pair: {word} and {word}', function(playerName, card
   console.log(`${playerName} should have two pair: ${card1} and ${card2}`);
 });
 
+/**
+ * Auto-start game after all players are seated
+ */
+When('the game is auto-started after all players are seated', { timeout: 120000 }, async function() {
+  console.log('🚀 Auto-starting game after all players are seated...');
+  
+  // Wait for all players to be fully seated first
+  await new Promise(resolve => setTimeout(resolve, 5000));
+  
+  // Open a new browser instance for auto-start monitoring
+  const autoStartDriver = await createPlayerBrowser('AutoStartBot', isHeadless, 0);
+  
+  try {
+    // Navigate to auto-start page
+    const autoStartUrl = `http://localhost:3000/start-game?table=1&min=5&wait=60`;
+    console.log(`🔗 Opening auto-start URL: ${autoStartUrl}`);
+    await autoStartDriver.get(autoStartUrl);
+    
+    // Wait for the auto-start process to complete (look for success status)
+    const maxWaitTime = 60000; // 60 seconds
+    const startTime = Date.now();
+    
+    let gameStarted = false;
+    while (!gameStarted && (Date.now() - startTime) < maxWaitTime) {
+      try {
+        // Check for success status
+        const statusElement = await autoStartDriver.findElement(By.css('[data-testid="status"]'));
+        const statusText = await statusElement.getText();
+        
+        console.log(`🔍 Auto-start status: ${statusText}`);
+        
+        if (statusText.includes('Game started successfully')) {
+          gameStarted = true;
+          console.log('✅ Game auto-started successfully!');
+          break;
+        }
+        
+        if (statusText.includes('Failed') || statusText.includes('Error')) {
+          throw new Error(`Auto-start failed: ${statusText}`);
+        }
+        
+        // Wait a bit before checking again
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } catch (error) {
+        if (error.name === 'NoSuchElementError') {
+          // Status element not found yet, keep waiting
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } else {
+          throw error;
+        }
+      }
+    }
+    
+    if (!gameStarted) {
+      throw new Error('Auto-start timeout: Game did not start within 60 seconds');
+    }
+    
+    // Update all players' game state tracking
+    gameState.phase = 'preflop';
+    gameState.gameStarted = true;
+    
+    console.log('🎮 All players should now see the game has started!');
+    
+  } finally {
+    // Close the auto-start browser
+    if (autoStartDriver) {
+      await autoStartDriver.quit();
+    }
+  }
+});
+
 // Cleanup
 process.on('exit', async () => {
   for (const player of Object.values(players)) {
