@@ -16,51 +16,47 @@ async function createPlayerBrowser(playerName, headless = true, playerIndex = 0)
   }
   
   // Position windows in a grid layout for headed mode (5 windows: 3x2 grid)
-  let windowArgs = '--window-size=800,600';
   if (!headless) {
     const gridX = (playerIndex % 3) * 420; // 3 columns with spacing
     const gridY = Math.floor(playerIndex / 3) * 360; // 2 rows with spacing
-    windowArgs = `--window-size=800,600 --window-position=${gridX},${gridY}`;
+    options.addArguments(`--window-size=800,600`);
+    options.addArguments(`--window-position=${gridX},${gridY}`);
+  } else {
+    options.addArguments('--window-size=1024,768');
   }
   
-  // All windows use the same size for consistency
-  const smallWindowArgs = windowArgs;
-  
+  // Stable Chrome options for multi-browser instances
   options.addArguments(
     '--no-sandbox',
     '--disable-dev-shm-usage', 
     '--disable-gpu',
     '--disable-web-security',
-    '--disable-features=VizDisplayCompositor',
-    '--memory-pressure-off',
-    '--max_old_space_size=1024',
+    '--disable-extensions',
     '--disable-background-timer-throttling',
     '--disable-backgrounding-occluded-windows',
     '--disable-renderer-backgrounding',
-    '--disable-extensions',
-    '--disable-plugins',
-    '--disable-images',
-    '--disable-javascript-harmony-shipping',
-    '--aggressive-cache-discard',
-    '--disable-background-networking',
     '--disable-default-apps',
     '--disable-sync',
     '--disable-translate',
-    '--single-process',
-    smallWindowArgs
+    '--memory-pressure-off',
+    '--max_old_space_size=512'
   );
   
-  // Set timeouts for faster creation
+  // Add unique user data directory for each browser to avoid conflicts
+  const userDataDir = `/tmp/chrome_${playerName}_${Date.now()}`;
+  options.addArguments(`--user-data-dir=${userDataDir}`);
+  
+  // Set timeouts for stable creation
   const driver = await new Builder()
     .forBrowser('chrome')
     .setChromeOptions(options)
     .build();
   
-  // Set shorter timeouts for faster operations
+  // Set reasonable timeouts
   await driver.manage().setTimeouts({
-    implicit: 5000,
-    pageLoad: 10000,
-    script: 5000
+    implicit: 10000,
+    pageLoad: 30000,
+    script: 10000
   });
     
   return { name: playerName, driver, chips: 100, seat: null, cards: [] };
