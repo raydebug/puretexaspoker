@@ -14,12 +14,27 @@ async function createPlayerBrowser(playerName, headless = true) {
   if (headless) {
     options.addArguments('--headless');
   }
-  options.addArguments('--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu');
+  options.addArguments(
+    '--no-sandbox',
+    '--disable-dev-shm-usage', 
+    '--disable-gpu',
+    '--disable-web-security',
+    '--disable-features=VizDisplayCompositor',
+    '--window-size=1280,720'
+  );
   
+  // Set timeouts for faster creation
   const driver = await new Builder()
     .forBrowser('chrome')
     .setChromeOptions(options)
     .build();
+  
+  // Set shorter timeouts for faster operations
+  await driver.manage().setTimeouts({
+    implicit: 5000,
+    pageLoad: 10000,
+    script: 5000
+  });
     
   return { name: playerName, driver, chips: 100, seat: null, cards: [] };
 }
@@ -117,10 +132,21 @@ Given('the card order is deterministic for testing', async function() {
 Given('I have {int} players ready to join a poker game', async function(playerCount) {
   assert.equal(playerCount, 5, 'This scenario requires exactly 5 players');
   
+  // Create browsers sequentially to avoid resource issues
   for (let i = 1; i <= playerCount; i++) {
     const playerName = `Player${i}`;
-    players[playerName] = await createPlayerBrowser(playerName, true);
+    console.log(`🎮 Creating browser for ${playerName}...`);
+    try {
+      players[playerName] = await createPlayerBrowser(playerName, true);
+      console.log(`✅ ${playerName} browser ready`);
+    } catch (error) {
+      console.log(`❌ Failed to create browser for ${playerName}: ${error.message}`);
+      throw error;
+    }
+    // Small delay between browser creations
+    await new Promise(resolve => setTimeout(resolve, 1000));
   }
+  console.log(`🎯 All ${playerCount} players ready`);
 });
 
 Given('all players have starting stacks of ${int}', function(stackAmount) {
