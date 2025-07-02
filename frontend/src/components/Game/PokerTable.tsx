@@ -312,24 +312,11 @@ const CommunityCard = styled.div<{ isEmpty?: boolean }>`
   `}
 `;
 
-const CommunityCardsLabel = styled.div`
-  position: absolute;
-  top: -35px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.8);
-  color: #ffd700;
-  padding: 4px 12px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: bold;
-  white-space: nowrap;
-  border: 1px solid rgba(255, 215, 0, 0.3);
-`;
+
 
 const PotDisplay = styled.div`
   position: absolute;
-  top: 35%;
+  top: 25%;
   left: 50%;
   transform: translateX(-50%);
   background: rgba(0,0,0,0.8);
@@ -840,12 +827,6 @@ export const PokerTable: React.FC<PokerTableProps> = ({
 
         {/* Community Cards - Always show 5 positions */}
         <CommunityCardsArea data-testid="community-cards">
-          <CommunityCardsLabel>
-            {gameState.communityCards.length === 0 ? 'Community Cards' : 
-             gameState.communityCards.length === 3 ? 'Flop' :
-             gameState.communityCards.length === 4 ? 'Turn' :
-             gameState.communityCards.length === 5 ? 'River' : 'Community Cards'}
-          </CommunityCardsLabel>
           {Array.from({ length: 5 }, (_, index) => {
             const card = gameState.communityCards[index];
             const isEmpty = !card;
