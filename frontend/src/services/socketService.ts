@@ -1068,7 +1068,6 @@ export class SocketService {
       // User is observing a table (table=X, seat=null)
       console.log(`🎯 FRONTEND: User ${nickname} is observing table ${table}`);
       console.log(`🎯 FRONTEND: Current observers before adding:`, this.observers);
-      console.log(`🎯 FRONTEND: Stack trace for debugging:`, new Error().stack);
       if (!this.observers.includes(nickname)) {
         this.observers.push(nickname);
         console.log(`✅ FRONTEND: Added ${nickname} to observers list`);
