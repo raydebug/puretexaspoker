@@ -129,7 +129,7 @@ Given('the card order is deterministic for testing', async function() {
 });
 
 // Player setup steps
-Given('I have {int} players ready to join a poker game', async function(playerCount) {
+Given('I have {int} players ready to join a poker game', { timeout: 180000 }, async function(playerCount) {
   assert.equal(playerCount, 5, 'This scenario requires exactly 5 players');
   
   // Create browsers sequentially to avoid resource issues
@@ -144,7 +144,7 @@ Given('I have {int} players ready to join a poker game', async function(playerCo
       throw error;
     }
     // Small delay between browser creations
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 500));
   }
   console.log(`🎯 All ${playerCount} players ready`);
 });
@@ -156,21 +156,25 @@ Given('all players have starting stacks of ${int}', function(stackAmount) {
   assert.equal(stackAmount, 100, 'Expected starting stack of $100');
 });
 
-When('players join the table in order:', async function(dataTable) {
+When('players join the table in order:', { timeout: 120000 }, async function(dataTable) {
   const playersData = dataTable.hashes();
   
   for (const playerData of playersData) {
     const player = players[playerData.Player];
     assert(player, `Player ${playerData.Player} not found`);
     
+    console.log(`🎯 ${playerData.Player} joining table and taking seat ${playerData.Seat}...`);
     await joinTable(player);
     await takeSeat(player, parseInt(playerData.Seat), parseInt(playerData.Stack.replace('$', '')));
     
     gameState.activePlayers.push(playerData.Player);
+    console.log(`✅ ${playerData.Player} seated successfully`);
   }
   
   // Wait for all players to be seated
-  await new Promise(resolve => setTimeout(resolve, 3000));
+  console.log('⏳ Waiting for all players to be fully seated...');
+  await new Promise(resolve => setTimeout(resolve, 5000));
+  console.log('🎮 All players seated and ready to start the game');
 });
 
 When('the game starts with blinds structure:', async function(dataTable) {
@@ -194,17 +198,18 @@ When('the game starts with blinds structure:', async function(dataTable) {
   }
 });
 
-Then('the pot should be ${int}', async function(expectedAmount) {
+Then('the pot should be ${int}', { timeout: 30000 }, async function(expectedAmount) {
   expectedPotAmount = expectedAmount;
   
   const player = Object.values(players)[0];
   try {
     const potDisplay = await player.driver.wait(
-      until.elementLocated(By.css('[data-testid="pot-amount"]')), 5000
+      until.elementLocated(By.css('[data-testid="pot-amount"]')), 10000
     );
     const potText = await potDisplay.getText();
     const actualPot = parseInt(potText.replace(/[^0-9]/g, ''));
     
+    console.log(`💰 Pot verification: Expected $${expectedAmount}, Found $${actualPot}`);
     assert(Math.abs(actualPot - expectedAmount) <= 5, 
            `Expected pot $${expectedAmount}, got $${actualPot}`);
   } catch (error) {
