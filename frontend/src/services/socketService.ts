@@ -1325,6 +1325,13 @@ export class SocketService {
   }
 
   /**
+   * Get current table number
+   */
+  getCurrentTable(): number | null {
+    return this.currentUserTable;
+  }
+
+  /**
    * Get initial game state for a table
    */
   private getInitialGameState(tableId: string) {

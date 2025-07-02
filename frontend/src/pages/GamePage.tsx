@@ -93,9 +93,37 @@ const LeftSidebar = styled.div`
 const TableContainer = styled.div`
   flex: 1;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   position: relative;
+`;
+
+const TableHeader = styled.div`
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+`;
+
+const TableNumberDisplay = styled.div`
+  background: rgba(0, 0, 0, 0.8);
+  color: #ffd700;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: bold;
+  border: 2px solid #ffd700;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+  backdrop-filter: blur(10px);
+  text-align: center;
+  min-width: 120px;
+  
+  &::before {
+    content: '🎰 ';
+    margin-right: 4px;
+  }
 `;
 
 const GamePage: React.FC = () => {
@@ -116,6 +144,7 @@ const GamePage: React.FC = () => {
   const [availableSeats, setAvailableSeats] = useState<number[]>([]);
   const [showSeatDialog, setShowSeatDialog] = useState(false);
   const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
+  const [currentTableNumber, setCurrentTableNumber] = useState<number | null>(null);
 
   
   // Get table info from state if coming from JoinGamePage
@@ -142,6 +171,19 @@ const GamePage: React.FC = () => {
       setIsObserver(true);
       setObservers([testNickname]); // Initialize with test user as observer
       setIsLoading(false);
+      
+      // Set table number for test mode
+      let tableNumber = socketService.getCurrentTable();
+      if (!tableNumber) {
+        if (table?.id) {
+          tableNumber = table.id;
+        } else if (gameId && /^\d+$/.test(gameId)) {
+          tableNumber = parseInt(gameId);
+        } else {
+          tableNumber = 1; // Default table for tests
+        }
+      }
+      setCurrentTableNumber(tableNumber);
       
       // Set up WebSocket connection for test mode to receive test API updates
       const setupTestMode = async () => {
@@ -298,6 +340,12 @@ const GamePage: React.FC = () => {
           const available = Array.from({ length: 9 }, (_, i) => i + 1).filter(seat => !occupiedSeats.includes(seat));
           setAvailableSeats(available);
           }
+          
+          // Update table number when user location changes
+          const tableNumber = socketService.getCurrentTable();
+          if (tableNumber !== currentTableNumber) {
+            setCurrentTableNumber(tableNumber);
+          }
         });
         
         // Set up event-driven listeners for game state instead of polling
@@ -330,6 +378,23 @@ const GamePage: React.FC = () => {
           const occupiedSeats = existingState.players.map(p => p.seatNumber);
           const available = Array.from({ length: 9 }, (_, i) => i + 1).filter(seat => !occupiedSeats.includes(seat));
           setAvailableSeats(available);
+        }
+        
+        // Get current table number from multiple sources
+        let tableNumber = socketService.getCurrentTable();
+        
+        // Fallback: try to get table number from URL params or location state
+        if (!tableNumber) {
+          if (table?.id) {
+            tableNumber = table.id;
+          } else if (gameId && /^\d+$/.test(gameId)) {
+            // If gameId is a number, it might be the table ID
+            tableNumber = parseInt(gameId);
+          }
+        }
+        
+        if (tableNumber) {
+          setCurrentTableNumber(tableNumber);
         }
         
         // Set a timeout to show the observer view if no game state is received
@@ -558,6 +623,12 @@ const GamePage: React.FC = () => {
           </LeftSidebar>
           
           <TableContainer>
+            <TableHeader>
+              <TableNumberDisplay>
+                {currentTableNumber ? `Table ${currentTableNumber}` : 'Loading...'}
+              </TableNumberDisplay>
+            </TableHeader>
+            
             <PokerTable 
               gameState={gameState} 
               currentPlayer={null}
@@ -597,6 +668,12 @@ const GamePage: React.FC = () => {
       </LeftSidebar>
       
       <TableContainer>
+        <TableHeader>
+          <TableNumberDisplay>
+            {currentTableNumber ? `Table ${currentTableNumber}` : 'Loading...'}
+          </TableNumberDisplay>
+        </TableHeader>
+        
         <PokerTable
           gameState={gameState}
           currentPlayer={currentPlayer}
