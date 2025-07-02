@@ -980,6 +980,5 @@ process.on('exit', async () => {
 
 module.exports = {
   createPlayerBrowser,
-  joinTable,
-  takeSeat
+  autoSeatPlayer
 }; 
