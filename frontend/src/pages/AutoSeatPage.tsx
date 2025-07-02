@@ -70,6 +70,7 @@ const AutoSeatPage: React.FC = () => {
   const playerName = searchParams.get('player') || searchParams.get('name');
   const tableNumber = searchParams.get('table');
   const seatNumber = searchParams.get('seat');
+  const buyInAmount = parseInt(searchParams.get('buyin') || searchParams.get('chips') || '200');
 
   useEffect(() => {
     const autoSeatPlayer = async () => {
@@ -103,10 +104,10 @@ const AutoSeatPage: React.FC = () => {
         socketService.joinTable(parseInt(tableNumber));
         await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for table join
 
-        setStatus('💺 Taking seat ' + seatNumber + '...');
+        setStatus('💺 Taking seat ' + seatNumber + ' with $' + buyInAmount + ' buy-in...');
         
-        // Take the specified seat with default buy-in
-        socketService.takeSeat(parseInt(seatNumber), 100);
+        // Take the specified seat with specified buy-in amount
+        socketService.takeSeat(parseInt(seatNumber), buyInAmount);
         await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for seat taken
 
         setStatus('✅ Successfully seated! Redirecting to game...');
@@ -144,7 +145,7 @@ const AutoSeatPage: React.FC = () => {
     return () => {
       // No manual cleanup needed for public API
     };
-  }, [playerName, tableNumber, seatNumber, navigate]);
+  }, [playerName, tableNumber, seatNumber, buyInAmount, navigate]);
 
   return (
     <Container>
@@ -155,6 +156,7 @@ const AutoSeatPage: React.FC = () => {
           <div><strong>Player:</strong> {playerName || 'Not provided'}</div>
           <div><strong>Table:</strong> {tableNumber || 'Not provided'}</div>
           <div><strong>Seat:</strong> {seatNumber || 'Not provided'}</div>
+          <div><strong>Buy-in:</strong> ${buyInAmount}</div>
         </ParameterInfo>
 
         <Status type={statusType}>
@@ -164,8 +166,14 @@ const AutoSeatPage: React.FC = () => {
         {statusType === 'error' && (
           <div style={{ marginTop: '20px', fontSize: '14px', opacity: 0.8 }}>
             <p><strong>Usage:</strong></p>
-            <p><code>/auto-seat?player=PlayerName&table=1&seat=3</code></p>
-            <p>Or: <code>/auto-seat?name=PlayerName&table=1&seat=3</code></p>
+            <p><code>/auto-seat?player=PlayerName&table=1&seat=3&buyin=500</code></p>
+            <p><strong>Parameters:</strong></p>
+            <ul style={{ textAlign: 'left', paddingLeft: '20px' }}>
+              <li><code>player</code> or <code>name</code> - Player nickname</li>
+              <li><code>table</code> - Table number (1, 2, 3)</li>
+              <li><code>seat</code> - Seat number (1-9)</li>
+              <li><code>buyin</code> or <code>chips</code> - Buy-in amount (default: $200)</li>
+            </ul>
           </div>
         )}
       </StatusCard>
