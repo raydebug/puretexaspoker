@@ -155,21 +155,41 @@ async function takeSeat(player, seatNumber, buyInAmount = 100) {
 Given('the poker system is running', async function() {
   const http = require('http');
   
-  return new Promise((resolve, reject) => {
-    const req = http.get('http://localhost:3001/api/tables', (res) => {
-      if (res.statusCode === 200) {
-        resolve();
-      } else {
-        reject(new Error(`Backend not running: ${res.statusCode}`));
+  // Retry logic for server connectivity
+  let retries = 3;
+  while (retries > 0) {
+    try {
+      await new Promise((resolve, reject) => {
+        const req = http.get('http://localhost:3001/api/tables', (res) => {
+          let data = '';
+          res.on('data', chunk => data += chunk);
+          res.on('end', () => {
+            if (res.statusCode === 200) {
+              console.log('✅ Backend server is accessible');
+              resolve();
+            } else {
+              reject(new Error(`Backend not running: ${res.statusCode}`));
+            }
+          });
+        });
+        req.on('error', (err) => {
+          reject(new Error(`Backend server not accessible: ${err.message}`));
+        });
+        req.setTimeout(10000, () => {
+          req.destroy();
+          reject(new Error('Backend server timeout'));
+        });
+      });
+      return; // Success, exit retry loop
+    } catch (error) {
+      retries--;
+      console.log(`⚠️ Backend check failed (${3 - retries}/3): ${error.message}`);
+      if (retries === 0) {
+        throw error;
       }
-    });
-    req.on('error', () => {
-      reject(new Error('Backend server not accessible'));
-    });
-    req.setTimeout(5000, () => {
-      reject(new Error('Backend server timeout'));
-    });
-  });
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s before retry
+    }
+  }
 });
 
 Given('I have a clean game state', async function() {
