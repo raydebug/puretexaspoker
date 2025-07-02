@@ -41,52 +41,65 @@ async function createPlayerBrowser(playerName, headless = true) {
 
 // Helper function to join a table
 async function joinTable(player, tableId = 1) {
+  console.log(`🎯 ${player.name} starting join process...`);
   await player.driver.get('http://localhost:3000');
-  await player.driver.sleep(2000);
+  await player.driver.sleep(3000);
   
   // Enter nickname
+  console.log(`🔐 ${player.name} entering nickname...`);
   const nicknameInput = await player.driver.wait(
-    until.elementLocated(By.css('input[placeholder*="nickname" i]')), 10000
+    until.elementLocated(By.css('[data-testid="nickname-input"]')), 15000
   );
+  await nicknameInput.clear();
   await nicknameInput.sendKeys(player.name);
   
   // Join button
-  const joinButton = await player.driver.findElement(By.css('button[type="submit"]'));
-  await joinButton.click();
-  await player.driver.sleep(2000);
-  
-  // Navigate to table
-  const tableCard = await player.driver.wait(
-    until.elementLocated(By.css(`[data-testid="table-card-${tableId}"]`)), 5000
+  console.log(`✅ ${player.name} clicking join button...`);
+  const joinButton = await player.driver.wait(
+    until.elementLocated(By.css('[data-testid="join-button"]')), 5000
   );
-  await tableCard.click();
-  await player.driver.sleep(1000);
+  await joinButton.click();
+  await player.driver.sleep(3000);
+  
+  // Navigate to table using correct selector
+  console.log(`🏃 ${player.name} navigating to table ${tableId}...`);
+  const tableJoinButton = await player.driver.wait(
+    until.elementLocated(By.css(`[data-testid="join-table-${tableId}"]`)), 10000
+  );
+  await tableJoinButton.click();
+  await player.driver.sleep(3000);
+  console.log(`🎯 ${player.name} joined table successfully`);
 }
 
 // Helper function to take a seat
 async function takeSeat(player, seatNumber, buyInAmount = 100) {
-  const seatSelector = `[data-testid="seat-${seatNumber}"]`;
+  console.log(`💺 ${player.name} attempting to take seat ${seatNumber}...`);
+  
+  const seatSelector = `[data-testid="available-seat-${seatNumber}"]`;
   const seatElement = await player.driver.wait(
-    until.elementLocated(By.css(seatSelector)), 5000
+    until.elementLocated(By.css(seatSelector)), 10000
   );
   await seatElement.click();
-  await player.driver.sleep(1000);
+  await player.driver.sleep(2000);
   
-  // Enter buy-in amount
+  // Enter buy-in amount and confirm
   try {
+    console.log(`💰 ${player.name} entering buy-in amount $${buyInAmount}...`);
     const buyInInput = await player.driver.wait(
-      until.elementLocated(By.css('input[type="number"]')), 3000
+      until.elementLocated(By.css('[data-testid="custom-buyin-input"], input[type="number"]')), 5000
     );
     await buyInInput.clear();
     await buyInInput.sendKeys(buyInAmount.toString());
     
-    const confirmButton = await player.driver.findElement(
-      By.css('button[data-testid="confirm-seat-button"], button:contains("Confirm")')
+    const confirmButton = await player.driver.wait(
+      until.elementLocated(By.css('[data-testid="confirm-seat-btn"]')), 5000
     );
     await confirmButton.click();
-    await player.driver.sleep(2000);
+    await player.driver.sleep(3000);
+    
+    console.log(`✅ ${player.name} successfully took seat ${seatNumber}`);
   } catch (error) {
-    console.log(`No buy-in dialog for ${player.name} - seat may already be taken`);
+    console.log(`⚠️ Buy-in dialog issue for ${player.name}: ${error.message}`);
   }
   
   player.seat = seatNumber;
