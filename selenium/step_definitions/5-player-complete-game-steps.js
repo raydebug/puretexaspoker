@@ -45,16 +45,24 @@ async function joinTable(player, tableId = 1) {
   await player.driver.get('http://localhost:3000');
   await player.driver.sleep(3000);
   
-  // Enter nickname
-  console.log(`🔐 ${player.name} entering nickname...`);
+  // Click login button to open the LoginModal
+  console.log(`🔐 ${player.name} clicking login button to open modal...`);
+  const loginButton = await player.driver.wait(
+    until.elementLocated(By.css('[data-testid="login-button"]')), 10000
+  );
+  await loginButton.click();
+  await player.driver.sleep(2000);
+  
+  // Enter nickname in the modal
+  console.log(`📝 ${player.name} entering nickname in modal...`);
   const nicknameInput = await player.driver.wait(
-    until.elementLocated(By.css('[data-testid="nickname-input"]')), 15000
+    until.elementLocated(By.css('[data-testid="nickname-input"]')), 10000
   );
   await nicknameInput.clear();
   await nicknameInput.sendKeys(player.name);
   
-  // Join button
-  console.log(`✅ ${player.name} clicking join button...`);
+  // Click join button in modal
+  console.log(`✅ ${player.name} clicking join button in modal...`);
   const joinButton = await player.driver.wait(
     until.elementLocated(By.css('[data-testid="join-button"]')), 5000
   );
