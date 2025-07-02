@@ -44,15 +44,21 @@ BeforeAll({timeout: 60000}, async function() {
     await checkServersRunning()
     console.log('✅ Both servers are confirmed to be running')
     
-    // Initialize WebDriver with improved timeout handling
-    console.log('🔧 Initializing WebDriver...')
-    const driver = await Promise.race([
-      seleniumManager.getDriver(),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('WebDriver initialization timed out after 45 seconds')), 45000)
-      )
-    ]);
-    console.log(`✅ WebDriver initialized successfully with browser: ${seleniumManager.getConfig().browser}`)
+    // Skip WebDriver initialization for multi-browser scenarios
+    // Multi-browser tests (like 5-player) manage their own drivers
+    if (process.env.MULTI_BROWSER_TEST !== 'true') {
+      // Initialize WebDriver with improved timeout handling
+      console.log('🔧 Initializing WebDriver...')
+      const driver = await Promise.race([
+        seleniumManager.getDriver(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('WebDriver initialization timed out after 45 seconds')), 45000)
+        )
+      ]);
+      console.log(`✅ WebDriver initialized successfully with browser: ${seleniumManager.getConfig().browser}`)
+    } else {
+      console.log('🔧 Skipping global WebDriver initialization for multi-browser test')
+    }
   } catch (error) {
     console.error('❌ Failed to initialize Selenium environment:', error.message)
     throw error
@@ -63,37 +69,42 @@ BeforeAll({timeout: 60000}, async function() {
 Before({timeout: 60000}, async function() {
   console.log('🔧 Setting up scenario...')
   
-  // Get or initialize driver with timeout protection
-  const driver = await Promise.race([
-    seleniumManager.getDriver(),
-    new Promise((_, reject) => setTimeout(() => reject(new Error('Driver retrieval timed out')), 15000))
-  ]);
-  
-  helpers = new WebDriverHelpers(driver)
-  
-  // Store helpers in the world for step definitions to access
-  this.helpers = helpers
-  this.driver = driver
-  
-  // Only navigate if needed (check current URL first to avoid unnecessary navigation)
-  try {
-    const currentUrl = await driver.getCurrentUrl();
-    if (!currentUrl.includes('localhost:3000')) {
-      await helpers.navigateTo('/')
-      console.log('✅ Navigated to base URL')
-    } else {
-      console.log('✅ Already on base URL')
-    }
-  } catch (error) {
-    console.log(`⚠️ Navigation failed, retrying: ${error.message}`)
-    await helpers.sleep(2000)
+  // Skip single-browser setup for multi-browser tests
+  if (process.env.MULTI_BROWSER_TEST !== 'true') {
+    // Get or initialize driver with timeout protection
+    const driver = await Promise.race([
+      seleniumManager.getDriver(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Driver retrieval timed out')), 15000))
+    ]);
+    
+    helpers = new WebDriverHelpers(driver)
+    
+    // Store helpers in the world for step definitions to access
+    this.helpers = helpers
+    this.driver = driver
+    
+    // Only navigate if needed (check current URL first to avoid unnecessary navigation)
     try {
-      await helpers.navigateTo('/')
-      console.log('✅ Navigated to base URL (retry)')
-    } catch (retryError) {
-      console.log(`❌ Navigation retry failed: ${retryError.message}`)
-      throw retryError
+      const currentUrl = await driver.getCurrentUrl();
+      if (!currentUrl.includes('localhost:3000')) {
+        await helpers.navigateTo('/')
+        console.log('✅ Navigated to base URL')
+      } else {
+        console.log('✅ Already on base URL')
+      }
+    } catch (error) {
+      console.log(`⚠️ Navigation failed, retrying: ${error.message}`)
+      await helpers.sleep(2000)
+      try {
+        await helpers.navigateTo('/')
+        console.log('✅ Navigated to base URL (retry)')
+      } catch (retryError) {
+        console.log(`❌ Navigation retry failed: ${retryError.message}`)
+        throw retryError
+      }
     }
+  } else {
+    console.log('🔧 Skipping single-browser setup for multi-browser test')
   }
 })
 
@@ -116,7 +127,7 @@ After({timeout: 60000}, async function(scenario) {
   }
   
   // Clear browser state but keep driver alive for next scenario
-  if (this.driver) {
+  if (this.driver && process.env.MULTI_BROWSER_TEST !== 'true') {
     try {
       // Set very short timeout for cleanup operations to prevent hanging
       await Promise.race([

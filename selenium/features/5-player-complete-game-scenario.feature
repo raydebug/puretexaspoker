@@ -18,6 +18,13 @@ Feature: 5-Player Complete Game Scenario
       | Player3  | 3    | $100  |
       | Player4  | 4    | $100  |
       | Player5  | 5    | $100  |
+    Then all players should be seated correctly:
+      | Player  | Seat |
+      | Player1 | 1    |
+      | Player2 | 2    |
+      | Player3 | 3    |
+      | Player4 | 4    |
+      | Player5 | 5    |
     And the game starts with blinds structure:
       | Position    | Player  | Amount |
       | Small Blind | Player1 | $1     |

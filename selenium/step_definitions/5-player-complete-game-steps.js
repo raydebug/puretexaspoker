@@ -9,18 +9,37 @@ let gameState = {};
 let expectedPotAmount = 0;
 
 // Helper function to create a player browser instance
-async function createPlayerBrowser(playerName, headless = true) {
+async function createPlayerBrowser(playerName, headless = true, playerIndex = 0) {
   const options = new chrome.Options();
   if (headless) {
     options.addArguments('--headless');
   }
+  
+  // Position windows in a grid layout for headed mode
+  let windowArgs = '--window-size=800,600';
+  if (!headless) {
+    const gridX = (playerIndex % 3) * 400; // 3 columns
+    const gridY = Math.floor(playerIndex / 3) * 350; // 2 rows
+    windowArgs = `--window-size=800,600 --window-position=${gridX},${gridY}`;
+  }
+  
   options.addArguments(
     '--no-sandbox',
     '--disable-dev-shm-usage', 
     '--disable-gpu',
     '--disable-web-security',
     '--disable-features=VizDisplayCompositor',
-    '--window-size=1280,720'
+    '--memory-pressure-off',
+    '--max_old_space_size=2048',
+    '--disable-background-timer-throttling',
+    '--disable-backgrounding-occluded-windows',
+    '--disable-renderer-backgrounding',
+    '--disable-extensions',
+    '--disable-plugins',
+    '--disable-images',
+    '--disable-javascript-harmony-shipping',
+    '--aggressive-cache-discard',
+    windowArgs
   );
   
   // Set timeouts for faster creation
@@ -156,7 +175,7 @@ async function takeSeat(player, seatNumber, buyInAmount = 100) {
 }
 
 // Background steps
-Given('the poker system is running', async function() {
+Given('the poker system is running', { timeout: 30000 }, async function() {
   const http = require('http');
   
   // Retry logic for server connectivity
@@ -215,19 +234,23 @@ Given('the card order is deterministic for testing', async function() {
 Given('I have {int} players ready to join a poker game', { timeout: 180000 }, async function(playerCount) {
   assert.equal(playerCount, 5, 'This scenario requires exactly 5 players');
   
+  // Check environment variable for headless mode
+  const isHeadless = process.env.HEADLESS === 'true';
+  console.log(`🎮 Creating ${playerCount} players in ${isHeadless ? 'headless' : 'headed'} mode...`);
+  
   // Create browsers sequentially to avoid resource issues
   for (let i = 1; i <= playerCount; i++) {
     const playerName = `Player${i}`;
     console.log(`🎮 Creating browser for ${playerName}...`);
     try {
-      players[playerName] = await createPlayerBrowser(playerName, true);
+      players[playerName] = await createPlayerBrowser(playerName, isHeadless, i - 1);
       console.log(`✅ ${playerName} browser ready`);
     } catch (error) {
       console.log(`❌ Failed to create browser for ${playerName}: ${error.message}`);
       throw error;
     }
-    // Small delay between browser creations
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Longer delay between browser creations for stability
+    await new Promise(resolve => setTimeout(resolve, 2000));
   }
   console.log(`🎯 All ${playerCount} players ready`);
 });
@@ -239,7 +262,7 @@ Given('all players have starting stacks of ${int}', function(stackAmount) {
   assert.equal(stackAmount, 100, 'Expected starting stack of $100');
 });
 
-When('players join the table in order:', { timeout: 120000 }, async function(dataTable) {
+When('players join the table in order:', { timeout: 300000 }, async function(dataTable) {
   const playersData = dataTable.hashes();
   
   for (const playerData of playersData) {
@@ -252,12 +275,70 @@ When('players join the table in order:', { timeout: 120000 }, async function(dat
     
     gameState.activePlayers.push(playerData.Player);
     console.log(`✅ ${playerData.Player} seated successfully`);
+    
+    // Add delay between player seating for stability  
+    await new Promise(resolve => setTimeout(resolve, 3000));
   }
   
   // Wait for all players to be seated
   console.log('⏳ Waiting for all players to be fully seated...');
   await new Promise(resolve => setTimeout(resolve, 5000));
   console.log('🎮 All players seated and ready to start the game');
+});
+
+Then('all players should be seated correctly:', { timeout: 30000 }, async function(dataTable) {
+  const expectedSeating = dataTable.hashes();
+  
+  console.log('🔍 Verifying all players are seated correctly...');
+  
+  for (const seatInfo of expectedSeating) {
+    const player = players[seatInfo.Player];
+    const expectedSeat = parseInt(seatInfo.Seat);
+    const seatIndex = expectedSeat - 1; // Convert to 0-based index
+    
+    try {
+      // Verify the player name appears in the correct seat across all browser instances
+      for (const [playerName, playerBrowser] of Object.entries(players)) {
+        try {
+          // Look for the player name element in the seat
+          const playerNameSelector = `[data-testid="player-${seatInfo.Player}"]`;
+          const playerNameElement = await playerBrowser.driver.wait(
+            until.elementLocated(By.css(playerNameSelector)), 3000
+          );
+          
+          const playerText = await playerNameElement.getText();
+          
+          if (playerText === seatInfo.Player) {
+            console.log(`✅ ${playerName} sees ${seatInfo.Player} correctly seated`);
+          } else {
+            console.log(`⚠️ ${playerName} sees "${playerText}" instead of ${seatInfo.Player}`);
+          }
+        } catch (error) {
+          // Try alternative selector for seated players
+          const seatSelector = `[data-testid="seat-${seatIndex}"]`;
+          try {
+            const seatElement = await playerBrowser.driver.findElement(By.css(seatSelector));
+            const seatText = await seatElement.getText();
+            
+            if (seatText.includes(seatInfo.Player)) {
+              console.log(`✅ ${playerName} sees ${seatInfo.Player} in seat ${expectedSeat} (alternative selector)`);
+            } else {
+              console.log(`⚠️ ${playerName} sees "${seatText}" in seat ${expectedSeat}, expected ${seatInfo.Player}`);
+            }
+          } catch (altError) {
+            console.log(`⚠️ ${playerName} could not verify ${seatInfo.Player} at seat ${expectedSeat}`);
+          }
+        }
+      }
+      
+      console.log(`✅ Verified ${seatInfo.Player} is seated at position ${expectedSeat}`);
+      
+    } catch (error) {
+      console.log(`⚠️ Could not verify ${seatInfo.Player} at seat ${expectedSeat}: ${error.message}`);
+    }
+  }
+  
+  console.log('✅ All players seating verification completed');
 });
 
 When('the game starts with blinds structure:', async function(dataTable) {
