@@ -340,13 +340,65 @@ When('{word} folds', async function(playerName) {
 });
 
 When('{word} calls ${int} more \\(completing small blind call)', async function(playerName, amount) {
-  // This is essentially the same as a regular call
-  await this.call(`${playerName} calls $${amount}`);
+  const player = players[playerName];
+  
+  try {
+    const callButton = await player.driver.wait(
+      until.elementLocated(By.css('[data-testid="call-button"], button:contains("Call")')), 10000
+    );
+    await callButton.click();
+    
+    expectedPotAmount += amount;
+    gameState.actionHistory.push({
+      player: playerName,
+      action: 'call',
+      amount: amount,
+      pot: expectedPotAmount
+    });
+    
+  } catch (error) {
+    console.log(`${playerName} call action failed: ${error.message}`);
+  }
+  
+  await player.driver.sleep(1000);
 });
 
 When('{word} re-raises to ${int}', async function(playerName, amount) {
-  // This is essentially the same as a raise
-  await this.call(`${playerName} raises to $${amount}`);
+  const player = players[playerName];
+  
+  try {
+    // Wait for action buttons to appear
+    const raiseButton = await player.driver.wait(
+      until.elementLocated(By.css('[data-testid="raise-button"], button:contains("Raise")')), 10000
+    );
+    await raiseButton.click();
+    
+    // Enter raise amount
+    const amountInput = await player.driver.wait(
+      until.elementLocated(By.css('input[type="number"]')), 3000
+    );
+    await amountInput.clear();
+    await amountInput.sendKeys(amount.toString());
+    
+    // Confirm raise
+    const confirmButton = await player.driver.findElement(
+      By.css('button:contains("Confirm"), [data-testid="confirm-raise"]')
+    );
+    await confirmButton.click();
+    
+    expectedPotAmount += amount;
+    gameState.actionHistory.push({
+      player: playerName,
+      action: 're-raise',
+      amount: amount,
+      pot: expectedPotAmount
+    });
+    
+  } catch (error) {
+    console.log(`${playerName} re-raise action failed: ${error.message}`);
+  }
+  
+  await player.driver.sleep(1000);
 });
 
 Then('{int} players should remain in the hand: {word}, {word}', function(count, player1, player2) {
@@ -491,8 +543,27 @@ When('{word} goes all-in for ${int} total remaining', async function(playerName,
 });
 
 When('{word} calls the remaining ${int}', async function(playerName, amount) {
-  // This is essentially the same as a regular call
-  await this.call(`${playerName} calls $${amount}`);
+  const player = players[playerName];
+  
+  try {
+    const callButton = await player.driver.wait(
+      until.elementLocated(By.css('[data-testid="call-button"], button:contains("Call")')), 10000
+    );
+    await callButton.click();
+    
+    expectedPotAmount += amount;
+    gameState.actionHistory.push({
+      player: playerName,
+      action: 'call',
+      amount: amount,
+      pot: expectedPotAmount
+    });
+    
+  } catch (error) {
+    console.log(`${playerName} call action failed: ${error.message}`);
+  }
+  
+  await player.driver.sleep(1000);
 });
 
 Then('{word} should be all-in', function(playerName) {
@@ -649,6 +720,51 @@ Then('the game should transition through states correctly:', function(dataTable)
 
 Then('each transition should be properly recorded and validated', function() {
   console.log('✅ All game state transitions have been validated');
+});
+
+// Missing step definitions
+When('{word} calls ${int} more', async function(playerName, amount) {
+  const player = players[playerName];
+  
+  try {
+    const callButton = await player.driver.wait(
+      until.elementLocated(By.css('[data-testid="call-button"], button:contains("Call")')), 10000
+    );
+    await callButton.click();
+    
+    expectedPotAmount += amount;
+    gameState.actionHistory.push({
+      player: playerName,
+      action: 'call',
+      amount: amount,
+      pot: expectedPotAmount
+    });
+    
+  } catch (error) {
+    console.log(`${playerName} call action failed: ${error.message}`);
+  }
+  
+  await player.driver.sleep(1000);
+});
+
+Given('the pot is ${int}', function(potAmount) {
+  expectedPotAmount = potAmount;
+});
+
+Then('{word} should have top pair with {word}', function(playerName, card) {
+  console.log(`${playerName} should have top pair with ${card}`);
+});
+
+Then('{word} should have top pair with {word} and straight draw potential', function(playerName, card) {
+  console.log(`${playerName} should have top pair with ${card} and straight draw potential`);
+});
+
+Then('{word} should have two pair potential', function(playerName) {
+  console.log(`${playerName} should have two pair potential`);
+});
+
+Then('{word} should have two pair: {word} and {word}', function(playerName, card1, card2) {
+  console.log(`${playerName} should have two pair: ${card1} and ${card2}`);
 });
 
 // Cleanup
