@@ -15,13 +15,16 @@ async function createPlayerBrowser(playerName, headless = true, playerIndex = 0)
     options.addArguments('--headless');
   }
   
-  // Position windows in a grid layout for headed mode
+  // Position windows in a grid layout for headed mode (5 windows: 3x2 grid)
   let windowArgs = '--window-size=800,600';
   if (!headless) {
-    const gridX = (playerIndex % 3) * 400; // 3 columns
-    const gridY = Math.floor(playerIndex / 3) * 350; // 2 rows
+    const gridX = (playerIndex % 3) * 420; // 3 columns with spacing
+    const gridY = Math.floor(playerIndex / 3) * 360; // 2 rows with spacing
     windowArgs = `--window-size=800,600 --window-position=${gridX},${gridY}`;
   }
+  
+  // All windows use the same size for consistency
+  const smallWindowArgs = windowArgs;
   
   options.addArguments(
     '--no-sandbox',
@@ -30,7 +33,7 @@ async function createPlayerBrowser(playerName, headless = true, playerIndex = 0)
     '--disable-web-security',
     '--disable-features=VizDisplayCompositor',
     '--memory-pressure-off',
-    '--max_old_space_size=2048',
+    '--max_old_space_size=1024',
     '--disable-background-timer-throttling',
     '--disable-backgrounding-occluded-windows',
     '--disable-renderer-backgrounding',
@@ -39,7 +42,12 @@ async function createPlayerBrowser(playerName, headless = true, playerIndex = 0)
     '--disable-images',
     '--disable-javascript-harmony-shipping',
     '--aggressive-cache-discard',
-    windowArgs
+    '--disable-background-networking',
+    '--disable-default-apps',
+    '--disable-sync',
+    '--disable-translate',
+    '--single-process',
+    smallWindowArgs
   );
   
   // Set timeouts for faster creation
@@ -243,14 +251,17 @@ Given('I have {int} players ready to join a poker game', { timeout: 180000 }, as
     const playerName = `Player${i}`;
     console.log(`🎮 Creating browser for ${playerName}...`);
     try {
-      players[playerName] = await createPlayerBrowser(playerName, isHeadless, i - 1);
-      console.log(`✅ ${playerName} browser ready`);
+      // All browsers use the same headless setting for true 5-player headed experience
+      const useHeadless = isHeadless;
+      players[playerName] = await createPlayerBrowser(playerName, useHeadless, i - 1);
+      console.log(`✅ ${playerName} browser ready ${useHeadless ? '(headless)' : '(headed)'}`);
     } catch (error) {
       console.log(`❌ Failed to create browser for ${playerName}: ${error.message}`);
       throw error;
     }
     // Longer delay between browser creations for stability
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    const delay = 2000;
+    await new Promise(resolve => setTimeout(resolve, delay));
   }
   console.log(`🎯 All ${playerCount} players ready`);
 });
