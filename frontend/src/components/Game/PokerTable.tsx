@@ -280,13 +280,13 @@ const CommunityCardsArea = styled.div`
   border: 2px solid rgba(255, 215, 0, 0.4);
 `;
 
-const CommunityCard = styled.div<{ isEmpty?: boolean }>`
+const CommunityCard = styled.div<{ $isEmpty?: boolean; color?: string }>`
   width: 40px;
   height: 56px;
-  background: ${props => props.isEmpty ? 
+  background: ${props => props.$isEmpty ? 
     'linear-gradient(145deg, #2c3e50, #34495e)' : 
     'white'};
-  border: ${props => props.isEmpty ? 
+  border: ${props => props.$isEmpty ? 
     '2px dashed rgba(255, 215, 0, 0.5)' : 
     '1px solid #ddd'};
   border-radius: 6px;
@@ -295,15 +295,15 @@ const CommunityCard = styled.div<{ isEmpty?: boolean }>`
   justify-content: center;
   font-size: 16px;
   font-weight: bold;
-  box-shadow: ${props => props.isEmpty ? 
+  box-shadow: ${props => props.$isEmpty ? 
     'inset 0 2px 4px rgba(0,0,0,0.3)' : 
     '0 2px 8px rgba(0,0,0,0.2)'};
-  color: ${props => props.isEmpty ? 
+  color: ${props => props.$isEmpty ? 
     'rgba(255, 215, 0, 0.3)' : 
     (props.color || 'black')};
   transition: all 0.3s ease;
   
-  ${props => props.isEmpty && `
+  ${props => props.$isEmpty && `
     &::before {
       content: '?';
       font-size: 24px;
@@ -835,7 +835,7 @@ export const PokerTable: React.FC<PokerTableProps> = ({
               <CommunityCard 
                 key={index} 
                 data-testid={`community-card-${index}`}
-                isEmpty={isEmpty}
+                $isEmpty={isEmpty}
                 color={card ? getCardColor(card.suit) : undefined}
               >
                 {card ? `${card.rank}${getSuitSymbol(card.suit)}` : ''}
