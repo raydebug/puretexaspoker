@@ -7,6 +7,7 @@ import { JoinGamePage } from './pages/JoinGamePage';
 import { JoinPage } from './pages/JoinPage';
 import { AuthDemo } from './pages/AuthDemo';
 import TableMonitorPage from './pages/TableMonitorPage';
+import AutoSeatPage from './pages/AutoSeatPage';
 import { Navigation } from './components/Navigation';
 import GlobalStyles from './styles/GlobalStyles';
 import { theme } from './styles/theme';
@@ -38,6 +39,7 @@ function AppContent() {
         <Route path="/join-table" element={<JoinGamePage />} />
         <Route path="/game/:gameId" element={<GamePage />} />
         <Route path="/monitor" element={<TableMonitorPage />} />
+        <Route path="/auto-seat" element={<AutoSeatPage />} />
       </Routes>
     </div>
   );
