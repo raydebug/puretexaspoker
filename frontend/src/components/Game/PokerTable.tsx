@@ -906,28 +906,7 @@ export const PokerTable: React.FC<PokerTableProps> = ({
           </div>
         )}
 
-        {/* Debug info for troubleshooting */}
-        {process.env.NODE_ENV === 'development' && (
-          <div style={{
-            position: 'absolute',
-            top: '10px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            background: 'rgba(0,0,0,0.8)',
-            color: 'white',
-            padding: '8px',
-            borderRadius: '4px',
-            fontSize: '10px',
-            zIndex: 20
-          }}>
-            Observer: {isObserver ? 'Yes' : 'No'} | 
-            Player: {currentPlayer?.name || 'None'} | 
-            ShowCards: {shouldShowUserHoleCards() ? 'Yes' : 'No'} |
-            WithCards: {playerWithCards?.name || 'None'} |
-            Cards: {playerWithCards?.cards?.length || 0} |
-            Community: {gameState.communityCards.length}
-          </div>
-        )}
+
       </PokerTableSurface>
     </TableContainer>
   );
