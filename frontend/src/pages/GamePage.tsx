@@ -150,6 +150,59 @@ const GamePage: React.FC = () => {
   // Get table info from state if coming from JoinGamePage
   const table = location.state?.table as TableData | undefined;
 
+  // Helper function to determine table number from various sources
+  const getTableNumber = (): number | null => {
+    // 1. Try socketService first
+    let tableNumber = socketService.getCurrentTable();
+    console.log('DEBUG: getTableNumber - from socketService:', tableNumber);
+    
+    if (tableNumber) return tableNumber;
+    
+    // 2. Try location state
+    if (table?.id) {
+      console.log('DEBUG: getTableNumber - from location state:', table.id);
+      return table.id;
+    }
+    
+    // 3. Try URL search params (for auto-seat flow)
+    const urlParams = new URLSearchParams(window.location.search);
+    const tableParam = urlParams.get('table');
+    if (tableParam) {
+      const num = parseInt(tableParam);
+      console.log('DEBUG: getTableNumber - from URL params:', num);
+      return num;
+    }
+    
+    // 4. Try gameId if it's numeric
+    if (gameId && /^\d+$/.test(gameId)) {
+      const num = parseInt(gameId);
+      console.log('DEBUG: getTableNumber - from gameId:', num);
+      return num;
+    }
+    
+    // 5. Try extracting from current URL path
+    const pathParts = window.location.pathname.split('/');
+    const gameIndex = pathParts.findIndex(part => part === 'game');
+    if (gameIndex >= 0 && pathParts[gameIndex + 1] && /^\d+$/.test(pathParts[gameIndex + 1])) {
+      const num = parseInt(pathParts[gameIndex + 1]);
+      console.log('DEBUG: getTableNumber - from URL path:', num);
+      return num;
+    }
+    
+    console.log('DEBUG: getTableNumber - no table number found');
+    return null;
+  };
+
+  // Effect to update table number when URL or location changes
+  useEffect(() => {
+    const tableNumber = getTableNumber();
+    console.log('DEBUG: URL/location changed, checking table number:', tableNumber);
+    if (tableNumber && tableNumber !== currentTableNumber) {
+      console.log('DEBUG: Setting table number from URL change:', tableNumber);
+      setCurrentTableNumber(tableNumber);
+    }
+  }, [location.pathname, location.search, gameId, table?.id, currentTableNumber]);
+
   useEffect(() => {
     console.log('DEBUG: GamePage mounting with gameId:', gameId);
     
@@ -173,16 +226,15 @@ const GamePage: React.FC = () => {
       setIsLoading(false);
       
       // Set table number for test mode
-      let tableNumber = socketService.getCurrentTable();
+      let tableNumber = getTableNumber();
+      console.log('DEBUG TEST: Table number from getTableNumber:', tableNumber);
+      
       if (!tableNumber) {
-        if (table?.id) {
-          tableNumber = table.id;
-        } else if (gameId && /^\d+$/.test(gameId)) {
-          tableNumber = parseInt(gameId);
-        } else {
-          tableNumber = 1; // Default table for tests
-        }
+        tableNumber = 1; // Default table for tests
+        console.log('DEBUG TEST: Using default table number 1');
       }
+      
+      console.log('DEBUG TEST: Final table number to set:', tableNumber);
       setCurrentTableNumber(tableNumber);
       
       // Set up WebSocket connection for test mode to receive test API updates
@@ -342,8 +394,9 @@ const GamePage: React.FC = () => {
           }
           
           // Update table number when user location changes
-          const tableNumber = socketService.getCurrentTable();
+          const tableNumber = getTableNumber();
           if (tableNumber !== currentTableNumber) {
+            console.log('DEBUG: Updating table number from', currentTableNumber, 'to', tableNumber);
             setCurrentTableNumber(tableNumber);
           }
         });
@@ -380,19 +433,9 @@ const GamePage: React.FC = () => {
           setAvailableSeats(available);
         }
         
-        // Get current table number from multiple sources
-        let tableNumber = socketService.getCurrentTable();
-        
-        // Fallback: try to get table number from URL params or location state
-        if (!tableNumber) {
-          if (table?.id) {
-            tableNumber = table.id;
-          } else if (gameId && /^\d+$/.test(gameId)) {
-            // If gameId is a number, it might be the table ID
-            tableNumber = parseInt(gameId);
-          }
-        }
-        
+        // Get current table number
+        const tableNumber = getTableNumber();
+        console.log('DEBUG: Final table number to set:', tableNumber);
         if (tableNumber) {
           setCurrentTableNumber(tableNumber);
         }
