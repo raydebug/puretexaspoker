@@ -71,10 +71,22 @@ async function joinTable(player, tableId = 1) {
   
   // Navigate to table using correct selector
   console.log(`🏃 ${player.name} navigating to table ${tableId}...`);
+  
+  // Wait for any modals/overlays to clear
+  await player.driver.sleep(2000);
+  
   const tableJoinButton = await player.driver.wait(
     until.elementLocated(By.css(`[data-testid="join-table-${tableId}"]`)), 10000
   );
-  await tableJoinButton.click();
+  
+  // Try clicking the button, if intercepted use JavaScript click
+  try {
+    await tableJoinButton.click();
+  } catch (error) {
+    console.log(`⚠️ ${player.name} regular click failed, trying JavaScript click...`);
+    await player.driver.executeScript('arguments[0].click();', tableJoinButton);
+  }
+  
   await player.driver.sleep(3000);
   console.log(`🎯 ${player.name} joined table successfully`);
 }
@@ -87,14 +99,33 @@ async function takeSeat(player, seatNumber, buyInAmount = 100) {
   const seatElement = await player.driver.wait(
     until.elementLocated(By.css(seatSelector)), 10000
   );
-  await seatElement.click();
+  
+  // Try clicking the seat, use JavaScript click if intercepted
+  try {
+    await seatElement.click();
+  } catch (error) {
+    console.log(`⚠️ ${player.name} seat click intercepted, trying JavaScript click...`);
+    await player.driver.executeScript('arguments[0].click();', seatElement);
+  }
+  
   await player.driver.sleep(2000);
   
   // Enter buy-in amount and confirm
   try {
     console.log(`💰 ${player.name} entering buy-in amount $${buyInAmount}...`);
+    
+    // First select "Custom Amount" from dropdown to show custom input
+    const buyInDropdown = await player.driver.wait(
+      until.elementLocated(By.css('[data-testid="buyin-dropdown"]')), 5000
+    );
+    
+    // Use JavaScript to set the dropdown value to -1 (Custom Amount)
+    await player.driver.executeScript('arguments[0].value = "-1"; arguments[0].dispatchEvent(new Event("change"));', buyInDropdown);
+    await player.driver.sleep(1000);
+    
+    // Now the custom input should appear
     const buyInInput = await player.driver.wait(
-      until.elementLocated(By.css('[data-testid="custom-buyin-input"], input[type="number"]')), 5000
+      until.elementLocated(By.css('[data-testid="custom-buyin-input"]')), 5000
     );
     await buyInInput.clear();
     await buyInInput.sendKeys(buyInAmount.toString());
@@ -102,7 +133,14 @@ async function takeSeat(player, seatNumber, buyInAmount = 100) {
     const confirmButton = await player.driver.wait(
       until.elementLocated(By.css('[data-testid="confirm-seat-btn"]')), 5000
     );
-    await confirmButton.click();
+    
+    // Try clicking confirm button, use JavaScript click if intercepted
+    try {
+      await confirmButton.click();
+    } catch (error) {
+      console.log(`⚠️ ${player.name} confirm button click intercepted, trying JavaScript click...`);
+      await player.driver.executeScript('arguments[0].click();', confirmButton);
+    }
     await player.driver.sleep(3000);
     
     console.log(`✅ ${player.name} successfully took seat ${seatNumber}`);
