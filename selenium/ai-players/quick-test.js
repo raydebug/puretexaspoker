@@ -5,7 +5,7 @@ async function quickTest() {
   console.log('Testing a single AI player...\n');
 
   const ai = new UIAIPlayer({
-    name: 'TestBot',
+    name: 'player_test',
     personality: 'balanced',
     reactionTime: 1500
   });

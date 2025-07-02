@@ -10,28 +10,28 @@ async function runUIAIDemo() {
     // Create 4 AI players with different personalities
     const playerConfigs = [
       {
-        name: 'Bot1',
+        name: 'player1',
         personality: 'aggressive',
         reactionTime: 1500,
         aggressionFactor: 0.8,
         bluffFrequency: 0.4
       },
       {
-        name: 'Bot2',
+        name: 'player2',
         personality: 'conservative',
         reactionTime: 3000,
         aggressionFactor: 0.2,
         bluffFrequency: 0.1
       },
       {
-        name: 'Bot3',
+        name: 'player3',
         personality: 'bluffer',
         reactionTime: 2000,
         aggressionFactor: 0.6,
         bluffFrequency: 0.7
       },
       {
-        name: 'Bot4',
+        name: 'player4',
         personality: 'balanced',
         reactionTime: 2500,
         aggressionFactor: 0.5,
@@ -56,10 +56,10 @@ async function runUIAIDemo() {
     console.log('\n🎮 All AI players initialized and joining game...');
     console.log('📺 You can watch them play in the browser windows that opened!');
     console.log('🎯 Each AI has a different personality:');
-    console.log('   - Bot1: Raises frequently, high aggression');
-    console.log('   - Bot2: Plays tight, folds often');
-    console.log('   - Bot3: Makes big bluffs, unpredictable');
-    console.log('   - Bot4: Mixed strategy, moderate aggression');
+    console.log('   - player1: Raises frequently, high aggression');
+    console.log('   - player2: Plays tight, folds often');
+    console.log('   - player3: Makes big bluffs, unpredictable');
+    console.log('   - player4: Mixed strategy, moderate aggression');
     console.log('\n🔄 Demo will run endlessly until you stop it (Ctrl+C)...\n');
 
     // Run indefinitely until manually stopped
@@ -91,9 +91,9 @@ async function runHumanVsAIDemo() {
   try {
     // Create 3 AI opponents
     const configs = [
-      { name: 'Bot1', personality: 'aggressive', reactionTime: 1200 },
-      { name: 'Bot2', personality: 'conservative', reactionTime: 4000 },
-      { name: 'Bot3', personality: 'bluffer', reactionTime: 2200 }
+      { name: 'player1', personality: 'aggressive', reactionTime: 1200 },
+      { name: 'player2', personality: 'conservative', reactionTime: 4000 },
+      { name: 'player3', personality: 'bluffer', reactionTime: 2200 }
     ];
 
     for (let i = 0; i < configs.length; i++) {
