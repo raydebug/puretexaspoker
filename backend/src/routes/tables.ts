@@ -109,87 +109,6 @@ router.post('/:tableId/join', async (req, res) => {
   }
 });
 
-// Get specific table
-router.get('/:tableId', async (req, res) => {
-  try {
-    const { tableId } = req.params;
-
-    const table = await prisma.table.findUnique({
-      where: { id: tableId },
-      include: {
-        playerTables: {
-          include: {
-            player: true
-          }
-        },
-        games: {
-          where: {
-            status: 'active'
-          },
-          take: 1,
-          orderBy: {
-            createdAt: 'desc'
-          }
-        }
-      }
-    });
-
-    if (!table) {
-      return res.status(404).json({ error: 'Table not found' });
-    }
-
-    // Add currentGameId to response
-    const currentGameId = table.games.length > 0 ? table.games[0].id : `game-${tableId}`;
-    
-    res.status(200).json({
-      ...table,
-      currentGameId,
-      players: table.playerTables.length,
-      status: table.games.length > 0 ? 'active' : 'waiting'
-    });
-  } catch (error) {
-    console.error('Error getting table:', error);
-    res.status(500).json({ error: 'Failed to get table' });
-  }
-});
-
-// Spectate a table
-router.post('/:tableId/spectate', async (req, res) => {
-  try {
-    const { tableId } = req.params;
-    const { playerId } = req.body;
-
-    // Check if table exists
-    const table = await prisma.table.findUnique({
-      where: { id: tableId }
-    });
-
-    if (!table) {
-      return res.status(404).json({ error: 'Table not found' });
-    }
-
-    // For now, just return success - in a real implementation you'd track spectators
-    res.status(200).json({ 
-      success: true, 
-      message: `Player ${playerId} is now spectating table ${tableId}` 
-    });
-  } catch (error) {
-    console.error('Error spectating table:', error);
-    res.status(500).json({ error: 'Failed to spectate table' });
-  }
-});
-
-// Get all tables with basic info
-router.get('/', (req, res) => {
-  try {
-    const tables = tableManager.getAllTables();
-    res.json(tables);
-  } catch (error) {
-    console.error('Error getting tables:', error);
-    res.status(500).json({ error: 'Failed to get tables' });
-  }
-});
-
 // **NEW**: Get detailed monitoring information for all tables
 router.get('/monitor', async (req, res) => {
   try {
@@ -307,6 +226,76 @@ router.get('/monitor', async (req, res) => {
       error: 'Failed to get table monitoring data',
       message: error instanceof Error ? error.message : 'Unknown error'
     });
+  }
+});
+
+// Get specific table - placed after /monitor to avoid route conflicts
+router.get('/:tableId', async (req, res) => {
+  try {
+    const { tableId } = req.params;
+
+    const table = await prisma.table.findUnique({
+      where: { id: tableId },
+      include: {
+        playerTables: {
+          include: {
+            player: true
+          }
+        },
+        games: {
+          where: {
+            status: 'active'
+          },
+          take: 1,
+          orderBy: {
+            createdAt: 'desc'
+          }
+        }
+      }
+    });
+
+    if (!table) {
+      return res.status(404).json({ error: 'Table not found' });
+    }
+
+    // Add currentGameId to response
+    const currentGameId = table.games.length > 0 ? table.games[0].id : `game-${tableId}`;
+    
+    res.status(200).json({
+      ...table,
+      currentGameId,
+      players: table.playerTables.length,
+      status: table.games.length > 0 ? 'active' : 'waiting'
+    });
+  } catch (error) {
+    console.error('Error getting table:', error);
+    res.status(500).json({ error: 'Failed to get table' });
+  }
+});
+
+// Spectate a table
+router.post('/:tableId/spectate', async (req, res) => {
+  try {
+    const { tableId } = req.params;
+    const { playerId } = req.body;
+
+    // Check if table exists
+    const table = await prisma.table.findUnique({
+      where: { id: tableId }
+    });
+
+    if (!table) {
+      return res.status(404).json({ error: 'Table not found' });
+    }
+
+    // For now, just return success - in a real implementation you'd track spectators
+    res.status(200).json({ 
+      success: true, 
+      message: `Player ${playerId} is now spectating table ${tableId}` 
+    });
+  } catch (error) {
+    console.error('Error spectating table:', error);
+    res.status(500).json({ error: 'Failed to spectate table' });
   }
 });
 
