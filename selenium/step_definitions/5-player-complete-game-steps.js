@@ -276,25 +276,66 @@ Given('all players have starting stacks of ${int}', function(stackAmount) {
 When('players join the table in order:', { timeout: 300000 }, async function(dataTable) {
   const playersData = dataTable.hashes();
   
+  console.log('🚀 Using auto-seat functionality for fast 5-player setup...');
+  
   for (const playerData of playersData) {
     const player = players[playerData.Player];
     assert(player, `Player ${playerData.Player} not found`);
     
-    console.log(`🎯 ${playerData.Player} joining table and taking seat ${playerData.Seat}...`);
-    await joinTable(player);
-    await takeSeat(player, parseInt(playerData.Seat), parseInt(playerData.Stack.replace('$', '')));
+    const seat = parseInt(playerData.Seat);
+    const buyIn = parseInt(playerData.Stack.replace('$', ''));
+    
+    console.log(`🎯 ${playerData.Player} auto-seating at table 1, seat ${seat}...`);
+    
+    // Use auto-seat URL for instant seating
+    const autoSeatUrl = `http://localhost:3000/auto-seat?player=${playerData.Player}&table=1&seat=${seat}`;
+    console.log(`🔗 Navigating to: ${autoSeatUrl}`);
+    
+    await player.driver.get(autoSeatUrl);
+    
+    // Wait for auto-seat process to complete and redirect to game
+    console.log(`⏳ Waiting for ${playerData.Player} auto-seat process...`);
+    
+    // Wait for either the success message or the game page
+    try {
+      // Wait for success message (auto-seat completed)
+      await player.driver.wait(
+        until.elementLocated(By.xpath('//*[contains(text(), "Successfully seated")]')), 
+        15000
+      );
+      console.log(`✅ ${playerData.Player} auto-seat successful, waiting for redirect...`);
+      
+      // Wait for redirect to game page
+      await player.driver.wait(
+        until.urlContains('/game/'), 
+        10000
+      );
+      console.log(`🎮 ${playerData.Player} redirected to game page`);
+      
+    } catch (error) {
+      console.log(`⚠️ ${playerData.Player} auto-seat process took longer than expected: ${error.message}`);
+      
+      // Check if we're already on the game page (redirect happened faster than expected)
+      const currentUrl = await player.driver.getCurrentUrl();
+      if (currentUrl.includes('/game/')) {
+        console.log(`✅ ${playerData.Player} already on game page: ${currentUrl}`);
+      } else {
+        console.log(`❌ ${playerData.Player} auto-seat failed. Current URL: ${currentUrl}`);
+        throw new Error(`Auto-seat failed for ${playerData.Player}`);
+      }
+    }
     
     gameState.activePlayers.push(playerData.Player);
-    console.log(`✅ ${playerData.Player} seated successfully`);
+    console.log(`✅ ${playerData.Player} seated successfully via auto-seat`);
     
-    // Add delay between player seating for stability  
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    // Shorter delay since auto-seat is much faster
+    await new Promise(resolve => setTimeout(resolve, 1000));
   }
   
-  // Wait for all players to be seated
-  console.log('⏳ Waiting for all players to be fully seated...');
+  // Wait for all players to be fully seated and game state to sync
+  console.log('⏳ Waiting for all players to sync on game page...');
   await new Promise(resolve => setTimeout(resolve, 5000));
-  console.log('🎮 All players seated and ready to start the game');
+  console.log('🎮 All players seated and ready to start the game via auto-seat!');
 });
 
 Then('all players should be seated correctly:', { timeout: 30000 }, async function(dataTable) {
