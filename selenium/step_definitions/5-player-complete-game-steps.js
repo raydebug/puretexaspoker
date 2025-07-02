@@ -119,8 +119,12 @@ async function takeSeat(player, seatNumber, buyInAmount = 100) {
       until.elementLocated(By.css('[data-testid="buyin-dropdown"]')), 5000
     );
     
-    // Use JavaScript to set the dropdown value to -1 (Custom Amount)
-    await player.driver.executeScript('arguments[0].value = "-1"; arguments[0].dispatchEvent(new Event("change"));', buyInDropdown);
+    // Use JavaScript to set the dropdown value to -1 (Custom Amount) with proper event
+    await player.driver.executeScript(`
+      const dropdown = arguments[0];
+      dropdown.value = '-1';
+      dropdown.dispatchEvent(new Event('change', { bubbles: true }));
+    `, buyInDropdown);
     await player.driver.sleep(1000);
     
     // Now the custom input should appear
