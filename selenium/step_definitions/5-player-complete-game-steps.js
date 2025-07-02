@@ -200,7 +200,7 @@ Then('the pot should be ${int}', async function(expectedAmount) {
   const player = Object.values(players)[0];
   try {
     const potDisplay = await player.driver.wait(
-      until.elementLocated(By.css('[data-testid="pot-display"], .pot-amount')), 5000
+      until.elementLocated(By.css('[data-testid="pot-amount"]')), 5000
     );
     const potText = await potDisplay.getText();
     const actualPot = parseInt(potText.replace(/[^0-9]/g, ''));
@@ -283,7 +283,7 @@ When('{word} raises to ${int}', async function(playerName, amount) {
   try {
     // Wait for action buttons to appear
     const raiseButton = await player.driver.wait(
-      until.elementLocated(By.css('[data-testid="raise-button"], button:contains("Raise")')), 10000
+      until.elementLocated(By.css('[data-testid="raise-button"]')), 10000
     );
     await raiseButton.click();
     
@@ -320,7 +320,7 @@ When('{word} calls ${int}', async function(playerName, amount) {
   
   try {
     const callButton = await player.driver.wait(
-      until.elementLocated(By.css('[data-testid="call-button"], button:contains("Call")')), 10000
+      until.elementLocated(By.css('[data-testid="call-button"]')), 10000
     );
     await callButton.click();
     
@@ -344,7 +344,7 @@ When('{word} folds', async function(playerName) {
   
   try {
     const foldButton = await player.driver.wait(
-      until.elementLocated(By.css('[data-testid="fold-button"], button:contains("Fold")')), 10000
+      until.elementLocated(By.css('[data-testid="fold-button"]')), 10000
     );
     await foldButton.click();
     
@@ -370,7 +370,7 @@ When('{word} calls ${int} more \\(completing small blind call)', async function(
   
   try {
     const callButton = await player.driver.wait(
-      until.elementLocated(By.css('[data-testid="call-button"], button:contains("Call")')), 10000
+      until.elementLocated(By.css('[data-testid="call-button"]')), 10000
     );
     await callButton.click();
     
@@ -395,7 +395,7 @@ When('{word} re-raises to ${int}', async function(playerName, amount) {
   try {
     // Wait for action buttons to appear
     const raiseButton = await player.driver.wait(
-      until.elementLocated(By.css('[data-testid="raise-button"], button:contains("Raise")')), 10000
+      until.elementLocated(By.css('[data-testid="raise-button"]')), 10000
     );
     await raiseButton.click();
     
@@ -458,7 +458,7 @@ When('{word} checks', async function(playerName) {
   
   try {
     const checkButton = await player.driver.wait(
-      until.elementLocated(By.css('[data-testid="check-button"], button:contains("Check")')), 10000
+      until.elementLocated(By.css('[data-testid="check-button"]')), 10000
     );
     await checkButton.click();
     
@@ -481,7 +481,7 @@ When('{word} bets ${int}', async function(playerName, amount) {
   
   try {
     const betButton = await player.driver.wait(
-      until.elementLocated(By.css('[data-testid="bet-button"], button:contains("Bet")')), 10000
+      until.elementLocated(By.css('[data-testid="bet-button"]')), 10000
     );
     await betButton.click();
     
@@ -547,7 +547,7 @@ When('{word} goes all-in for ${int} total remaining', async function(playerName,
   
   try {
     const allInButton = await player.driver.wait(
-      until.elementLocated(By.css('[data-testid="all-in-button"], button:contains("All In")')), 10000
+      until.elementLocated(By.css('[data-testid="all-in-button"]')), 10000
     );
     await allInButton.click();
     
@@ -573,7 +573,7 @@ When('{word} calls the remaining ${int}', async function(playerName, amount) {
   
   try {
     const callButton = await player.driver.wait(
-      until.elementLocated(By.css('[data-testid="call-button"], button:contains("Call")')), 10000
+      until.elementLocated(By.css('[data-testid="call-button"]')), 10000
     );
     await callButton.click();
     
@@ -754,7 +754,7 @@ When('{word} calls ${int} more', async function(playerName, amount) {
   
   try {
     const callButton = await player.driver.wait(
-      until.elementLocated(By.css('[data-testid="call-button"], button:contains("Call")')), 10000
+      until.elementLocated(By.css('[data-testid="call-button"]')), 10000
     );
     await callButton.click();
     

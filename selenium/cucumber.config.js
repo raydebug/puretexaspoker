@@ -1,7 +1,7 @@
 module.exports = {
   default: {
-    // Timeout for each step (120 seconds to handle browser creation)
-    timeout: 120000,
+    // Timeout for each step (180 seconds to handle browser creation)
+    timeout: 180000,
     
     // Feature paths
     paths: ['selenium/features/**/*.feature'],
