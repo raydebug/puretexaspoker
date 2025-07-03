@@ -8,6 +8,67 @@ Feature: 5-Player Complete Game Scenario
     And I have a clean game state
     And the card order is deterministic for testing
 
+  @comprehensive-50-percent
+  Scenario: 50% Coverage - Setup + Pre-Flop + Basic Flop (Comprehensive)
+    # GAME SETUP (20% coverage)
+    Given I have 5 players ready to join a poker game
+    And all players have starting stacks of $100
+    When players join the table in order:
+      | Player   | Seat | Stack |
+      | Player1  | 1    | $100  |
+      | Player2  | 2    | $100  |
+      | Player3  | 3    | $100  |
+      | Player4  | 4    | $100  |
+      | Player5  | 5    | $100  |
+    Then all players should be seated correctly:
+      | Player  | Seat |
+      | Player1 | 1    |
+      | Player2 | 2    |
+      | Player3 | 3    |
+      | Player4 | 4    |
+      | Player5 | 5    |
+    
+    # MANUAL GAME START WITH COUNTDOWN
+    When I manually start the game for table 1
+    Then the game starts with blinds structure:
+      | Position    | Player  | Amount |
+      | Small Blind | Player1 | $1     |
+      | Big Blind   | Player2 | $2     |
+    And the pot should be $3
+    
+    # HOLE CARDS DEALING
+    When hole cards are dealt according to the test scenario:
+      | Player  | Card1 | Card2 |
+      | Player1 | 6♠    | 8♦    |
+      | Player2 | A♥    | Q♥    |
+      | Player3 | J♣    | K♣    |
+      | Player4 | J♠    | 10♠   |
+      | Player5 | Q♦    | 2♦    |
+    Then each player should see their own hole cards
+    
+    # PRE-FLOP BETTING (Adds 15% coverage - total 35%)
+    When the pre-flop betting round begins
+    And Player3 raises to $6
+    And Player4 calls $6
+    And Player5 folds
+    And Player1 calls $5 more
+    And Player2 re-raises to $16
+    And Player3 calls $10 more
+    And Player4 folds
+    And Player1 folds
+    Then the pot should be $41
+    And 2 players should remain in the hand: Player2, Player3
+    
+    # BASIC FLOP (Adds 15% coverage - total 50%)
+    When the flop is dealt: K♣, Q♥, 10♦
+    And Player2 checks
+    And Player3 bets $20
+    And Player2 calls $20
+    Then the pot should be $81
+    And both players should see the 3 flop cards
+    And Player2 should have top pair with Q♥
+    And Player3 should have top pair with K♣ and straight draw potential
+
   Scenario: Complete 5-Player Texas Hold'em Game with Specific Cards and Actions
     Given I have 5 players ready to join a poker game
     And all players have starting stacks of $100
