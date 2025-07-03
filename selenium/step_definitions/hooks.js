@@ -2,6 +2,10 @@ const { Before, After, BeforeAll, AfterAll, Status } = require('@cucumber/cucumb
 const { seleniumManager } = require('../config/selenium.config.js')
 const { WebDriverHelpers } = require('../utils/webdriverHelpers.js')
 const axios = require('axios')
+const { exec } = require('child_process')
+const { promisify } = require('util')
+
+const execAsync = promisify(exec)
 
 let helpers
 
@@ -35,12 +39,34 @@ async function checkServersRunning() {
   throw new Error('❌ Servers are not running after 10 attempts. Please start both frontend (npm start in frontend/) and backend (npm start in backend/) servers.')
 }
 
+// Helper function to kill all Chrome instances
+async function killAllChromeInstances() {
+  try {
+    console.log('🔥 Killing all Chrome instances...')
+    const command = "ps aux | grep '[C]hrome' | awk '{print $2}' | xargs kill -9"
+    await execAsync(command)
+    console.log('✅ All Chrome instances killed successfully')
+    
+    // Wait a moment for processes to fully terminate
+    await new Promise(resolve => setTimeout(resolve, 2000))
+  } catch (error) {
+    if (error.message.includes('No such process') || error.code === 123) {
+      console.log('ℹ️ No Chrome processes found to kill')
+    } else {
+      console.log(`⚠️ Chrome cleanup completed with minor issues: ${error.message}`)
+    }
+  }
+}
+
 // Global setup - runs once before all scenarios
 BeforeAll({timeout: 60000}, async function() {
   console.log('🚀 Setting up Selenium test environment...')
   
   try {
-    // First check if servers are running
+    // First, kill any lingering Chrome processes from previous test runs
+    await killAllChromeInstances()
+    
+    // Then check if servers are running
     await checkServersRunning()
     console.log('✅ Both servers are confirmed to be running')
     
@@ -68,6 +94,9 @@ BeforeAll({timeout: 60000}, async function() {
 // Setup before each scenario
 Before({timeout: 60000}, async function() {
   console.log('🔧 Setting up scenario...')
+  
+  // Always kill Chrome instances for clean browser state
+  await killAllChromeInstances()
   
   // Skip single-browser setup for multi-browser tests
   if (process.env.MULTI_BROWSER_TEST !== 'true') {
