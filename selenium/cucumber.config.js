@@ -4,11 +4,11 @@ module.exports = {
     timeout: 180000,
     
     // Feature paths
-    paths: ['selenium/features/**/*.feature'],
+    paths: ['features/**/*.feature'],
     
     // Step definition paths
     require: [
-      'selenium/step_definitions/**/*.js'
+      'step_definitions/**/*.js'
     ],
     
     // Formatters
