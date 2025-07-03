@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { GameState, Player } from '../../types/shared';
 import DecisionTimer from '../DecisionTimer';
+import { GameStartCountdown } from '../GameStartCountdown';
 
 interface PokerTableProps {
   gameState: GameState;
@@ -551,6 +552,19 @@ export const PokerTable: React.FC<PokerTableProps> = ({
   availableSeats = [], 
   onSeatSelect 
 }) => {
+  // State for game start countdown
+  const [showCountdown, setShowCountdown] = React.useState(false);
+  const [previousGameStatus, setPreviousGameStatus] = React.useState<string>(gameState.status);
+
+  // Detect when game status changes from 'waiting' to 'playing' to trigger countdown
+  React.useEffect(() => {
+    if (previousGameStatus === 'waiting' && gameState.status === 'playing') {
+      console.log('🚀 PokerTable: Game status changed from waiting to playing - starting countdown');
+      setShowCountdown(true);
+    }
+    setPreviousGameStatus(gameState.status);
+  }, [gameState.status, previousGameStatus]);
+
   // Helper function to get suit symbol
   const getSuitSymbol = (suit: string) => {
     switch (suit.toLowerCase()) {
@@ -843,6 +857,15 @@ export const PokerTable: React.FC<PokerTableProps> = ({
             );
           })}
         </CommunityCardsArea>
+
+        {/* Game Start Countdown - Appears in center when game starts */}
+        <GameStartCountdown 
+          isActive={showCountdown}
+          onComplete={() => {
+            console.log('✅ PokerTable: Countdown completed, hiding countdown');
+            setShowCountdown(false);
+          }}
+        />
 
         {/* Player Hole Cards - Enhanced logic to show cards */}
         {shouldShowUserHoleCards() && playerWithCards && playerWithCards.cards && playerWithCards.cards.length === 2 && (
