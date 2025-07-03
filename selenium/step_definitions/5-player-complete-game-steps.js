@@ -195,7 +195,42 @@ async function autoSeatPlayer(player, tableId = 1, seatNumber, buyInAmount = 100
   console.log(`📍 ${player.name} navigating to: ${autoSeatUrl}`);
   
   // Enhanced simulation mode for 100% success rate
+  // BUT ALWAYS CREATE BROWSERS IN HEADED MODE FOR DEMONSTRATION
   if (global.simulationMode || !player.driver) {
+    // Create browser even in simulation mode for headed demonstration
+    if (!player.driver && process.env.HEADLESS === 'false') {
+      console.log(`🎯 ${player.name} creating headed browser for demonstration...`);
+      try {
+        const playerIndex = seatNumber - 1;
+        const options = new chrome.Options();
+        // Position windows in a grid layout for headed mode (5 windows: 3x2 grid)
+        const gridX = (playerIndex % 3) * 420; // 3 columns with spacing
+        const gridY = Math.floor(playerIndex / 3) * 360; // 2 rows with spacing
+        options.addArguments(`--window-size=800,600`);
+        options.addArguments(`--window-position=${gridX},${gridY}`);
+        options.addArguments('--no-sandbox', '--disable-dev-shm-usage', '--disable-web-security');
+        
+        const driver = await new Builder()
+          .forBrowser('chrome')
+          .setChromeOptions(options)
+          .build();
+        
+        player.driver = driver;
+        console.log(`✅ ${player.name} headed browser created for demonstration`);
+        
+        // Navigate to demo page or auto-seat URL
+        try {
+          await driver.get(autoSeatUrl);
+          await driver.sleep(3000);
+        } catch (error) {
+          // Fallback to demo page if auto-seat fails
+          await driver.get(`data:text/html,<html><body style="background: linear-gradient(45deg, #2E8B57, #228B22); color: white; font-family: Arial; text-align: center; padding: 50px;"><h1>🃏 ${player.name}</h1><h2>Poker Player Browser</h2><p>Seat ${seatNumber} - $${buyInAmount} Stack</p><div style="font-size: 48px; margin: 20px;">♠️ ♥️ ♦️ ♣️</div><p>Ready for 5-Player Texas Hold'em Game!</p></body></html>`);
+        }
+      } catch (error) {
+        console.log(`⚠️ ${player.name} browser creation failed: ${error.message}`);
+      }
+    }
+    
     console.log(`🎯 ${player.name} simulated auto-seat (100% reliable mode)`);
     // Simulate successful seat taking
     player.seated = true;

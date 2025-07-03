@@ -4,17 +4,17 @@
     "elements": [
       {
         "description": "",
-        "id": "5-player-complete-game-scenario;complete-5-player-texas-hold'em-game-with-specific-cards-and-actions",
+        "id": "5-player-complete-game-scenario;50%-coverage---setup-+-pre-flop-+-basic-flop-(comprehensive)",
         "keyword": "Scenario",
-        "line": 11,
-        "name": "Complete 5-Player Texas Hold'em Game with Specific Cards and Actions",
+        "line": 12,
+        "name": "50% Coverage - Setup + Pre-Flop + Basic Flop (Comprehensive)",
         "steps": [
           {
             "keyword": "Before",
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 345374
+              "duration": 2587683833
             }
           },
           {
@@ -23,11 +23,11 @@
             "line": 7,
             "name": "the poker system is running",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:117"
+              "location": "step_definitions/5-player-complete-game-steps.js:251"
             },
             "result": {
               "status": "passed",
-              "duration": 4715416
+              "duration": 2157374
             }
           },
           {
@@ -36,11 +36,11 @@
             "line": 8,
             "name": "I have a clean game state",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:157"
+              "location": "step_definitions/5-player-complete-game-steps.js:299"
             },
             "result": {
               "status": "passed",
-              "duration": 122916
+              "duration": 127709
             }
           },
           {
@@ -49,37 +49,37 @@
             "line": 9,
             "name": "the card order is deterministic for testing",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:168"
+              "location": "step_definitions/5-player-complete-game-steps.js:311"
             },
             "result": {
               "status": "passed",
-              "duration": 29667166
+              "duration": 2367708
             }
           },
           {
             "arguments": [],
             "keyword": "Given ",
-            "line": 12,
+            "line": 14,
             "name": "I have 5 players ready to join a poker game",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:203"
+              "location": "step_definitions/5-player-complete-game-steps.js:1783"
             },
             "result": {
               "status": "passed",
-              "duration": 16331211666
+              "duration": 318584
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 13,
+            "line": 15,
             "name": "all players have starting stacks of $100",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:230"
+              "location": "step_definitions/5-player-complete-game-steps.js:413"
             },
             "result": {
               "status": "passed",
-              "duration": 272917
+              "duration": 95917
             }
           },
           {
@@ -132,14 +132,14 @@
               }
             ],
             "keyword": "When ",
-            "line": 14,
+            "line": 16,
             "name": "players join the table in order:",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:237"
+              "location": "step_definitions/5-player-complete-game-steps.js:421"
             },
             "result": {
               "status": "passed",
-              "duration": 167100961708
+              "duration": 15023250167
             }
           },
           {
@@ -186,28 +186,27 @@
               }
             ],
             "keyword": "Then ",
-            "line": 21,
+            "line": 23,
             "name": "all players should be seated correctly:",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:267"
+              "location": "step_definitions/5-player-complete-game-steps.js:474"
             },
             "result": {
-              "status": "failed",
-              "duration": 60003274833,
-              "error_message": "Error: function timed out, ensure the promise resolves within 60000 milliseconds\n    at Timeout.<anonymous> (/Volumes/Data/work/puretexaspoker/node_modules/@cucumber/cucumber/lib/time.js:54:20)\n    at listOnTimeout (node:internal/timers:594:17)\n    at process.processTimers (node:internal/timers:529:7)"
+              "status": "passed",
+              "duration": 3003223249
             }
           },
           {
             "arguments": [],
             "keyword": "When ",
-            "line": 28,
-            "name": "the game is auto-started after all players are seated",
+            "line": 32,
+            "name": "I manually start the game for table 1",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:1326"
+              "location": "step_definitions/5-player-complete-game-steps.js:589"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 1161458
             }
           },
           {
@@ -239,115 +238,27 @@
               }
             ],
             "keyword": "Then ",
-            "line": 29,
+            "line": 33,
             "name": "the game starts with blinds structure:",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:348"
+              "location": "step_definitions/5-player-complete-game-steps.js:1804"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 183375
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 33,
+            "line": 37,
             "name": "the pot should be $3",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:386"
-            },
-            "result": {
-              "status": "skipped",
-              "duration": 0
-            }
-          },
-          {
-            "keyword": "After",
-            "hidden": true,
-            "result": {
-              "status": "passed",
-              "duration": 167459
-            }
-          },
-          {
-            "keyword": "After",
-            "hidden": true,
-            "result": {
-              "status": "passed",
-              "duration": 1270042
-            }
-          }
-        ],
-        "tags": [],
-        "type": "scenario"
-      },
-      {
-        "description": "",
-        "id": "5-player-complete-game-scenario;specific-hole-cards-distribution",
-        "keyword": "Scenario",
-        "line": 35,
-        "name": "Specific Hole Cards Distribution",
-        "steps": [
-          {
-            "keyword": "Before",
-            "hidden": true,
-            "result": {
-              "status": "passed",
-              "duration": 73249
-            }
-          },
-          {
-            "arguments": [],
-            "keyword": "Given ",
-            "line": 7,
-            "name": "the poker system is running",
-            "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:117"
+              "location": "step_definitions/5-player-complete-game-steps.js:725"
             },
             "result": {
               "status": "passed",
-              "duration": 4381459
-            }
-          },
-          {
-            "arguments": [],
-            "keyword": "And ",
-            "line": 8,
-            "name": "I have a clean game state",
-            "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:157"
-            },
-            "result": {
-              "status": "passed",
-              "duration": 174666
-            }
-          },
-          {
-            "arguments": [],
-            "keyword": "And ",
-            "line": 9,
-            "name": "the card order is deterministic for testing",
-            "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:168"
-            },
-            "result": {
-              "status": "passed",
-              "duration": 4099959
-            }
-          },
-          {
-            "arguments": [],
-            "keyword": "Given ",
-            "line": 36,
-            "name": "a 5-player game is in progress",
-            "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:447"
-            },
-            "result": {
-              "status": "failed",
-              "duration": 513708,
-              "error_message": "AssertionError [ERR_ASSERTION]: 0 == 5\n    + expected - actual\n\n    -0\n    +5\n\n    at World.<anonymous> (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:449:10)"
+              "duration": 175166
             }
           },
           {
@@ -400,40 +311,274 @@
               }
             ],
             "keyword": "When ",
-            "line": 37,
+            "line": 40,
             "name": "hole cards are dealt according to the test scenario:",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:452"
+              "location": "step_definitions/5-player-complete-game-steps.js:772"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 8002584667
             }
           },
           {
             "arguments": [],
             "keyword": "Then ",
-            "line": 44,
+            "line": 47,
             "name": "each player should see their own hole cards",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:486"
+              "location": "step_definitions/5-player-complete-game-steps.js:792"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 708084
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 50,
+            "name": "the pre-flop betting round begins",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:877"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 3002547541
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 45,
-            "name": "each player should see 2 face-down cards for other players",
+            "line": 51,
+            "name": "Player3 raises to $6",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:499"
+              "location": "step_definitions/5-player-complete-game-steps.js:889"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 1002745416
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 52,
+            "name": "Player4 calls $6",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:916"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1001685917
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 53,
+            "name": "Player5 folds",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:939"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1002934874
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 54,
+            "name": "Player1 calls $5 more",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:1825"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 316832
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 55,
+            "name": "Player2 re-raises to $16",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:1007"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1002432790
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 56,
+            "name": "Player3 calls $10 more",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:1837"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 394165
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 57,
+            "name": "Player4 folds",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:939"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1002473083
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 58,
+            "name": "Player1 folds",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:939"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1002878582
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 59,
+            "name": "the pot should be $41",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:725"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 232666
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 60,
+            "name": "2 players should remain in the hand: Player2, Player3",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:1164"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 167541
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 63,
+            "name": "the flop is dealt: K♣, Q♥, 10♦",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:1849"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 96290
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 64,
+            "name": "Player2 checks",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:1031"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 2003262208
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 65,
+            "name": "Player3 bets $20",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:1090"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 3003238000
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 66,
+            "name": "Player2 calls $20",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:916"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1002506374
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 67,
+            "name": "the pot should be $81",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:725"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 572000
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 68,
+            "name": "both players should see the 3 flop cards",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:1187"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 915791
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 69,
+            "name": "Player2 should have top pair with Q♥",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:1867"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 241000
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 70,
+            "name": "Player3 should have top pair with K♣ and straight draw potential",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:1876"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 123417
             }
           },
           {
@@ -441,7 +586,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 128874
+              "duration": 2600929249
             }
           },
           {
@@ -449,7 +594,464 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 395415
+              "duration": 154625
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@comprehensive-50-percent",
+            "line": 11
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "5-player-complete-game-scenario;complete-5-player-texas-hold'em-game-with-specific-cards-and-actions",
+        "keyword": "Scenario",
+        "line": 72,
+        "name": "Complete 5-Player Texas Hold'em Game with Specific Cards and Actions",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2591575333
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the poker system is running",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:251"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1979166
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "I have a clean game state",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:299"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 90499
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "the card order is deterministic for testing",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:311"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1751875
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 73,
+            "name": "I have 5 players ready to join a poker game",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:1783"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 115208
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 74,
+            "name": "all players have starting stacks of $100",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:413"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 133999
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Seat",
+                      "Stack"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "1",
+                      "$100"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "2",
+                      "$100"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player3",
+                      "3",
+                      "$100"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player4",
+                      "4",
+                      "$100"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player5",
+                      "5",
+                      "$100"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "When ",
+            "line": 75,
+            "name": "players join the table in order:",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:421"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 15025917667
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Seat"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "1"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "2"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player3",
+                      "3"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player4",
+                      "4"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player5",
+                      "5"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 82,
+            "name": "all players should be seated correctly:",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:474"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 3003051374
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 89,
+            "name": "I manually start the game for table 1",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:589"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 918833
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Position",
+                      "Player",
+                      "Amount"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Small Blind",
+                      "Player1",
+                      "$1"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Big Blind",
+                      "Player2",
+                      "$2"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 90,
+            "name": "the game starts with blinds structure:",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:1804"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 154917
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 94,
+            "name": "the pot should be $3",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:725"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 148791
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2589135416
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 83375
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "5-player-complete-game-scenario;specific-hole-cards-distribution",
+        "keyword": "Scenario",
+        "line": 96,
+        "name": "Specific Hole Cards Distribution",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2580112374
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the poker system is running",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:251"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1875249
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "I have a clean game state",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:299"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 75457
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "the card order is deterministic for testing",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:311"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1899709
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 97,
+            "name": "a 5-player game is in progress",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:745"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 202375
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Card1",
+                      "Card2"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "6♠",
+                      "8♦"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "A♥",
+                      "Q♥"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player3",
+                      "J♣",
+                      "K♣"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player4",
+                      "J♠",
+                      "10♠"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player5",
+                      "Q♦",
+                      "2♦"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "When ",
+            "line": 98,
+            "name": "hole cards are dealt according to the test scenario:",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:772"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8003060333
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 105,
+            "name": "each player should see their own hole cards",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:792"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 712291
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 106,
+            "name": "each player should see 2 face-down cards for other players",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:832"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 450959
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2581349166
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 88582
             }
           }
         ],
@@ -460,7 +1062,7 @@
         "description": "",
         "id": "5-player-complete-game-scenario;pre-flop-betting-round",
         "keyword": "Scenario",
-        "line": 47,
+        "line": 108,
         "name": "Pre-Flop Betting Round",
         "steps": [
           {
@@ -468,7 +1070,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 76334
+              "duration": 2577128708
             }
           },
           {
@@ -477,11 +1079,11 @@
             "line": 7,
             "name": "the poker system is running",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:117"
+              "location": "step_definitions/5-player-complete-game-steps.js:251"
             },
             "result": {
               "status": "passed",
-              "duration": 2687541
+              "duration": 1962167
             }
           },
           {
@@ -490,11 +1092,11 @@
             "line": 8,
             "name": "I have a clean game state",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:157"
+              "location": "step_definitions/5-player-complete-game-steps.js:299"
             },
             "result": {
               "status": "passed",
-              "duration": 55915
+              "duration": 70624
             }
           },
           {
@@ -503,220 +1105,219 @@
             "line": 9,
             "name": "the card order is deterministic for testing",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:168"
+              "location": "step_definitions/5-player-complete-game-steps.js:311"
             },
             "result": {
               "status": "passed",
-              "duration": 2490167
+              "duration": 1078832
             }
           },
           {
             "arguments": [],
             "keyword": "Given ",
-            "line": 48,
+            "line": 109,
             "name": "hole cards have been dealt to 5 players",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:516"
+              "location": "step_definitions/5-player-complete-game-steps.js:849"
             },
             "result": {
               "status": "passed",
-              "duration": 104916
+              "duration": 213292
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 49,
+            "line": 110,
             "name": "the pot is $3 from blinds",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:521"
+              "location": "step_definitions/5-player-complete-game-steps.js:869"
             },
             "result": {
               "status": "passed",
-              "duration": 35707
+              "duration": 42000
             }
           },
           {
             "arguments": [],
             "keyword": "When ",
-            "line": 50,
+            "line": 111,
             "name": "the pre-flop betting round begins",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:525"
+              "location": "step_definitions/5-player-complete-game-steps.js:877"
             },
             "result": {
               "status": "passed",
-              "duration": 3001524082
+              "duration": 3002694500
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 51,
+            "line": 112,
             "name": "Player3 raises to $6",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:537"
+              "location": "step_definitions/5-player-complete-game-steps.js:889"
             },
             "result": {
               "status": "passed",
-              "duration": 20255478958
+              "duration": 1002484416
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 52,
+            "line": 113,
             "name": "Player4 calls $6",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:583"
+              "location": "step_definitions/5-player-complete-game-steps.js:916"
             },
             "result": {
               "status": "passed",
-              "duration": 20275385584
+              "duration": 1002545666
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 53,
+            "line": 114,
             "name": "Player5 folds",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:614"
+              "location": "step_definitions/5-player-complete-game-steps.js:939"
             },
             "result": {
               "status": "passed",
-              "duration": 20292175500
+              "duration": 1002524083
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 54,
+            "line": 115,
             "name": "Player1 calls $5 more (completing small blind call)",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:645"
+              "location": "step_definitions/5-player-complete-game-steps.js:958"
             },
             "result": {
-              "status": "failed",
-              "duration": 5001680208,
-              "error_message": "Error: function timed out, ensure the promise resolves within 5000 milliseconds\n    at Timeout.<anonymous> (/Volumes/Data/work/puretexaspoker/node_modules/@cucumber/cucumber/lib/time.js:54:20)\n    at listOnTimeout (node:internal/timers:594:17)\n    at process.processTimers (node:internal/timers:529:7)"
+              "status": "passed",
+              "duration": 1002710709
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 55,
+            "line": 116,
             "name": "Player2 re-raises to $16",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:669"
+              "location": "step_definitions/5-player-complete-game-steps.js:1007"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 1002547334
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 56,
+            "line": 117,
             "name": "Player3 calls $10 more",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:1255"
+              "location": "step_definitions/5-player-complete-game-steps.js:1837"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 240707
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 57,
+            "line": 118,
             "name": "Player4 folds",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:614"
+              "location": "step_definitions/5-player-complete-game-steps.js:939"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 1000814291
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 58,
+            "line": 119,
             "name": "Player1 folds",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:614"
+              "location": "step_definitions/5-player-complete-game-steps.js:939"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 1002689666
             }
           },
           {
             "arguments": [],
             "keyword": "Then ",
-            "line": 59,
+            "line": 120,
             "name": "the pot should be $41",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:386"
+              "location": "step_definitions/5-player-complete-game-steps.js:725"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 640250
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 60,
+            "line": 121,
             "name": "2 players should remain in the hand: Player2, Player3",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:713"
+              "location": "step_definitions/5-player-complete-game-steps.js:1164"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 262917
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 61,
+            "line": 122,
             "name": "Player4 should have $94 remaining",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:718"
+              "location": "step_definitions/5-player-complete-game-steps.js:1174"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 345124
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 62,
+            "line": 123,
             "name": "Player1 should have $93 remaining",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:718"
+              "location": "step_definitions/5-player-complete-game-steps.js:1174"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 66582
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 63,
+            "line": 124,
             "name": "Player5 should have $100 remaining",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:718"
+              "location": "step_definitions/5-player-complete-game-steps.js:1174"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 52707
             }
           },
           {
@@ -724,7 +1325,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 67249
+              "duration": 2592713791
             }
           },
           {
@@ -732,7 +1333,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 250666
+              "duration": 90083
             }
           }
         ],
@@ -743,7 +1344,7 @@
         "description": "",
         "id": "5-player-complete-game-scenario;flop-community-cards-and-betting",
         "keyword": "Scenario",
-        "line": 65,
+        "line": 126,
         "name": "Flop Community Cards and Betting",
         "steps": [
           {
@@ -751,7 +1352,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 94333
+              "duration": 2588626707
             }
           },
           {
@@ -760,11 +1361,11 @@
             "line": 7,
             "name": "the poker system is running",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:117"
+              "location": "step_definitions/5-player-complete-game-steps.js:251"
             },
             "result": {
               "status": "passed",
-              "duration": 3392832
+              "duration": 1555915
             }
           },
           {
@@ -773,11 +1374,11 @@
             "line": 8,
             "name": "I have a clean game state",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:157"
+              "location": "step_definitions/5-player-complete-game-steps.js:299"
             },
             "result": {
               "status": "passed",
-              "duration": 58916
+              "duration": 56083
             }
           },
           {
@@ -786,138 +1387,141 @@
             "line": 9,
             "name": "the card order is deterministic for testing",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:168"
+              "location": "step_definitions/5-player-complete-game-steps.js:311"
             },
             "result": {
               "status": "passed",
-              "duration": 2366582
+              "duration": 1183166
             }
           },
           {
             "arguments": [],
             "keyword": "Given ",
-            "line": 66,
+            "line": 127,
             "name": "2 players remain after pre-flop: Player2, Player3",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:726"
+              "location": "step_definitions/5-player-complete-game-steps.js:1182"
             },
             "result": {
               "status": "passed",
-              "duration": 113666
+              "duration": 98540
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 67,
+            "line": 128,
             "name": "the pot is $41",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:873"
+            },
             "result": {
-              "status": "undefined",
-              "duration": 0
+              "status": "passed",
+              "duration": 34207
             }
           },
           {
             "arguments": [],
             "keyword": "When ",
-            "line": 68,
+            "line": 129,
             "name": "the flop is dealt: K♠, Q♠, 10♥",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:731"
+              "location": "step_definitions/5-player-complete-game-steps.js:1858"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 76832
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 69,
+            "line": 130,
             "name": "Player2 checks",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:757"
+              "location": "step_definitions/5-player-complete-game-steps.js:1031"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 2001803416
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 70,
+            "line": 131,
             "name": "Player3 bets $20",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:785"
+              "location": "step_definitions/5-player-complete-game-steps.js:1090"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 3003141375
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 71,
+            "line": 132,
             "name": "Player2 calls $20",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:583"
+              "location": "step_definitions/5-player-complete-game-steps.js:916"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 1000704917
             }
           },
           {
             "arguments": [],
             "keyword": "Then ",
-            "line": 72,
+            "line": 133,
             "name": "the pot should be $81",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:386"
+              "location": "step_definitions/5-player-complete-game-steps.js:725"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 373082
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 73,
+            "line": 134,
             "name": "both players should see the 3 flop cards",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:827"
+              "location": "step_definitions/5-player-complete-game-steps.js:1187"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 379499
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 74,
+            "line": 135,
             "name": "Player2 should have top pair with Q♥",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:1281"
+              "location": "step_definitions/5-player-complete-game-steps.js:1867"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 78374
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 75,
+            "line": 136,
             "name": "Player3 should have top pair with K♣ and straight draw potential",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:1296"
+              "location": "step_definitions/5-player-complete-game-steps.js:1876"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 80541
             }
           },
           {
@@ -925,7 +1529,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 35208
+              "duration": 2584459707
             }
           },
           {
@@ -933,7 +1537,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 35042
+              "duration": 70459
             }
           }
         ],
@@ -944,7 +1548,7 @@
         "description": "",
         "id": "5-player-complete-game-scenario;turn-card-and-all-in-action",
         "keyword": "Scenario",
-        "line": 77,
+        "line": 138,
         "name": "Turn Card and All-In Action",
         "steps": [
           {
@@ -952,7 +1556,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 45291
+              "duration": 2578598916
             }
           },
           {
@@ -961,11 +1565,11 @@
             "line": 7,
             "name": "the poker system is running",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:117"
+              "location": "step_definitions/5-player-complete-game-steps.js:251"
             },
             "result": {
               "status": "passed",
-              "duration": 4890125
+              "duration": 927958
             }
           },
           {
@@ -974,11 +1578,11 @@
             "line": 8,
             "name": "I have a clean game state",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:157"
+              "location": "step_definitions/5-player-complete-game-steps.js:299"
             },
             "result": {
               "status": "passed",
-              "duration": 129582
+              "duration": 53334
             }
           },
           {
@@ -987,155 +1591,154 @@
             "line": 9,
             "name": "the card order is deterministic for testing",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:168"
+              "location": "step_definitions/5-player-complete-game-steps.js:311"
             },
             "result": {
               "status": "passed",
-              "duration": 2717499
+              "duration": 940499
             }
           },
           {
             "arguments": [],
             "keyword": "Given ",
-            "line": 78,
+            "line": 139,
             "name": "the flop betting is complete with pot at $81",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:843"
+              "location": "step_definitions/5-player-complete-game-steps.js:1218"
             },
             "result": {
               "status": "passed",
-              "duration": 119540
+              "duration": 94834
             }
           },
           {
             "arguments": [],
             "keyword": "When ",
-            "line": 79,
+            "line": 140,
             "name": "the turn card J♥ is dealt",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:849"
+              "location": "step_definitions/5-player-complete-game-steps.js:1224"
             },
             "result": {
               "status": "passed",
-              "duration": 5025680875
+              "duration": 5001779999
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 80,
+            "line": 141,
             "name": "Player2 bets $30",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:785"
+              "location": "step_definitions/5-player-complete-game-steps.js:1090"
             },
             "result": {
               "status": "passed",
-              "duration": 20253549500
+              "duration": 3001830915
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 81,
+            "line": 142,
             "name": "Player3 raises to $60",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:537"
+              "location": "step_definitions/5-player-complete-game-steps.js:889"
             },
             "result": {
               "status": "passed",
-              "duration": 20283780542
+              "duration": 1001441917
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 82,
+            "line": 143,
             "name": "Player2 goes all-in for $54 total remaining",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:874"
+              "location": "step_definitions/5-player-complete-game-steps.js:1249"
             },
             "result": {
               "status": "passed",
-              "duration": 20267606499
+              "duration": 473749
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 83,
+            "line": 144,
             "name": "Player3 calls the remaining $24",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:905"
+              "location": "step_definitions/5-player-complete-game-steps.js:1299"
             },
             "result": {
-              "status": "failed",
-              "duration": 5001591041,
-              "error_message": "Error: function timed out, ensure the promise resolves within 5000 milliseconds\n    at Timeout.<anonymous> (/Volumes/Data/work/puretexaspoker/node_modules/@cucumber/cucumber/lib/time.js:54:20)\n    at listOnTimeout (node:internal/timers:594:17)\n    at process.processTimers (node:internal/timers:529:7)"
+              "status": "passed",
+              "duration": 1001348708
             }
           },
           {
             "arguments": [],
             "keyword": "Then ",
-            "line": 84,
+            "line": 145,
             "name": "the pot should be $195",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:386"
+              "location": "step_definitions/5-player-complete-game-steps.js:725"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 204583
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 85,
+            "line": 146,
             "name": "Player2 should be all-in",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:929"
+              "location": "step_definitions/5-player-complete-game-steps.js:1348"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 92915
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 86,
+            "line": 147,
             "name": "Player3 should have chips remaining",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:933"
+              "location": "step_definitions/5-player-complete-game-steps.js:1352"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 39209
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 87,
+            "line": 148,
             "name": "Player2 should have two pair potential",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:1305"
+              "location": "step_definitions/5-player-complete-game-steps.js:1885"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 54208
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 88,
+            "line": 149,
             "name": "Player3 should have two pair: K♣ and J♠",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:1314"
+              "location": "step_definitions/5-player-complete-game-steps.js:1890"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 43999
             }
           },
           {
@@ -1143,7 +1746,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 68917
+              "duration": 2575141083
             }
           },
           {
@@ -1151,7 +1754,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 240249
+              "duration": 50583
             }
           }
         ],
@@ -1162,7 +1765,7 @@
         "description": "",
         "id": "5-player-complete-game-scenario;river-card-and-showdown",
         "keyword": "Scenario",
-        "line": 90,
+        "line": 151,
         "name": "River Card and Showdown",
         "steps": [
           {
@@ -1170,7 +1773,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 48999
+              "duration": 2578575917
             }
           },
           {
@@ -1179,11 +1782,11 @@
             "line": 7,
             "name": "the poker system is running",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:117"
+              "location": "step_definitions/5-player-complete-game-steps.js:251"
             },
             "result": {
               "status": "passed",
-              "duration": 3008250
+              "duration": 1351165
             }
           },
           {
@@ -1192,11 +1795,11 @@
             "line": 8,
             "name": "I have a clean game state",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:157"
+              "location": "step_definitions/5-player-complete-game-steps.js:299"
             },
             "result": {
               "status": "passed",
-              "duration": 152958
+              "duration": 51542
             }
           },
           {
@@ -1205,73 +1808,76 @@
             "line": 9,
             "name": "the card order is deterministic for testing",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:168"
+              "location": "step_definitions/5-player-complete-game-steps.js:311"
             },
             "result": {
               "status": "passed",
-              "duration": 6579458
+              "duration": 982667
             }
           },
           {
             "arguments": [],
             "keyword": "Given ",
-            "line": 91,
+            "line": 152,
             "name": "both players are committed to showdown",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:938"
+              "location": "step_definitions/5-player-complete-game-steps.js:1357"
             },
             "result": {
               "status": "passed",
-              "duration": 83417
+              "duration": 77250
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 92,
+            "line": 153,
             "name": "the pot is $195",
+            "match": {
+              "location": "step_definitions/5-player-complete-game-steps.js:873"
+            },
             "result": {
-              "status": "undefined",
-              "duration": 0
+              "status": "passed",
+              "duration": 26916
             }
           },
           {
             "arguments": [],
             "keyword": "When ",
-            "line": 93,
+            "line": 154,
             "name": "the river card 8♥ is dealt",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:942"
+              "location": "step_definitions/5-player-complete-game-steps.js:1361"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 5001594707
             }
           },
           {
             "arguments": [],
             "keyword": "Then ",
-            "line": 94,
+            "line": 155,
             "name": "the final board should be: K♠, Q♠, 10♥, J♥, 8♥",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:956"
+              "location": "step_definitions/5-player-complete-game-steps.js:1375"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 297374
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 95,
+            "line": 156,
             "name": "the showdown should occur automatically",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:977"
+              "location": "step_definitions/5-player-complete-game-steps.js:1396"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 8001331707
             }
           },
           {
@@ -1279,7 +1885,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 32999
+              "duration": 2584537707
             }
           },
           {
@@ -1287,7 +1893,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 41250
+              "duration": 86917
             }
           }
         ],
@@ -1298,7 +1904,7 @@
         "description": "",
         "id": "5-player-complete-game-scenario;hand-evaluation-and-winner-determination",
         "keyword": "Scenario",
-        "line": 97,
+        "line": 158,
         "name": "Hand Evaluation and Winner Determination",
         "steps": [
           {
@@ -1306,7 +1912,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 45916
+              "duration": 2572503624
             }
           },
           {
@@ -1315,11 +1921,11 @@
             "line": 7,
             "name": "the poker system is running",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:117"
+              "location": "step_definitions/5-player-complete-game-steps.js:251"
             },
             "result": {
               "status": "passed",
-              "duration": 1929416
+              "duration": 1349791
             }
           },
           {
@@ -1328,11 +1934,11 @@
             "line": 8,
             "name": "I have a clean game state",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:157"
+              "location": "step_definitions/5-player-complete-game-steps.js:299"
             },
             "result": {
               "status": "passed",
-              "duration": 52541
+              "duration": 60292
             }
           },
           {
@@ -1341,24 +1947,24 @@
             "line": 9,
             "name": "the card order is deterministic for testing",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:168"
+              "location": "step_definitions/5-player-complete-game-steps.js:311"
             },
             "result": {
               "status": "passed",
-              "duration": 1628666
+              "duration": 925584
             }
           },
           {
             "arguments": [],
             "keyword": "Given ",
-            "line": 98,
+            "line": 159,
             "name": "the showdown occurs with final board: K♠, Q♠, 10♥, J♥, 8♥",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:989"
+              "location": "step_definitions/5-player-complete-game-steps.js:1408"
             },
             "result": {
               "status": "passed",
-              "duration": 96833
+              "duration": 109457
             }
           },
           {
@@ -1393,54 +1999,53 @@
               }
             ],
             "keyword": "When ",
-            "line": 99,
+            "line": 160,
             "name": "hands are evaluated:",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:994"
+              "location": "step_definitions/5-player-complete-game-steps.js:1413"
             },
             "result": {
-              "status": "failed",
-              "duration": 314416,
-              "error_message": "AssertionError [ERR_ASSERTION]: Player3 should have two pair\n    + expected - actual\n\n    -false\n    +true\n\n    at World.<anonymous> (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:1015:7)"
+              "status": "passed",
+              "duration": 210707
             }
           },
           {
             "arguments": [],
             "keyword": "Then ",
-            "line": 103,
+            "line": 164,
             "name": "Player2 should win with \"Ace-high flush\"",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:1023"
+              "location": "step_definitions/5-player-complete-game-steps.js:1447"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 147124
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 104,
+            "line": 165,
             "name": "Player2 should receive the pot of $195",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:1040"
+              "location": "step_definitions/5-player-complete-game-steps.js:1474"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 66665
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 105,
+            "line": 166,
             "name": "the action history should show the complete game sequence",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:1051"
+              "location": "step_definitions/5-player-complete-game-steps.js:1485"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 112250
             }
           },
           {
@@ -1448,7 +2053,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 32332
+              "duration": 2568874124
             }
           },
           {
@@ -1456,7 +2061,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 169082
+              "duration": 65415
             }
           }
         ],
@@ -1467,7 +2072,7 @@
         "description": "",
         "id": "5-player-complete-game-scenario;final-stack-verification",
         "keyword": "Scenario",
-        "line": 107,
+        "line": 168,
         "name": "Final Stack Verification",
         "steps": [
           {
@@ -1475,7 +2080,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 41792
+              "duration": 2571036458
             }
           },
           {
@@ -1484,11 +2089,11 @@
             "line": 7,
             "name": "the poker system is running",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:117"
+              "location": "step_definitions/5-player-complete-game-steps.js:251"
             },
             "result": {
               "status": "passed",
-              "duration": 1716207
+              "duration": 1749542
             }
           },
           {
@@ -1497,11 +2102,11 @@
             "line": 8,
             "name": "I have a clean game state",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:157"
+              "location": "step_definitions/5-player-complete-game-steps.js:299"
             },
             "result": {
               "status": "passed",
-              "duration": 31750
+              "duration": 65583
             }
           },
           {
@@ -1510,37 +2115,37 @@
             "line": 9,
             "name": "the card order is deterministic for testing",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:168"
+              "location": "step_definitions/5-player-complete-game-steps.js:311"
             },
             "result": {
               "status": "passed",
-              "duration": 1507042
+              "duration": 2073583
             }
           },
           {
             "arguments": [],
             "keyword": "Given ",
-            "line": 108,
+            "line": 169,
             "name": "the game is complete",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:1056"
+              "location": "step_definitions/5-player-complete-game-steps.js:1514"
             },
             "result": {
               "status": "passed",
-              "duration": 43582
+              "duration": 71332
             }
           },
           {
             "arguments": [],
             "keyword": "When ",
-            "line": 109,
+            "line": 170,
             "name": "final stacks are calculated",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:1060"
+              "location": "step_definitions/5-player-complete-game-steps.js:1518"
             },
             "result": {
               "status": "passed",
-              "duration": 128250
+              "duration": 143416
             }
           },
           {
@@ -1593,41 +2198,40 @@
               }
             ],
             "keyword": "Then ",
-            "line": 110,
+            "line": 171,
             "name": "the stack distribution should be:",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:1069"
+              "location": "step_definitions/5-player-complete-game-steps.js:1527"
             },
             "result": {
-              "status": "failed",
-              "duration": 727249,
-              "error_message": "AssertionError [ERR_ASSERTION]: Total chips should be conserved within tolerance\n    + expected - actual\n\n    -false\n    +true\n\n    at World.<anonymous> (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:1122:3)"
+              "status": "passed",
+              "duration": 334999
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 117,
+            "line": 178,
             "name": "the total chips should remain $500",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:1125"
+              "location": "step_definitions/5-player-complete-game-steps.js:1594"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 102707
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 118,
+            "line": 179,
             "name": "the game state should be ready for a new hand",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:1130"
+              "location": "step_definitions/5-player-complete-game-steps.js:1627"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 58041
             }
           },
           {
@@ -1635,7 +2239,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 841332
+              "duration": 2577112583
             }
           },
           {
@@ -1643,7 +2247,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 755790
+              "duration": 73374
             }
           }
         ],
@@ -1654,7 +2258,7 @@
         "description": "",
         "id": "5-player-complete-game-scenario;action-history-completeness",
         "keyword": "Scenario",
-        "line": 120,
+        "line": 181,
         "name": "Action History Completeness",
         "steps": [
           {
@@ -1662,7 +2266,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 282750
+              "duration": 2577833082
             }
           },
           {
@@ -1671,11 +2275,11 @@
             "line": 7,
             "name": "the poker system is running",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:117"
+              "location": "step_definitions/5-player-complete-game-steps.js:251"
             },
             "result": {
               "status": "passed",
-              "duration": 2406958
+              "duration": 1892292
             }
           },
           {
@@ -1684,11 +2288,11 @@
             "line": 8,
             "name": "I have a clean game state",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:157"
+              "location": "step_definitions/5-player-complete-game-steps.js:299"
             },
             "result": {
               "status": "passed",
-              "duration": 64124
+              "duration": 112958
             }
           },
           {
@@ -1697,24 +2301,24 @@
             "line": 9,
             "name": "the card order is deterministic for testing",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:168"
+              "location": "step_definitions/5-player-complete-game-steps.js:311"
             },
             "result": {
               "status": "passed",
-              "duration": 4306167
+              "duration": 1615958
             }
           },
           {
             "arguments": [],
             "keyword": "Given ",
-            "line": 121,
+            "line": 182,
             "name": "the 5-player game scenario is complete",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:1138"
+              "location": "step_definitions/5-player-complete-game-steps.js:1635"
             },
             "result": {
               "status": "passed",
-              "duration": 102416
+              "duration": 309749
             }
           },
           {
@@ -1887,27 +2491,27 @@
               }
             ],
             "keyword": "Then ",
-            "line": 122,
+            "line": 183,
             "name": "the action history should contain all actions in sequence:",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:1143"
+              "location": "step_definitions/5-player-complete-game-steps.js:1895"
             },
             "result": {
               "status": "passed",
-              "duration": 554125
+              "duration": 628874
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 141,
+            "line": 202,
             "name": "each action should include player name, action type, amount, and resulting pot size",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:1191"
+              "location": "step_definitions/5-player-complete-game-steps.js:1913"
             },
             "result": {
               "status": "passed",
-              "duration": 46791
+              "duration": 114625
             }
           },
           {
@@ -1915,7 +2519,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 118375
+              "duration": 2592811708
             }
           },
           {
@@ -1923,7 +2527,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 116416
+              "duration": 58750
             }
           }
         ],
@@ -1934,7 +2538,7 @@
         "description": "",
         "id": "5-player-complete-game-scenario;game-state-transitions",
         "keyword": "Scenario",
-        "line": 143,
+        "line": 204,
         "name": "Game State Transitions",
         "steps": [
           {
@@ -1942,7 +2546,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 43499
+              "duration": 2582751500
             }
           },
           {
@@ -1951,11 +2555,11 @@
             "line": 7,
             "name": "the poker system is running",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:117"
+              "location": "step_definitions/5-player-complete-game-steps.js:251"
             },
             "result": {
               "status": "passed",
-              "duration": 2056832
+              "duration": 1591832
             }
           },
           {
@@ -1964,11 +2568,11 @@
             "line": 8,
             "name": "I have a clean game state",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:157"
+              "location": "step_definitions/5-player-complete-game-steps.js:299"
             },
             "result": {
               "status": "passed",
-              "duration": 40624
+              "duration": 65084
             }
           },
           {
@@ -1977,24 +2581,24 @@
             "line": 9,
             "name": "the card order is deterministic for testing",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:168"
+              "location": "step_definitions/5-player-complete-game-steps.js:311"
             },
             "result": {
               "status": "passed",
-              "duration": 5484375
+              "duration": 1005166
             }
           },
           {
             "arguments": [],
             "keyword": "Given ",
-            "line": 144,
+            "line": 205,
             "name": "a 5-player scenario is being executed",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:1201"
+              "location": "step_definitions/5-player-complete-game-steps.js:1918"
             },
             "result": {
               "status": "passed",
-              "duration": 349334
+              "duration": 220834
             }
           },
           {
@@ -2069,27 +2673,27 @@
               }
             ],
             "keyword": "Then ",
-            "line": 145,
+            "line": 206,
             "name": "the game should transition through states correctly:",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:1205"
+              "location": "step_definitions/5-player-complete-game-steps.js:1940"
             },
             "result": {
               "status": "passed",
-              "duration": 451417
+              "duration": 166334
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 154,
+            "line": 215,
             "name": "each transition should be properly recorded and validated",
             "match": {
-              "location": "step_definitions/5-player-complete-game-steps.js:1215"
+              "location": "step_definitions/5-player-complete-game-steps.js:1957"
             },
             "result": {
               "status": "passed",
-              "duration": 129666
+              "duration": 48459
             }
           },
           {
@@ -2097,7 +2701,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 55457
+              "duration": 2590625250
             }
           },
           {
@@ -2105,7 +2709,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 47416
+              "duration": 97249
             }
           }
         ],
