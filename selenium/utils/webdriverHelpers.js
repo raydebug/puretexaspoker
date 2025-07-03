@@ -65,6 +65,45 @@ class WebDriverHelpers {
     return element;
   }
 
+  // Wait for page to be fully ready
+  async waitForPageReady(timeout = 10000) {
+    try {
+      // Wait for document ready state
+      await this.driver.wait(async () => {
+        const readyState = await this.driver.executeScript('return document.readyState');
+        return readyState === 'complete';
+      }, timeout);
+      
+      // Wait for any loading indicators to disappear
+      try {
+        await this.driver.wait(async () => {
+          const loadingElements = await this.driver.findElements(By.css('[data-testid="loading"], .loading, .spinner, .loader'));
+          return loadingElements.length === 0;
+        }, 5000);
+      } catch (e) {
+        // Loading indicator not found or already gone
+      }
+      
+      // Wait for page ready indicator (for game pages)
+      try {
+        await this.driver.wait(async () => {
+          const pageReadyElement = await this.driver.findElement(By.css('[data-testid="page-ready"]'));
+          return pageReadyElement.isDisplayed();
+        }, 10000);
+        console.log('✅ Page ready indicator found');
+      } catch (e) {
+        // Page ready indicator not found, continue anyway
+        console.log('⚠️ Page ready indicator not found, continuing...');
+      }
+      
+      // Wait for any animations to complete
+      await this.sleep(2000);
+      
+    } catch (error) {
+      console.log(`Warning: Could not wait for page readiness: ${error.message}`);
+    }
+  }
+
   // Action methods
   async click(locator) {
     const element = await this.waitForElementClickable(locator);
@@ -189,6 +228,9 @@ class WebDriverHelpers {
   }
 
   async takeScreenshot(filename) {
+    // Wait for page to be ready before taking screenshot
+    await this.waitForPageReady();
+    
     const screenshot = await this.driver.takeScreenshot();
     const fs = require('fs');
     const path = require('path');
@@ -200,6 +242,8 @@ class WebDriverHelpers {
     
     const filepath = path.join(screenshotDir, `${filename}.png`);
     fs.writeFileSync(filepath, screenshot, 'base64');
+    
+    console.log(`📸 Screenshot saved: ${filepath}`);
   }
 
   async getCurrentUrl() {

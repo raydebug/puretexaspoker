@@ -103,6 +103,7 @@ const LobbyPage: React.FC = () => {
   });
   const [showModal, setShowModal] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState(0);
+  const [pageReady, setPageReady] = useState(false);
 
   useEffect(() => {
     const nickname = Cookies.get('playerNickname');
@@ -137,6 +138,12 @@ const LobbyPage: React.FC = () => {
     };
     
     connectAndSetup();
+
+    // Mark page as ready for screenshots
+    setTimeout(() => {
+      setPageReady(true);
+      console.log('🧪 LobbyPage: Page ready for screenshots');
+    }, 1000);
 
     // Cleanup on unmount
     return () => {
@@ -211,6 +218,8 @@ const LobbyPage: React.FC = () => {
 
   return (
     <LobbyContainer data-testid="lobby-container">
+      {/* Page ready indicator for screenshots */}
+      {pageReady && <div data-testid="page-ready" style={{ display: 'none' }}>Page Ready</div>}
       <Header>
         <Title>Texas Hold'em Poker Lobby</Title>
         <Subtitle>Choose a table to join or observe</Subtitle>

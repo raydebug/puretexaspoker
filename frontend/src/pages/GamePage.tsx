@@ -145,6 +145,7 @@ const GamePage: React.FC = () => {
   const [showSeatDialog, setShowSeatDialog] = useState(false);
   const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
   const [currentTableNumber, setCurrentTableNumber] = useState<number | null>(null);
+  const [pageReady, setPageReady] = useState(false);
 
   
   // Get table info from state if coming from JoinGamePage
@@ -293,6 +294,12 @@ const GamePage: React.FC = () => {
           
           setGameState(initialGameState);
           setAvailableSeats([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+          
+          // Mark page as ready for screenshots
+          setTimeout(() => {
+            setPageReady(true);
+            console.log('🧪 GamePage TEST MODE: Page ready for screenshots');
+          }, 1000);
           
           // Clean up function
           return () => {
@@ -652,6 +659,8 @@ const GamePage: React.FC = () => {
   if (isObserver) {
     return (
       <GameContainer data-testid="observer-view">
+        {/* Page ready indicator for screenshots */}
+        {pageReady && <div data-testid="page-ready" style={{ display: 'none' }}>Page Ready</div>}
         <GameLayout>
           <LeftSidebar>
             <ActionHistory 
@@ -698,6 +707,8 @@ const GamePage: React.FC = () => {
 
   return (
     <GameContainer>
+      {/* Page ready indicator for screenshots */}
+      {pageReady && <div data-testid="page-ready" style={{ display: 'none' }}>Page Ready</div>}
       <LeftSidebar>
         <ActionHistory 
           gameId={gameId || ''} 

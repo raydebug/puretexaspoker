@@ -2,6 +2,8 @@ const { Builder } = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
 const firefox = require('selenium-webdriver/firefox');
 const edge = require('selenium-webdriver/edge');
+const fs = require('fs');
+const path = require('path');
 
 class SeleniumManager {
   constructor() {
@@ -10,13 +12,19 @@ class SeleniumManager {
       baseUrl: process.env.BASE_URL || 'http://localhost:3000',
       apiUrl: process.env.API_URL || 'http://localhost:3001',
       browser: process.env.BROWSER || 'chrome',
-      headless: process.env.HEADLESS === 'true',
+      headless: process.env.HEADLESS !== 'false',
       timeout: parseInt(process.env.TIMEOUT || '10000'),
       windowSize: {
         width: parseInt(process.env.WINDOW_WIDTH || '1280'),
         height: parseInt(process.env.WINDOW_HEIGHT || '720')
-      }
+      },
+      screenshotDir: path.join(__dirname, '..', 'screenshots')
     };
+
+    // Ensure screenshots directory exists
+    if (!fs.existsSync(this.config.screenshotDir)) {
+      fs.mkdirSync(this.config.screenshotDir, { recursive: true });
+    }
   }
 
   async initializeDriver() {
@@ -31,29 +39,50 @@ class SeleniumManager {
         const chromeOptions = new chrome.Options();
         if (this.config.headless) {
           chromeOptions.addArguments('--headless=new');
+          // Proper screenshot support in headless mode
+          chromeOptions.addArguments('--disable-gpu');
+          chromeOptions.addArguments('--no-sandbox');
+          chromeOptions.addArguments('--disable-dev-shm-usage');
+          chromeOptions.addArguments('--force-device-scale-factor=1');
+          chromeOptions.addArguments('--disable-web-security');
+          chromeOptions.addArguments('--allow-running-insecure-content');
+          chromeOptions.addArguments(`--window-size=${this.config.windowSize.width},${this.config.windowSize.height}`);
+          // Ensure proper rendering for screenshots
+          chromeOptions.addArguments('--disable-background-timer-throttling');
+          chromeOptions.addArguments('--disable-backgrounding-occluded-windows');
+          chromeOptions.addArguments('--disable-renderer-backgrounding');
+          chromeOptions.addArguments('--disable-ipc-flooding-protection');
+          chromeOptions.addArguments('--disable-extensions');
+          chromeOptions.addArguments('--remote-debugging-port=0');
+          chromeOptions.addArguments('--disable-default-apps');
+          chromeOptions.addArguments('--disable-background-networking');
+          // Enable localStorage for file:// URLs
+          chromeOptions.addArguments('--enable-local-file-accesses');
+          chromeOptions.addArguments('--allow-file-access');
+          // Ensure screenshots work
+          chromeOptions.addArguments('--disable-features=VizDisplayCompositor');
+          chromeOptions.addArguments('--disable-software-rasterizer');
+        } else {
+          // Non-headless options
+          chromeOptions.addArguments('--no-sandbox');
+          chromeOptions.addArguments('--disable-dev-shm-usage');
+          chromeOptions.addArguments('--disable-web-security');
+          chromeOptions.addArguments('--allow-running-insecure-content');
+          chromeOptions.addArguments(`--window-size=${this.config.windowSize.width},${this.config.windowSize.height}`);
+          chromeOptions.addArguments('--disable-features=VizDisplayCompositor');
+          chromeOptions.addArguments('--disable-background-timer-throttling');
+          chromeOptions.addArguments('--disable-backgrounding-occluded-windows');
+          chromeOptions.addArguments('--disable-renderer-backgrounding');
+          chromeOptions.addArguments('--disable-ipc-flooding-protection');
+          chromeOptions.addArguments('--allow-file-access-from-files');
+          chromeOptions.addArguments('--disable-features=VizDisplayCompositor');
+          chromeOptions.addArguments('--disable-extensions');
+          chromeOptions.addArguments('--remote-debugging-port=0');
+          chromeOptions.addArguments('--disable-default-apps');
+          chromeOptions.addArguments('--disable-background-networking');
+          chromeOptions.addArguments('--enable-local-file-accesses');
+          chromeOptions.addArguments('--allow-file-access');
         }
-        chromeOptions.addArguments('--no-sandbox');
-        chromeOptions.addArguments('--disable-dev-shm-usage');
-        chromeOptions.addArguments('--disable-web-security');
-        chromeOptions.addArguments('--allow-running-insecure-content');
-        chromeOptions.addArguments(`--window-size=${this.config.windowSize.width},${this.config.windowSize.height}`);
-        // Fix localStorage access issues
-        chromeOptions.addArguments('--disable-features=VizDisplayCompositor');
-        chromeOptions.addArguments('--disable-background-timer-throttling');
-        chromeOptions.addArguments('--disable-backgrounding-occluded-windows');
-        chromeOptions.addArguments('--disable-renderer-backgrounding');
-        chromeOptions.addArguments('--disable-ipc-flooding-protection');
-        chromeOptions.addArguments('--allow-file-access-from-files');
-        chromeOptions.addArguments('--disable-features=VizDisplayCompositor');
-        chromeOptions.addArguments('--disable-extensions');
-        chromeOptions.addArguments('--disable-gpu');
-        chromeOptions.addArguments('--remote-debugging-port=0');
-        chromeOptions.addArguments('--force-device-scale-factor=1');
-        chromeOptions.addArguments('--disable-default-apps');
-        chromeOptions.addArguments('--disable-background-networking');
-        // Enable localStorage for file:// URLs
-        chromeOptions.addArguments('--enable-local-file-accesses');
-        chromeOptions.addArguments('--allow-file-access');
         builder.forBrowser('chrome').setChromeOptions(chromeOptions);
         break;
 
@@ -125,18 +154,31 @@ class SeleniumManager {
   }
 
   async takeScreenshot(filename) {
-    const driver = await this.getDriver();
-    const screenshot = await driver.takeScreenshot();
-    const fs = require('fs');
-    const path = require('path');
-    
-    const screenshotDir = 'selenium/screenshots';
-    if (!fs.existsSync(screenshotDir)) {
-      fs.mkdirSync(screenshotDir, { recursive: true });
+    if (!process.env.SCREENSHOT_MODE) {
+      return;
     }
-    
-    const filepath = path.join(screenshotDir, `${filename}.png`);
-    fs.writeFileSync(filepath, screenshot, 'base64');
+
+    try {
+      const driver = await this.getDriver();
+      if (!driver) {
+        console.log(`⚠️ No driver available for screenshot: ${filename}`);
+        return;
+      }
+
+      // Wait for any animations to complete
+      await driver.sleep(1000);
+
+      const screenshot = await driver.takeScreenshot();
+      
+      // Add timestamp to filename to avoid overwrites
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const filepath = path.join(this.config.screenshotDir, `${filename}-${timestamp}.png`);
+      
+      fs.writeFileSync(filepath, screenshot, 'base64');
+      console.log(`📸 Screenshot saved: ${filepath}`);
+    } catch (error) {
+      console.log(`⚠️ Failed to take screenshot: ${error.message}`);
+    }
   }
 }
 

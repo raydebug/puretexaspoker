@@ -5,6 +5,8 @@ const assert = require('assert');
 const fetch = require('node-fetch');
 const { seleniumManager } = require('../config/selenium.config.js');
 const { WebDriverHelpers } = require('../utils/webdriverHelpers.js');
+const path = require('path');
+const fs = require('fs');
 
 /*
  * 🚨 CRITICAL: 5-PLAYER GAME TEST - ONLY ACCESS GAME PAGE
@@ -186,57 +188,87 @@ async function createPlayerBrowser(playerName, headless = true, playerIndex = 0)
   return { name: playerName, driver, chips: 100, seat: null, cards: [] };
 }
 
-// Helper function to auto seat a player directly using URL parameters (100% reliable simulation mode)
+// Add this function at the top of the file after the imports
+async function captureScreenshot(world, stepName) {
+  if (process.env.SCREENSHOT_MODE === 'true') {
+    try {
+      for (const [playerName, player] of Object.entries(players)) {
+        if (player && player.driver) {
+          const screenshot = await player.driver.takeScreenshot();
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+          const filename = `${stepName}-${playerName}-${timestamp}.png`;
+          const filepath = path.join(__dirname, '..', 'screenshots', filename);
+          fs.writeFileSync(filepath, screenshot, 'base64');
+          console.log(`📸 Screenshot saved for ${playerName}: ${filepath}`);
+        }
+      }
+    } catch (error) {
+      console.log(`⚠️ Failed to take screenshot: ${error.message}`);
+    }
+  }
+}
+
+// Add this function after the imports
+async function createBrowserForScreenshots(playerName, seatNumber) {
+  if (!process.env.SCREENSHOT_MODE) {
+    return null;
+  }
+
+  try {
+    const options = new chrome.Options();
+    if (process.env.HEADLESS === 'true') {
+      options.addArguments('--headless=new');
+      options.addArguments('--hide-scrollbars');
+      options.addArguments('--disable-gpu');
+      options.addArguments('--no-sandbox');
+      options.addArguments('--force-device-scale-factor=1');
+    }
+    options.addArguments('--no-sandbox');
+    options.addArguments('--disable-dev-shm-usage');
+    options.addArguments('--disable-web-security');
+    options.addArguments('--allow-running-insecure-content');
+    options.addArguments('--window-size=1280,720');
+
+    const driver = await new Builder()
+      .forBrowser('chrome')
+      .setChromeOptions(options)
+      .build();
+
+    return driver;
+  } catch (error) {
+    console.log(`⚠️ Failed to create browser for ${playerName}: ${error.message}`);
+    return null;
+  }
+}
+
+// Modify the autoSeatPlayer function to create browsers for screenshots
 async function autoSeatPlayer(player, tableId = 1, seatNumber, buyInAmount = 100) {
   console.log(`🚀 ${player.name} using auto-seat to join table ${tableId}, seat ${seatNumber} with $${buyInAmount}...`);
+  
+  // Create browser for screenshots if needed
+  if (!player.driver && process.env.SCREENSHOT_MODE === 'true') {
+    player.driver = await createBrowserForScreenshots(player.name, seatNumber);
+  }
+  
+  // Take screenshot before auto-seat
+  await captureScreenshot(player, 'before-auto-seat');
   
   // Navigate directly to auto-seat URL with parameters
   const autoSeatUrl = `http://localhost:3000/auto-seat?player=${encodeURIComponent(player.name)}&table=${tableId}&seat=${seatNumber}&buyin=${buyInAmount}`;
   console.log(`📍 ${player.name} navigating to: ${autoSeatUrl}`);
   
   // Enhanced simulation mode for 100% success rate
-  // BUT ALWAYS CREATE BROWSERS IN HEADED MODE FOR DEMONSTRATION
   if (global.simulationMode || !player.driver) {
-    // Create browser even in simulation mode for headed demonstration
-    if (!player.driver && process.env.HEADLESS === 'false') {
-      console.log(`🎯 ${player.name} creating headed browser for demonstration...`);
-      try {
-        const playerIndex = seatNumber - 1;
-        const options = new chrome.Options();
-        // Position windows in a grid layout for headed mode (5 windows: 3x2 grid)
-        const gridX = (playerIndex % 3) * 420; // 3 columns with spacing
-        const gridY = Math.floor(playerIndex / 3) * 360; // 2 rows with spacing
-        options.addArguments(`--window-size=800,600`);
-        options.addArguments(`--window-position=${gridX},${gridY}`);
-        options.addArguments('--no-sandbox', '--disable-dev-shm-usage', '--disable-web-security');
-        
-        const driver = await new Builder()
-          .forBrowser('chrome')
-          .setChromeOptions(options)
-          .build();
-        
-        player.driver = driver;
-        console.log(`✅ ${player.name} headed browser created for demonstration`);
-        
-        // Navigate to demo page or auto-seat URL
-        try {
-          await driver.get(autoSeatUrl);
-          await driver.sleep(3000);
-        } catch (error) {
-          // Fallback to demo page if auto-seat fails
-          await driver.get(`data:text/html,<html><body style="background: linear-gradient(45deg, #2E8B57, #228B22); color: white; font-family: Arial; text-align: center; padding: 50px;"><h1>🃏 ${player.name}</h1><h2>Poker Player Browser</h2><p>Seat ${seatNumber} - $${buyInAmount} Stack</p><div style="font-size: 48px; margin: 20px;">♠️ ♥️ ♦️ ♣️</div><p>Ready for 5-Player Texas Hold'em Game!</p></body></html>`);
-        }
-      } catch (error) {
-        console.log(`⚠️ ${player.name} browser creation failed: ${error.message}`);
-      }
-    }
-    
     console.log(`🎯 ${player.name} simulated auto-seat (100% reliable mode)`);
     // Simulate successful seat taking
     player.seated = true;
     player.seat = seatNumber;
     player.chips = buyInAmount;
     console.log(`✅ ${player.name} successfully seated at seat ${seatNumber} (simulated)`);
+    
+    // Take screenshot after auto-seat
+    await captureScreenshot(player, 'after-auto-seat');
+    
     await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate processing time
     return;
   }
@@ -272,6 +304,9 @@ async function autoSeatPlayer(player, tableId = 1, seatNumber, buyInAmount = 100
     player.seat = seatNumber;
     console.log(`🎯 ${player.name} completed auto-seat process for seat ${seatNumber}`);
     
+    // Take screenshot after auto-seat
+    await captureScreenshot(player, 'after-auto-seat');
+      
   } catch (error) {
     console.log(`⚠️ ${player.name} browser navigation failed, switching to simulation mode`);
     // Fallback to simulation on any browser error
@@ -292,27 +327,27 @@ Given('the poker system is running', { timeout: 30000 }, async function() {
   const http = require('http');
   let serverAvailable = false;
   
-  try {
+    try {
     // Quick server check with short timeout
-    await new Promise((resolve, reject) => {
-      const req = http.get('http://localhost:3001/api/tables', (res) => {
-        if (res.statusCode === 200) {
+      await new Promise((resolve, reject) => {
+        const req = http.get('http://localhost:3001/api/tables', (res) => {
+            if (res.statusCode === 200) {
           console.log('✅ Live backend server detected and accessible');
           serverAvailable = true;
-          resolve();
-        } else {
+              resolve();
+            } else {
           reject(new Error(`Backend not responding properly: ${res.statusCode}`));
-        }
-      });
-      req.on('error', (err) => {
+            }
+        });
+        req.on('error', (err) => {
         reject(new Error(`Backend not accessible: ${err.message}`));
-      });
+        });
       req.setTimeout(3000, () => {
-        req.destroy();
+          req.destroy();
         reject(new Error('Backend timeout'));
+        });
       });
-    });
-  } catch (error) {
+    } catch (error) {
     console.log(`⚠️ Live server not available: ${error.message}`);
     console.log('🔄 Switching to simulation mode for 100% test reliability');
     serverAvailable = false;
@@ -559,22 +594,22 @@ Then('all players should be seated correctly:', { timeout: 30000 }, async functi
     try {
       // Only try browser verification if not in simulation mode
       if (player.driver) {
-        // Check if player browser is still responsive
-        const currentUrl = await player.driver.getCurrentUrl();
-        if (!currentUrl.includes('localhost:3000')) {
-          throw new Error(`Player ${seatInfo.Player} not on game page: ${currentUrl}`);
-        }
-        
-        // Trust the auto-seat process - if the URL was accessed successfully, seating worked
-        if (player && player.seat === expectedSeat) {
-          console.log(`✅ ${seatInfo.Player} is seated at position ${expectedSeat} (auto-seat confirmed)`);
-          verifiedCount++;
-          continue;
-        }
-        
-        // Simple verification - just count as verified if browsers are working
-        console.log(`✅ ${seatInfo.Player} seating assumed successful (browser responsive)`);
+      // Check if player browser is still responsive
+      const currentUrl = await player.driver.getCurrentUrl();
+      if (!currentUrl.includes('localhost:3000')) {
+        throw new Error(`Player ${seatInfo.Player} not on game page: ${currentUrl}`);
+      }
+      
+      // Trust the auto-seat process - if the URL was accessed successfully, seating worked
+      if (player && player.seat === expectedSeat) {
+        console.log(`✅ ${seatInfo.Player} is seated at position ${expectedSeat} (auto-seat confirmed)`);
         verifiedCount++;
+        continue;
+      }
+      
+      // Simple verification - just count as verified if browsers are working
+      console.log(`✅ ${seatInfo.Player} seating assumed successful (browser responsive)`);
+      verifiedCount++;
       } else {
         // Fallback to simulation if no driver
         console.log(`✅ ${seatInfo.Player} seating verified (fallback simulation mode)`);
@@ -594,7 +629,7 @@ Then('all players should be seated correctly:', { timeout: 30000 }, async functi
         verifiedCount++;
         console.log(`✅ ${seatInfo.Player} seating verified (simulation fallback)`);
       } else {
-        criticalFailures++;
+      criticalFailures++;
         console.log(`❌ SEATING FAILURE for ${seatInfo.Player}: Player object not found`);
       }
     }
@@ -619,6 +654,9 @@ Then('all players should be seated correctly:', { timeout: 30000 }, async functi
   // Update game state to reflect all players are seated
   gameState.activePlayers = expectedSeating.map(seat => seat.Player);
   gameState.totalPlayers = expectedSeating.length;
+  
+  // Take screenshot after seating verification
+  await captureScreenshot(this, 'seating-verified');
 });
 
 When('I manually start the game for table {int}', { timeout: 45000 }, async function(tableId) {
@@ -684,7 +722,7 @@ When('I manually start the game for table {int}', { timeout: 45000 }, async func
           playersSeenGameStart++;
           console.log(`✅ ${playerName} browser responsive on game page`);
         }
-      } catch (error) {
+    } catch (error) {
         console.log(`⚠️ Could not verify ${playerName}: ${error.message}`);
       }
     }
@@ -708,6 +746,9 @@ When('I manually start the game for table {int}', { timeout: 45000 }, async func
     
     console.log(`🎮 Continuing with simulated game start for coverage testing`);
   }
+  
+  // Take screenshot after game start
+  await captureScreenshot(this, 'game-started');
 });
 
 // Global cleanup hooks for immediate failure handling
@@ -799,7 +840,7 @@ Given('a {int}-player game is in progress', function(playerCount) {
   if (actualPlayers !== playerCount) {
     console.log(`⚠️ Expected ${playerCount} players, found ${actualPlayers}, adjusting state...`);
     gameState.activePlayers = Object.keys(players).slice(0, playerCount);
-  } else {
+    } else {
     console.log(`✅ ${actualPlayers} players confirmed in game state`);
   }
 });
@@ -850,14 +891,14 @@ Then('each player should see their own hole cards', { timeout: 20000 }, async fu
       console.log(`⚠️ ${player.name} hole card verification failed, but continuing test`);
       return false;
     }
-  });
-  
+});
+
   // Wait for all verifications with timeout protection
-  try {
+    try {
     await Promise.allSettled(verificationPromises);
-  } catch (error) {
+    } catch (error) {
     console.log(`⚠️ Some hole card verifications timed out: ${error.message}`);
-  }
+    }
   
   // Always continue - this is not a blocking step
   console.log(`🎴 Hole card verification: ${playersWithCards}/${totalPlayers} players confirmed`);
@@ -932,14 +973,14 @@ When('{word} raises to ${int}', { timeout: 10000 }, async function(playerName, a
   if (players[playerName]) {
     players[playerName].chips -= raiseAmount;
   }
-  
-  gameState.actionHistory.push({
-    player: playerName,
+    
+    gameState.actionHistory.push({
+      player: playerName,
     action: 'raise (coverage simulation)',
-    amount: amount,
-    pot: expectedPotAmount
-  });
-  
+      amount: amount,
+      pot: expectedPotAmount
+    });
+    
   console.log(`✅ ${playerName} simulated raise to $${amount} (pot now $${expectedPotAmount}) - Coverage testing complete`);
   
   // Brief pause to simulate realistic timing
@@ -953,18 +994,18 @@ When('{word} calls ${int}', { timeout: 10000 }, async function(playerName, amoun
   console.log(`🎯 ${playerName} calling $${amount} (simulation mode for coverage)...`);
   
   // Immediate simulation - skip UI entirely for coverage testing
-  expectedPotAmount += amount;
+    expectedPotAmount += amount;
   if (players[playerName]) {
     players[playerName].chips -= amount;
   }
-  
-  gameState.actionHistory.push({
-    player: playerName,
+    
+    gameState.actionHistory.push({
+      player: playerName,
     action: 'call (coverage simulation)',
-    amount: amount,
-    pot: expectedPotAmount
-  });
-  
+      amount: amount,
+      pot: expectedPotAmount
+    });
+    
   console.log(`✅ ${playerName} simulated call $${amount} (pot now $${expectedPotAmount}) - Coverage testing complete`);
   
   // Brief pause to simulate realistic timing
@@ -976,16 +1017,16 @@ When('{word} folds', { timeout: 10000 }, async function(playerName) {
   console.log(`🎯 ${playerName} folding (simulation mode for coverage)...`);
   
   // Immediate simulation - skip UI entirely for coverage testing
-  gameState.activePlayers = gameState.activePlayers.filter(p => p !== playerName);
-  gameState.actionHistory.push({
-    player: playerName,
+    gameState.activePlayers = gameState.activePlayers.filter(p => p !== playerName);
+    gameState.actionHistory.push({
+      player: playerName,
     action: 'fold (coverage simulation)',
-    amount: 0,
-    pot: expectedPotAmount
-  });
-  
+      amount: 0,
+      pot: expectedPotAmount
+    });
+    
   console.log(`✅ ${playerName} simulated fold (${gameState.activePlayers.length} players remaining) - Coverage testing complete`);
-  
+    
   // Brief pause to simulate realistic timing
   await new Promise(resolve => setTimeout(resolve, 1000));
 });
@@ -995,10 +1036,10 @@ When('{word} calls ${int} more \\(completing small blind call)', async function(
   
   try {
     if (player && player.driver) {
-      const callButton = await player.driver.wait(
-        until.elementLocated(By.css('[data-testid="call-button"]')), 10000
-      );
-      await callButton.click();
+    const callButton = await player.driver.wait(
+      until.elementLocated(By.css('[data-testid="call-button"]')), 10000
+    );
+    await callButton.click();
       await player.driver.sleep(2000);
     } else {
       console.log(`🎯 ${playerName} call simulated (driver not available)`);
@@ -1033,7 +1074,7 @@ When('{word} calls ${int} more \\(completing small blind call)', async function(
   
   // Safe sleep with fallback
   if (player && player.driver) {
-    await player.driver.sleep(1000);
+  await player.driver.sleep(1000);
   } else {
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
@@ -1044,19 +1085,19 @@ When('{word} re-raises to ${int}', { timeout: 10000 }, async function(playerName
   console.log(`🎯 ${playerName} re-raising to $${amount} (simulation mode for coverage)...`);
   
   // Immediate simulation - skip UI entirely for coverage testing
-  const reraiseAmount = amount - 6; // Account for previous bet
-  expectedPotAmount += reraiseAmount;
+    const reraiseAmount = amount - 6; // Account for previous bet
+    expectedPotAmount += reraiseAmount;
   if (players[playerName]) {
     players[playerName].chips -= reraiseAmount;
   }
-  
-  gameState.actionHistory.push({
-    player: playerName,
+    
+    gameState.actionHistory.push({
+      player: playerName,
     action: 're-raise (coverage simulation)',
-    amount: amount,
-    pot: expectedPotAmount
-  });
-  
+      amount: amount,
+      pot: expectedPotAmount
+    });
+    
   console.log(`✅ ${playerName} simulated re-raise to $${amount} (pot now $${expectedPotAmount}) - Coverage testing complete`);
   
   // Brief pause to simulate realistic timing
@@ -1089,23 +1130,23 @@ When('{word} checks', { timeout: 45000 }, async function(playerName) {
           8000
         );
         break;
-      } catch (error) {
+  } catch (error) {
         // Try next selector
       }
     }
     
     if (checkButton) {
-      await checkButton.click();
-      await player.driver.sleep(2000);
-      
-      gameState.actionHistory.push({
-        player: playerName,
-        action: 'check',
-        amount: 0,
-        pot: expectedPotAmount
-      });
-      
-      console.log(`✅ ${playerName} checked`);
+    await checkButton.click();
+    await player.driver.sleep(2000);
+    
+    gameState.actionHistory.push({
+      player: playerName,
+      action: 'check',
+      amount: 0,
+      pot: expectedPotAmount
+    });
+    
+    console.log(`✅ ${playerName} checked`);
     } else {
       throw new Error(`No check button found for ${playerName}`);
     }
@@ -1154,31 +1195,31 @@ When('{word} bets ${int}', { timeout: 45000 }, async function(playerName, amount
     
     if (betButton) {
       // Try to set amount
-      try {
-        const amountInput = await player.driver.findElement(
-          By.css('[data-testid="bet-amount"], .bet-amount, input[type="number"]')
-        );
-        await amountInput.clear();
-        await amountInput.sendKeys(amount.toString());
+    try {
+      const amountInput = await player.driver.findElement(
+        By.css('[data-testid="bet-amount"], .bet-amount, input[type="number"]')
+      );
+      await amountInput.clear();
+      await amountInput.sendKeys(amount.toString());
         await player.driver.sleep(1000);
-      } catch (error) {
+    } catch (error) {
         console.log(`⚠️ ${playerName} could not set bet amount`);
-      }
-      
-      await betButton.click();
-      await player.driver.sleep(2000);
-      
-      expectedPotAmount += amount;
-      player.chips -= amount;
-      
-      gameState.actionHistory.push({
-        player: playerName,
-        action: 'bet',
-        amount: amount,
-        pot: expectedPotAmount
-      });
-      
-      console.log(`✅ ${playerName} bet $${amount} (pot now $${expectedPotAmount})`);
+    }
+    
+    await betButton.click();
+    await player.driver.sleep(2000);
+    
+    expectedPotAmount += amount;
+    player.chips -= amount;
+    
+    gameState.actionHistory.push({
+      player: playerName,
+      action: 'bet',
+      amount: amount,
+      pot: expectedPotAmount
+    });
+    
+    console.log(`✅ ${playerName} bet $${amount} (pot now $${expectedPotAmount})`);
     } else {
       throw new Error(`No bet button found for ${playerName}`);
     }
@@ -1288,13 +1329,13 @@ When('{word} goes all-in for ${int} total remaining', { timeout: 30000 }, async 
   
   try {
     if (player && player.driver) {
-      const allInButton = await player.driver.wait(
-        until.elementLocated(By.css('[data-testid="all-in-button"], .all-in-btn, [data-action="all-in"]')), 
-        15000
-      );
-      
-      await allInButton.click();
-      await player.driver.sleep(2000);
+    const allInButton = await player.driver.wait(
+      until.elementLocated(By.css('[data-testid="all-in-button"], .all-in-btn, [data-action="all-in"]')), 
+      15000
+    );
+    
+    await allInButton.click();
+    await player.driver.sleep(2000);
     } else {
       console.log(`🎯 ${playerName} all-in simulated (driver not available)`);
     }
@@ -1336,10 +1377,10 @@ When('{word} calls the remaining ${int}', async function(playerName, amount) {
   
   try {
     if (player && player.driver) {
-      const callButton = await player.driver.wait(
-        until.elementLocated(By.css('[data-testid="call-button"]')), 10000
-      );
-      await callButton.click();
+    const callButton = await player.driver.wait(
+      until.elementLocated(By.css('[data-testid="call-button"]')), 10000
+    );
+    await callButton.click();
       await player.driver.sleep(2000);
     } else {
       console.log(`🎯 ${playerName} call simulated (driver not available)`);
@@ -1374,7 +1415,7 @@ When('{word} calls the remaining ${int}', async function(playerName, amount) {
   
   // Safe sleep with fallback
   if (player && player.driver) {
-    await player.driver.sleep(1000);
+  await player.driver.sleep(1000);
   } else {
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
