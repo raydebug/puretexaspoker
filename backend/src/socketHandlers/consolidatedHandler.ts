@@ -724,18 +724,22 @@ export function registerConsolidatedHandlers(io: Server) {
         // Get updated game state from gameManager (source of truth)
         let gameState = gameService.getGameState();
 
-        // **AUTO-START LOGIC**: Check if game should start automatically
-        if (gameState.status === 'waiting' && gameState.players.length >= 2) {
-          try {
-            console.log(`[CONSOLIDATED] Auto-starting game with ${gameState.players.length} players`);
-            await gameManager.startGame(socket.data.gameId);
-            gameState = gameService.getGameState(); // Get updated state after start
-            console.log(`[CONSOLIDATED] Game auto-started successfully - new phase: ${gameState.phase}`);
-          } catch (startError) {
-            console.error(`[CONSOLIDATED] Failed to auto-start game:`, startError);
-            // Continue with seat assignment even if auto-start fails
-          }
-        }
+        // **AUTO-START LOGIC DISABLED FOR TESTING**: Manual start only
+        // Use the test API endpoint /api/test/start-game to manually start games
+        console.log(`[CONSOLIDATED] Game has ${gameState.players.length} players (status: ${gameState.status})`);
+        console.log(`[CONSOLIDATED] Auto-start disabled - use manual start for testing`);
+        
+        // if (gameState.status === 'waiting' && gameState.players.length >= 2) {
+        //   try {
+        //     console.log(`[CONSOLIDATED] Auto-starting game with ${gameState.players.length} players`);
+        //     await gameManager.startGame(socket.data.gameId);
+        //     gameState = gameService.getGameState(); // Get updated state after start
+        //     console.log(`[CONSOLIDATED] Game auto-started successfully - new phase: ${gameState.phase}`);
+        //   } catch (startError) {
+        //     console.error(`[CONSOLIDATED] Failed to auto-start game:`, startError);
+        //     // Continue with seat assignment even if auto-start fails
+        //   }
+        // }
 
         // Emit success events
         socket.emit('seatTaken', { seatNumber, playerId: socket.data.playerId, gameState });

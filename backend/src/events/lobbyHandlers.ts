@@ -875,18 +875,22 @@ export const setupLobbyHandlers = (
       // Get updated game state
       let gameState = gameService.getGameState();
       
-      // **AUTO-START LOGIC**: Check if game should start automatically
-      if (gameState.status === 'waiting' && gameState.players.length >= 2) {
-        try {
-          console.log(`DEBUG: Auto-starting game with ${gameState.players.length} players`);
-          gameService.startGame();
-          gameState = gameService.getGameState(); // Get updated state after start
-          console.log(`DEBUG: Game auto-started successfully - new phase: ${gameState.phase}`);
-        } catch (startError) {
-          console.error(`DEBUG: Failed to auto-start game:`, startError);
-          // Continue with seat assignment even if auto-start fails
-        }
-      }
+      // **AUTO-START LOGIC DISABLED FOR TESTING**: Manual start only
+      // Use the test API endpoint /api/test/start-game to manually start games
+      console.log(`DEBUG: Game has ${gameState.players.length} players (status: ${gameState.status})`);
+      console.log(`DEBUG: Auto-start disabled - use manual start for testing`);
+      
+      // if (gameState.status === 'waiting' && gameState.players.length >= 2) {
+      //   try {
+      //     console.log(`DEBUG: Auto-starting game with ${gameState.players.length} players`);
+      //     gameService.startGame();
+      //     gameState = gameService.getGameState(); // Get updated state after start
+      //     console.log(`DEBUG: Game auto-started successfully - new phase: ${gameState.phase}`);
+      //   } catch (startError) {
+      //     console.error(`DEBUG: Failed to auto-start game:`, startError);
+      //     // Continue with seat assignment even if auto-start fails
+      //   }
+      // }
       
       // Update user location from observer to player seat
       await locationManager.moveToTableSeat(socket.id, nickname, tableId, seatNumber);
