@@ -65,7 +65,7 @@ Feature: 5-Player Complete Game Scenario
   Scenario: Flop Community Cards and Betting
     Given 2 players remain after pre-flop: Player2, Player3
     And the pot is $41
-    When the flop is dealt: K♣, Q♥, 10♦
+    When the flop is dealt: K♠, Q♠, 10♥
     And Player2 checks
     And Player3 bets $20
     And Player2 calls $20
@@ -76,7 +76,7 @@ Feature: 5-Player Complete Game Scenario
 
   Scenario: Turn Card and All-In Action
     Given the flop betting is complete with pot at $81
-    When the turn card J♠ is dealt
+    When the turn card J♥ is dealt
     And Player2 bets $30
     And Player3 raises to $60
     And Player2 goes all-in for $54 total remaining
@@ -90,16 +90,16 @@ Feature: 5-Player Complete Game Scenario
   Scenario: River Card and Showdown
     Given both players are committed to showdown
     And the pot is $195
-    When the river card 7♥ is dealt
-    Then the final board should be: K♣, Q♥, 10♦, J♠, 7♥
+    When the river card 8♥ is dealt
+    Then the final board should be: K♠, Q♠, 10♥, J♥, 8♥
     And the showdown should occur automatically
 
   Scenario: Hand Evaluation and Winner Determination
-    Given the showdown occurs with final board: K♣, Q♥, 10♦, J♠, 7♥
+    Given the showdown occurs with final board: K♠, Q♠, 10♥, J♥, 8♥
     When hands are evaluated:
       | Player  | Hole Cards | Best Hand                    | Hand Type     |
-      | Player2 | A♥, Q♥     | A♥, Q♥, 7♥, Q♥, 10♦ (Flush) | Ace-high flush|
-      | Player3 | J♣, K♣     | K♣, K♣, J♠, J♣, Q♥ (Two Pair)| Two pair     |
+      | Player2 | A♥, Q♥     | A♥, Q♥, J♥, 10♥, 8♥ (Flush) | Ace-high flush|
+      | Player3 | J♣, K♣     | K♣, K♠, J♣, J♥, Q♠ (Two Pair)| Kings over Jacks|
     Then Player2 should win with "Ace-high flush"
     And Player2 should receive the pot of $195
     And the action history should show the complete game sequence
@@ -127,17 +127,17 @@ Feature: 5-Player Complete Game Scenario
       | Pre-Flop | Player4 | Call          | $6     | $15       |
       | Pre-Flop | Player5 | Fold          | $0     | $15       |
       | Pre-Flop | Player1 | Call          | $5     | $20       |
-      | Pre-Flop | Player2 | Raise         | $14    | $34       |
-      | Pre-Flop | Player3 | Call          | $10    | $44       |
-      | Pre-Flop | Player4 | Fold          | $0     | $44       |
-      | Pre-Flop | Player1 | Fold          | $0     | $44       |
-      | Flop     | Player2 | Check         | $0     | $44       |
-      | Flop     | Player3 | Bet           | $20    | $64       |
-      | Flop     | Player2 | Call          | $20    | $84       |
-      | Turn     | Player2 | Bet           | $30    | $114      |
-      | Turn     | Player3 | Raise         | $60    | $174      |
-      | Turn     | Player2 | All-in        | $54    | $228      |
-      | Turn     | Player3 | Call          | $24    | $252      |
+      | Pre-Flop | Player2 | Re-raise      | $14    | $34       |
+      | Pre-Flop | Player3 | Call          | $10    | $41       |
+      | Pre-Flop | Player4 | Fold          | $0     | $41       |
+      | Pre-Flop | Player1 | Fold          | $0     | $41       |
+      | Flop     | Player2 | Check         | $0     | $41       |
+      | Flop     | Player3 | Bet           | $20    | $61       |
+      | Flop     | Player2 | Call          | $20    | $81       |
+      | Turn     | Player2 | Bet           | $30    | $111      |
+      | Turn     | Player3 | Raise         | $60    | $171      |
+      | Turn     | Player2 | All-in        | $24    | $195      |
+      | Turn     | Player3 | Call          | $0     | $195      |
     And each action should include player name, action type, amount, and resulting pot size
 
   Scenario: Game State Transitions
