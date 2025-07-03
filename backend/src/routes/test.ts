@@ -468,10 +468,18 @@ router.post('/start-game', async (req, res) => {
         });
       }
       
-      // Find the corresponding database table
+      // Find the corresponding database table that actually has players
       const dbTableName = `${lobbyTable.name} (ID: ${tableId})`;
       const dbTable = await prisma.table.findFirst({
-        where: { name: dbTableName }
+        where: { name: dbTableName },
+        include: {
+          playerTables: true,
+          games: {
+            where: {
+              status: { in: ['waiting', 'active'] }
+            }
+          }
+        }
       });
       
       if (!dbTable) {
@@ -481,18 +489,36 @@ router.post('/start-game', async (req, res) => {
         });
       }
       
-      // Find the game for this database table
-      const existingGame = await prisma.game.findFirst({
-        where: {
-          tableId: dbTable.id,
-          status: { in: ['waiting', 'active'] }
+      // Find the table that actually has players (in case there are duplicates)
+      let activeDbTable = dbTable;
+      if (dbTable.playerTables.length === 0 && dbTable.games.length === 0) {
+        // This table is empty, look for another one with the same name that has players
+        const allTables = await prisma.table.findMany({
+          where: { name: dbTableName },
+          include: {
+            playerTables: true,
+            games: {
+              where: {
+                status: { in: ['waiting', 'active'] }
+              }
+            }
+          }
+        });
+        
+        const tableWithPlayers = allTables.find(t => t.playerTables.length > 0 || t.games.length > 0);
+        if (tableWithPlayers) {
+          activeDbTable = tableWithPlayers;
+          console.log(`🔧 Found table with players: ${tableWithPlayers.id} (${tableWithPlayers.playerTables.length} players)`);
         }
-      });
+      }
+      
+      // Find the game for this database table
+      const existingGame = activeDbTable.games[0];
       
       if (!existingGame) {
         return res.status(404).json({ 
           success: false, 
-          error: `No active game found for table ${tableId}`
+          error: `No active game found for table ${tableId}. Found table ${activeDbTable.id} with ${activeDbTable.playerTables.length} players`
         });
       }
       
