@@ -1,0 +1,293 @@
+[
+  {
+    "description": "  As a poker game system\n  I want to execute a complete 5-player Texas Hold'em game\n  So that I can validate complex multi-player game mechanics with specific card dealing and betting patterns",
+    "elements": [
+      {
+        "description": "",
+        "id": "5-player-complete-game-scenario;complete-5-player-texas-hold'em-game-with-specific-cards-and-actions",
+        "keyword": "Scenario",
+        "line": 11,
+        "name": "Complete 5-Player Texas Hold'em Game with Specific Cards and Actions",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 314290
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the poker system is running",
+            "match": {
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:105"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 2934167
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "I have a clean game state",
+            "match": {
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:145"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 136541
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "the card order is deterministic for testing",
+            "match": {
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:156"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10913082
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 12,
+            "name": "I have 5 players ready to join a poker game",
+            "match": {
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:191"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 15070655124
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 13,
+            "name": "all players have starting stacks of $100",
+            "match": {
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:218"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 361833
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Seat",
+                      "Stack"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "1",
+                      "$100"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "2",
+                      "$100"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player3",
+                      "3",
+                      "$100"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player4",
+                      "4",
+                      "$100"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player5",
+                      "5",
+                      "$100"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "When ",
+            "line": 14,
+            "name": "players join the table in order:",
+            "match": {
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:225"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 167168338667
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Seat"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "1"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "2"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player3",
+                      "3"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player4",
+                      "4"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player5",
+                      "5"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 21,
+            "name": "all players should be seated correctly:",
+            "match": {
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:255"
+            },
+            "result": {
+              "status": "failed",
+              "duration": 30005455000,
+              "error_message": "Error: function timed out, ensure the promise resolves within 30000 milliseconds\n    at Timeout.<anonymous> (/Volumes/Data/work/puretexaspoker/node_modules/@cucumber/cucumber/lib/time.js:54:20)\n    at listOnTimeout (node:internal/timers:594:17)\n    at process.processTimers (node:internal/timers:529:7)"
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 28,
+            "name": "the game is auto-started after all players are seated",
+            "match": {
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1082"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Position",
+                      "Player",
+                      "Amount"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Small Blind",
+                      "Player1",
+                      "$1"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Big Blind",
+                      "Player2",
+                      "$2"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 29,
+            "name": "the game starts with blinds structure:",
+            "match": {
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:310"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 33,
+            "name": "the pot should be $3",
+            "match": {
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:348"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 161916
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2540374
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      }
+    ],
+    "id": "5-player-complete-game-scenario",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "5-Player Complete Game Scenario",
+    "tags": [],
+    "uri": "selenium/features/5-player-complete-game-scenario.feature"
+  }
+]
