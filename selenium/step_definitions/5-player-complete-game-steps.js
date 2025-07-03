@@ -1,4 +1,4 @@
-const { Given, When, Then } = require('@cucumber/cucumber');
+const { Given, When, Then, AfterAll, After } = require('@cucumber/cucumber');
 const { Builder, By, until, Key } = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
 const assert = require('assert');
@@ -21,12 +21,17 @@ let players = {};
 let gameState = {};
 let expectedPotAmount = 0;
 
-// Global error handler for fail-fast behavior
+// Global error handler for IMMEDIATE fail-fast behavior
 let testFailures = [];
 let criticalFailure = false;
+let testStopped = false;
 
 function handleCriticalFailure(step, playerName, error, context = {}) {
+  if (testStopped) return; // Prevent multiple failure handling
+  
+  testStopped = true;
   criticalFailure = true;
+  
   const failure = {
     step: step,
     player: playerName,
@@ -38,22 +43,49 @@ function handleCriticalFailure(step, playerName, error, context = {}) {
   
   testFailures.push(failure);
   
-  console.log(`\n❌ CRITICAL FAILURE in step: ${step}`);
+  console.log(`\n🚨 IMMEDIATE TEST STOP - CRITICAL FAILURE`);
+  console.log(`📍 Step: ${step}`);
   console.log(`👤 Player: ${playerName}`);
   console.log(`💥 Error: ${error.message}`);
-  console.log(`📍 Context:`, JSON.stringify(context, null, 2));
+  console.log(`📊 Context:`, JSON.stringify(context, null, 2));
   console.log(`\n🔍 DEBUGGING INFO:`);
   console.log(`📊 Game State:`, JSON.stringify(gameState, null, 2));
   console.log(`👥 Active Players:`, Object.keys(players));
   console.log(`📈 Test Failures Count:`, testFailures.length);
+  console.log(`\n🛑 TEST EXECUTION STOPPED IMMEDIATELY`);
   
-  // Throw error to stop test execution
-  throw new Error(`CRITICAL FAILURE: ${step} - ${error.message}`);
+  // Cleanup browsers immediately on failure
+  cleanupBrowsers();
+  
+  // Throw error to stop test execution immediately
+  const criticalError = new Error(`🚨 IMMEDIATE STOP: ${step} - ${error.message}`);
+  criticalError.isCritical = true;
+  throw criticalError;
 }
 
 function checkForCriticalFailure() {
-  if (criticalFailure) {
-    throw new Error(`Test cannot continue due to previous critical failure. Total failures: ${testFailures.length}`);
+  if (criticalFailure || testStopped) {
+    throw new Error(`🛑 Test execution stopped due to previous critical failure. Total failures: ${testFailures.length}`);
+  }
+}
+
+// Immediate cleanup function
+async function cleanupBrowsers() {
+  console.log('🧹 Emergency browser cleanup...');
+  try {
+    for (const [playerName, player] of Object.entries(players)) {
+      try {
+        if (player && player.driver) {
+          await player.driver.quit();
+          console.log(`✅ Cleaned up ${playerName} browser`);
+        }
+      } catch (e) {
+        console.log(`⚠️ Error cleaning ${playerName}: ${e.message}`);
+      }
+    }
+    players = {}; // Clear players object
+  } catch (error) {
+    console.log(`⚠️ Cleanup error: ${error.message}`);
   }
 }
 
@@ -152,9 +184,10 @@ async function autoSeatPlayer(player, tableId = 1, seatNumber, buyInAmount = 100
 
 // Background steps
 Given('the poker system is running', { timeout: 30000 }, async function() {
+  checkForCriticalFailure(); // Immediate stop if previous failure
   const http = require('http');
   
-  // Retry logic for server connectivity
+  // Retry logic for server connectivity with immediate failure on final attempt
   let retries = 3;
   while (retries > 0) {
     try {
@@ -184,7 +217,16 @@ Given('the poker system is running', { timeout: 30000 }, async function() {
       retries--;
       console.log(`⚠️ Backend check failed (${3 - retries}/3): ${error.message}`);
       if (retries === 0) {
-        throw error;
+        // Use critical failure handler to stop test immediately
+        handleCriticalFailure(
+          'server connectivity check',
+          'system',
+          error,
+          { 
+            retriesAttempted: 3,
+            finalError: error.message
+          }
+        );
       }
       await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s before retry
     }
@@ -192,6 +234,7 @@ Given('the poker system is running', { timeout: 30000 }, async function() {
 });
 
 Given('I have a clean game state', async function() {
+  checkForCriticalFailure(); // Immediate stop if previous failure
   gameState = {
     pot: 0,
     activePlayers: [],
@@ -203,6 +246,7 @@ Given('I have a clean game state', async function() {
 });
 
 Given('the card order is deterministic for testing', async function() {
+  checkForCriticalFailure(); // Immediate stop if previous failure
   console.log('🎴 Setting up deterministic card order for 5-player scenario');
   
   // Make API call to set deterministic card order
@@ -242,6 +286,7 @@ Given('the card order is deterministic for testing', async function() {
 
 // Player setup steps
 Given('I have {int} players ready to join a poker game', { timeout: 180000 }, async function(playerCount) {
+  checkForCriticalFailure(); // Immediate stop if previous failure
   assert.equal(playerCount, 5, 'This scenario requires exactly 5 players');
   
   // Check environment variable for headless mode
@@ -259,7 +304,17 @@ Given('I have {int} players ready to join a poker game', { timeout: 180000 }, as
       console.log(`✅ ${playerName} browser ready ${useHeadless ? '(headless)' : '(headed)'}`);
     } catch (error) {
       console.log(`❌ Failed to create browser for ${playerName}: ${error.message}`);
-      throw error;
+      // Use critical failure handler to stop test immediately
+      handleCriticalFailure(
+        'browser creation',
+        playerName,
+        error,
+        { 
+          playerIndex: i,
+          totalPlayers: playerCount,
+          headlessMode: isHeadless
+        }
+      );
     }
     // Longer delay between browser creations for stability
     const delay = 2000;
@@ -269,6 +324,7 @@ Given('I have {int} players ready to join a poker game', { timeout: 180000 }, as
 });
 
 Given('all players have starting stacks of ${int}', function(stackAmount) {
+  checkForCriticalFailure(); // Immediate stop if previous failure
   Object.values(players).forEach(player => {
     player.chips = stackAmount;
   });
@@ -503,23 +559,46 @@ When('I manually start the game for table {int}', { timeout: 30000 }, async func
       throw new Error(`Too few players see game started: ${playersSeenGameStart}/${totalPlayers}`);
     }
     
-    console.log(`🎮 Game successfully started - ${playersSeenGameStart}/${totalPlayers} players confirmed`);
-    
-  } catch (error) {
-    handleCriticalFailure(
-      'manual game start',
-      'system',
-      error,
-      { 
-        tableId,
-        gameState: gameState,
-        totalPlayers: Object.keys(players).length
-      }
-    );
+      console.log(`🎮 Game successfully started - ${playersSeenGameStart}/${totalPlayers} players confirmed`);
+  
+} catch (error) {
+  handleCriticalFailure(
+    'manual game start',
+    'system',
+    error,
+    { 
+      tableId,
+      gameState: gameState,
+      totalPlayers: Object.keys(players).length
+    }
+  );
+}
+});
+
+// Global cleanup hooks for immediate failure handling
+After(async function(scenario) {
+  // Check if scenario failed and clean up immediately
+  if (scenario.result.status === 'FAILED' || criticalFailure || testStopped) {
+    console.log('🚨 Scenario failed - performing immediate cleanup');
+    await cleanupBrowsers();
+  }
+});
+
+AfterAll(async function() {
+  // Final cleanup to ensure no browsers are left running
+  console.log('🧹 Final cleanup - ensuring no browsers remain');
+  await cleanupBrowsers();
+  
+  if (testFailures.length > 0) {
+    console.log('\n📊 TEST FAILURE SUMMARY:');
+    testFailures.forEach((failure, index) => {
+      console.log(`${index + 1}. ${failure.step} (${failure.player}): ${failure.error}`);
+    });
   }
 });
 
 When('the game starts with blinds structure:', { timeout: 30000 }, async function(dataTable) {
+  checkForCriticalFailure(); // Immediate stop if previous failure
   const blindsData = dataTable.hashes();
   
   console.log('🎯 Verifying blinds structure...');
@@ -558,6 +637,7 @@ When('the game starts with blinds structure:', { timeout: 30000 }, async functio
 });
 
 Then('the pot should be ${int}', { timeout: 30000 }, async function(expectedAmount) {
+  checkForCriticalFailure(); // Immediate stop if previous failure
   expectedPotAmount = expectedAmount;
   
   // Critical pot checkpoints for specification compliance
