@@ -219,10 +219,14 @@ Given('the card order is deterministic for testing', async function() {
   ];
   
   try {
+    // Set card order for table 1 specifically (not just default game)
     const response = await fetch('http://localhost:3001/api/test/set-card-order', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cardOrder })
+      body: JSON.stringify({ 
+        cardOrder,
+        gameId: 'table-1' // Use table-based identifier
+      })
     });
     
     if (response.ok) {

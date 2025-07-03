@@ -69,13 +69,25 @@ export class CardOrderService {
    * Get test card order for a specific game (placeholder - will be imported from test routes)
    */
   private getTestCardOrder(gameId: string): Card[] | null {
-    // This will be implemented by importing from test routes
-    // For now, return null (no test override)
     try {
       // Dynamic import to avoid circular dependency
       const testModule = require('../routes/test');
       if (testModule && typeof testModule.getTestCardOrder === 'function') {
-        return testModule.getTestCardOrder(gameId);
+        // First try the actual game ID
+        let testCards = testModule.getTestCardOrder(gameId);
+        if (testCards) {
+          return testCards;
+        }
+        
+        // Also try table-based identifiers for table 1, 2, 3
+        const tableIdentifiers = ['table-1', 'table-2', 'table-3'];
+        for (const tableId of tableIdentifiers) {
+          testCards = testModule.getTestCardOrder(tableId);
+          if (testCards) {
+            console.log(`🎯 Found test card order for ${gameId} using table identifier: ${tableId}`);
+            return testCards;
+          }
+        }
       }
     } catch (error) {
       // Test module not available or error importing - continue with normal operation
