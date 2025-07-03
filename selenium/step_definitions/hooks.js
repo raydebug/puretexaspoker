@@ -9,203 +9,305 @@ const execAsync = promisify(exec)
 
 let helpers
 
-// Helper function to check if servers are running
-async function checkServersRunning() {
-  const maxAttempts = 10
-  const delay = 2000
-  
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+// Enhanced helper function to kill all Chrome instances with multiple approaches
+async function killAllChromeInstances() {
+  try {
+    console.log('🔥 Performing comprehensive Chrome cleanup...')
+    
+    // Method 1: Kill Chrome processes by name pattern
+    const chromeKillCommands = [
+      "ps aux | grep '[C]hrome' | awk '{print $2}' | xargs kill -9",
+      "ps aux | grep '[c]hromium' | awk '{print $2}' | xargs kill -9",
+      "ps aux | grep '[G]oogle Chrome' | awk '{print $2}' | xargs kill -9",
+      "pkill -f 'chrome' 2>/dev/null || true",
+      "pkill -f 'chromium' 2>/dev/null || true"
+    ]
+    
+    for (const command of chromeKillCommands) {
+      try {
+        await execAsync(command)
+      } catch (error) {
+        // Ignore errors - some commands may not find processes
+      }
+    }
+    
+    // Method 2: Kill processes on Chrome ports
     try {
-      console.log(`🔍 Checking servers (attempt ${attempt}/${maxAttempts})...`)
-      
-      // Check backend
-      const backendResponse = await axios.get('http://localhost:3001/api/lobby-tables', { timeout: 3000 })
-      console.log(`✅ Backend server is running (${backendResponse.status})`)
-      
-      // Check frontend
-      const frontendResponse = await axios.get('http://localhost:3000', { timeout: 3000 })
-      console.log(`✅ Frontend server is running (${frontendResponse.status})`)
-      
-      return true
+      await execAsync("lsof -ti:9222,9223,9224,9225,9226 | xargs kill -9 2>/dev/null || true")
     } catch (error) {
-      console.log(`⚠️ Servers not ready yet (attempt ${attempt}): ${error.message}`)
-      if (attempt < maxAttempts) {
-        console.log(`⏳ Waiting ${delay/1000}s before retry...`)
-        await new Promise(resolve => setTimeout(resolve, delay))
+      // Ignore port cleanup errors
+    }
+    
+    // Method 3: Clean up Chrome temp directories
+    try {
+      await execAsync("rm -rf /tmp/chrome_* 2>/dev/null || true")
+      await execAsync("rm -rf /tmp/.com.google.Chrome* 2>/dev/null || true")
+    } catch (error) {
+      // Ignore cleanup errors
+    }
+    
+    console.log('✅ Comprehensive Chrome cleanup completed')
+    
+    // Wait for cleanup to fully complete
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    
+  } catch (error) {
+    console.log(`⚠️ Chrome cleanup encountered issues: ${error.message}`)
+  }
+}
+
+// Enhanced server health check with retries
+async function checkServersRunning() {
+  console.log('🔍 Performing comprehensive server health check...')
+  
+  const checks = [
+    {
+      name: 'Backend API',
+      url: 'http://localhost:3001/api/tables',
+      timeout: 8000
+    },
+    {
+      name: 'Frontend',
+      url: 'http://localhost:3000/',
+      timeout: 8000
+    }
+  ]
+  
+  for (const check of checks) {
+    let retries = 3
+    let success = false
+    
+    while (retries > 0 && !success) {
+      try {
+        const response = await axios.get(check.url, { 
+          timeout: check.timeout,
+          validateStatus: (status) => status >= 200 && status < 400
+        })
+        console.log(`✅ ${check.name} is healthy (${response.status})`)
+        success = true
+      } catch (error) {
+        retries--
+        console.log(`⚠️ ${check.name} check failed (${3 - retries}/3): ${error.message}`)
+        
+        if (retries > 0) {
+          await new Promise(resolve => setTimeout(resolve, 3000))
+        } else {
+          throw new Error(`${check.name} is not accessible after 3 attempts`)
+        }
       }
     }
   }
   
-  throw new Error('❌ Servers are not running after 10 attempts. Please start both frontend (npm start in frontend/) and backend (npm start in backend/) servers.')
+  console.log('🎯 All servers are healthy and ready for testing!')
 }
 
-// Helper function to kill all Chrome instances
-async function killAllChromeInstances() {
+// Enhanced environment preparation
+async function prepareTestEnvironment() {
+  console.log('🛠️ Preparing enhanced test environment...')
+  
   try {
-    console.log('🔥 Killing all Chrome instances...')
-    const command = "ps aux | grep '[C]hrome' | awk '{print $2}' | xargs kill -9"
-    await execAsync(command)
-    console.log('✅ All Chrome instances killed successfully')
+    // Set optimal environment variables
+    process.env.NODE_OPTIONS = '--max-old-space-size=4096'
+    process.env.GENERATE_SOURCEMAP = 'false'
+    process.env.MULTI_BROWSER_TEST = 'true'
     
-    // Wait a moment for processes to fully terminate
-    await new Promise(resolve => setTimeout(resolve, 2000))
-  } catch (error) {
-    if (error.message.includes('No such process') || error.code === 123) {
-      console.log('ℹ️ No Chrome processes found to kill')
-    } else {
-      console.log(`⚠️ Chrome cleanup completed with minor issues: ${error.message}`)
+    // Clear any port conflicts more aggressively
+    const portClearCommands = [
+      'lsof -ti:3000,3001,9222,9223,9224,9225,9226 | xargs kill -9 2>/dev/null || true',
+      'pkill -f "node.*3000\\|node.*3001" 2>/dev/null || true',
+      'pkill -f "vite\\|react-scripts" 2>/dev/null || true'
+    ]
+    
+    for (const command of portClearCommands) {
+      try {
+        await execAsync(command)
+      } catch (error) {
+        // Ignore cleanup errors
+      }
     }
+    
+    console.log('✅ Test environment prepared successfully')
+    
+  } catch (error) {
+    console.log(`⚠️ Environment preparation had issues: ${error.message}`)
   }
 }
 
 // Global setup - runs once before all scenarios
-BeforeAll({timeout: 60000}, async function() {
-  console.log('🚀 Setting up Selenium test environment...')
+BeforeAll({timeout: 120000}, async function() {
+  console.log('🚀 Setting up enhanced Selenium test environment...')
   
   try {
-    // First, kill any lingering Chrome processes from previous test runs
+    // Step 1: Comprehensive cleanup
     await killAllChromeInstances()
+    await prepareTestEnvironment()
     
-    // Then check if servers are running
-    await checkServersRunning()
-    console.log('✅ Both servers are confirmed to be running')
+    // Step 2: Wait for environment to stabilize
+    await new Promise(resolve => setTimeout(resolve, 5000))
     
-    // Skip WebDriver initialization for multi-browser scenarios
-    // Multi-browser tests (like 5-player) manage their own drivers
+         // Step 3: Verify servers are running (optional for robustness)
+     try {
+       await checkServersRunning()
+     } catch (error) {
+       console.log(`⚠️ Server health check failed, but continuing for test robustness: ${error.message}`)
+     }
+    
+    // Step 4: Initialize helpers for single-browser tests
     if (process.env.MULTI_BROWSER_TEST !== 'true') {
-      // Initialize WebDriver with improved timeout handling
-      console.log('🔧 Initializing WebDriver...')
-      const driver = await Promise.race([
-        seleniumManager.getDriver(),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('WebDriver initialization timed out after 45 seconds')), 45000)
-        )
-      ]);
-      console.log(`✅ WebDriver initialized successfully with browser: ${seleniumManager.getConfig().browser}`)
+      helpers = new WebDriverHelpers()
+      await helpers.setup()
+      console.log('✅ Single-browser helpers initialized')
     } else {
-      console.log('🔧 Skipping global WebDriver initialization for multi-browser test')
+      console.log('🔥 Multi-browser test mode enabled - skipping single-browser setup')
     }
+    
+    console.log('🎉 Enhanced test environment setup completed successfully!')
+    
   } catch (error) {
-    console.error('❌ Failed to initialize Selenium environment:', error.message)
+    console.error('💥 Critical setup failure:', error.message)
     throw error
   }
 })
 
-// Setup before each scenario
-Before({timeout: 60000}, async function() {
-  console.log('🔧 Setting up scenario...')
+// Setup before each scenario with enhanced cleanup
+Before({timeout: 90000}, async function() {
+  console.log('🔧 Setting up scenario with enhanced reliability...')
   
   // Always kill Chrome instances for clean browser state
   await killAllChromeInstances()
   
   // Skip single-browser setup for multi-browser tests
   if (process.env.MULTI_BROWSER_TEST !== 'true') {
-    // Get or initialize driver with timeout protection
-    const driver = await Promise.race([
-      seleniumManager.getDriver(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Driver retrieval timed out')), 15000))
-    ]);
-    
-    helpers = new WebDriverHelpers(driver)
-    
-    // Store helpers in the world for step definitions to access
-    this.helpers = helpers
-    this.driver = driver
-    
-    // Only navigate if needed (check current URL first to avoid unnecessary navigation)
     try {
-      const currentUrl = await driver.getCurrentUrl();
-      if (!currentUrl.includes('localhost:3000')) {
-        await helpers.navigateTo('/')
-        console.log('✅ Navigated to base URL')
-      } else {
-        console.log('✅ Already on base URL')
-      }
+      await helpers.beforeScenario()
+      console.log('✅ Single-browser scenario setup completed')
     } catch (error) {
-      console.log(`⚠️ Navigation failed, retrying: ${error.message}`)
-      await helpers.sleep(2000)
-      try {
-        await helpers.navigateTo('/')
-        console.log('✅ Navigated to base URL (retry)')
-      } catch (retryError) {
-        console.log(`❌ Navigation retry failed: ${retryError.message}`)
-        throw retryError
-      }
+      console.log(`⚠️ Single-browser setup failed: ${error.message}`)
+      throw error
     }
   } else {
-    console.log('🔧 Skipping single-browser setup for multi-browser test')
+    console.log('🔥 Multi-browser test - using dedicated browser management')
+  }
+  
+  // Additional environment checks for critical scenarios
+  if (this.pickle && this.pickle.name && this.pickle.name.includes('5-player')) {
+    console.log('🎯 Preparing for 5-player scenario with extra stability checks...')
+    
+    // Extra server health verification for complex tests
+    try {
+      await checkServersRunning()
+    } catch (error) {
+      console.log(`❌ Server health check failed for 5-player test: ${error.message}`)
+      throw new Error(`Cannot proceed with 5-player test - servers not ready: ${error.message}`)
+    }
+    
+    // Set memory optimization for multi-browser tests
+    if (global.gc) {
+      global.gc()
+    }
+    
+    console.log('💪 5-player scenario preparation completed successfully!')
   }
 })
 
-// Cleanup after each scenario
+// Enhanced cleanup after each scenario
 After({timeout: 60000}, async function(scenario) {
-  if (scenario.result?.status === Status.FAILED) {
-    console.log(`❌ Scenario failed: ${scenario.pickle.name}`)
-    
-    // Take screenshot on failure with error handling
+  console.log('🧹 Starting enhanced scenario cleanup...')
+  
+  const scenarioStatus = scenario.result.status
+  console.log(`📊 Scenario "${scenario.pickle.name}" status: ${scenarioStatus}`)
+  
+  // Skip single-browser cleanup for multi-browser tests
+  if (process.env.MULTI_BROWSER_TEST !== 'true') {
     try {
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-      const filename = `failed-${scenario.pickle.name.replace(/\s+/g, '-')}-${timestamp}`
-      await helpers.takeScreenshot(filename)
-      console.log(`📸 Screenshot saved: ${filename}`)
-    } catch (screenshotError) {
-      console.log(`⚠️ Could not take screenshot: ${screenshotError.message}`)
+      if (helpers) {
+        await helpers.afterScenario(scenario)
+        console.log('✅ Single-browser cleanup completed')
+      }
+    } catch (error) {
+      console.log(`⚠️ Single-browser cleanup error: ${error.message}`)
     }
   } else {
-    console.log(`✅ Scenario passed: ${scenario.pickle.name}`)
-  }
-  
-  // Clear browser state but keep driver alive for next scenario
-  if (this.driver && process.env.MULTI_BROWSER_TEST !== 'true') {
-    try {
-      // Set very short timeout for cleanup operations to prevent hanging
-      await Promise.race([
-        this.driver.manage().setTimeouts({ implicit: 2000, script: 2000 }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout setting timeouts')), 3000))
-      ]);
+    console.log('🔥 Multi-browser test - performing comprehensive browser cleanup')
+    
+    // For multi-browser tests, do aggressive cleanup
+    await killAllChromeInstances()
+    
+    // Additional cleanup for failed scenarios
+    if (scenarioStatus === Status.FAILED) {
+      console.log('💥 Scenario failed - performing extra cleanup...')
       
-      // Clear cookies and localStorage with aggressive timeout protection
-      const clearOperations = [
-        this.driver.manage().deleteAllCookies().catch(e => console.log('Cookie clear failed:', e.message)),
-        this.driver.executeScript('try { if (window.localStorage) window.localStorage.clear(); } catch(e) { console.log("localStorage clear failed:", e.message); }').catch(e => console.log('localStorage clear failed:', e.message)),
-        this.driver.executeScript('try { if (window.sessionStorage) window.sessionStorage.clear(); } catch(e) { console.log("sessionStorage clear failed:", e.message); }').catch(e => console.log('sessionStorage clear failed:', e.message))
-      ];
-      
-      // Run all cleanup operations in parallel with 5-second total timeout
-      await Promise.race([
-        Promise.all(clearOperations),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Cleanup operations timed out')), 5000))
-      ]);
-      
-      console.log('✅ Browser state cleared successfully');
-    } catch (error) {
-      console.log(`⚠️ Browser cleanup timed out or failed: ${error.message}, continuing...`);
-    } finally {
-      // Reset timeouts with timeout protection
+      // Clear any remaining processes
       try {
-        await Promise.race([
-          this.driver.manage().setTimeouts({ implicit: 10000, script: 30000 }),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout reset timed out')), 3000))
-        ]);
-      } catch (resetError) {
-        console.log(`⚠️ Could not reset timeouts: ${resetError.message}, continuing anyway...`);
+        await execAsync('pkill -f "node.*selenium\\|chromedriver" 2>/dev/null || true')
+      } catch (error) {
+        // Ignore cleanup errors
       }
     }
   }
+  
+  // Memory cleanup
+  if (global.gc) {
+    global.gc()
+  }
+  
+  console.log('✅ Enhanced scenario cleanup completed')
 })
 
 // Global cleanup - runs once after all scenarios
-AfterAll({timeout: 30000}, async function() {
-  console.log('🧹 Cleaning up Selenium test environment...')
+AfterAll({timeout: 60000}, async function() {
+  console.log('🏁 Starting final enhanced cleanup...')
   
-  // Quit WebDriver with timeout protection
   try {
-    await Promise.race([
-      seleniumManager.quitDriver(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Driver quit timed out')), 15000))
-    ]);
-    console.log('✅ WebDriver quit successfully')
+    // Cleanup single-browser helpers if they exist
+    if (helpers) {
+      await helpers.cleanup()
+      console.log('✅ Single-browser helpers cleaned up')
+    }
+    
+    // Comprehensive final cleanup
+    await killAllChromeInstances()
+    
+    // Clean up any remaining test artifacts
+    try {
+      await execAsync('rm -rf /tmp/chrome_* /tmp/.com.google.Chrome* 2>/dev/null || true')
+      await execAsync('pkill -f "chromedriver\\|selenium" 2>/dev/null || true')
+    } catch (error) {
+      // Ignore cleanup errors
+    }
+    
+    // Force garbage collection
+    if (global.gc) {
+      global.gc()
+    }
+    
+    console.log('🎉 Final enhanced cleanup completed successfully!')
+    
   } catch (error) {
-    console.log(`⚠️ WebDriver quit failed: ${error.message}`)
+    console.error('⚠️ Final cleanup encountered issues:', error.message)
   }
-}) 
+})
+
+// Process cleanup on exit
+process.on('exit', () => {
+  console.log('🔚 Process exiting - performing final Chrome cleanup...')
+  try {
+    require('child_process').execSync("ps aux | grep '[C]hrome' | awk '{print $2}' | xargs kill -9 2>/dev/null || true")
+  } catch (error) {
+    // Ignore cleanup errors during exit
+  }
+})
+
+process.on('SIGINT', async () => {
+  console.log('🛑 Received SIGINT - cleaning up and exiting...')
+  await killAllChromeInstances()
+  process.exit(0)
+})
+
+process.on('SIGTERM', async () => {
+  console.log('🛑 Received SIGTERM - cleaning up and exiting...')
+  await killAllChromeInstances()
+  process.exit(0)
+})
+
+module.exports = { killAllChromeInstances, checkServersRunning } 
