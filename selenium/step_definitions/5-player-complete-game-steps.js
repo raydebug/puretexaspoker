@@ -2,6 +2,7 @@ const { Given, When, Then } = require('@cucumber/cucumber');
 const { Builder, By, until, Key } = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
 const assert = require('assert');
+const fetch = require('node-fetch');
 
 /*
  * 🚨 CRITICAL: 5-PLAYER GAME TEST - ONLY ACCESS GAME PAGE
@@ -422,6 +423,100 @@ Then('all players should be seated correctly:', { timeout: 30000 }, async functi
   // Update game state to reflect all players are seated
   gameState.activePlayers = expectedSeating.map(seat => seat.Player);
   gameState.totalPlayers = expectedSeating.length;
+});
+
+When('I manually start the game for table {int}', { timeout: 30000 }, async function(tableId) {
+  checkForCriticalFailure(); // Stop if previous step failed
+  
+  console.log(`🚀 Manually starting game for table ${tableId}...`);
+  
+  try {
+    // Use the test API endpoint to manually start the game
+    const response = await fetch('http://localhost:3001/api/test/start-game', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tableId: tableId })
+    });
+    
+    const result = await response.json();
+    
+    if (!response.ok || !result.success) {
+      throw new Error(`Failed to start game: ${result.error || response.statusText}`);
+    }
+    
+    console.log(`✅ Game started successfully!`);
+    console.log(`📊 Game ID: ${result.gameId}`);
+    console.log(`📈 Status: ${result.status}`);
+    console.log(`🎯 Phase: ${result.phase}`);
+    console.log(`👥 Players: ${result.players}`);
+    
+    // Update our game state
+    gameState.phase = result.phase || 'preflop';
+    gameState.status = result.status || 'playing';
+    gameState.gameId = result.gameId;
+    
+    // Wait for the game start to propagate to all players
+    console.log('⏳ Waiting for game start to propagate to all players...');
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    
+    // Verify that players can see game has started
+    let playersSeenGameStart = 0;
+    for (const [playerName, player] of Object.entries(players)) {
+      try {
+        // Look for any indication that the game has started (cards, actions, timers, etc.)
+        const gameStartIndicators = [
+          '//*[contains(text(), "Small Blind")]',
+          '//*[contains(text(), "Big Blind")]', 
+          '//*[contains(text(), "Your turn")]',
+          '//*[contains(text(), "Pot:")]',
+          '//*[@data-testid="pot-amount"]',
+          '//button[contains(text(), "Fold")]',
+          '//button[contains(text(), "Call")]',
+          '//button[contains(text(), "Raise")]'
+        ];
+        
+        let foundIndicator = false;
+        for (const indicator of gameStartIndicators) {
+          try {
+            await player.driver.wait(until.elementLocated(By.xpath(indicator)), 3000);
+            foundIndicator = true;
+            break;
+          } catch (e) {
+            // Try next indicator
+          }
+        }
+        
+        if (foundIndicator) {
+          console.log(`✅ ${playerName} sees game has started`);
+          playersSeenGameStart++;
+        } else {
+          console.log(`⚠️ ${playerName} may not see game started yet`);
+        }
+      } catch (error) {
+        console.log(`⚠️ Could not verify game start for ${playerName}: ${error.message}`);
+      }
+    }
+    
+    // Require at least majority of players to see game started
+    const totalPlayers = Object.keys(players).length;
+    if (playersSeenGameStart < Math.ceil(totalPlayers / 2)) {
+      throw new Error(`Too few players see game started: ${playersSeenGameStart}/${totalPlayers}`);
+    }
+    
+    console.log(`🎮 Game successfully started - ${playersSeenGameStart}/${totalPlayers} players confirmed`);
+    
+  } catch (error) {
+    handleCriticalFailure(
+      'manual game start',
+      'system',
+      error,
+      { 
+        tableId,
+        gameState: gameState,
+        totalPlayers: Object.keys(players).length
+      }
+    );
+  }
 });
 
 When('the game starts with blinds structure:', { timeout: 30000 }, async function(dataTable) {

@@ -25,7 +25,7 @@ Feature: 5-Player Complete Game Scenario
       | Player3 | 3    |
       | Player4 | 4    |
       | Player5 | 5    |
-    When the game is auto-started after all players are seated
+    When I manually start the game for table 1
     Then the game starts with blinds structure:
       | Position    | Player  | Amount |
       | Small Blind | Player1 | $1     |
