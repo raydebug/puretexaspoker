@@ -1471,104 +1471,52 @@ Then('{word} should have two pair: {word} and {word}', function(playerName, card
 });
 
 /**
- * Auto-start game after all players are seated
+ * Start game using API after all players are seated
  */
 When('the game is auto-started after all players are seated', { timeout: 60000 }, async function() {
-  console.log('🚀 Auto-starting game after all players are seated...');
+  console.log('🚀 Starting game using direct API call for 5-player test...');
   
-  // Wait for all players to be fully seated first
+  // Wait for all players to be seated first
   await new Promise(resolve => setTimeout(resolve, 3000));
   
-  // Use Player1's browser to start the game
-  const player1 = players['Player1'];
-  
   try {
-    // Check if game has already auto-started by looking for game status
-    let gameStarted = false;
+    // Use direct API call to start the game
+    const response = await fetch('http://localhost:3001/api/test/start-game', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        tableId: 1 // Start game for table 1
+      })
+    });
     
-    // Look for game status indicators
-    const gameStatusSelectors = [
-      '[data-testid="game-status"]',
-      '[data-testid="game-phase"]',
-      '.game-phase',
-      '.game-status',
-      '[class*="phase"]'
-    ];
+    const result = await response.json();
     
-    for (const selector of gameStatusSelectors) {
-      try {
-        const statusElement = await player1.driver.findElement(By.css(selector));
-        const statusText = await statusElement.getText();
-        
-        if (statusText && statusText.toLowerCase() !== 'waiting' && statusText.toLowerCase() !== 'waiting for players') {
-          console.log(`✅ Game already started! Status: ${statusText}`);
-          gameStarted = true;
-          gameState.phase = statusText.toLowerCase();
-          break;
-        }
-      } catch (error) {
-        // Try next selector
-      }
-    }
-    
-    // If game hasn't started, try to start it manually
-    if (!gameStarted) {
-      console.log('🎯 Game not yet started, looking for start button...');
+    if (result.success) {
+      console.log('✅ Game started successfully via API:', result.message);
+      console.log(`🎮 Game ID: ${result.gameId}`);
+      console.log(`👥 Players: ${result.players?.map(p => `${p.name} (seat ${p.seat})`).join(', ')}`);
       
-      const startButtonSelectors = [
-        '[data-testid="start-game-button"]',
-        '.start-game',
-        'button[class*="start"]',
-        'button:contains("Start")'
-      ];
+      // Store game state for later use
+      gameState.gameId = result.gameId;
+      gameState.phase = result.gameState.phase;
+      gameState.pot = result.gameState.pot;
+      gameState.gameStarted = true;
       
-      for (const selector of startButtonSelectors) {
-        try {
-          const startButton = await player1.driver.wait(
-            until.elementLocated(By.css(selector)), 5000
-          );
-          await startButton.click();
-          console.log('✅ Start button clicked!');
-          gameStarted = true;
-          break;
-        } catch (error) {
-          // Try next selector
-        }
-      }
-    }
-    
-    // Wait for game to transition to playing state
-    if (gameStarted) {
+      // Wait for UI to update after game start
       await new Promise(resolve => setTimeout(resolve, 5000));
       
-      // Verify game has started by checking for poker elements
-      try {
-        await player1.driver.wait(
-          until.elementLocated(By.css('[data-testid="community-cards"], .community-cards, [class*="community"]')), 
-          10000
-        );
-        console.log('✅ Game started successfully - community cards area visible!');
-        gameState.phase = 'preflop';
-        gameState.gameStarted = true;
-      } catch (error) {
-        console.log('⚠️ Game may have started but poker elements not yet visible, continuing...');
-        gameState.phase = 'preflop';
-        gameState.gameStarted = true;
-      }
+      console.log('🎮 Game started successfully and UI updated!');
     } else {
-      // Assume game started automatically (common in poker apps with enough players)
-      console.log('⚠️ Could not manually start game, assuming auto-start occurred');
-      gameState.phase = 'preflop';
-      gameState.gameStarted = true;
+      console.log(`⚠️ Failed to start game: ${result.error}`);
+      console.log(`Current status: ${result.currentStatus || 'unknown'}`);
+      if (result.players) {
+        console.log(`Current players: ${result.players.map(p => `${p.name} (seat ${p.seat})`).join(', ')}`);
+      }
+      throw new Error(`Failed to start game: ${result.error}`);
     }
-    
-    console.log('🎮 Game auto-start process completed!');
-    
   } catch (error) {
-    console.log(`⚠️ Auto-start process had issues: ${error.message}, but continuing with test`);
-    // Allow test to continue - game might have started automatically
-    gameState.phase = 'preflop';
-    gameState.gameStarted = true;
+    console.log('❌ Error starting game via API:', error);
+    throw error;
   }
 });
 

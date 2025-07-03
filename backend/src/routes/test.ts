@@ -3,6 +3,7 @@ import { clearDatabase } from '../services/testService';
 import { PrismaClient } from '@prisma/client';
 import { CardOrderService } from '../services/cardOrderService';
 import { Card } from '../types/shared';
+import { GameManager } from '../services/gameManager';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -443,27 +444,104 @@ router.post('/get_game_state', async (req, res) => {
   }
 });
 
-router.post('/start_game', async (req, res) => {
+// POST /api/test/start-game - Start a game for testing purposes
+router.post('/start-game', async (req, res) => {
   try {
-    const { gameId } = req.body;
+    const { gameId, tableId } = req.body;
     
-    if (!gameId) {
-      return res.status(400).json({ success: false, error: 'gameId is required' });
+    console.log(`🎮 TEST API: Start game request - gameId: ${gameId}, tableId: ${tableId}`);
+    
+    let targetGameId = gameId;
+    
+    if (!targetGameId && tableId) {
+      console.log(`🔍 Finding game for table ${tableId}...`);
+      
+      // Find the database table by tableId (lobby table ID)
+      const tableManager = require('../services/TableManager').TableManager;
+      const tables = tableManager.getAllTables();
+      const lobbyTable = tables.find((t: any) => t.id === tableId);
+      
+      if (!lobbyTable) {
+        return res.status(404).json({ 
+          success: false, 
+          error: `Table ${tableId} not found in lobby`
+        });
+      }
+      
+      // Find the corresponding database table
+      const dbTableName = `${lobbyTable.name} (ID: ${tableId})`;
+      const dbTable = await prisma.table.findFirst({
+        where: { name: dbTableName }
+      });
+      
+      if (!dbTable) {
+        return res.status(404).json({ 
+          success: false, 
+          error: `Database table not found for table ${tableId}`
+        });
+      }
+      
+      // Find the game for this database table
+      const existingGame = await prisma.game.findFirst({
+        where: {
+          tableId: dbTable.id,
+          status: { in: ['waiting', 'active'] }
+        }
+      });
+      
+      if (!existingGame) {
+        return res.status(404).json({ 
+          success: false, 
+          error: `No active game found for table ${tableId}`
+        });
+      }
+      
+      targetGameId = existingGame.id;
+      console.log(`✅ Found game ${targetGameId} for table ${tableId}`);
     }
     
-    // Update game status to playing with simplified data
-    const game = await prisma.game.update({
-      where: { id: gameId },
-      data: {
-        status: 'PLAYING',
-        pot: 15 // small blind + big blind
-      }
+    if (!targetGameId) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No gameId provided and could not find game for table'
+      });
+    }
+    
+    console.log(`🚀 Starting game ${targetGameId}...`);
+    
+    // Import gameManager
+    const { gameManager } = require('../services/gameManager');
+    
+    // Check if game exists in memory
+    const gameService = gameManager.getGame(targetGameId);
+    if (!gameService) {
+      return res.status(404).json({ 
+        success: false, 
+        error: `Game ${targetGameId} not found in memory`
+      });
+    }
+    
+    // Start the game
+    const gameState = await gameManager.startGame(targetGameId);
+    
+    console.log(`✅ Game ${targetGameId} started successfully`);
+    console.log(`🎯 Game status: ${gameState.status}, phase: ${gameState.phase}`);
+    
+    res.json({ 
+      success: true, 
+      gameId: targetGameId,
+      status: gameState.status,
+      phase: gameState.phase,
+      players: gameState.players.length,
+      message: `Game ${targetGameId} started successfully`
     });
     
-    res.json({ success: true, game });
   } catch (error) {
-    console.error('Error starting game:', error);
-    res.status(500).json({ success: false, error: 'Failed to start game' });
+    console.error('❌ Error starting game:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: (error as Error).message || 'Failed to start game'
+    });
   }
 });
 
