@@ -522,6 +522,10 @@ Given('the pot is ${int} from blinds', function(potAmount) {
   expectedPotAmount = potAmount;
 });
 
+Given('the pot is ${int}', function(potAmount) {
+  expectedPotAmount = potAmount;
+});
+
 When('the pre-flop betting round begins', { timeout: 30000 }, async function() {
   console.log('🎯 Pre-flop betting round starting...');
   
@@ -540,10 +544,16 @@ When('{word} raises to ${int}', { timeout: 30000 }, async function(playerName, a
   const player = players[playerName];
   
   try {
+    // Wait for player actions to be available first
+    await player.driver.wait(
+      until.elementLocated(By.css('[data-testid="player-actions"]')), 
+      20000
+    );
+    
     // Look for raise button and amount input
     const raiseButton = await player.driver.wait(
       until.elementLocated(By.css('[data-testid="raise-button"], .raise-btn, [data-action="raise"]')), 
-      15000
+      20000
     );
     
     // Try to find amount input
@@ -586,9 +596,15 @@ When('{word} calls ${int}', { timeout: 30000 }, async function(playerName, amoun
   const player = players[playerName];
   
   try {
+    // Wait for player actions to be available first
+    await player.driver.wait(
+      until.elementLocated(By.css('[data-testid="player-actions"]')), 
+      20000
+    );
+    
     const callButton = await player.driver.wait(
       until.elementLocated(By.css('[data-testid="call-button"], .call-btn, [data-action="call"]')), 
-      15000
+      20000
     );
     
     await callButton.click();
@@ -617,9 +633,15 @@ When('{word} folds', { timeout: 30000 }, async function(playerName) {
   const player = players[playerName];
   
   try {
+    // Wait for player actions to be available first
+    await player.driver.wait(
+      until.elementLocated(By.css('[data-testid="player-actions"]')), 
+      20000
+    );
+    
     const foldButton = await player.driver.wait(
       until.elementLocated(By.css('[data-testid="fold-button"], .fold-btn, [data-action="fold"]')), 
-      15000
+      20000
     );
     
     await foldButton.click();
