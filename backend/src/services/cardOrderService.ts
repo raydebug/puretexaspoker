@@ -21,13 +21,31 @@ export class CardOrderService {
 
   /**
    * Generate a deterministic card order with hash
+   * If test card order is available, use that instead
    */
   public generateCardOrder(gameId: string): {
     seed: string;
     cardOrder: Card[];
     hash: string;
   } {
-    // Generate random seed
+    // Check if there's a test card order for this game
+    const testCardOrder = this.getTestCardOrder(gameId);
+    
+    if (testCardOrder) {
+      console.log(`🎯 Using test card order for game ${gameId}: ${testCardOrder.length} cards`);
+      
+      // Use test seed and hash for test mode
+      const testSeed = `test-seed-${gameId}-${Date.now()}`;
+      const hash = this.generateCardOrderHash(testCardOrder, testSeed, gameId);
+      
+      return {
+        seed: testSeed,
+        cardOrder: testCardOrder,
+        hash
+      };
+    }
+    
+    // Generate random seed for normal operation
     const seed = randomBytes(32).toString('hex');
     
     // Create deterministic deck based on seed
@@ -45,6 +63,26 @@ export class CardOrderService {
       cardOrder: shuffledDeck,
       hash
     };
+  }
+
+  /**
+   * Get test card order for a specific game (placeholder - will be imported from test routes)
+   */
+  private getTestCardOrder(gameId: string): Card[] | null {
+    // This will be implemented by importing from test routes
+    // For now, return null (no test override)
+    try {
+      // Dynamic import to avoid circular dependency
+      const testModule = require('../routes/test');
+      if (testModule && typeof testModule.getTestCardOrder === 'function') {
+        return testModule.getTestCardOrder(gameId);
+      }
+    } catch (error) {
+      // Test module not available or error importing - continue with normal operation
+      console.log(`⚠️ Could not load test card order for ${gameId}: ${error}`);
+    }
+    
+    return null;
   }
 
   /**

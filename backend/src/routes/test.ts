@@ -2,10 +2,174 @@ import express from 'express';
 import { clearDatabase } from '../services/testService';
 import { PrismaClient } from '@prisma/client';
 import { CardOrderService } from '../services/cardOrderService';
+import { Card } from '../types/shared';
 
 const router = express.Router();
 const prisma = new PrismaClient();
 const cardOrderService = new CardOrderService();
+
+// Global test card order storage for controlling card order in tests
+const testCardOrders = new Map<string, Card[]>();
+
+// Function to convert card string notation to Card objects
+function parseCardNotation(cardString: string): Card {
+  // Handle card notation like '6♠', 'A♥', '10♠'
+  const suits: { [key: string]: string } = {
+    '♠': 'spades',
+    '♥': 'hearts', 
+    '♦': 'diamonds',
+    '♣': 'clubs'
+  };
+  
+  // Extract suit (last character)
+  const suitSymbol = cardString.slice(-1);
+  const suit = suits[suitSymbol];
+  
+  if (!suit) {
+    throw new Error(`Invalid card notation: ${cardString} (unknown suit: ${suitSymbol})`);
+  }
+  
+  // Extract rank (everything except last character)
+  const rank = cardString.slice(0, -1);
+  
+  // Validate rank
+  const validRanks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+  if (!validRanks.includes(rank)) {
+    throw new Error(`Invalid card notation: ${cardString} (unknown rank: ${rank})`);
+  }
+  
+  return { rank, suit };
+}
+
+// Set deterministic card order for testing
+router.post('/set-card-order', async (req, res) => {
+  try {
+    const { cardOrder, gameId = 'test-game' } = req.body;
+    
+    if (!cardOrder || !Array.isArray(cardOrder)) {
+      return res.status(400).json({
+        success: false,
+        error: 'cardOrder must be an array of card strings'
+      });
+    }
+    
+    console.log(`🎴 Setting test card order for game ${gameId}:`, cardOrder);
+    
+    // Parse card notation and validate
+    const parsedCards: Card[] = [];
+    const cardStrings = new Set<string>();
+    
+    for (const cardString of cardOrder) {
+      if (typeof cardString !== 'string') {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid card: ${cardString} (must be string)`
+        });
+      }
+      
+      // Check for duplicates
+      if (cardStrings.has(cardString)) {
+        return res.status(400).json({
+          success: false,
+          error: `Duplicate card: ${cardString}`
+        });
+      }
+      cardStrings.add(cardString);
+      
+      try {
+        const card = parseCardNotation(cardString);
+        parsedCards.push(card);
+      } catch (error) {
+        return res.status(400).json({
+          success: false,
+          error: (error as Error).message
+        });
+      }
+    }
+    
+    // Store the test card order
+    testCardOrders.set(gameId, parsedCards);
+    
+    console.log(`✅ Test card order set for game ${gameId}: ${parsedCards.length} cards`);
+    console.log(`🃏 First 10 cards:`, parsedCards.slice(0, 10).map(c => `${c.rank}${c.suit[0]}`).join(', '));
+    
+    res.json({
+      success: true,
+      gameId,
+      cardCount: parsedCards.length,
+      message: `Card order set for game ${gameId}`,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('Error setting card order:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to set card order'
+    });
+  }
+});
+
+// Get current test card order for a game
+router.get('/get-card-order/:gameId?', (req, res) => {
+  try {
+    const gameId = req.params.gameId || 'test-game';
+    const cardOrder = testCardOrders.get(gameId);
+    
+    if (!cardOrder) {
+      return res.json({
+        success: true,
+        gameId,
+        cardOrder: null,
+        message: 'No test card order set for this game'
+      });
+    }
+    
+    res.json({
+      success: true,
+      gameId,
+      cardCount: cardOrder.length,
+      cardOrder: cardOrder.map(c => `${c.rank}${c.suit[0]}`),
+      message: `Test card order retrieved for game ${gameId}`
+    });
+    
+  } catch (error) {
+    console.error('Error getting card order:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get card order'
+    });
+  }
+});
+
+// Clear test card order for a game
+router.delete('/clear-card-order/:gameId?', (req, res) => {
+  try {
+    const gameId = req.params.gameId || 'test-game';
+    const existed = testCardOrders.delete(gameId);
+    
+    console.log(`🗑️ Cleared test card order for game ${gameId}: ${existed ? 'existed' : 'not found'}`);
+    
+    res.json({
+      success: true,
+      gameId,
+      existed,
+      message: `Test card order ${existed ? 'cleared' : 'was not set'} for game ${gameId}`
+    });
+    
+  } catch (error) {
+    console.error('Error clearing card order:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to clear card order'
+    });
+  }
+});
+
+// Helper function to get test card order for other services
+export function getTestCardOrder(gameId: string): Card[] | null {
+  return testCardOrders.get(gameId) || null;
+}
 
 // Basic connection check for tests
 router.get('/', (req, res) => {
