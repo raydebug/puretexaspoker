@@ -4,7 +4,7 @@ Feature: 5-Player Complete Game Scenario
   So that I can validate complex multi-player game mechanics with specific card dealing and betting patterns
 
   Background:
-    Given the poker system is running
+    Given both servers are force restarted and verified working correctly
     And I have a clean game state
     And the card order is deterministic for testing
 
