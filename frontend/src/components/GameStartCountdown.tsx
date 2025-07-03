@@ -43,12 +43,13 @@ const CountdownContainer = styled.div<{ $isVisible: boolean; $isFadingOut: boole
   align-items: center;
   justify-content: center;
   
-  animation: ${props => {
-    if (props.$isFadingOut) {
-      return `${fadeOutAnimation} 0.5s ease-out forwards`;
-    }
-    return `${pulseAnimation} 1s ease-in-out infinite`;
-  }};
+  ${props => props.$isFadingOut && `
+    animation: ${fadeOutAnimation} 0.5s ease-out forwards;
+  `}
+  
+  ${props => !props.$isFadingOut && props.$isVisible && `
+    animation: ${pulseAnimation} 1s ease-in-out infinite;
+  `}
 `;
 
 const CountdownNumber = styled.div`

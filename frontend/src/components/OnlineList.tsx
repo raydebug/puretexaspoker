@@ -1,8 +1,8 @@
 import React from 'react';
 import styled from 'styled-components';
 
-const ListContainer = styled.div<{ compact?: boolean }>`
-  ${props => props.compact ? `
+const ListContainer = styled.div<{ $compact?: boolean }>`
+  ${props => props.$compact ? `
     position: relative;
     background-color: rgba(0, 0, 0, 0.7);
     border-radius: 0;
@@ -24,9 +24,9 @@ const ListContainer = styled.div<{ compact?: boolean }>`
   `}
 `;
 
-const SectionTitle = styled.h3<{ compact?: boolean }>`
+const SectionTitle = styled.h3<{ $compact?: boolean }>`
   color: #ffd700;
-  ${props => props.compact ? `
+  ${props => props.$compact ? `
     margin: 0 0 0.5rem 0;
     font-size: 0.9rem;
     text-align: left;
@@ -46,9 +46,9 @@ const UsersList = styled.ul`
   margin: 0;
 `;
 
-const UserItem = styled.li<{ compact?: boolean }>`
+const UserItem = styled.li<{ $compact?: boolean }>`
   color: white;
-  ${props => props.compact ? `
+  ${props => props.$compact ? `
     padding: 0.25rem 0.5rem;
     margin: 0.1rem 0;
     font-size: 0.8rem;
@@ -92,12 +92,12 @@ export const OnlineList: React.FC<OnlineListProps> = ({
   
   if (shouldShowObservers) {
     return (
-      <ListContainer compact={compact} data-testid="online-list">
-        <SectionTitle compact={compact}>Observers ({observersArray.length})</SectionTitle>
+      <ListContainer $compact={compact} data-testid="online-list">
+        <SectionTitle $compact={compact}>Observers ({observersArray.length})</SectionTitle>
         <UsersList>
           {observersArray.length > 0 ? (
             observersArray.map((observer, index) => (
-              <UserItem key={index} compact={compact} role="listitem" data-testid={`observer-${index}`}>
+              <UserItem key={index} $compact={compact} role="listitem" data-testid={`observer-${index}`}>
                 <span>{observer}</span>
               </UserItem>
             ))
@@ -113,8 +113,8 @@ export const OnlineList: React.FC<OnlineListProps> = ({
   const totalUsers = onlineUsers !== undefined ? onlineUsers : observersArray.length;
 
   return (
-    <ListContainer compact={compact} data-testid="online-list">
-      <SectionTitle compact={compact}>Online Users: {totalUsers}</SectionTitle>
+    <ListContainer $compact={compact} data-testid="online-list">
+      <SectionTitle $compact={compact}>Online Users: {totalUsers}</SectionTitle>
     </ListContainer>
   );
 }; 
