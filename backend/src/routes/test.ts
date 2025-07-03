@@ -457,7 +457,7 @@ router.post('/start-game', async (req, res) => {
       console.log(`🔍 Finding game for table ${tableId}...`);
       
       // Find the database table by tableId (lobby table ID)
-      const tableManager = require('../services/TableManager').TableManager;
+      const { tableManager } = require('../services/TableManager');
       const tables = tableManager.getAllTables();
       const lobbyTable = tables.find((t: any) => t.id === tableId);
       
