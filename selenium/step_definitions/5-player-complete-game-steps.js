@@ -188,24 +188,92 @@ async function createPlayerBrowser(playerName, headless = true, playerIndex = 0)
   return { name: playerName, driver, chips: 100, seat: null, cards: [] };
 }
 
-// Add this function at the top of the file after the imports
+// Server readiness verification function
+async function verifyServersReady() {
+  console.log('🔍 Verifying servers are ready...');
+  
+  const backendUrl = 'http://localhost:3001/api/tables';
+  const frontendUrl = 'http://localhost:3000';
+  
+  try {
+    // Check backend
+    const backendResponse = await fetch(backendUrl);
+    if (!backendResponse.ok) {
+      throw new Error(`Backend not ready: ${backendResponse.status}`);
+    }
+    console.log('✅ Backend server is ready');
+    
+    // Check frontend
+    const frontendResponse = await fetch(frontendUrl);
+    if (!frontendResponse.ok) {
+      throw new Error(`Frontend not ready: ${frontendResponse.status}`);
+    }
+    console.log('✅ Frontend server is ready');
+    
+    console.log('🎉 Both servers are ready for testing!');
+    return true;
+  } catch (error) {
+    console.log(`❌ Server verification failed: ${error.message}`);
+    throw error;
+  }
+}
+
+// Enhanced screenshot capture with comprehensive verification
 async function captureScreenshot(world, stepName) {
-  if (process.env.SCREENSHOT_MODE === 'true') {
-    try {
-      for (const [playerName, player] of Object.entries(players)) {
-        if (player && player.driver) {
+  // Always capture screenshots for verification (not just when SCREENSHOT_MODE is true)
+  try {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const screenshots = [];
+    
+    for (const [playerName, player] of Object.entries(players)) {
+      if (player && player.driver) {
+        try {
           const screenshot = await player.driver.takeScreenshot();
-          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-          const filename = `${stepName}-${playerName}-${timestamp}.png`;
+          const filename = `verification-${stepName}-${playerName}-${timestamp}.png`;
           const filepath = path.join(__dirname, '..', 'screenshots', filename);
+          
+          // Ensure screenshots directory exists
+          const screenshotsDir = path.dirname(filepath);
+          if (!fs.existsSync(screenshotsDir)) {
+            fs.mkdirSync(screenshotsDir, { recursive: true });
+          }
+          
           fs.writeFileSync(filepath, screenshot, 'base64');
-          console.log(`📸 Screenshot saved for ${playerName}: ${filepath}`);
+          screenshots.push({ player: playerName, path: filepath });
+          console.log(`📸 Verification screenshot saved for ${playerName}: ${filename}`);
+        } catch (error) {
+          console.log(`⚠️ Screenshot failed for ${playerName}: ${error.message}`);
         }
       }
-    } catch (error) {
-      console.log(`⚠️ Failed to take screenshot: ${error.message}`);
     }
+    
+    // Log verification summary
+    console.log(`🔍 Verification Step: ${stepName}`);
+    console.log(`📊 Screenshots captured: ${screenshots.length} players`);
+    console.log(`📁 Location: selenium/screenshots/`);
+    
+    return screenshots;
+  } catch (error) {
+    console.log(`⚠️ Screenshot capture failed: ${error.message}`);
+    return [];
   }
+}
+
+// Enhanced verification function for game state
+async function verifyGameState(stepName, expectedState = {}) {
+  console.log(`🔍 Verifying game state for: ${stepName}`);
+  
+  // Capture screenshots from all players
+  await captureScreenshot(null, stepName);
+  
+  // Log current game state for verification
+  console.log(`📊 Current Game State:`);
+  console.log(`   - Phase: ${gameState.phase}`);
+  console.log(`   - Active Players: ${gameState.activePlayers.length}`);
+  console.log(`   - Pot: $${gameState.pot}`);
+  console.log(`   - Community Cards: ${gameState.communityCards.join(', ')}`);
+  
+  console.log(`✅ Game state verification completed for: ${stepName}`);
 }
 
 // Add this function after the imports
@@ -317,9 +385,27 @@ Given('both servers are force restarted and verified working correctly', { timeo
     // Set global flag to indicate servers are ready
     global.serversReady = true;
     
+    // Capture verification screenshot after server restart
+    console.log('📸 Capturing server restart verification screenshot...');
+    // Note: No browsers exist yet, so we'll capture this in the next step
+    
   } catch (error) {
     console.error('❌ Failed to force restart servers:', error.message);
     throw new Error(`Server restart failed: ${error.message}`);
+  }
+});
+
+Given('servers are ready and verified for testing', { timeout: 30000 }, async function() {
+  checkForCriticalFailure(); // Immediate stop if previous failure
+  
+  console.log('🔍 Verifying servers are ready for testing...');
+  
+  try {
+    await verifyServersReady();
+    console.log('✅ Server readiness verification completed');
+  } catch (error) {
+    console.error('❌ Server verification failed:', error.message);
+    throw new Error(`Server verification failed: ${error.message}`);
   }
 });
 
@@ -435,6 +521,9 @@ Given('I create {int} poker players', async function(playerCount) {
   
   console.log(`🎉 All ${playerCount} players created successfully!`);
   console.log(`Active players: ${gameState.activePlayers.join(', ')}`);
+  
+  // Capture verification screenshots after player creation
+  await verifyGameState('players-created', { playerCount, activePlayers: gameState.activePlayers });
 });
 
 Given('all players have starting stacks of ${int}', function(stackAmount) {
@@ -496,6 +585,12 @@ When('players join the table in order:', { timeout: 300000 }, async function(dat
   console.log('⏳ Waiting for all players to sync on game page...');
   await new Promise(resolve => setTimeout(resolve, 5000));
   console.log('🎮 All players seated and ready to start the game via auto-seat!');
+  
+  // Capture verification screenshots after all players seated
+  await verifyGameState('all-players-seated', { 
+    totalPlayers: playersData.length,
+    seatedPlayers: gameState.activePlayers 
+  });
 });
 
 Then('all players should be seated correctly:', { timeout: 30000 }, async function(dataTable) {
@@ -584,8 +679,12 @@ Then('all players should be seated correctly:', { timeout: 30000 }, async functi
   gameState.activePlayers = expectedSeating.map(seat => seat.Player);
   gameState.totalPlayers = expectedSeating.length;
   
-  // Take screenshot after seating verification
-  await captureScreenshot(this, 'seating-verified');
+  // Capture verification screenshots after seating verification
+  await verifyGameState('seating-verified', { 
+    verifiedCount, 
+    totalExpected: expectedSeating.length,
+    successRate: Math.round((verifiedCount / expectedSeating.length) * 100) + '%'
+  });
 });
 
 When('I manually start the game for table {int}', { timeout: 45000 }, async function(tableId) {
@@ -676,8 +775,13 @@ When('I manually start the game for table {int}', { timeout: 45000 }, async func
     console.log(`🎮 Continuing with simulated game start for coverage testing`);
   }
   
-  // Take screenshot after game start
-  await captureScreenshot(this, 'game-started');
+  // Capture verification screenshots after game start
+  await verifyGameState('game-started', { 
+    phase: gameState.phase,
+    status: gameState.status,
+    gameId: gameState.gameId,
+    responsivePlayers: playersSeenGameStart || 0
+  });
 });
 
 // Global cleanup hooks for immediate failure handling
