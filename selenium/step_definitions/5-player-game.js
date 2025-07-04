@@ -510,6 +510,72 @@ Then('each transition should be properly recorded and validated', function () {
   return 'pending';
 });
 
+// Missing parameterized step definitions
+Given('a {int}-player game is in progress', function (int) {
+  // TODO: Implement logic to verify a game with specified number of players is in progress
+  return 'pending';
+});
+
+Then('each player should see {int} face-down cards for other players', function (int) {
+  // TODO: Implement logic to verify each player sees the specified number of face-down cards for other players
+  return 'pending';
+});
+
+Given('hole cards have been dealt to {int} players', function (int) {
+  // TODO: Implement logic to verify hole cards have been dealt to the specified number of players
+  return 'pending';
+});
+
+Given('the pot is ${int} from blinds', function (int) {
+  // TODO: Implement logic to verify the pot contains the specified amount from blinds
+  return 'pending';
+});
+
+When('Player1 calls ${int} more \\(completing small blind call)', function (int) {
+  // TODO: Implement logic for Player1 to call the specified amount more to complete small blind call
+  return 'pending';
+});
+
+Then('Player4 should have ${int} remaining', function (int) {
+  // TODO: Implement logic to verify Player4 has the specified amount remaining
+  return 'pending';
+});
+
+Then('Player1 should have ${int} remaining', function (int) {
+  // TODO: Implement logic to verify Player1 has the specified amount remaining
+  return 'pending';
+});
+
+Then('Player5 should have ${int} remaining', function (int) {
+  // TODO: Implement logic to verify Player5 has the specified amount remaining
+  return 'pending';
+});
+
+Given('{int} players remain after pre-flop: Player2, Player3', function (int) {
+  // TODO: Implement logic to verify the specified number of players remain after pre-flop
+  return 'pending';
+});
+
+Given('the pot is ${int}', function (int) {
+  // TODO: Implement logic to verify the pot contains the specified amount
+  return 'pending';
+});
+
+When('the flop is dealt: K♠, Q♠, {int}♥', function (int) {
+  // TODO: Implement logic to verify the flop is dealt with the specified cards
+  return 'pending';
+});
+
+Given('the flop betting is complete with pot at ${int}', function (int) {
+  // TODO: Implement logic to verify flop betting is complete with pot at specified amount
+  return 'pending';
+});
+
+Given('both players are committed to showdown', function () {
+  // TODO: Implement logic to verify both players are committed to showdown
+  return 'pending';
+});
+
 // Helper functions
 async function createPlayerBrowser(playerName, headless = true, playerIndex = 0) {
   const options = new chrome.Options();
