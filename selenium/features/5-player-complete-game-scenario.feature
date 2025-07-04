@@ -5,6 +5,7 @@ Feature: 5-Player Complete Game Scenario
 
   Background:
     Given both servers are force restarted and verified working correctly
+    And servers are ready and verified for testing
     And I have a clean game state
     And the card order is deterministic for testing
 

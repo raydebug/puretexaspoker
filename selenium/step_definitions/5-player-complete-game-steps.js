@@ -1021,6 +1021,14 @@ When('{word} raises to ${int}', { timeout: 15000 }, async function(playerName, a
     
     console.log(`✅ ${playerName} raised to $${amount}`);
     
+    // Capture verification screenshot after raise action
+    await verifyGameState('player-raise-action', { 
+      player: playerName, 
+      action: 'raise', 
+      amount: amount,
+      phase: gameState.phase 
+    });
+    
   } catch (error) {
     console.error(`❌ Failed to raise for ${playerName}: ${error.message}`);
     throw error;
@@ -1048,6 +1056,14 @@ When('{word} calls ${int}', { timeout: 15000 }, async function(playerName, amoun
     
     console.log(`✅ ${playerName} called $${amount}`);
     
+    // Capture verification screenshot after call action
+    await verifyGameState('player-call-action', { 
+      player: playerName, 
+      action: 'call', 
+      amount: amount,
+      phase: gameState.phase 
+    });
+    
   } catch (error) {
     console.error(`❌ Failed to call for ${playerName}: ${error.message}`);
     throw error;
@@ -1074,6 +1090,13 @@ When('{word} folds', { timeout: 15000 }, async function(playerName) {
     await foldButton.click();
     
     console.log(`✅ ${playerName} folded`);
+    
+    // Capture verification screenshot after fold action
+    await verifyGameState('player-fold-action', { 
+      player: playerName, 
+      action: 'fold', 
+      phase: gameState.phase 
+    });
     
   } catch (error) {
     console.error(`❌ Failed to fold for ${playerName}: ${error.message}`);
@@ -1184,6 +1207,14 @@ When('{word} checks', { timeout: 45000 }, async function(playerName) {
       });
       
       console.log(`✅ ${playerName} checked`);
+      
+      // Capture verification screenshot after check action
+      await verifyGameState('player-check-action', { 
+        player: playerName, 
+        action: 'check', 
+        phase: gameState.phase 
+      });
+      
     } else {
       throw new Error(`No check button found for ${playerName}`);
     }
@@ -1247,6 +1278,15 @@ When('{word} bets ${int}', { timeout: 45000 }, async function(playerName, amount
     });
     
     console.log(`✅ ${playerName} bet $${amount} (pot now $${expectedPotAmount})`);
+    
+    // Capture verification screenshot after bet action
+    await verifyGameState('player-bet-action', { 
+      player: playerName, 
+      action: 'bet', 
+      amount: amount,
+      phase: gameState.phase 
+    });
+    
     } else {
       throw new Error(`No bet button found for ${playerName}`);
     }
@@ -1372,6 +1412,14 @@ When('{word} goes all-in for ${int} total remaining', { timeout: 30000 }, async 
     });
     
     console.log(`✅ ${playerName} went all-in for $${amount} (pot now $${expectedPotAmount})`);
+    
+    // Capture verification screenshot after all-in action
+    await verifyGameState('player-all-in-action', { 
+      player: playerName, 
+      action: 'all-in', 
+      amount: amount,
+      phase: gameState.phase 
+    });
     
   } catch (error) {
     console.error(`❌ Failed to go all-in for ${playerName}: ${error.message}`);
