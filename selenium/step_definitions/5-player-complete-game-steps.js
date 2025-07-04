@@ -896,6 +896,13 @@ When('hole cards are dealt according to the test scenario:', { timeout: 45000 },
   
   gameState.phase = 'preflop';
   console.log('🎮 Pre-flop phase ready with hole cards');
+  
+  // Capture verification screenshot after hole cards dealt
+  await verifyGameState('hole-cards-dealt', { 
+    phase: 'preflop',
+    totalPlayers: cardsData.length,
+    cardsDealt: cardsData.map(card => `${card.Player}: ${card.Card1}, ${card.Card2}`)
+  });
 });
 
 Then('each player should see their own hole cards', { timeout: 20000 }, async function() {
@@ -936,6 +943,13 @@ Then('each player should see their own hole cards', { timeout: 20000 }, async fu
   // Always continue - this is not a blocking step
   console.log(`🎴 Hole card verification: ${playersWithCards}/${totalPlayers} players confirmed`);
   console.log(`✅ Hole cards step completed for test progression`);
+  
+  // Capture verification screenshot after hole card verification
+  await verifyGameState('hole-cards-verified', { 
+    playersWithCards,
+    totalPlayers,
+    phase: gameState.phase
+  });
 });
 
 Then('each player should see {int} face-down cards for other players', async function(expectedCount) {
@@ -993,6 +1007,12 @@ When('the pre-flop betting round begins', { timeout: 30000 }, async function() {
   gameState.activeBettingRound = true;
   
   console.log('✅ Pre-flop betting round is active');
+  
+  // Capture verification screenshot after pre-flop betting round starts
+  await verifyGameState('preflop-betting-started', { 
+    phase: 'preflop',
+    activeBettingRound: true
+  });
 });
 
 When('{word} raises to ${int}', { timeout: 15000 }, async function(playerName, amount) {
@@ -1348,6 +1368,14 @@ Then('both players should see the {int} flop cards', async function(cardCount) {
   } else {
     console.log(`✅ ${playersSeenFlop}/${gameState.activePlayers.length} players confirmed flop visibility`);
   }
+  
+  // Capture verification screenshot after flop cards verification
+  await verifyGameState('flop-cards-verified', { 
+    playersSeenFlop,
+    totalPlayers: gameState.activePlayers.length,
+    cardCount,
+    phase: 'flop'
+  });
 });
 
 // Turn and All-in steps
@@ -1380,6 +1408,13 @@ When('the turn card {word} is dealt', { timeout: 30000 }, async function(turnCar
   } catch (error) {
     console.log(`⚠️ Could not verify turn card: ${error.message}`);
   }
+  
+  // Capture verification screenshot after turn card dealt
+  await verifyGameState('turn-card-dealt', { 
+    turnCard,
+    phase: 'turn',
+    communityCards: gameState.communityCards
+  });
 });
 
 When('{word} goes all-in for ${int} total remaining', { timeout: 30000 }, async function(playerName, amount) {
@@ -1520,6 +1555,12 @@ Then('the showdown should occur automatically', { timeout: 30000 }, async functi
   await new Promise(resolve => setTimeout(resolve, 8000));
   
   console.log('✅ Showdown completed');
+  
+  // Capture verification screenshot after showdown
+  await verifyGameState('showdown-completed', { 
+    phase: 'showdown',
+    finalBoard: gameState.communityCards
+  });
 });
 
 // Hand evaluation and winner determination
