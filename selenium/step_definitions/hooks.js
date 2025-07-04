@@ -111,11 +111,9 @@ async function prepareTestEnvironment() {
     process.env.GENERATE_SOURCEMAP = 'false'
     process.env.MULTI_BROWSER_TEST = 'true'
     
-    // Clear any port conflicts more aggressively
+    // Clear only Chrome debugging ports, NEVER kill server ports
     const portClearCommands = [
-      'lsof -ti:3000,3001,9222,9223,9224,9225,9226 | xargs kill -9 2>/dev/null || true',
-      'pkill -f "node.*3000\\|node.*3001" 2>/dev/null || true',
-      'pkill -f "vite\\|react-scripts" 2>/dev/null || true'
+      'lsof -ti:9222,9223,9224,9225,9226 | xargs kill -9 2>/dev/null || true'
     ]
     
     for (const command of portClearCommands) {
