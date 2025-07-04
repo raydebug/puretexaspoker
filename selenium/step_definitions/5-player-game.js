@@ -571,10 +571,7 @@ Given('the flop betting is complete with pot at ${int}', function (int) {
   return 'pending';
 });
 
-Given('both players are committed to showdown', function () {
-  // TODO: Implement logic to verify both players are committed to showdown
-  return 'pending';
-});
+
 
 // Helper functions
 async function createPlayerBrowser(playerName, headless = true, playerIndex = 0) {
