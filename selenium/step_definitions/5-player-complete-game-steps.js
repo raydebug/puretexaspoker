@@ -891,7 +891,7 @@ When('the pre-flop betting round begins', { timeout: 30000 }, async function() {
   console.log('✅ Pre-flop betting round is active');
 });
 
-When('{word} raises to ${int}', { timeout: 10000 }, async function(playerName, amount) {
+When('{word} raises to ${int}', { timeout: 15000 }, async function(playerName, amount) {
   console.log(`🎯 ${playerName} raising to $${amount}...`);
   
   const player = players[playerName];
@@ -900,13 +900,19 @@ When('{word} raises to ${int}', { timeout: 10000 }, async function(playerName, a
   }
   
   try {
+    // Wait for the player actions to be available
+    await player.driver.wait(until.elementLocated(By.css('[data-testid="player-actions"]')), 10000);
+    
+    // Wait a bit for the UI to stabilize
+    await player.driver.sleep(2000);
+    
     // First set the bet amount
-    const amountInput = await player.driver.findElement(By.css('[data-testid="bet-amount-input"]'));
+    const amountInput = await player.driver.wait(until.elementLocated(By.css('[data-testid="bet-amount-input"]')), 5000);
     await amountInput.clear();
     await amountInput.sendKeys(amount.toString());
     
     // Find and click the raise button
-    const raiseButton = await player.driver.findElement(By.css('[data-testid="raise-button"]'));
+    const raiseButton = await player.driver.wait(until.elementLocated(By.css('[data-testid="raise-button"]')), 5000);
     await raiseButton.click();
     
     console.log(`✅ ${playerName} raised to $${amount}`);
@@ -917,7 +923,7 @@ When('{word} raises to ${int}', { timeout: 10000 }, async function(playerName, a
   }
 });
 
-When('{word} calls ${int}', { timeout: 10000 }, async function(playerName, amount) {
+When('{word} calls ${int}', { timeout: 15000 }, async function(playerName, amount) {
   console.log(`🎯 ${playerName} calling $${amount}...`);
   
   const player = players[playerName];
@@ -926,8 +932,14 @@ When('{word} calls ${int}', { timeout: 10000 }, async function(playerName, amoun
   }
   
   try {
+    // Wait for the player actions to be available
+    await player.driver.wait(until.elementLocated(By.css('[data-testid="player-actions"]')), 10000);
+    
+    // Wait a bit for the UI to stabilize
+    await player.driver.sleep(2000);
+    
     // Find and click the call button
-    const callButton = await player.driver.findElement(By.css('[data-testid="call-button"]'));
+    const callButton = await player.driver.wait(until.elementLocated(By.css('[data-testid="call-button"]')), 5000);
     await callButton.click();
     
     console.log(`✅ ${playerName} called $${amount}`);
@@ -938,7 +950,7 @@ When('{word} calls ${int}', { timeout: 10000 }, async function(playerName, amoun
   }
 });
 
-When('{word} folds', { timeout: 10000 }, async function(playerName) {
+When('{word} folds', { timeout: 15000 }, async function(playerName) {
   console.log(`🎯 ${playerName} folding...`);
   
   const player = players[playerName];
@@ -947,8 +959,14 @@ When('{word} folds', { timeout: 10000 }, async function(playerName) {
   }
   
   try {
+    // Wait for the player actions to be available
+    await player.driver.wait(until.elementLocated(By.css('[data-testid="player-actions"]')), 10000);
+    
+    // Wait a bit for the UI to stabilize
+    await player.driver.sleep(2000);
+    
     // Find and click the fold button
-    const foldButton = await player.driver.findElement(By.css('[data-testid="fold-button"]'));
+    const foldButton = await player.driver.wait(until.elementLocated(By.css('[data-testid="fold-button"]')), 5000);
     await foldButton.click();
     
     console.log(`✅ ${playerName} folded`);
