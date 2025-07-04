@@ -1,0 +1,2359 @@
+[
+  {
+    "description": "  As a poker game system\n  I want to execute a complete 5-player Texas Hold'em game\n  So that I can validate complex multi-player game mechanics with specific card dealing and betting patterns",
+    "elements": [
+      {
+        "description": "",
+        "id": "5-player-complete-game-scenario;50%-coverage---setup-+-pre-flop-+-basic-flop-(comprehensive)",
+        "keyword": "Scenario",
+        "line": 13,
+        "name": "50% Coverage - Setup + Pre-Flop + Basic Flop (Comprehensive)",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2923399957
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "both servers are force restarted and verified working correctly",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "servers are ready and verified for testing",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "I have a clean game state",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 10,
+            "name": "the card order is deterministic for testing",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 15,
+            "name": "I have 5 players ready to join a poker game",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 16,
+            "name": "all players have starting stacks of $100",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Seat",
+                      "Stack"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "1",
+                      "$100"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "2",
+                      "$100"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player3",
+                      "3",
+                      "$100"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player4",
+                      "4",
+                      "$100"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player5",
+                      "5",
+                      "$100"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "When ",
+            "line": 17,
+            "name": "players join the table in order:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Seat"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "1"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "2"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player3",
+                      "3"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player4",
+                      "4"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player5",
+                      "5"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 24,
+            "name": "all players should be seated correctly:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 33,
+            "name": "I manually start the game for table 1",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Position",
+                      "Player",
+                      "Amount"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Small Blind",
+                      "Player1",
+                      "$1"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Big Blind",
+                      "Player2",
+                      "$2"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 34,
+            "name": "the game starts with blinds structure:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 38,
+            "name": "the pot should be $3",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Card1",
+                      "Card2"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "6♠",
+                      "8♦"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "A♥",
+                      "Q♥"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player3",
+                      "J♣",
+                      "K♣"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player4",
+                      "J♠",
+                      "10♠"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player5",
+                      "Q♦",
+                      "2♦"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "When ",
+            "line": 41,
+            "name": "hole cards are dealt according to the test scenario:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 48,
+            "name": "each player should see their own hole cards",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 51,
+            "name": "the pre-flop betting round begins",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 52,
+            "name": "Player3 raises to $6",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 53,
+            "name": "Player4 calls $6",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 54,
+            "name": "Player5 folds",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 55,
+            "name": "Player1 calls $5 more",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 56,
+            "name": "Player2 re-raises to $16",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 57,
+            "name": "Player3 calls $10 more",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 58,
+            "name": "Player4 folds",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 59,
+            "name": "Player1 folds",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 60,
+            "name": "the pot should be $41",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 61,
+            "name": "2 players should remain in the hand: Player2, Player3",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 64,
+            "name": "the flop is dealt: K♣, Q♥, 10♦",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 65,
+            "name": "Player2 checks",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 66,
+            "name": "Player3 bets $20",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 67,
+            "name": "Player2 calls $20",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 68,
+            "name": "the pot should be $81",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 69,
+            "name": "both players should see the 3 flop cards",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 70,
+            "name": "Player2 should have top pair with Q♥",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 71,
+            "name": "Player3 should have top pair with K♣ and straight draw potential",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2916541249
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@comprehensive-50-percent",
+            "line": 12
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "5-player-complete-game-scenario;complete-5-player-texas-hold'em-game-with-specific-cards-and-actions",
+        "keyword": "Scenario",
+        "line": 73,
+        "name": "Complete 5-Player Texas Hold'em Game with Specific Cards and Actions",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "both servers are force restarted and verified working correctly",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "servers are ready and verified for testing",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "I have a clean game state",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 10,
+            "name": "the card order is deterministic for testing",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 74,
+            "name": "I have 5 players ready to join a poker game",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 75,
+            "name": "all players have starting stacks of $100",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Seat",
+                      "Stack"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "1",
+                      "$100"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "2",
+                      "$100"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player3",
+                      "3",
+                      "$100"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player4",
+                      "4",
+                      "$100"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player5",
+                      "5",
+                      "$100"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "When ",
+            "line": 76,
+            "name": "players join the table in order:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Seat"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "1"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "2"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player3",
+                      "3"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player4",
+                      "4"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player5",
+                      "5"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 83,
+            "name": "all players should be seated correctly:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 90,
+            "name": "I manually start the game for table 1",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Position",
+                      "Player",
+                      "Amount"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Small Blind",
+                      "Player1",
+                      "$1"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Big Blind",
+                      "Player2",
+                      "$2"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 91,
+            "name": "the game starts with blinds structure:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 95,
+            "name": "the pot should be $3",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "5-player-complete-game-scenario;specific-hole-cards-distribution",
+        "keyword": "Scenario",
+        "line": 97,
+        "name": "Specific Hole Cards Distribution",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "both servers are force restarted and verified working correctly",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "servers are ready and verified for testing",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "I have a clean game state",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 10,
+            "name": "the card order is deterministic for testing",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 98,
+            "name": "a 5-player game is in progress",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Card1",
+                      "Card2"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "6♠",
+                      "8♦"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "A♥",
+                      "Q♥"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player3",
+                      "J♣",
+                      "K♣"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player4",
+                      "J♠",
+                      "10♠"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player5",
+                      "Q♦",
+                      "2♦"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "When ",
+            "line": 99,
+            "name": "hole cards are dealt according to the test scenario:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 106,
+            "name": "each player should see their own hole cards",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 107,
+            "name": "each player should see 2 face-down cards for other players",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "5-player-complete-game-scenario;pre-flop-betting-round",
+        "keyword": "Scenario",
+        "line": 109,
+        "name": "Pre-Flop Betting Round",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "both servers are force restarted and verified working correctly",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "servers are ready and verified for testing",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "I have a clean game state",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 10,
+            "name": "the card order is deterministic for testing",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 110,
+            "name": "hole cards have been dealt to 5 players",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 111,
+            "name": "the pot is $3 from blinds",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 112,
+            "name": "the pre-flop betting round begins",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 113,
+            "name": "Player3 raises to $6",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 114,
+            "name": "Player4 calls $6",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 115,
+            "name": "Player5 folds",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 116,
+            "name": "Player1 calls $5 more (completing small blind call)",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 117,
+            "name": "Player2 re-raises to $16",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 118,
+            "name": "Player3 calls $10 more",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 119,
+            "name": "Player4 folds",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 120,
+            "name": "Player1 folds",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 121,
+            "name": "the pot should be $41",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 122,
+            "name": "2 players should remain in the hand: Player2, Player3",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 123,
+            "name": "Player4 should have $94 remaining",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 124,
+            "name": "Player1 should have $93 remaining",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 125,
+            "name": "Player5 should have $100 remaining",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "5-player-complete-game-scenario;flop-community-cards-and-betting",
+        "keyword": "Scenario",
+        "line": 127,
+        "name": "Flop Community Cards and Betting",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "both servers are force restarted and verified working correctly",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "servers are ready and verified for testing",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "I have a clean game state",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 10,
+            "name": "the card order is deterministic for testing",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 128,
+            "name": "2 players remain after pre-flop: Player2, Player3",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 129,
+            "name": "the pot is $41",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 130,
+            "name": "the flop is dealt: K♠, Q♠, 10♥",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 131,
+            "name": "Player2 checks",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 132,
+            "name": "Player3 bets $20",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 133,
+            "name": "Player2 calls $20",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 134,
+            "name": "the pot should be $81",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 135,
+            "name": "both players should see the 3 flop cards",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 136,
+            "name": "Player2 should have top pair with Q♥",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 137,
+            "name": "Player3 should have top pair with K♣ and straight draw potential",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "5-player-complete-game-scenario;turn-card-and-all-in-action",
+        "keyword": "Scenario",
+        "line": 139,
+        "name": "Turn Card and All-In Action",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "both servers are force restarted and verified working correctly",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "servers are ready and verified for testing",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "I have a clean game state",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 10,
+            "name": "the card order is deterministic for testing",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 140,
+            "name": "the flop betting is complete with pot at $81",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 141,
+            "name": "the turn card J♥ is dealt",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 142,
+            "name": "Player2 bets $30",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 143,
+            "name": "Player3 raises to $60",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 144,
+            "name": "Player2 goes all-in for $54 total remaining",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 145,
+            "name": "Player3 calls the remaining $24",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 146,
+            "name": "the pot should be $195",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 147,
+            "name": "Player2 should be all-in",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 148,
+            "name": "Player3 should have chips remaining",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 149,
+            "name": "Player2 should have two pair potential",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 150,
+            "name": "Player3 should have two pair: K♣ and J♠",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "5-player-complete-game-scenario;river-card-and-showdown",
+        "keyword": "Scenario",
+        "line": 152,
+        "name": "River Card and Showdown",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "both servers are force restarted and verified working correctly",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "servers are ready and verified for testing",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "I have a clean game state",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 10,
+            "name": "the card order is deterministic for testing",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 153,
+            "name": "both players are committed to showdown",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 154,
+            "name": "the pot is $195",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 155,
+            "name": "the river card 8♥ is dealt",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 156,
+            "name": "the final board should be: K♠, Q♠, 10♥, J♥, 8♥",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 157,
+            "name": "the showdown should occur automatically",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "5-player-complete-game-scenario;hand-evaluation-and-winner-determination",
+        "keyword": "Scenario",
+        "line": 159,
+        "name": "Hand Evaluation and Winner Determination",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "both servers are force restarted and verified working correctly",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "servers are ready and verified for testing",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "I have a clean game state",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 10,
+            "name": "the card order is deterministic for testing",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 160,
+            "name": "the showdown occurs with final board: K♠, Q♠, 10♥, J♥, 8♥",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Hole Cards",
+                      "Best Hand",
+                      "Hand Type"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "A♥, Q♥",
+                      "A♥, Q♥, J♥, 10♥, 8♥ (Flush)",
+                      "Ace-high flush"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player3",
+                      "J♣, K♣",
+                      "K♣, K♠, J♣, J♥, Q♠ (Two Pair)",
+                      "Kings over Jacks"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "When ",
+            "line": 161,
+            "name": "hands are evaluated:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 165,
+            "name": "Player2 should win with \"Ace-high flush\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 166,
+            "name": "Player2 should receive the pot of $195",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 167,
+            "name": "the action history should show the complete game sequence",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "5-player-complete-game-scenario;final-stack-verification",
+        "keyword": "Scenario",
+        "line": 169,
+        "name": "Final Stack Verification",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "both servers are force restarted and verified working correctly",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "servers are ready and verified for testing",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "I have a clean game state",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 10,
+            "name": "the card order is deterministic for testing",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 170,
+            "name": "the game is complete",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 171,
+            "name": "final stacks are calculated",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Final Stack",
+                      "Net Change"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "$93",
+                      "-$7"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "$195",
+                      "+$95"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player3",
+                      "$0",
+                      "-$100"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player4",
+                      "$94",
+                      "-$6"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player5",
+                      "$100",
+                      "$0"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 172,
+            "name": "the stack distribution should be:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 179,
+            "name": "the total chips should remain $500",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 180,
+            "name": "the game state should be ready for a new hand",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "5-player-complete-game-scenario;action-history-completeness",
+        "keyword": "Scenario",
+        "line": 182,
+        "name": "Action History Completeness",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "both servers are force restarted and verified working correctly",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "servers are ready and verified for testing",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "I have a clean game state",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 10,
+            "name": "the card order is deterministic for testing",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 183,
+            "name": "the 5-player game scenario is complete",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Phase",
+                      "Player",
+                      "Action",
+                      "Amount",
+                      "Pot After"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Blinds",
+                      "Player1",
+                      "Small Blind",
+                      "$1",
+                      "$1"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Blinds",
+                      "Player2",
+                      "Big Blind",
+                      "$2",
+                      "$3"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Pre-Flop",
+                      "Player3",
+                      "Raise",
+                      "$6",
+                      "$9"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Pre-Flop",
+                      "Player4",
+                      "Call",
+                      "$6",
+                      "$15"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Pre-Flop",
+                      "Player5",
+                      "Fold",
+                      "$0",
+                      "$15"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Pre-Flop",
+                      "Player1",
+                      "Call",
+                      "$5",
+                      "$20"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Pre-Flop",
+                      "Player2",
+                      "Re-raise",
+                      "$14",
+                      "$34"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Pre-Flop",
+                      "Player3",
+                      "Call",
+                      "$10",
+                      "$41"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Pre-Flop",
+                      "Player4",
+                      "Fold",
+                      "$0",
+                      "$41"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Pre-Flop",
+                      "Player1",
+                      "Fold",
+                      "$0",
+                      "$41"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Flop",
+                      "Player2",
+                      "Check",
+                      "$0",
+                      "$41"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Flop",
+                      "Player3",
+                      "Bet",
+                      "$20",
+                      "$61"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Flop",
+                      "Player2",
+                      "Call",
+                      "$20",
+                      "$81"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Turn",
+                      "Player2",
+                      "Bet",
+                      "$30",
+                      "$111"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Turn",
+                      "Player3",
+                      "Raise",
+                      "$60",
+                      "$171"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Turn",
+                      "Player2",
+                      "All-in",
+                      "$24",
+                      "$195"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Turn",
+                      "Player3",
+                      "Call",
+                      "$0",
+                      "$195"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 184,
+            "name": "the action history should contain all actions in sequence:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 203,
+            "name": "each action should include player name, action type, amount, and resulting pot size",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "5-player-complete-game-scenario;game-state-transitions",
+        "keyword": "Scenario",
+        "line": 205,
+        "name": "Game State Transitions",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "both servers are force restarted and verified working correctly",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "servers are ready and verified for testing",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "I have a clean game state",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 10,
+            "name": "the card order is deterministic for testing",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 206,
+            "name": "a 5-player scenario is being executed",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "State",
+                      "Active Players",
+                      "Pot Amount",
+                      "Community Cards"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Initial",
+                      "5",
+                      "$0",
+                      "0"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Blinds Posted",
+                      "5",
+                      "$3",
+                      "0"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Pre-Flop",
+                      "5→2",
+                      "$41",
+                      "0"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Flop",
+                      "2",
+                      "$81",
+                      "3"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Turn",
+                      "2",
+                      "$195",
+                      "4"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "River",
+                      "2",
+                      "$195",
+                      "5"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Showdown",
+                      "0",
+                      "$0",
+                      "5"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 207,
+            "name": "the game should transition through states correctly:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 216,
+            "name": "each transition should be properly recorded and validated",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      }
+    ],
+    "id": "5-player-complete-game-scenario",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "5-Player Complete Game Scenario",
+    "tags": [],
+    "uri": "selenium/features/5-player-complete-game-scenario.feature"
+  }
+]

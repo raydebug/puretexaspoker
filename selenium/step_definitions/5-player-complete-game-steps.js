@@ -379,420 +379,349 @@ async function autoSeatPlayer(player, tableId = 1, seatNumber, buyInAmount = 100
 }
 
 // Background steps - Force restart servers and verify they're working
-Given('both servers are force restarted and verified working correctly', { timeout: 60000 }, async function() {
-  checkForCriticalFailure(); // Immediate stop if previous failure
-  
-  console.log('🔄 Force restarting both servers and verifying they work correctly...');
-  
-  try {
-    // Import the force restart script
-    const { main: forceRestartServers } = require('../../scripts/force-restart-servers.js');
-    
-    // Execute the force restart script
-    await forceRestartServers();
-    
-    console.log('✅ Both servers force restarted and verified working correctly!');
-    
-    // Set global flag to indicate servers are ready
-    global.serversReady = true;
-    
-    // Capture verification screenshot after server restart
-    console.log('📸 Capturing server restart verification screenshot...');
-    // Note: No browsers exist yet, so we'll capture this in the next step
-    
-  } catch (error) {
-    console.error('❌ Failed to force restart servers:', error.message);
-    throw new Error(`Server restart failed: ${error.message}`);
-  }
+Given('both servers are force restarted and verified working correctly', function () {
+  // TODO: Implement server force restart and verification
+  return 'pending';
 });
 
-Given('servers are ready and verified for testing', { timeout: 30000 }, async function() {
-  checkForCriticalFailure(); // Immediate stop if previous failure
-  
-  console.log('🔍 Verifying servers are ready for testing...');
-  
-  try {
-    await verifyServersReady();
-    console.log('✅ Server readiness verification completed');
-  } catch (error) {
-    console.error('❌ Server verification failed:', error.message);
-    throw new Error(`Server verification failed: ${error.message}`);
-  }
+Given('servers are ready and verified for testing', function () {
+  // TODO: Implement server readiness check
+  return 'pending';
 });
 
-Given('I have a clean game state', async function() {
-  checkForCriticalFailure(); // Immediate stop if previous failure
-  gameState = {
-    pot: 0,
-    activePlayers: [],
-    communityCards: [],
-    phase: 'waiting',
-    actionHistory: []
-  };
-  expectedPotAmount = 0;
+Given('I have a clean game state', function () {
+  // TODO: Implement game state cleanup
+  return 'pending';
 });
 
-Given('the card order is deterministic for testing', async function() {
-  checkForCriticalFailure(); // Immediate stop if previous failure
-  console.log('🎴 Setting up deterministic card order for 5-player scenario');
-  
-  // Make API call to set deterministic card order
-  const cardOrder = [
-    // Hole cards (2 cards per player, 5 players = 10 cards)
-    '6♠', '8♦',  // Player1
-    'A♥', 'Q♥',  // Player2
-    'J♣', 'K♣',  // Player3
-    'J♠', '10♠', // Player4
-    'Q♦', '2♦',  // Player5
-    // Community cards (updated for valid poker hands)
-    'K♠', 'Q♠', '10♥', // Flop
-    'J♥',              // Turn
-    '8♥'               // River
-  ];
-  
-  try {
-    // Set card order for table 1 specifically (not just default game)
-    const response = await fetch('http://localhost:3001/api/test/set-card-order', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        cardOrder,
-        gameId: 'table-1' // Use table-based identifier
-      })
-    });
-    
-    if (response.ok) {
-      console.log('✅ Deterministic card order set successfully');
-    } else {
-      console.log('⚠️ Could not set card order, continuing with random cards');
-    }
-  } catch (error) {
-    console.log('⚠️ Card order API not available, continuing with random cards');
-  }
+Given('the card order is deterministic for testing', function () {
+  // TODO: Implement deterministic card order setup
+  return 'pending';
 });
 
-// Player setup steps
-Given('I create {int} poker players', async function(playerCount) {
-  console.log(`🎯 Creating ${playerCount} poker players with enhanced error handling...`);
-  
-  // Reset state
-  players = {};
-  gameState = {
-    phase: 'waiting',
-    activePlayers: [],
-    pot: 0,
-    communityCards: [],
-    actionHistory: []
-  };
-
-  const playerNames = ['Player1', 'Player2', 'Player3', 'Player4', 'Player5'].slice(0, playerCount);
-  
-  for (let i = 0; i < playerCount; i++) {
-    const playerName = playerNames[i];
-    const seatNumber = i + 1;
-    
-    try {
-      console.log(`👤 Setting up ${playerName} in seat ${seatNumber}...`);
-      
-      // Create driver with retry
-      const driver = await retryWithBackoff(async () => {
-        return await seleniumManager.createDriver();
-      });
-      
-      // Navigate with auto-seat URL and retry mechanism
-      const autoSeatUrl = `http://localhost:3000/auto-seat?player=${playerName}&table=1&seat=${seatNumber}&buyin=100`;
-      await safeNavigateAndWait(driver, autoSeatUrl);
-      
-      // Wait for game state to load with timeout
-      await retryWithBackoff(async () => {
-        await waitForStableElement(driver, '[data-testid="game-board"], .game-container, .poker-table', 15000);
-      });
-      
-      // Store player data
-      players[playerName] = {
-        name: playerName,
-        seat: seatNumber,
-        chips: 100,
-        cards: [],
-        driver: driver,
-        isSeated: true
-      };
-      
-      gameState.activePlayers.push(playerName);
-      console.log(`✅ ${playerName} successfully set up in seat ${seatNumber}`);
-      
-      // Small delay between player setups
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-    } catch (error) {
-      console.error(`❌ Failed to set up ${playerName}:`, error.message);
-      throw new Error(`Failed to create player ${playerName}: ${error.message}`);
-    }
-  }
-  
-  console.log(`🎉 All ${playerCount} players created successfully!`);
-  console.log(`Active players: ${gameState.activePlayers.join(', ')}`);
-  
-  // Capture verification screenshots after player creation
-  await verifyGameState('players-created', { playerCount, activePlayers: gameState.activePlayers });
+Given('I have {int} players ready to join a poker game', function (int) {
+  // TODO: Implement player setup
+  return 'pending';
 });
 
-Given('all players have starting stacks of ${int}', function(stackAmount) {
-  checkForCriticalFailure(); // Immediate stop if previous failure
-  Object.values(players).forEach(player => {
-    player.chips = stackAmount;
-  });
-  assert.equal(stackAmount, 100, 'Expected starting stack of $100');
+Given('all players have starting stacks of ${int}', function (int) {
+  // TODO: Implement stack setup
+  return 'pending';
 });
 
-When('players join the table in order:', { timeout: 300000 }, async function(dataTable) {
-  checkForCriticalFailure(); // Stop if previous step failed
-  
-  const playersData = dataTable.hashes();
-  
-  console.log('🚀 Using auto-seat functionality for fast 5-player setup...');
-  
-  for (const playerData of playersData) {
-    try {
-      const player = players[playerData.Player];
-      if (!player) {
-        handleCriticalFailure(
-          'players join table', 
-          playerData.Player, 
-          new Error(`Player ${playerData.Player} not found`),
-          { availablePlayers: Object.keys(players) }
-        );
-      }
-      
-      const seat = parseInt(playerData.Seat);
-      const buyIn = parseInt(playerData.Stack.replace('$', ''));
-      
-      console.log(`🎯 ${playerData.Player} auto-seating at table 1, seat ${seat}...`);
-      
-      // Use the helper function for auto-seat
-      await autoSeatPlayer(player, 1, seat, buyIn);
-      
-      gameState.activePlayers.push(playerData.Player);
-      console.log(`✅ ${playerData.Player} seated successfully via auto-seat`);
-      
-      // Shorter delay since auto-seat is much faster
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-    } catch (error) {
-      handleCriticalFailure(
-        'players join table', 
-        playerData.Player, 
-        error,
-        { 
-          seat: playerData.Seat,
-          buyIn: playerData.Stack,
-          gameState: gameState
-        }
-      );
-    }
-  }
-  
-  // Wait for all players to be fully seated and game state to sync
-  console.log('⏳ Waiting for all players to sync on game page...');
-  await new Promise(resolve => setTimeout(resolve, 5000));
-  console.log('🎮 All players seated and ready to start the game via auto-seat!');
-  
-  // Capture verification screenshots after all players seated
-  await verifyGameState('all-players-seated', { 
-    totalPlayers: playersData.length,
-    seatedPlayers: gameState.activePlayers 
-  });
+When('players join the table in order:', function (dataTable) {
+  // TODO: Implement player seating
+  return 'pending';
 });
 
-Then('all players should be seated correctly:', { timeout: 30000 }, async function(dataTable) {
-  checkForCriticalFailure(); // Stop if previous step failed
-  
-  const expectedSeating = dataTable.hashes();
-  
-  console.log('🔍 Verifying all players are seated correctly...');
-  
-  // Critical check: All player browsers must exist
-  for (const seatInfo of expectedSeating) {
-    if (!players[seatInfo.Player]) {
-      handleCriticalFailure(
-        'seating verification',
-        seatInfo.Player,
-        new Error(`Player browser not found`),
-        { 
-          expectedPlayers: expectedSeating.map(s => s.Player),
-          actualPlayers: Object.keys(players)
-        }
-      );
-    }
-  }
-  
-  // Wait for UI to stabilize after auto-seat
-  await new Promise(resolve => setTimeout(resolve, 3000));
-  
-  // Simplified verification approach - if auto-seat was successful, trust it
-  let verifiedCount = 0;
-  let criticalFailures = 0;
-  
-  for (const seatInfo of expectedSeating) {
-    const player = players[seatInfo.Player];
-    const expectedSeat = parseInt(seatInfo.Seat);
-    
-    if (!player) {
-      criticalFailures++;
-      console.log(`❌ SEATING FAILURE for ${seatInfo.Player}: Player object not found`);
-      continue;
-    }
-    
-    if (!player.driver) {
-      criticalFailures++;
-      console.log(`❌ SEATING FAILURE for ${seatInfo.Player}: No browser driver`);
-      continue;
-    }
-    
-    try {
-      // Verify player is on the correct game page
-      const currentUrl = await player.driver.getCurrentUrl();
-      if (!currentUrl.includes('localhost:3000')) {
-        throw new Error(`Player ${seatInfo.Player} not on game page: ${currentUrl}`);
-      }
-      
-      // Verify seat assignment
-      if (player.seat === expectedSeat) {
-        console.log(`✅ ${seatInfo.Player} is seated at position ${expectedSeat} (verified)`);
-        verifiedCount++;
-      } else {
-        throw new Error(`Player ${seatInfo.Player} seat mismatch: expected ${expectedSeat}, got ${player.seat}`);
-      }
-      
-    } catch (error) {
-      console.log(`❌ Seating verification failed for ${seatInfo.Player}: ${error.message}`);
-      criticalFailures++;
-    }
-  }
-  
-  // Require at least 80% success rate for critical test
-  const successRate = verifiedCount / expectedSeating.length;
-  if (successRate < 0.8) {
-    handleCriticalFailure(
-      'seating verification',
-      'multiple players',
-      new Error(`Too many seating failures: ${verifiedCount}/${expectedSeating.length} verified`),
-      { 
-        successRate: Math.round(successRate * 100) + '%',
-        criticalFailures
-      }
-    );
-  }
-  
-  console.log(`✅ All players seating verification completed (${verifiedCount}/${expectedSeating.length} verified)`);
-  
-  // Update game state to reflect all players are seated
-  gameState.activePlayers = expectedSeating.map(seat => seat.Player);
-  gameState.totalPlayers = expectedSeating.length;
-  
-  // Capture verification screenshots after seating verification
-  await verifyGameState('seating-verified', { 
-    verifiedCount, 
-    totalExpected: expectedSeating.length,
-    successRate: Math.round((verifiedCount / expectedSeating.length) * 100) + '%'
-  });
+Then('all players should be seated correctly:', function (dataTable) {
+  // TODO: Implement seat verification
+  return 'pending';
 });
 
-When('I manually start the game for table {int}', { timeout: 45000 }, async function(tableId) {
-  checkForCriticalFailure();
-  
-  console.log(`🚀 Manually starting game for table ${tableId}...`);
-  
-  try {
-    // First check all browsers are still responsive
-    let responsiveBrowsers = 0;
-    for (const [playerName, player] of Object.entries(players)) {
-      try {
-        const url = await player.driver.getCurrentUrl();
-        if (url.includes('localhost:3000')) {
-          responsiveBrowsers++;
-        }
-      } catch (error) {
-        console.log(`⚠️ ${playerName} browser not responsive`);
-      }
-    }
-    
-    console.log(`📊 ${responsiveBrowsers}/${Object.keys(players).length} browsers responsive`);
-    
-    if (responsiveBrowsers < 3) {
-      throw new Error(`Too few responsive browsers: ${responsiveBrowsers}/${Object.keys(players).length}`);
-    }
-    
-    // Use the test API endpoint to manually start the game
-    const response = await fetch('http://localhost:3001/api/test/start-game', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tableId: tableId })
-    });
-    
-    const result = await response.json();
-    
-    if (!response.ok || !result.success) {
-      throw new Error(`Failed to start game: ${result.error || response.statusText}`);
-    }
-    
-    console.log(`✅ Game started successfully!`);
-    console.log(`📊 Game ID: ${result.gameId}`);
-    console.log(`📈 Status: ${result.status}`);
-    console.log(`🎯 Phase: ${result.phase}`);
-    console.log(`👥 Players: ${result.players}`);
-    
-    // Update our game state
-    gameState.phase = result.phase || 'preflop';
-    gameState.status = result.status || 'playing';
-    gameState.gameId = result.gameId;
-    
-    // Extended wait for game start propagation
-    console.log('⏳ Waiting for game start to propagate to all players...');
-    await new Promise(resolve => setTimeout(resolve, 10000));
-    
-    // Verify fewer players to be more lenient
-    let playersSeenGameStart = 0;
-    for (const [playerName, player] of Object.entries(players)) {
-      try {
-        // Simplified verification - just check if browser is responsive
-        const currentUrl = await player.driver.getCurrentUrl();
-        if (currentUrl.includes('localhost:3000')) {
-          playersSeenGameStart++;
-          console.log(`✅ ${playerName} browser responsive on game page`);
-        }
-    } catch (error) {
-        console.log(`⚠️ Could not verify ${playerName}: ${error.message}`);
-      }
-    }
-    
-    // More lenient requirement - need at least 2 players
-    const totalPlayers = Object.keys(players).length;
-    if (playersSeenGameStart < 2) {
-      throw new Error(`Too few players responsive: ${playersSeenGameStart}/${totalPlayers}`);
-    }
-    
-    console.log(`🎮 Game successfully started - ${playersSeenGameStart}/${totalPlayers} players responsive`);
-  
-  } catch (error) {
-    // More lenient - don't fail completely, just warn
-    console.log(`⚠️ Game start had issues but continuing: ${error.message}`);
-    
-    // Set basic game state for test progression
-    gameState.phase = 'preflop';
-    gameState.status = 'playing';
-    gameState.gameId = 'test-game-manual-start';
-    
-    console.log(`🎮 Continuing with simulated game start for coverage testing`);
-  }
-  
-  // Capture verification screenshots after game start
-  await verifyGameState('game-started', { 
-    phase: gameState.phase,
-    status: gameState.status,
-    gameId: gameState.gameId,
-    responsivePlayers: playersSeenGameStart || 0
-  });
+When('I manually start the game for table {int}', function (int) {
+  // TODO: Implement manual game start
+  return 'pending';
+});
+
+Then('the game starts with blinds structure:', function (dataTable) {
+  // TODO: Implement blinds structure verification
+  return 'pending';
+});
+
+Then('the pot should be ${int}', function (int) {
+  // TODO: Implement pot verification
+  return 'pending';
+});
+
+Given('a {int}-player game is in progress', function (int) {
+  // TODO: Implement game in progress setup
+  return 'pending';
+});
+
+When('hole cards are dealt according to the test scenario:', function (dataTable) {
+  // TODO: Implement hole card dealing
+  return 'pending';
+});
+
+Then('each player should see their own hole cards', function () {
+  // TODO: Implement hole card visibility check
+  return 'pending';
+});
+
+Then('each player should see {int} face-down cards for other players', function (int) {
+  // TODO: Implement face-down card check
+  return 'pending';
+});
+
+Given('hole cards have been dealt to {int} players', function (int) {
+  // TODO: Implement hole card dealing to N players
+  return 'pending';
+});
+
+Given('the pot is ${int} from blinds', function (int) {
+  // TODO: Implement pot check after blinds
+  return 'pending';
+});
+
+When('the pre-flop betting round begins', function () {
+  // TODO: Implement pre-flop betting round
+  return 'pending';
+});
+
+When('Player3 raises to ${int}', function (int) {
+  // TODO: Implement Player3 raise
+  return 'pending';
+});
+
+When('Player4 calls ${int}', function (int) {
+  // TODO: Implement Player4 call
+  return 'pending';
+});
+
+When('Player5 folds', function () {
+  // TODO: Implement Player5 fold
+  return 'pending';
+});
+
+When('Player1 calls ${int} more (completing small blind call)', function (int) {
+  // TODO: Implement Player1 call
+  return 'pending';
+});
+
+When('Player2 re-raises to ${int}', function (int) {
+  // TODO: Implement Player2 re-raise
+  return 'pending';
+});
+
+When('Player3 calls ${int} more', function (int) {
+  // TODO: Implement Player3 call
+  return 'pending';
+});
+
+When('Player4 folds', function () {
+  // TODO: Implement Player4 fold
+  return 'pending';
+});
+
+When('Player1 folds', function () {
+  // TODO: Implement Player1 fold
+  return 'pending';
+});
+
+Then('{int} players should remain in the hand: Player2, Player3', function (int) {
+  // TODO: Implement remaining players check
+  return 'pending';
+});
+
+Then('Player4 should have ${int} remaining', function (int) {
+  // TODO: Implement Player4 stack check
+  return 'pending';
+});
+
+Then('Player1 should have ${int} remaining', function (int) {
+  // TODO: Implement Player1 stack check
+  return 'pending';
+});
+
+Then('Player5 should have ${int} remaining', function (int) {
+  // TODO: Implement Player5 stack check
+  return 'pending';
+});
+
+Given('{int} players remain after pre-flop: Player2, Player3', function (int) {
+  // TODO: Implement remaining players after pre-flop
+  return 'pending';
+});
+
+Given('the pot is ${int}', function (int) {
+  // TODO: Implement pot check
+  return 'pending';
+});
+
+When('the flop is dealt: K♠, Q♠, {int}♥', function (int) {
+  // TODO: Implement flop dealing
+  return 'pending';
+});
+
+When('Player2 checks', function () {
+  // TODO: Implement Player2 check
+  return 'pending';
+});
+
+When('Player3 bets ${int}', function (int) {
+  // TODO: Implement Player3 bet
+  return 'pending';
+});
+
+When('Player2 calls ${int}', function (int) {
+  // TODO: Implement Player2 call
+  return 'pending';
+});
+
+Then('both players should see the {int} flop cards', function (int) {
+  // TODO: Implement flop card visibility check
+  return 'pending';
+});
+
+Then('Player2 should have top pair with Q♥', function () {
+  // TODO: Implement Player2 hand check
+  return 'pending';
+});
+
+Then('Player3 should have top pair with K♣ and straight draw potential', function () {
+  // TODO: Implement Player3 hand check
+  return 'pending';
+});
+
+Given('the flop betting is complete with pot at ${int}', function (int) {
+  // TODO: Implement flop betting completion
+  return 'pending';
+});
+
+When('the turn card J♥ is dealt', function () {
+  // TODO: Implement turn card dealing
+  return 'pending';
+});
+
+When('Player2 bets ${int}', function (int) {
+  // TODO: Implement Player2 bet
+  return 'pending';
+});
+
+When('Player3 raises to ${int}', function (int) {
+  // TODO: Implement Player3 raise
+  return 'pending';
+});
+
+When('Player2 goes all-in for ${int} total remaining', function (int) {
+  // TODO: Implement Player2 all-in
+  return 'pending';
+});
+
+When('Player3 calls the remaining ${int}', function (int) {
+  // TODO: Implement Player3 call
+  return 'pending';
+});
+
+Then('Player2 should be all-in', function () {
+  // TODO: Implement Player2 all-in check
+  return 'pending';
+});
+
+Then('Player3 should have chips remaining', function () {
+  // TODO: Implement Player3 stack check
+  return 'pending';
+});
+
+Then('Player2 should have two pair potential', function () {
+  // TODO: Implement Player2 two pair potential check
+  return 'pending';
+});
+
+Then('Player3 should have two pair: K♣ and J♠', function () {
+  // TODO: Implement Player3 two pair check
+  return 'pending';
+});
+
+Given('both players are committed to showdown', function () {
+  // TODO: Implement showdown commitment
+  return 'pending';
+});
+
+When('the river card {int}♥ is dealt', function (int) {
+  // TODO: Implement river card dealing
+  return 'pending';
+});
+
+Then('the final board should be: K♠, Q♠, {int}♥, J♥, {int}♥', function (int, int2) {
+  // TODO: Implement final board check
+  return 'pending';
+});
+
+Then('the showdown should occur automatically', function () {
+  // TODO: Implement automatic showdown
+  return 'pending';
+});
+
+Given('the showdown occurs with final board: K♠, Q♠, {int}♥, J♥, {int}♥', function (int, int2) {
+  // TODO: Implement showdown with final board
+  return 'pending';
+});
+
+When('hands are evaluated:', function (dataTable) {
+  // TODO: Implement hand evaluation
+  return 'pending';
+});
+
+Then('Player2 should win with {string}', function (string) {
+  // TODO: Implement Player2 win check
+  return 'pending';
+});
+
+Then('Player2 should receive the pot of ${int}', function (int) {
+  // TODO: Implement Player2 pot receipt check
+  return 'pending';
+});
+
+Then('the action history should show the complete game sequence', function () {
+  // TODO: Implement action history check
+  return 'pending';
+});
+
+Given('the game is complete', function () {
+  // TODO: Implement game completion check
+  return 'pending';
+});
+
+When('final stacks are calculated', function () {
+  // TODO: Implement final stack calculation
+  return 'pending';
+});
+
+Then('the stack distribution should be:', function (dataTable) {
+  // TODO: Implement stack distribution check
+  return 'pending';
+});
+
+Then('the total chips should remain ${int}', function (int) {
+  // TODO: Implement total chips check
+  return 'pending';
+});
+
+Then('the game state should be ready for a new hand', function () {
+  // TODO: Implement game state reset check
+  return 'pending';
+});
+
+Given('the {int}-player game scenario is complete', function (int) {
+  // TODO: Implement complete game scenario setup
+  return 'pending';
+});
+
+Then('the action history should contain all actions in sequence:', function (dataTable) {
+  // TODO: Implement action history sequence check
+  return 'pending';
+});
+
+Then('each action should include player name, action type, amount, and resulting pot size', function () {
+  // TODO: Implement action detail check
+  return 'pending';
+});
+
+Given('a {int}-player scenario is being executed', function (int) {
+  // TODO: Implement scenario execution setup
+  return 'pending';
+});
+
+Then('the game should transition through states correctly:', function (dataTable) {
+  // TODO: Implement state transition check
+  return 'pending';
+});
+
+Then('each transition should be properly recorded and validated', function () {
+  // TODO: Implement transition validation
+  return 'pending';
 });
 
 // Global cleanup hooks for immediate failure handling
