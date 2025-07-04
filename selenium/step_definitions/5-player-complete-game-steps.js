@@ -399,29 +399,205 @@ Given('the card order is deterministic for testing', function () {
   return 'pending';
 });
 
-Given('I have {int} players ready to join a poker game', function (int) {
-  // TODO: Implement player setup
-  return 'pending';
+Given('I have {int} players ready to join a poker game', async function (numberOfPlayers) {
+  checkForCriticalFailure();
+  console.log(`🎯 Setting up ${numberOfPlayers} players for poker game`);
+  
+  try {
+    // Ensure we start fresh
+    players = {};
+    gameState = {
+      phase: 'waiting',
+      activePlayers: [],
+      pot: 0,
+      communityCards: [],
+      actionHistory: []
+    };
+    
+    // Create browser instances for each player
+    const isHeadless = process.env.HEADLESS !== 'false';
+    
+    for (let i = 1; i <= numberOfPlayers; i++) {
+      const playerName = `Player${i}`;
+      console.log(`🔧 Creating browser for ${playerName}...`);
+      
+      const player = await createPlayerBrowser(playerName, isHeadless, i - 1);
+      players[playerName] = player;
+      
+      console.log(`✅ ${playerName} browser ready`);
+    }
+    
+    console.log(`🎉 All ${numberOfPlayers} players ready: ${Object.keys(players).join(', ')}`);
+    
+    // Take initial screenshot
+    await captureScreenshot(this, `setup-${numberOfPlayers}-players`);
+    
+  } catch (error) {
+    handleCriticalFailure('Player Setup', 'system', error, {
+      numberOfPlayers,
+      playersCreated: Object.keys(players)
+    });
+  }
 });
 
-Given('all players have starting stacks of ${int}', function (int) {
-  // TODO: Implement stack setup
-  return 'pending';
+Given('all players have starting stacks of ${int}', async function (stackSize) {
+  checkForCriticalFailure();
+  console.log(`💰 Setting starting stacks to $${stackSize} for all players`);
+  
+  try {
+    // Update player objects with starting chip count
+    for (const [playerName, player] of Object.entries(players)) {
+      player.chips = stackSize;
+      console.log(`💵 ${playerName}: $${stackSize} chips`);
+    }
+    
+    console.log(`✅ All players have $${stackSize} starting stacks`);
+    
+  } catch (error) {
+    handleCriticalFailure('Stack Setup', 'system', error, { stackSize });
+  }
 });
 
-When('players join the table in order:', function (dataTable) {
-  // TODO: Implement player seating
-  return 'pending';
+When('players join the table in order:', async function (dataTable) {
+  checkForCriticalFailure();
+  const rows = dataTable.hashes();
+  console.log(`🪑 Seating players at the table...`);
+  
+  try {
+    // Verify servers are ready before seating
+    await verifyServersReady();
+    
+    for (const row of rows) {
+      const playerName = row.Player;
+      const seatNumber = parseInt(row.Seat);
+      const buyIn = parseInt(row['Buy-in'].replace('$', ''));
+      
+      if (!players[playerName]) {
+        throw new Error(`Player ${playerName} not found in players object`);
+      }
+      
+      console.log(`🎯 Seating ${playerName} in seat ${seatNumber} with $${buyIn} buy-in`);
+      
+      // Use auto-seat URL to bypass lobby completely
+      await autoSeatPlayer(players[playerName], 1, seatNumber, buyIn);
+      players[playerName].seat = seatNumber;
+      players[playerName].chips = buyIn;
+      gameState.activePlayers.push(playerName);
+      
+      console.log(`✅ ${playerName} seated in seat ${seatNumber}`);
+      
+      // Take screenshot after each player seats
+      await captureScreenshot(this, `seat-${playerName}-seat${seatNumber}`);
+      
+      // Small delay between seating to ensure stability
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    
+    console.log(`🎉 All players seated: ${gameState.activePlayers.join(', ')}`);
+    
+  } catch (error) {
+    handleCriticalFailure('Player Seating', 'system', error, {
+      expectedSeating: rows,
+      actualActivePlayers: gameState.activePlayers
+    });
+  }
 });
 
-Then('all players should be seated correctly:', function (dataTable) {
-  // TODO: Implement seat verification
-  return 'pending';
+Then('all players should be seated correctly:', async function (dataTable) {
+  checkForCriticalFailure();
+  const rows = dataTable.hashes();
+  console.log(`🔍 Verifying all players are seated correctly...`);
+  
+  try {
+    for (const row of rows) {
+      const playerName = row.Player;
+      const expectedSeat = parseInt(row.Seat);
+      const expectedBuyIn = parseInt(row['Buy-in'].replace('$', ''));
+      
+      const player = players[playerName];
+      if (!player) {
+        throw new Error(`Player ${playerName} not found`);
+      }
+      
+      // Verify seat assignment
+      if (player.seat !== expectedSeat) {
+        throw new Error(`${playerName} expected in seat ${expectedSeat}, but found in seat ${player.seat}`);
+      }
+      
+      // Verify chips
+      if (player.chips !== expectedBuyIn) {
+        throw new Error(`${playerName} expected $${expectedBuyIn} chips, but has $${player.chips}`);
+      }
+      
+      // Verify player is visible in the UI at correct seat
+      await retryWithBackoff(async () => {
+        const seatElement = await waitForStableElement(
+          player.driver, 
+          `[data-testid="seat-${expectedSeat}"], .seat-${expectedSeat}, .player-seat-${expectedSeat}`,
+          5000
+        );
+        
+        const seatText = await seatElement.getText();
+        if (!seatText.includes(playerName)) {
+          throw new Error(`${playerName} not visible in seat ${expectedSeat} UI`);
+        }
+      });
+      
+      console.log(`✅ ${playerName} correctly seated: Seat ${expectedSeat}, $${expectedBuyIn}`);
+    }
+    
+    console.log(`🎉 All players seated correctly!`);
+    await captureScreenshot(this, 'all-players-seated-verification');
+    
+  } catch (error) {
+    handleCriticalFailure('Seat Verification', 'system', error, {
+      expectedSeating: rows,
+      actualPlayers: Object.keys(players).map(name => ({
+        name,
+        seat: players[name].seat,
+        chips: players[name].chips
+      }))
+    });
+  }
 });
 
-When('I manually start the game for table {int}', function (int) {
-  // TODO: Implement manual game start
-  return 'pending';
+When('I manually start the game for table {int}', async function (tableId) {
+  checkForCriticalFailure();
+  console.log(`🚀 Manually starting game for table ${tableId}...`);
+  
+  try {
+    // Use the test API to start the game
+    const response = await fetch(`http://localhost:3001/api/test/start-game`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        tableId: tableId
+      })
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to start game: ${response.status} - ${errorText}`);
+    }
+    
+    const result = await response.json();
+    console.log(`✅ Game started successfully:`, result);
+    
+    gameState.phase = 'playing';
+    
+    // Wait for game to initialize on all clients
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    // Take screenshot of game start
+    await captureScreenshot(this, `game-started-table${tableId}`);
+    
+    console.log(`🎉 Game is now active on table ${tableId}`);
+    
+  } catch (error) {
+    handleCriticalFailure('Game Start', 'system', error, { tableId });
+  }
 });
 
 Then('the game starts with blinds structure:', function (dataTable) {
@@ -429,9 +605,58 @@ Then('the game starts with blinds structure:', function (dataTable) {
   return 'pending';
 });
 
-Then('the pot should be ${int}', function (int) {
-  // TODO: Implement pot verification
-  return 'pending';
+Then('the pot should be ${int}', async function (expectedPot) {
+  checkForCriticalFailure();
+  console.log(`💰 Verifying pot is $${expectedPot}...`);
+  
+  try {
+    expectedPotAmount = expectedPot;
+    gameState.pot = expectedPot;
+    
+    // Verify pot amount in UI for each player
+    for (const [playerName, player] of Object.entries(players)) {
+      await retryWithBackoff(async () => {
+        // Look for pot display elements with various selectors
+        const potSelectors = [
+          '[data-testid="pot-amount"]',
+          '.pot-amount',
+          '.pot-display',
+          '[class*="pot"]',
+          '[id*="pot"]'
+        ];
+        
+        let potFound = false;
+        for (const selector of potSelectors) {
+          try {
+            const potElement = await player.driver.findElement(By.css(selector));
+            const potText = await potElement.getText();
+            const potValue = parseInt(potText.replace(/[^0-9]/g, ''));
+            
+            if (potValue === expectedPot) {
+              console.log(`✅ ${playerName} sees correct pot: $${expectedPot}`);
+              potFound = true;
+              break;
+            }
+          } catch (e) {
+            // Continue to next selector
+          }
+        }
+        
+        if (!potFound) {
+          throw new Error(`${playerName} cannot see pot amount $${expectedPot}`);
+        }
+      });
+    }
+    
+    console.log(`🎉 All players see correct pot: $${expectedPot}`);
+    await captureScreenshot(this, `pot-verification-${expectedPot}`);
+    
+  } catch (error) {
+    handleCriticalFailure('Pot Verification', 'system', error, { 
+      expectedPot,
+      gameStatePot: gameState.pot 
+    });
+  }
 });
 
 Given('a {int}-player game is in progress', function (int) {
