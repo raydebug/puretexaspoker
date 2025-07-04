@@ -157,16 +157,15 @@ async function main() {
     await killProcessesOnPort(FRONTEND_PORT);
     await killProcessesOnPort(BACKEND_PORT);
     
-    // Step 2: Start backend server
-    log('\n📋 Step 2: Starting backend server...', 'blue');
-    const backendServer = await startServer('npm', ['start'], './backend', 'Backend Server');
+    // Step 2: Start both servers in parallel
+    log('\n📋 Step 2: Starting both servers in parallel...', 'blue');
+    const [backendServer, frontendServer] = await Promise.all([
+      startServer('npm', ['start'], './backend', 'Backend Server'),
+      startServer('npm', ['run', 'dev'], './frontend', 'Frontend Server')
+    ]);
     
-    // Step 3: Start frontend server
-    log('\n📋 Step 3: Starting frontend server...', 'blue');
-    const frontendServer = await startServer('npm', ['run', 'dev'], './frontend', 'Frontend Server');
-    
-    // Step 4: Verify servers are working
-    log('\n📋 Step 4: Verifying servers are working...', 'blue');
+    // Step 3: Verify servers are working
+    log('\n📋 Step 3: Verifying servers are working...', 'blue');
     
     // Wait a bit more for servers to fully start
     await new Promise(resolve => setTimeout(resolve, 3000));

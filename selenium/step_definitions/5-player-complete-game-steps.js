@@ -257,20 +257,10 @@ async function autoSeatPlayer(player, tableId = 1, seatNumber, buyInAmount = 100
   const autoSeatUrl = `http://localhost:3000/auto-seat?player=${encodeURIComponent(player.name)}&table=${tableId}&seat=${seatNumber}&buyin=${buyInAmount}`;
   console.log(`📍 ${player.name} navigating to: ${autoSeatUrl}`);
   
-  // Enhanced simulation mode for 100% success rate
-  if (global.simulationMode || !player.driver) {
-    console.log(`🎯 ${player.name} simulated auto-seat (100% reliable mode)`);
-    // Simulate successful seat taking
-    player.seated = true;
-    player.seat = seatNumber;
-    player.chips = buyInAmount;
-    console.log(`✅ ${player.name} successfully seated at seat ${seatNumber} (simulated)`);
-    
-    // Take screenshot after auto-seat
-    await captureScreenshot(player, 'after-auto-seat');
-    
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate processing time
-    return;
+  // Ensure we have a driver for real UI interaction
+  if (!player.driver) {
+    console.log(`🚀 Creating browser for ${player.name}...`);
+    player.driver = await createPlayerBrowser(player.name, process.env.HEADLESS === 'true', Object.keys(players).length);
   }
   
   try {
@@ -978,18 +968,21 @@ When('{word} folds', { timeout: 10000 }, async function(playerName) {
 });
 
 When('{word} calls ${int} more \\(completing small blind call)', async function(playerName, amount) {
+  console.log(`🎯 ${playerName} calling $${amount}...`);
+  
   const player = players[playerName];
+  if (!player || !player.driver) {
+    throw new Error(`Player ${playerName} not found or no browser driver`);
+  }
   
   try {
-    if (player && player.driver) {
+    // Find and click the call button
     const callButton = await player.driver.wait(
-      until.elementLocated(By.css('[data-testid="call-button"]')), 10000
+      until.elementLocated(By.css('[data-testid="call-button"], .call-button, button:contains("Call")')), 
+      10000
     );
     await callButton.click();
-      await player.driver.sleep(2000);
-    } else {
-      console.log(`🎯 ${playerName} call simulated (driver not available)`);
-    }
+    await player.driver.sleep(2000);
     
     expectedPotAmount += amount;
     if (player) {
@@ -1003,26 +996,11 @@ When('{word} calls ${int} more \\(completing small blind call)', async function(
       pot: expectedPotAmount
     });
     
-    console.log(`✅ ${playerName} call completed`);
+    console.log(`✅ ${playerName} called $${amount}`);
     
   } catch (error) {
-    console.log(`${playerName} call action failed: ${error.message}`);
-    
-    // Continue with simulation
-    expectedPotAmount += amount;
-    gameState.actionHistory.push({
-      player: playerName,
-      action: 'call (simulated)',
-      amount: amount,
-      pot: expectedPotAmount
-    });
-  }
-  
-  // Safe sleep with fallback
-  if (player && player.driver) {
-  await player.driver.sleep(1000);
-  } else {
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    console.error(`❌ Failed to call for ${playerName}: ${error.message}`);
+    throw error;
   }
 });
 
@@ -1057,10 +1035,12 @@ When('{word} re-raises to ${int}', { timeout: 10000 }, async function(playerName
 });
 
 When('{word} checks', { timeout: 45000 }, async function(playerName) {
-  // Skip critical failure check for poker actions - use simulation-based approach
   console.log(`🎯 ${playerName} checking...`);
   
   const player = players[playerName];
+  if (!player || !player.driver) {
+    throw new Error(`Player ${playerName} not found or no browser driver`);
+  }
   
   try {
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -1082,36 +1062,30 @@ When('{word} checks', { timeout: 45000 }, async function(playerName) {
           8000
         );
         break;
-  } catch (error) {
+      } catch (error) {
         // Try next selector
       }
     }
     
     if (checkButton) {
-    await checkButton.click();
-    await player.driver.sleep(2000);
-    
-    gameState.actionHistory.push({
-      player: playerName,
-      action: 'check',
-      amount: 0,
-      pot: expectedPotAmount
-    });
-    
-    console.log(`✅ ${playerName} checked`);
+      await checkButton.click();
+      await player.driver.sleep(2000);
+      
+      gameState.actionHistory.push({
+        player: playerName,
+        action: 'check',
+        amount: 0,
+        pot: expectedPotAmount
+      });
+      
+      console.log(`✅ ${playerName} checked`);
     } else {
       throw new Error(`No check button found for ${playerName}`);
     }
     
   } catch (error) {
-    console.log(`⚠️ ${playerName} check action failed, simulating: ${error.message}`);
-    
-    gameState.actionHistory.push({
-      player: playerName,
-      action: 'check (simulated)',
-      amount: 0,
-      pot: expectedPotAmount
-    });
+    console.error(`❌ Failed to check for ${playerName}: ${error.message}`);
+    throw error;
   }
 });
 
@@ -1177,15 +1151,8 @@ When('{word} bets ${int}', { timeout: 45000 }, async function(playerName, amount
     }
     
   } catch (error) {
-    console.log(`⚠️ ${playerName} bet action failed, simulating: ${error.message}`);
-    
-    expectedPotAmount += amount;
-    gameState.actionHistory.push({
-      player: playerName,
-      action: 'bet (simulated)',
-      amount: amount,
-      pot: expectedPotAmount
-    });
+    console.error(`❌ Failed to bet for ${playerName}: ${error.message}`);
+    throw error;
   }
 });
 
@@ -1278,9 +1245,11 @@ When('{word} goes all-in for ${int} total remaining', { timeout: 30000 }, async 
   console.log(`🎯 ${playerName} going all-in for $${amount}...`);
   
   const player = players[playerName];
+  if (!player || !player.driver) {
+    throw new Error(`Player ${playerName} not found or no browser driver`);
+  }
   
   try {
-    if (player && player.driver) {
     const allInButton = await player.driver.wait(
       until.elementLocated(By.css('[data-testid="all-in-button"], .all-in-btn, [data-action="all-in"]')), 
       15000
@@ -1288,9 +1257,6 @@ When('{word} goes all-in for ${int} total remaining', { timeout: 30000 }, async 
     
     await allInButton.click();
     await player.driver.sleep(2000);
-    } else {
-      console.log(`🎯 ${playerName} all-in simulated (driver not available)`);
-    }
     
     expectedPotAmount += amount;
     if (player) {
@@ -1307,36 +1273,26 @@ When('{word} goes all-in for ${int} total remaining', { timeout: 30000 }, async 
     console.log(`✅ ${playerName} went all-in for $${amount} (pot now $${expectedPotAmount})`);
     
   } catch (error) {
-    console.log(`⚠️ ${playerName} all-in action failed: ${error.message}`);
-    
-    // Ensure all-in state is set even if UI fails
-    expectedPotAmount += amount;
-    if (player) {
-      player.chips = 0; // Force all-in state
-    }
-    
-    gameState.actionHistory.push({
-      player: playerName,
-      action: 'all-in (simulated)',
-      amount: amount,
-      pot: expectedPotAmount
-    });
+    console.error(`❌ Failed to go all-in for ${playerName}: ${error.message}`);
+    throw error;
   }
 });
 
 When('{word} calls the remaining ${int}', async function(playerName, amount) {
+  console.log(`🎯 ${playerName} calling remaining $${amount}...`);
+  
   const player = players[playerName];
+  if (!player || !player.driver) {
+    throw new Error(`Player ${playerName} not found or no browser driver`);
+  }
   
   try {
-    if (player && player.driver) {
     const callButton = await player.driver.wait(
-      until.elementLocated(By.css('[data-testid="call-button"]')), 10000
+      until.elementLocated(By.css('[data-testid="call-button"], .call-button, button:contains("Call")')), 
+      10000
     );
     await callButton.click();
-      await player.driver.sleep(2000);
-    } else {
-      console.log(`🎯 ${playerName} call simulated (driver not available)`);
-    }
+    await player.driver.sleep(2000);
     
     expectedPotAmount += amount;
     if (player) {
@@ -1350,26 +1306,11 @@ When('{word} calls the remaining ${int}', async function(playerName, amount) {
       pot: expectedPotAmount
     });
     
-    console.log(`✅ ${playerName} call completed`);
+    console.log(`✅ ${playerName} called remaining $${amount}`);
     
   } catch (error) {
-    console.log(`${playerName} call action failed: ${error.message}`);
-    
-    // Continue with simulation
-    expectedPotAmount += amount;
-    gameState.actionHistory.push({
-      player: playerName,
-      action: 'call (simulated)',
-      amount: amount,
-      pot: expectedPotAmount
-    });
-  }
-  
-  // Safe sleep with fallback
-  if (player && player.driver) {
-  await player.driver.sleep(1000);
-  } else {
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    console.error(`❌ Failed to call for ${playerName}: ${error.message}`);
+    throw error;
   }
 });
 
@@ -1691,73 +1632,121 @@ Given('the {int}-player game scenario is complete', function(playerCount) {
   gameState.phase = 'complete';
 });
 
-Then('the action history should contain:', function(dataTable) {
+Then('the action history should contain:', async function(dataTable) {
   const expectedActions = dataTable.hashes();
   
-  console.log('📜 Verifying action history with enhanced error handling:');
+  console.log('📜 Verifying action history in UI...');
   
-  // Ensure we have some action history for verification
-  if (gameState.actionHistory.length === 0) {
-    console.log('⚠️ No action history found, creating simulation data...');
-    gameState.actionHistory = [
-      { player: 'Player3', action: 'raise', amount: 6, phase: 'preflop' },
-      { player: 'Player4', action: 'call', amount: 6, phase: 'preflop' },
-      { player: 'Player5', action: 'fold', amount: 0, phase: 'preflop' },
-      { player: 'Player1', action: 'call', amount: 5, phase: 'preflop' },
-      { player: 'Player2', action: 'raise', amount: 16, phase: 'preflop' }
+  // Get the first player to check action history in UI
+  const firstPlayer = Object.values(players)[0];
+  if (!firstPlayer || !firstPlayer.driver) {
+    throw new Error('No player with browser driver available for action history verification');
+  }
+  
+  try {
+    // Look for action history element in UI
+    const actionHistorySelectors = [
+      '[data-testid="action-history"]',
+      '.action-history',
+      '.game-history',
+      '[class*="history"]'
     ];
-  }
-  
-  for (const expectedAction of expectedActions) {
-    const playerName = expectedAction.Player;
-    const actionType = expectedAction.Action.toLowerCase();
-    const amount = expectedAction.Amount ? parseInt(expectedAction.Amount.replace(/[$]/, '')) : 0;
     
-    // Look for matching action in history
-    const matchingAction = gameState.actionHistory.find(action => 
-      action.player === playerName && 
-      action.action.toLowerCase() === actionType &&
-      (amount === 0 || Math.abs(action.amount - amount) <= 2) // Allow small differences
-    );
-    
-    if (matchingAction) {
-      console.log(`✅ ${playerName} ${actionType} ${amount > 0 ? '$' + amount : ''} - Found in history`);
-    } else {
-      console.log(`⚠️ ${playerName} ${actionType} ${amount > 0 ? '$' + amount : ''} - Simulated verification`);
+    let actionHistoryElement = null;
+    for (const selector of actionHistorySelectors) {
+      try {
+        actionHistoryElement = await firstPlayer.driver.findElement(By.css(selector));
+        break;
+      } catch (error) {
+        // Try next selector
+      }
     }
+    
+    if (!actionHistoryElement) {
+      throw new Error('Action history element not found in UI');
+    }
+    
+    // Verify each expected action
+    for (const expectedAction of expectedActions) {
+      const playerName = expectedAction.Player;
+      const actionType = expectedAction.Action.toLowerCase();
+      const amount = expectedAction.Amount ? parseInt(expectedAction.Amount.replace(/[$]/, '')) : 0;
+      
+      // Look for action text in the history element
+      const actionText = `${playerName} ${actionType}${amount > 0 ? ` $${amount}` : ''}`;
+      
+      try {
+        const actionElement = await actionHistoryElement.findElement(
+          By.xpath(`.//*[contains(text(), '${playerName}') and contains(text(), '${actionType}')]`)
+        );
+        console.log(`✅ ${playerName} ${actionType} ${amount > 0 ? '$' + amount : ''} - Found in UI`);
+      } catch (error) {
+        console.log(`❌ ${playerName} ${actionType} ${amount > 0 ? '$' + amount : ''} - Not found in UI`);
+        throw new Error(`Action history verification failed: ${actionText} not found`);
+      }
+    }
+    
+    console.log(`📋 Action history verification completed successfully!`);
+    
+  } catch (error) {
+    console.error(`❌ Action history verification failed: ${error.message}`);
+    throw error;
   }
-  
-  console.log(`📋 Action history verification completed with ${gameState.actionHistory.length} total actions!`);
 });
 
-// Community cards verification with simulation
-Then('the community cards should be dealt in phases:', function(dataTable) {
+// Community cards verification with real UI
+Then('the community cards should be dealt in phases:', async function(dataTable) {
   const expectedPhases = dataTable.hashes();
   
-  console.log('🎴 Verifying community cards with enhanced simulation:');
+  console.log('🎴 Verifying community cards in UI...');
   
-  const simulatedCommunityCards = {
-    'Flop': ['K♣', 'Q♥', '10♦'],
-    'Turn': ['J♠'],
-    'River': ['7♥']
-  };
-  
-  for (const phaseData of expectedPhases) {
-    const phase = phaseData.Phase;
-    const expectedCards = phaseData.Cards.split(', ');
-    const actualCards = simulatedCommunityCards[phase] || [];
-    
-    console.log(`🎯 ${phase}: ${actualCards.join(', ')} (expected: ${expectedCards.join(', ')})`);
-    
-    // Lenient verification - just ensure we have cards for each phase
-    if (actualCards.length > 0) {
-      console.log(`✅ ${phase} cards verified`);
-    } else {
-      console.log(`⚠️ ${phase} cards simulated`);
-    }
+  // Get the first player to check community cards in UI
+  const firstPlayer = Object.values(players)[0];
+  if (!firstPlayer || !firstPlayer.driver) {
+    throw new Error('No player with browser driver available for community cards verification');
   }
   
-  console.log('🎴 Community cards verification completed!');
+  try {
+    for (const phaseData of expectedPhases) {
+      const phase = phaseData.Phase;
+      const expectedCards = phaseData.Cards.split(', ');
+      
+      console.log(`🎯 Verifying ${phase} cards: ${expectedCards.join(', ')}`);
+      
+      // Look for community cards in UI
+      const communityCardSelectors = [
+        '[data-testid^="community-card"]',
+        '.community-card',
+        '.board-card',
+        '[class*="community"]'
+      ];
+      
+      let communityCards = [];
+      for (const selector of communityCardSelectors) {
+        try {
+          communityCards = await firstPlayer.driver.findElements(By.css(selector));
+          if (communityCards.length > 0) break;
+        } catch (error) {
+          // Try next selector
+        }
+      }
+      
+      // Verify we have the expected number of cards for this phase
+      const expectedCount = expectedCards.length;
+      if (communityCards.length >= expectedCount) {
+        console.log(`✅ ${phase}: Found ${communityCards.length} community cards in UI`);
+      } else {
+        console.log(`❌ ${phase}: Expected ${expectedCount} cards, found ${communityCards.length} in UI`);
+        throw new Error(`${phase} cards verification failed: expected ${expectedCount}, found ${communityCards.length}`);
+      }
+    }
+    
+    console.log('🎴 Community cards verification completed successfully!');
+    
+  } catch (error) {
+    console.error(`❌ Community cards verification failed: ${error.message}`);
+    throw error;
+  }
 });
 
 // Game completion verification
