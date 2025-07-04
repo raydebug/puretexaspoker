@@ -14,7 +14,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2909131959
+              "duration": 2916569417
             }
           },
           {
@@ -22,9 +22,13 @@
             "keyword": "Given ",
             "line": 7,
             "name": "both servers are force restarted and verified working correctly",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:222"
+            },
             "result": {
-              "status": "undefined",
-              "duration": 0
+              "status": "failed",
+              "duration": 5002651915,
+              "error_message": "Error: function timed out, ensure the promise resolves within 5000 milliseconds\n    at Timeout.<anonymous> (/Volumes/Data/work/puretexaspoker/node_modules/@cucumber/cucumber/lib/time.js:54:20)\n    at listOnTimeout (node:internal/timers:594:17)\n    at process.processTimers (node:internal/timers:529:7)"
             }
           },
           {
@@ -32,8 +36,11 @@
             "keyword": "And ",
             "line": 8,
             "name": "servers are ready and verified for testing",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:233"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -42,8 +49,11 @@
             "keyword": "And ",
             "line": 9,
             "name": "I have a clean game state",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:244"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -52,8 +62,11 @@
             "keyword": "And ",
             "line": 10,
             "name": "the card order is deterministic for testing",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:265"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -62,8 +75,11 @@
             "keyword": "Given ",
             "line": 15,
             "name": "I have 5 players ready to join a poker game",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:23"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -72,8 +88,11 @@
             "keyword": "And ",
             "line": 16,
             "name": "all players have starting stacks of $100",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:59"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -129,8 +148,11 @@
             "keyword": "When ",
             "line": 17,
             "name": "players join the table in order:",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:77"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -180,8 +202,11 @@
             "keyword": "Then ",
             "line": 24,
             "name": "all players should be seated correctly:",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:110"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -190,8 +215,11 @@
             "keyword": "When ",
             "line": 33,
             "name": "I manually start the game for table 1",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:140"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -226,8 +254,11 @@
             "keyword": "Then ",
             "line": 34,
             "name": "the game starts with blinds structure:",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:174"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -236,8 +267,11 @@
             "keyword": "And ",
             "line": 38,
             "name": "the pot should be $3",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:206"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -323,8 +357,11 @@
             "keyword": "And ",
             "line": 52,
             "name": "Player3 raises to $6",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:278"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -333,8 +370,11 @@
             "keyword": "And ",
             "line": 53,
             "name": "Player4 calls $6",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:282"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -343,8 +383,11 @@
             "keyword": "And ",
             "line": 54,
             "name": "Player5 folds",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:286"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -403,8 +446,11 @@
             "keyword": "Then ",
             "line": 60,
             "name": "the pot should be $41",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:206"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -463,8 +509,11 @@
             "keyword": "Then ",
             "line": 68,
             "name": "the pot should be $81",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:206"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -503,7 +552,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2962181791
+              "duration": 2954562290
             }
           }
         ],
@@ -535,8 +584,11 @@
             "keyword": "Given ",
             "line": 7,
             "name": "both servers are force restarted and verified working correctly",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:222"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -545,8 +597,11 @@
             "keyword": "And ",
             "line": 8,
             "name": "servers are ready and verified for testing",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:233"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -555,8 +610,11 @@
             "keyword": "And ",
             "line": 9,
             "name": "I have a clean game state",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:244"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -565,8 +623,11 @@
             "keyword": "And ",
             "line": 10,
             "name": "the card order is deterministic for testing",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:265"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -575,8 +636,11 @@
             "keyword": "Given ",
             "line": 74,
             "name": "I have 5 players ready to join a poker game",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:23"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -585,8 +649,11 @@
             "keyword": "And ",
             "line": 75,
             "name": "all players have starting stacks of $100",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:59"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -642,8 +709,11 @@
             "keyword": "When ",
             "line": 76,
             "name": "players join the table in order:",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:77"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -693,8 +763,11 @@
             "keyword": "Then ",
             "line": 83,
             "name": "all players should be seated correctly:",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:110"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -703,8 +776,11 @@
             "keyword": "When ",
             "line": 90,
             "name": "I manually start the game for table 1",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:140"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -739,8 +815,11 @@
             "keyword": "Then ",
             "line": 91,
             "name": "the game starts with blinds structure:",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:174"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -749,8 +828,11 @@
             "keyword": "And ",
             "line": 95,
             "name": "the pot should be $3",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:206"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -786,8 +868,11 @@
             "keyword": "Given ",
             "line": 7,
             "name": "both servers are force restarted and verified working correctly",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:222"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -796,8 +881,11 @@
             "keyword": "And ",
             "line": 8,
             "name": "servers are ready and verified for testing",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:233"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -806,8 +894,11 @@
             "keyword": "And ",
             "line": 9,
             "name": "I have a clean game state",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:244"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -816,8 +907,11 @@
             "keyword": "And ",
             "line": 10,
             "name": "the card order is deterministic for testing",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:265"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -940,8 +1034,11 @@
             "keyword": "Given ",
             "line": 7,
             "name": "both servers are force restarted and verified working correctly",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:222"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -950,8 +1047,11 @@
             "keyword": "And ",
             "line": 8,
             "name": "servers are ready and verified for testing",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:233"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -960,8 +1060,11 @@
             "keyword": "And ",
             "line": 9,
             "name": "I have a clean game state",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:244"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -970,8 +1073,11 @@
             "keyword": "And ",
             "line": 10,
             "name": "the card order is deterministic for testing",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:265"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1010,8 +1116,11 @@
             "keyword": "And ",
             "line": 113,
             "name": "Player3 raises to $6",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:278"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1020,8 +1129,11 @@
             "keyword": "And ",
             "line": 114,
             "name": "Player4 calls $6",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:282"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1030,8 +1142,11 @@
             "keyword": "And ",
             "line": 115,
             "name": "Player5 folds",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:286"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1090,8 +1205,11 @@
             "keyword": "Then ",
             "line": 121,
             "name": "the pot should be $41",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:206"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1167,8 +1285,11 @@
             "keyword": "Given ",
             "line": 7,
             "name": "both servers are force restarted and verified working correctly",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:222"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1177,8 +1298,11 @@
             "keyword": "And ",
             "line": 8,
             "name": "servers are ready and verified for testing",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:233"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1187,8 +1311,11 @@
             "keyword": "And ",
             "line": 9,
             "name": "I have a clean game state",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:244"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1197,8 +1324,11 @@
             "keyword": "And ",
             "line": 10,
             "name": "the card order is deterministic for testing",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:265"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1267,8 +1397,11 @@
             "keyword": "Then ",
             "line": 134,
             "name": "the pot should be $81",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:206"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1334,8 +1467,11 @@
             "keyword": "Given ",
             "line": 7,
             "name": "both servers are force restarted and verified working correctly",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:222"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1344,8 +1480,11 @@
             "keyword": "And ",
             "line": 8,
             "name": "servers are ready and verified for testing",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:233"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1354,8 +1493,11 @@
             "keyword": "And ",
             "line": 9,
             "name": "I have a clean game state",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:244"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1364,8 +1506,11 @@
             "keyword": "And ",
             "line": 10,
             "name": "the card order is deterministic for testing",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:265"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1404,8 +1549,11 @@
             "keyword": "And ",
             "line": 143,
             "name": "Player3 raises to $60",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:278"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1434,8 +1582,11 @@
             "keyword": "Then ",
             "line": 146,
             "name": "the pot should be $195",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:206"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1511,8 +1662,11 @@
             "keyword": "Given ",
             "line": 7,
             "name": "both servers are force restarted and verified working correctly",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:222"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1521,8 +1675,11 @@
             "keyword": "And ",
             "line": 8,
             "name": "servers are ready and verified for testing",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:233"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1531,8 +1688,11 @@
             "keyword": "And ",
             "line": 9,
             "name": "I have a clean game state",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:244"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1541,8 +1701,11 @@
             "keyword": "And ",
             "line": 10,
             "name": "the card order is deterministic for testing",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:265"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1628,8 +1791,11 @@
             "keyword": "Given ",
             "line": 7,
             "name": "both servers are force restarted and verified working correctly",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:222"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1638,8 +1804,11 @@
             "keyword": "And ",
             "line": 8,
             "name": "servers are ready and verified for testing",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:233"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1648,8 +1817,11 @@
             "keyword": "And ",
             "line": 9,
             "name": "I have a clean game state",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:244"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1658,8 +1830,11 @@
             "keyword": "And ",
             "line": 10,
             "name": "the card order is deterministic for testing",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:265"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1774,8 +1949,11 @@
             "keyword": "Given ",
             "line": 7,
             "name": "both servers are force restarted and verified working correctly",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:222"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1784,8 +1962,11 @@
             "keyword": "And ",
             "line": 8,
             "name": "servers are ready and verified for testing",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:233"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1794,8 +1975,11 @@
             "keyword": "And ",
             "line": 9,
             "name": "I have a clean game state",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:244"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1804,8 +1988,11 @@
             "keyword": "And ",
             "line": 10,
             "name": "the card order is deterministic for testing",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:265"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1938,8 +2125,11 @@
             "keyword": "Given ",
             "line": 7,
             "name": "both servers are force restarted and verified working correctly",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:222"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1948,8 +2138,11 @@
             "keyword": "And ",
             "line": 8,
             "name": "servers are ready and verified for testing",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:233"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1958,8 +2151,11 @@
             "keyword": "And ",
             "line": 9,
             "name": "I have a clean game state",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:244"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -1968,8 +2164,11 @@
             "keyword": "And ",
             "line": 10,
             "name": "the card order is deterministic for testing",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:265"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -2202,8 +2401,11 @@
             "keyword": "Given ",
             "line": 7,
             "name": "both servers are force restarted and verified working correctly",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:222"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -2212,8 +2414,11 @@
             "keyword": "And ",
             "line": 8,
             "name": "servers are ready and verified for testing",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:233"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -2222,8 +2427,11 @@
             "keyword": "And ",
             "line": 9,
             "name": "I have a clean game state",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:244"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },
@@ -2232,8 +2440,11 @@
             "keyword": "And ",
             "line": 10,
             "name": "the card order is deterministic for testing",
+            "match": {
+              "location": "selenium/step_definitions/5-player-game.js:265"
+            },
             "result": {
-              "status": "undefined",
+              "status": "skipped",
               "duration": 0
             }
           },

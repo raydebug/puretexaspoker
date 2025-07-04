@@ -46,7 +46,7 @@ async function runCucumber() {
     const args = [
       'cucumber-js',
       TEST_CONFIG.featureFile,
-      '--require', 'selenium/step_definitions/all-steps.js',
+      '--require', 'selenium/step_definitions/5-player-game.js',
       '--require', 'selenium/step_definitions/hooks.js',
       '--format', 'json:selenium/reports/cucumber-report.json',
       '--format', 'progress',
