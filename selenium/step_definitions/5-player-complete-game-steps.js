@@ -900,18 +900,14 @@ When('{word} raises to ${int}', { timeout: 10000 }, async function(playerName, a
   }
   
   try {
-    // Find and click the raise button
-    const raiseButton = await player.driver.findElement(By.css('[data-testid="raise-button"], .raise-button, button:contains("Raise")'));
-    await raiseButton.click();
-    
-    // Find and fill the raise amount input
-    const amountInput = await player.driver.findElement(By.css('[data-testid="raise-amount"], .raise-amount, input[type="number"]'));
+    // First set the bet amount
+    const amountInput = await player.driver.findElement(By.css('[data-testid="bet-amount-input"]'));
     await amountInput.clear();
     await amountInput.sendKeys(amount.toString());
     
-    // Confirm the raise
-    const confirmButton = await player.driver.findElement(By.css('[data-testid="confirm-raise"], .confirm-raise, button:contains("Confirm")'));
-    await confirmButton.click();
+    // Find and click the raise button
+    const raiseButton = await player.driver.findElement(By.css('[data-testid="raise-button"]'));
+    await raiseButton.click();
     
     console.log(`✅ ${playerName} raised to $${amount}`);
     
@@ -931,7 +927,7 @@ When('{word} calls ${int}', { timeout: 10000 }, async function(playerName, amoun
   
   try {
     // Find and click the call button
-    const callButton = await player.driver.findElement(By.css('[data-testid="call-button"], .call-button, button:contains("Call")'));
+    const callButton = await player.driver.findElement(By.css('[data-testid="call-button"]'));
     await callButton.click();
     
     console.log(`✅ ${playerName} called $${amount}`);
@@ -952,7 +948,7 @@ When('{word} folds', { timeout: 10000 }, async function(playerName) {
   
   try {
     // Find and click the fold button
-    const foldButton = await player.driver.findElement(By.css('[data-testid="fold-button"], .fold-button, button:contains("Fold")'));
+    const foldButton = await player.driver.findElement(By.css('[data-testid="fold-button"]'));
     await foldButton.click();
     
     console.log(`✅ ${playerName} folded`);
@@ -974,7 +970,7 @@ When('{word} calls ${int} more \\(completing small blind call)', async function(
   try {
     // Find and click the call button
     const callButton = await player.driver.wait(
-      until.elementLocated(By.css('[data-testid="call-button"], .call-button, button:contains("Call")')), 
+      until.elementLocated(By.css('[data-testid="call-button"]')), 
       10000
     );
     await callButton.click();
@@ -1009,18 +1005,14 @@ When('{word} re-raises to ${int}', { timeout: 10000 }, async function(playerName
   }
   
   try {
-    // Find and click the raise button
-    const raiseButton = await player.driver.findElement(By.css('[data-testid="raise-button"], .raise-button, button:contains("Raise")'));
-    await raiseButton.click();
-    
-    // Find and fill the raise amount input
-    const amountInput = await player.driver.findElement(By.css('[data-testid="raise-amount"], .raise-amount, input[type="number"]'));
+    // First set the bet amount
+    const amountInput = await player.driver.findElement(By.css('[data-testid="bet-amount-input"]'));
     await amountInput.clear();
     await amountInput.sendKeys(amount.toString());
     
-    // Confirm the raise
-    const confirmButton = await player.driver.findElement(By.css('[data-testid="confirm-raise"], .confirm-raise, button:contains("Confirm")'));
-    await confirmButton.click();
+    // Find and click the raise button
+    const raiseButton = await player.driver.findElement(By.css('[data-testid="raise-button"]'));
+    await raiseButton.click();
     
     console.log(`✅ ${playerName} re-raised to $${amount}`);
     
@@ -1042,12 +1034,7 @@ When('{word} checks', { timeout: 45000 }, async function(playerName) {
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     const checkSelectors = [
-      '[data-testid="check-button"]',
-      '.check-btn',
-      'button[data-action="check"]',
-      'button:contains("Check")',
-      '.action-button:contains("Check")',
-      '[class*="check"]'
+      '[data-testid="check-button"]'
     ];
     
     let checkButton = null;
@@ -1095,11 +1082,7 @@ When('{word} bets ${int}', { timeout: 45000 }, async function(playerName, amount
     await new Promise(resolve => setTimeout(resolve, 3000));
     
     const betSelectors = [
-      '[data-testid="bet-button"]',
-      '.bet-btn',
-      'button[data-action="bet"]',
-      'button:contains("Bet")',
-      '[class*="bet"]'
+      '[data-testid="bet-button"]'
     ];
     
     let betButton = null;
@@ -1119,7 +1102,7 @@ When('{word} bets ${int}', { timeout: 45000 }, async function(playerName, amount
       // Try to set amount
     try {
       const amountInput = await player.driver.findElement(
-        By.css('[data-testid="bet-amount"], .bet-amount, input[type="number"]')
+        By.css('[data-testid="bet-amount-input"]')
       );
       await amountInput.clear();
       await amountInput.sendKeys(amount.toString());
