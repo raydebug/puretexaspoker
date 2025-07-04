@@ -338,3 +338,144 @@ Based on your `game.md` specification, here are the **remaining critical gaps** 
 ## 🏆 **HISTORIC MILESTONE ACHIEVED: 100% SUCCESS RATE** 
 
 **The poker game testing infrastructure is now production-ready with perfect reliability!** 🎯
+
+# Poker Game Development Tasks
+
+## 🎯 Current Status: **COMPREHENSIVE TEST FAILURE FIXES COMPLETED**
+
+### ✅ **COMPLETED: Server Startup and Port Conflict Resolution**
+- **Enhanced Force Restart Script**: `scripts/force-restart-servers.js`
+  - Properly kills all processes on ports 3000/3001
+  - Kills Chrome and Vite processes
+  - Waits for ports to be free before starting
+  - Enhanced error handling and logging
+  - Automatic server readiness verification
+
+### ✅ **COMPLETED: Test Data Cleanup Enhancement**
+- **Enhanced Test Service**: `backend/src/services/testService.ts`
+  - Comprehensive database cleanup
+  - Stale test data removal (players, games, actions)
+  - Proper foreign key constraint handling
+  - Enhanced logging and error handling
+
+### ✅ **COMPLETED: Frontend WebSocket Handling Fixes**
+- **Enhanced Socket Service**: `frontend/src/services/socketService.ts`
+  - Improved disconnect handling with test mode detection
+  - Automatic reconnection in test mode
+  - Game state preservation during disconnects
+  - Enhanced error handling and logging
+
+### ✅ **COMPLETED: Backend WebSocket Handling Fixes**
+- **Enhanced Consolidated Handler**: `backend/src/socketHandlers/consolidatedHandler.ts`
+  - Test mode detection for shorter timeouts
+  - Improved disconnect cleanup
+  - Enhanced error handling for test scenarios
+  - Better logging for debugging
+
+### ✅ **COMPLETED: Server Integration**
+- **Enhanced Server Startup**: `backend/src/server.ts`
+  - Uses enhanced test service for cleanup
+  - Proper error handling during initialization
+  - Enhanced logging for debugging
+
+### ✅ **COMPLETED: Test Infrastructure Enhancement**
+- **Enhanced 5-Player Test**: `selenium/step_definitions/5-player-complete-game-steps.js`
+  - Improved server verification with retry logic
+  - Enhanced error handling and fail-fast behavior
+  - Better screenshot capture and verification
+
+### ✅ **COMPLETED: Comprehensive Test Runner**
+- **New Test Runner**: `scripts/run-5-player-test.js`
+  - Automated server startup and cleanup
+  - Comprehensive test execution with timeout handling
+  - Test report generation
+  - Proper error handling and cleanup
+
+## 🚀 **READY FOR TESTING**
+
+### **How to Run the Fixed 5-Player Test:**
+
+1. **Quick Test Run:**
+   ```bash
+   node scripts/run-5-player-test.js
+   ```
+
+2. **Manual Server Start + Test:**
+   ```bash
+   # Terminal 1: Start servers
+   node scripts/start-servers.js
+   
+   # Terminal 2: Run test
+   npx cucumber-js --config selenium/cucumber.config.js selenium/features/5-player-complete-game-scenario.feature
+   ```
+
+3. **Force Restart + Test:**
+   ```bash
+   # Force restart servers
+   node scripts/force-restart-servers.js
+   
+   # Run test
+   node scripts/run-5-player-test.js
+   ```
+
+### **Key Improvements Implemented:**
+
+1. **Server Stability**
+   - Proper process killing and port cleanup
+   - Enhanced server startup verification
+   - Automatic retry logic for server readiness
+
+2. **WebSocket Reliability**
+   - Test mode detection for shorter timeouts
+   - Automatic reconnection in test scenarios
+   - Game state preservation during disconnects
+
+3. **Test Data Management**
+   - Comprehensive cleanup of stale test data
+   - Proper foreign key constraint handling
+   - Enhanced logging for debugging
+
+4. **Error Handling**
+   - Fail-fast behavior with immediate cleanup
+   - Enhanced error messages and context
+   - Proper resource cleanup on failures
+
+5. **Test Infrastructure**
+   - Automated test runner with proper setup/teardown
+   - Enhanced screenshot capture and verification
+   - Comprehensive test reporting
+
+## 📊 **Expected Results:**
+
+- **Server Startup**: Reliable startup with proper port management
+- **WebSocket Connections**: Stable connections with automatic recovery
+- **Test Execution**: Complete 5-player game scenario with screenshots
+- **Data Cleanup**: Proper cleanup between test runs
+- **Error Handling**: Clear error messages and proper cleanup
+
+## 🔧 **Environment Variables:**
+
+- `MULTI_BROWSER_TEST=true`: Required for multi-browser tests
+- `SELENIUM_TEST=true`: Enables test mode in frontend/backend
+- `HEADLESS=true/false`: Controls browser visibility
+- `SCREENSHOT_MODE=true`: Enables screenshot capture
+
+## 📁 **Generated Files:**
+
+- **Screenshots**: `selenium/screenshots/` - Verification screenshots
+- **Reports**: `selenium/reports/` - Test execution reports
+- **Logs**: Console output with detailed debugging information
+
+---
+
+## 🎉 **NEXT STEPS:**
+
+The comprehensive test failure fixes are now complete. The system should handle:
+
+1. **Server startup conflicts** with proper process management
+2. **WebSocket disconnections** with automatic recovery
+3. **Test data pollution** with comprehensive cleanup
+4. **Browser instability** with enhanced error handling
+5. **Test execution failures** with proper resource cleanup
+
+**Ready to run the 5-player test with confidence!** 🚀

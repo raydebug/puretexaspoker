@@ -188,33 +188,44 @@ async function createPlayerBrowser(playerName, headless = true, playerIndex = 0)
   return { name: playerName, driver, chips: 100, seat: null, cards: [] };
 }
 
-// Server readiness verification function
+// Enhanced server readiness verification function
 async function verifyServersReady() {
   console.log('🔍 Verifying servers are ready...');
   
   const backendUrl = 'http://localhost:3001/api/tables';
   const frontendUrl = 'http://localhost:3000';
   
-  try {
-    // Check backend
-    const backendResponse = await fetch(backendUrl);
-    if (!backendResponse.ok) {
-      throw new Error(`Backend not ready: ${backendResponse.status}`);
+  // Enhanced retry logic for server verification
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    try {
+      console.log(`🔍 Server verification attempt ${attempt}/5...`);
+      
+      // Check backend
+      const backendResponse = await fetch(backendUrl, { timeout: 5000 });
+      if (!backendResponse.ok) {
+        throw new Error(`Backend responded with status ${backendResponse.status}`);
+      }
+      
+      // Check frontend
+      const frontendResponse = await fetch(frontendUrl, { timeout: 5000 });
+      if (!frontendResponse.ok) {
+        throw new Error(`Frontend responded with status ${frontendResponse.status}`);
+      }
+      
+      console.log('✅ Both servers are ready!');
+      return true;
+      
+    } catch (error) {
+      console.log(`⚠️ Server verification attempt ${attempt} failed: ${error.message}`);
+      
+      if (attempt === 5) {
+        console.log('❌ Server verification failed after 5 attempts');
+        throw new Error(`Servers not ready: ${error.message}`);
+      }
+      
+      // Wait before retry
+      await new Promise(resolve => setTimeout(resolve, 2000));
     }
-    console.log('✅ Backend server is ready');
-    
-    // Check frontend
-    const frontendResponse = await fetch(frontendUrl);
-    if (!frontendResponse.ok) {
-      throw new Error(`Frontend not ready: ${frontendResponse.status}`);
-    }
-    console.log('✅ Frontend server is ready');
-    
-    console.log('🎉 Both servers are ready for testing!');
-    return true;
-  } catch (error) {
-    console.log(`❌ Server verification failed: ${error.message}`);
-    throw error;
   }
 }
 
