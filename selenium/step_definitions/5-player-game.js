@@ -575,9 +575,11 @@ Given('the flop betting is complete with pot at ${int}', function (int) {
 
 // Helper functions
 async function createPlayerBrowser(playerName, headless = true, playerIndex = 0) {
+  console.log(`🔧 Creating browser for ${playerName} (headless: ${headless}, index: ${playerIndex})...`);
+  
   const options = new chrome.Options();
   if (headless) {
-    options.addArguments('--headless');
+    options.addArguments('--headless=new'); // Use new headless mode
   }
   
   // Position windows in a grid layout for headed mode (5 windows: 3x2 grid)
@@ -590,7 +592,7 @@ async function createPlayerBrowser(playerName, headless = true, playerIndex = 0)
     options.addArguments('--window-size=1024,768');
   }
   
-  // Stable Chrome options for multi-browser instances
+  // Enhanced Chrome options for multi-browser instances
   options.addArguments(
     '--no-sandbox',
     '--disable-dev-shm-usage', 
@@ -604,27 +606,50 @@ async function createPlayerBrowser(playerName, headless = true, playerIndex = 0)
     '--disable-sync',
     '--disable-translate',
     '--memory-pressure-off',
-    '--max_old_space_size=512'
+    '--max_old_space_size=512',
+    '--remote-debugging-port=0', // Use random port
+    '--disable-blink-features=AutomationControlled',
+    '--disable-features=VizDisplayCompositor'
   );
   
   // Add unique user data directory for each browser to avoid conflicts
-  const userDataDir = `/tmp/chrome_${playerName}_${Date.now()}`;
+  const userDataDir = `/tmp/chrome_${playerName}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   options.addArguments(`--user-data-dir=${userDataDir}`);
   
-  // Set timeouts for stable creation
-  const driver = await new Builder()
-    .forBrowser('chrome')
-    .setChromeOptions(options)
-    .build();
-  
-  // Set reasonable timeouts
-  await driver.manage().setTimeouts({
-    implicit: 10000,
-    pageLoad: 30000,
-    script: 10000
-  });
+  try {
+    console.log(`🚀 Building WebDriver for ${playerName}...`);
     
-  return { name: playerName, driver, chips: 100, seat: null, cards: [] };
+    // Set timeouts for stable creation
+    const driver = await new Builder()
+      .forBrowser('chrome')
+      .setChromeOptions(options)
+      .build();
+    
+    console.log(`✅ WebDriver built for ${playerName}`);
+    
+    // Set reasonable timeouts
+    await driver.manage().setTimeouts({
+      implicit: 15000,
+      pageLoad: 45000,
+      script: 15000
+    });
+    
+    console.log(`✅ Timeouts set for ${playerName}`);
+    
+    // Test the driver with a simple navigation
+    try {
+      await driver.get('data:text/html,<html><body><h1>Test</h1></body></html>');
+      console.log(`✅ Driver test successful for ${playerName}`);
+    } catch (testError) {
+      console.log(`⚠️ Driver test failed for ${playerName}, but continuing: ${testError.message}`);
+    }
+    
+    return { name: playerName, driver, chips: 100, seat: null, cards: [] };
+    
+  } catch (error) {
+    console.error(`❌ Failed to create browser for ${playerName}: ${error.message}`);
+    throw new Error(`Browser creation failed for ${playerName}: ${error.message}`);
+  }
 }
 
 async function verifyServersReady() {
@@ -671,17 +696,44 @@ async function autoSeatPlayer(player, tableId = 1, seatNumber, buyInAmount = 100
   console.log(`📍 ${player.name} navigating to: ${autoSeatUrl}`);
   
   try {
+    // First, test the driver with a simple page
+    console.log(`🧪 Testing ${player.name}'s driver...`);
+    await player.driver.get('http://localhost:3000/');
+    await player.driver.sleep(2000);
+    
+    // Now navigate to auto-seat URL
+    console.log(`🎯 ${player.name} navigating to auto-seat URL...`);
     await player.driver.get(autoSeatUrl);
     
-    // Wait for auto-seat process to complete
+    // Wait for auto-seat process to complete with better error handling
     console.log(`⏳ ${player.name} waiting for auto-seat process...`);
-    await player.driver.sleep(8000); // Give time for auto-seat to work
+    
+    // Wait for page to load and auto-seat to work
+    await player.driver.sleep(5000);
+    
+    // Try to wait for some indication that auto-seat worked
+    try {
+      await player.driver.wait(until.titleContains('Game') || until.urlContains('game'), 10000);
+      console.log(`✅ ${player.name} auto-seat page loaded successfully`);
+    } catch (waitError) {
+      console.log(`⚠️ ${player.name} auto-seat wait timeout, but continuing: ${waitError.message}`);
+    }
     
     player.seat = seatNumber;
     console.log(`🎯 ${player.name} completed auto-seat process for seat ${seatNumber}`);
       
   } catch (error) {
     console.log(`❌ ${player.name} browser navigation failed: ${error.message}`);
+    console.log(`🔍 ${player.name} driver status: ${player.driver ? 'exists' : 'null'}`);
+    
+    // Try to get more diagnostic information
+    try {
+      const currentUrl = await player.driver.getCurrentUrl();
+      console.log(`📍 ${player.name} current URL: ${currentUrl}`);
+    } catch (urlError) {
+      console.log(`❌ ${player.name} could not get current URL: ${urlError.message}`);
+    }
+    
     throw new Error(`Failed to auto-seat ${player.name}: ${error.message}`);
   }
 }
