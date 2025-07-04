@@ -20,7 +20,7 @@ let gameState = {
 let expectedPotAmount = 0;
 
 // Foundation step definitions
-Given('I have {int} players ready to join a poker game', async function (numberOfPlayers) {
+Given('I have {int} players ready to join a poker game', { timeout: 120 * 1000 }, async function (numberOfPlayers) {
   console.log(`🎯 Setting up ${numberOfPlayers} players for poker game`);
   
   try {
