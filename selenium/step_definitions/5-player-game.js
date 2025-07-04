@@ -576,7 +576,7 @@ Given('the flop betting is complete with pot at ${int}', function (int) {
 // Helper functions
 async function createPlayerBrowser(playerName, headless = true, playerIndex = 0) {
   // Add delay between browser launches to prevent resource conflicts
-  const delay = playerIndex * 2000; // 2 second delay between each browser
+  const delay = playerIndex * 500; // 500ms delay between each browser (reduced from 2000ms)
   console.log(`⏳ Waiting ${delay}ms before launching browser for ${playerName}...`);
   await new Promise(resolve => setTimeout(resolve, delay));
   
