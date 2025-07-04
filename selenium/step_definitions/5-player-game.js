@@ -287,6 +287,229 @@ When('Player5 folds', async function () {
   await executePlayerAction('Player5', 'fold');
 });
 
+When('hole cards are dealt according to the test scenario:', function (dataTable) {
+  // TODO: Implement logic to verify each player receives the correct hole cards
+  // Use browser instances to check UI for each player
+  return 'pending';
+});
+
+Then('each player should see their own hole cards', function () {
+  // TODO: Implement logic to verify each player only sees their own cards
+  // Use browser instances to check UI for each player
+  return 'pending';
+});
+
+When('the pre-flop betting round begins', function () {
+  // TODO: Implement logic to trigger pre-flop betting round
+  // Likely just a state transition, may be implicit
+  return 'pending';
+});
+
+When('Player1 calls ${int} more', function (amount) {
+  // TODO: Implement Player1 call action for the specified amount
+  return 'pending';
+});
+
+When('Player2 re-raises to ${int}', function (amount) {
+  // TODO: Implement Player2 re-raise action to the specified amount
+  return 'pending';
+});
+
+When('Player3 calls ${int} more', function (amount) {
+  // TODO: Implement Player3 call action for the specified amount
+  return 'pending';
+});
+
+When('Player4 folds', function () {
+  // TODO: Implement Player4 fold action
+  return 'pending';
+});
+
+When('Player1 folds', function () {
+  // TODO: Implement Player1 fold action
+  return 'pending';
+});
+
+Then('{int} players should remain in the hand: Player2, Player3', function (count) {
+  // TODO: Implement check for number of active players and their names
+  return 'pending';
+});
+
+When('the flop is dealt: K♣, Q♥, {int}♦', function (int) {
+  // TODO: Implement flop dealing verification
+  return 'pending';
+});
+
+When('Player2 checks', function () {
+  // TODO: Implement Player2 check action
+  return 'pending';
+});
+
+When('Player3 bets ${int}', function (amount) {
+  // TODO: Implement Player3 bet action for the specified amount
+  return 'pending';
+});
+
+When('Player2 calls ${int}', function (amount) {
+  // TODO: Implement Player2 call action for the specified amount
+  return 'pending';
+});
+
+Then('both players should see the {int} flop cards', function (count) {
+  // TODO: Implement check for both players seeing the correct number of flop cards
+  return 'pending';
+});
+
+Then('Player2 should have top pair with Q♥', function () {
+  // TODO: Implement check for Player2's hand
+  return 'pending';
+});
+
+Then('Player3 should have top pair with K♣ and straight draw potential', function () {
+  // TODO: Implement check for Player3's hand
+  return 'pending';
+});
+
+When('the turn card J♥ is dealt', function () {
+  // TODO: Implement turn card dealing verification
+  return 'pending';
+});
+
+When('Player2 bets ${int}', function (amount) {
+  // TODO: Implement Player2 bet action for the specified amount
+  return 'pending';
+});
+
+When('Player2 goes all-in for ${int} total remaining', function (amount) {
+  // TODO: Implement Player2 all-in action for the specified amount
+  return 'pending';
+});
+
+When('Player3 calls the remaining ${int}', function (amount) {
+  // TODO: Implement Player3 call action for the specified amount
+  return 'pending';
+});
+
+Then('Player2 should be all-in', function () {
+  // TODO: Implement check for Player2 all-in status
+  return 'pending';
+});
+
+Then('Player3 should have chips remaining', function () {
+  // TODO: Implement check for Player3's remaining chips
+  return 'pending';
+});
+
+Then('Player2 should have two pair potential', function () {
+  // TODO: Implement check for Player2's hand potential
+  return 'pending';
+});
+
+Then('Player3 should have two pair: K♣ and J♠', function () {
+  // TODO: Implement check for Player3's hand
+  return 'pending';
+});
+
+Given('both players are committed to showdown', function () {
+  // TODO: Implement check for both players committed to showdown
+  return 'pending';
+});
+
+When('the river card {int}♥ is dealt', function (int) {
+  // TODO: Implement river card dealing verification
+  return 'pending';
+});
+
+Then('the final board should be: K♠, Q♠, {int}♥, J♥, {int}♥', function (int, int2) {
+  // TODO: Implement check for final board cards
+  return 'pending';
+});
+
+Then('the showdown should occur automatically', function () {
+  // TODO: Implement check for automatic showdown
+  return 'pending';
+});
+
+Given('the showdown occurs with final board: K♠, Q♠, {int}♥, J♥, {int}♥', function (int, int2) {
+  // TODO: Implement check for showdown with final board
+  return 'pending';
+});
+
+When('hands are evaluated:', function (dataTable) {
+  // TODO: Implement hand evaluation verification
+  return 'pending';
+});
+
+Then('Player2 should win with {string}', function (string) {
+  // TODO: Implement check for Player2 winning hand
+  return 'pending';
+});
+
+Then('Player2 should receive the pot of ${int}', function (amount) {
+  // TODO: Implement check for Player2 receiving pot
+  return 'pending';
+});
+
+Then('the action history should show the complete game sequence', function () {
+  // TODO: Implement check for complete action history
+  return 'pending';
+});
+
+Given('the game is complete', function () {
+  // TODO: Implement check for game completion
+  return 'pending';
+});
+
+When('final stacks are calculated', function () {
+  // TODO: Implement final stack calculation verification
+  return 'pending';
+});
+
+Then('the stack distribution should be:', function (dataTable) {
+  // TODO: Implement check for stack distribution
+  return 'pending';
+});
+
+Then('the total chips should remain ${int}', function (amount) {
+  // TODO: Implement check for total chips
+  return 'pending';
+});
+
+Then('the game state should be ready for a new hand', function () {
+  // TODO: Implement check for game state readiness
+  return 'pending';
+});
+
+Given('the {int}-player game scenario is complete', function (int) {
+  // TODO: Implement check for scenario completion
+  return 'pending';
+});
+
+Then('the action history should contain all actions in sequence:', function (dataTable) {
+  // TODO: Implement check for action history sequence
+  return 'pending';
+});
+
+Then('each action should include player name, action type, amount, and resulting pot size', function () {
+  // TODO: Implement check for action details
+  return 'pending';
+});
+
+Given('a {int}-player scenario is being executed', function (int) {
+  // TODO: Implement check for scenario execution
+  return 'pending';
+});
+
+Then('the game should transition through states correctly:', function (dataTable) {
+  // TODO: Implement check for game state transitions
+  return 'pending';
+});
+
+Then('each transition should be properly recorded and validated', function () {
+  // TODO: Implement check for transition validation
+  return 'pending';
+});
+
 // Helper functions
 async function createPlayerBrowser(playerName, headless = true, playerIndex = 0) {
   const options = new chrome.Options();
