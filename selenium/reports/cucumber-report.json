@@ -14,7 +14,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2799337499
+              "duration": 2807536915
             }
           },
           {
@@ -23,11 +23,11 @@
             "line": 7,
             "name": "both servers are force restarted and verified working correctly",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:317"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:307"
             },
             "result": {
               "status": "passed",
-              "duration": 8156933082
+              "duration": 8127664375
             }
           },
           {
@@ -36,11 +36,11 @@
             "line": 8,
             "name": "I have a clean game state",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:340"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:330"
             },
             "result": {
               "status": "passed",
-              "duration": 151499
+              "duration": 150666
             }
           },
           {
@@ -49,11 +49,11 @@
             "line": 9,
             "name": "the card order is deterministic for testing",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:352"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:342"
             },
             "result": {
               "status": "passed",
-              "duration": 27447124
+              "duration": 19667000
             }
           },
           {
@@ -62,11 +62,11 @@
             "line": 14,
             "name": "I have 5 players ready to join a poker game",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1811"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1800"
             },
             "result": {
               "status": "passed",
-              "duration": 221041
+              "duration": 242999
             }
           },
           {
@@ -75,11 +75,11 @@
             "line": 15,
             "name": "all players have starting stacks of $100",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:454"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:444"
             },
             "result": {
               "status": "passed",
-              "duration": 73040
+              "duration": 78332
             }
           },
           {
@@ -135,11 +135,12 @@
             "line": 16,
             "name": "players join the table in order:",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:462"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:452"
             },
             "result": {
-              "status": "passed",
-              "duration": 15014776583
+              "status": "failed",
+              "duration": 9236519874,
+              "error_message": "Error: 🚨 IMMEDIATE STOP: players join table - Failed to auto-seat Player1: player.driver.get is not a function\n    at handleCriticalFailure (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:106:25)\n    at World.<anonymous> (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:486:7)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)"
             }
           },
           {
@@ -189,12 +190,11 @@
             "line": 23,
             "name": "all players should be seated correctly:",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:515"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:505"
             },
             "result": {
-              "status": "failed",
-              "duration": 3003211666,
-              "error_message": "Error: 🚨 IMMEDIATE STOP: seating verification - Too many seating failures: 0/5 verified\n    at handleCriticalFailure (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:106:25)\n    at World.<anonymous> (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:584:5)"
+              "status": "skipped",
+              "duration": 0
             }
           },
           {
@@ -203,7 +203,7 @@
             "line": 32,
             "name": "I manually start the game for table 1",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:605"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:595"
             },
             "result": {
               "status": "skipped",
@@ -242,7 +242,7 @@
             "line": 33,
             "name": "the game starts with blinds structure:",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1832"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1821"
             },
             "result": {
               "status": "skipped",
@@ -255,7 +255,7 @@
             "line": 37,
             "name": "the pot should be $3",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:744"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:734"
             },
             "result": {
               "status": "skipped",
@@ -315,7 +315,7 @@
             "line": 40,
             "name": "hole cards are dealt according to the test scenario:",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:791"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:781"
             },
             "result": {
               "status": "skipped",
@@ -328,7 +328,7 @@
             "line": 47,
             "name": "each player should see their own hole cards",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:811"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:801"
             },
             "result": {
               "status": "skipped",
@@ -341,7 +341,7 @@
             "line": 50,
             "name": "the pre-flop betting round begins",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:896"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:886"
             },
             "result": {
               "status": "skipped",
@@ -354,7 +354,7 @@
             "line": 51,
             "name": "Player3 raises to $6",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:908"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:898"
             },
             "result": {
               "status": "skipped",
@@ -367,7 +367,7 @@
             "line": 52,
             "name": "Player4 calls $6",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:938"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:928"
             },
             "result": {
               "status": "skipped",
@@ -380,7 +380,7 @@
             "line": 53,
             "name": "Player5 folds",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:959"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:949"
             },
             "result": {
               "status": "skipped",
@@ -393,7 +393,7 @@
             "line": 54,
             "name": "Player1 calls $5 more",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1853"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1842"
             },
             "result": {
               "status": "skipped",
@@ -406,7 +406,7 @@
             "line": 55,
             "name": "Player2 re-raises to $16",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1029"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1007"
             },
             "result": {
               "status": "skipped",
@@ -419,7 +419,7 @@
             "line": 56,
             "name": "Player3 calls $10 more",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1865"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1854"
             },
             "result": {
               "status": "skipped",
@@ -432,7 +432,7 @@
             "line": 57,
             "name": "Player4 folds",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:959"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:949"
             },
             "result": {
               "status": "skipped",
@@ -445,7 +445,7 @@
             "line": 58,
             "name": "Player1 folds",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:959"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:949"
             },
             "result": {
               "status": "skipped",
@@ -458,7 +458,7 @@
             "line": 59,
             "name": "the pot should be $41",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:744"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:734"
             },
             "result": {
               "status": "skipped",
@@ -471,7 +471,7 @@
             "line": 60,
             "name": "2 players should remain in the hand: Player2, Player3",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1192"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1159"
             },
             "result": {
               "status": "skipped",
@@ -484,7 +484,7 @@
             "line": 63,
             "name": "the flop is dealt: K♣, Q♥, 10♦",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1877"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1866"
             },
             "result": {
               "status": "skipped",
@@ -497,7 +497,7 @@
             "line": 64,
             "name": "Player2 checks",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1059"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1037"
             },
             "result": {
               "status": "skipped",
@@ -510,7 +510,7 @@
             "line": 65,
             "name": "Player3 bets $20",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1118"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1092"
             },
             "result": {
               "status": "skipped",
@@ -523,7 +523,7 @@
             "line": 66,
             "name": "Player2 calls $20",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:938"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:928"
             },
             "result": {
               "status": "skipped",
@@ -536,7 +536,7 @@
             "line": 67,
             "name": "the pot should be $81",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:744"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:734"
             },
             "result": {
               "status": "skipped",
@@ -549,7 +549,7 @@
             "line": 68,
             "name": "both players should see the 3 flop cards",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1215"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1182"
             },
             "result": {
               "status": "skipped",
@@ -562,7 +562,7 @@
             "line": 69,
             "name": "Player2 should have top pair with Q♥",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1895"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1884"
             },
             "result": {
               "status": "skipped",
@@ -575,7 +575,7 @@
             "line": 70,
             "name": "Player3 should have top pair with K♣ and straight draw potential",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1904"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1893"
             },
             "result": {
               "status": "skipped",
@@ -587,7 +587,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 241250
+              "duration": 274041
             }
           },
           {
@@ -595,7 +595,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2871626458
+              "duration": 2995096499
             }
           },
           {
@@ -603,7 +603,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 216082
+              "duration": 421833
             }
           }
         ],
@@ -627,7 +627,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2830711374
+              "duration": 2852994250
             }
           },
           {
@@ -636,12 +636,12 @@
             "line": 7,
             "name": "both servers are force restarted and verified working correctly",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:317"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:307"
             },
             "result": {
               "status": "failed",
-              "duration": 211708,
-              "error_message": "Error: 🛑 Test execution stopped due to previous critical failure. Total failures: 1\n    at checkForCriticalFailure (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:113:11)\n    at World.<anonymous> (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:318:3)"
+              "duration": 351249,
+              "error_message": "Error: 🛑 Test execution stopped due to previous critical failure. Total failures: 1\n    at checkForCriticalFailure (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:113:11)\n    at World.<anonymous> (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:308:3)"
             }
           },
           {
@@ -650,7 +650,7 @@
             "line": 8,
             "name": "I have a clean game state",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:340"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:330"
             },
             "result": {
               "status": "skipped",
@@ -663,7 +663,7 @@
             "line": 9,
             "name": "the card order is deterministic for testing",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:352"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:342"
             },
             "result": {
               "status": "skipped",
@@ -676,7 +676,7 @@
             "line": 73,
             "name": "I have 5 players ready to join a poker game",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1811"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1800"
             },
             "result": {
               "status": "skipped",
@@ -689,7 +689,7 @@
             "line": 74,
             "name": "all players have starting stacks of $100",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:454"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:444"
             },
             "result": {
               "status": "skipped",
@@ -749,7 +749,7 @@
             "line": 75,
             "name": "players join the table in order:",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:462"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:452"
             },
             "result": {
               "status": "skipped",
@@ -803,7 +803,7 @@
             "line": 82,
             "name": "all players should be seated correctly:",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:515"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:505"
             },
             "result": {
               "status": "skipped",
@@ -816,7 +816,7 @@
             "line": 89,
             "name": "I manually start the game for table 1",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:605"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:595"
             },
             "result": {
               "status": "skipped",
@@ -855,7 +855,7 @@
             "line": 90,
             "name": "the game starts with blinds structure:",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1832"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1821"
             },
             "result": {
               "status": "skipped",
@@ -868,7 +868,7 @@
             "line": 94,
             "name": "the pot should be $3",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:744"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:734"
             },
             "result": {
               "status": "skipped",
@@ -880,7 +880,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 82290
+              "duration": 170624
             }
           },
           {
@@ -888,7 +888,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2883234957
+              "duration": 2879481707
             }
           },
           {
@@ -896,7 +896,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 119041
+              "duration": 137457
             }
           }
         ],
@@ -915,7 +915,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2830597208
+              "duration": 2832749042
             }
           },
           {
@@ -924,12 +924,12 @@
             "line": 7,
             "name": "both servers are force restarted and verified working correctly",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:317"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:307"
             },
             "result": {
               "status": "failed",
-              "duration": 488499,
-              "error_message": "Error: 🛑 Test execution stopped due to previous critical failure. Total failures: 1\n    at checkForCriticalFailure (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:113:11)\n    at World.<anonymous> (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:318:3)"
+              "duration": 271208,
+              "error_message": "Error: 🛑 Test execution stopped due to previous critical failure. Total failures: 1\n    at checkForCriticalFailure (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:113:11)\n    at World.<anonymous> (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:308:3)"
             }
           },
           {
@@ -938,7 +938,7 @@
             "line": 8,
             "name": "I have a clean game state",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:340"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:330"
             },
             "result": {
               "status": "skipped",
@@ -951,7 +951,7 @@
             "line": 9,
             "name": "the card order is deterministic for testing",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:352"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:342"
             },
             "result": {
               "status": "skipped",
@@ -964,7 +964,7 @@
             "line": 97,
             "name": "a 5-player game is in progress",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:764"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:754"
             },
             "result": {
               "status": "skipped",
@@ -1024,7 +1024,7 @@
             "line": 98,
             "name": "hole cards are dealt according to the test scenario:",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:791"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:781"
             },
             "result": {
               "status": "skipped",
@@ -1037,7 +1037,7 @@
             "line": 105,
             "name": "each player should see their own hole cards",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:811"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:801"
             },
             "result": {
               "status": "skipped",
@@ -1050,7 +1050,7 @@
             "line": 106,
             "name": "each player should see 2 face-down cards for other players",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:851"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:841"
             },
             "result": {
               "status": "skipped",
@@ -1062,7 +1062,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 116042
+              "duration": 97042
             }
           },
           {
@@ -1070,7 +1070,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2853670874
+              "duration": 2880622374
             }
           },
           {
@@ -1078,7 +1078,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 104874
+              "duration": 126958
             }
           }
         ],
@@ -1097,7 +1097,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2840379333
+              "duration": 2825893083
             }
           },
           {
@@ -1106,12 +1106,12 @@
             "line": 7,
             "name": "both servers are force restarted and verified working correctly",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:317"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:307"
             },
             "result": {
               "status": "failed",
-              "duration": 149292,
-              "error_message": "Error: 🛑 Test execution stopped due to previous critical failure. Total failures: 1\n    at checkForCriticalFailure (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:113:11)\n    at World.<anonymous> (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:318:3)"
+              "duration": 288999,
+              "error_message": "Error: 🛑 Test execution stopped due to previous critical failure. Total failures: 1\n    at checkForCriticalFailure (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:113:11)\n    at World.<anonymous> (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:308:3)"
             }
           },
           {
@@ -1120,7 +1120,7 @@
             "line": 8,
             "name": "I have a clean game state",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:340"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:330"
             },
             "result": {
               "status": "skipped",
@@ -1133,7 +1133,7 @@
             "line": 9,
             "name": "the card order is deterministic for testing",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:352"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:342"
             },
             "result": {
               "status": "skipped",
@@ -1146,7 +1146,7 @@
             "line": 109,
             "name": "hole cards have been dealt to 5 players",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:868"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:858"
             },
             "result": {
               "status": "skipped",
@@ -1159,7 +1159,7 @@
             "line": 110,
             "name": "the pot is $3 from blinds",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:888"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:878"
             },
             "result": {
               "status": "skipped",
@@ -1172,7 +1172,7 @@
             "line": 111,
             "name": "the pre-flop betting round begins",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:896"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:886"
             },
             "result": {
               "status": "skipped",
@@ -1185,7 +1185,7 @@
             "line": 112,
             "name": "Player3 raises to $6",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:908"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:898"
             },
             "result": {
               "status": "skipped",
@@ -1198,7 +1198,7 @@
             "line": 113,
             "name": "Player4 calls $6",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:938"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:928"
             },
             "result": {
               "status": "skipped",
@@ -1211,7 +1211,7 @@
             "line": 114,
             "name": "Player5 folds",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:959"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:949"
             },
             "result": {
               "status": "skipped",
@@ -1224,7 +1224,7 @@
             "line": 115,
             "name": "Player1 calls $5 more (completing small blind call)",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:980"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:970"
             },
             "result": {
               "status": "skipped",
@@ -1237,7 +1237,7 @@
             "line": 116,
             "name": "Player2 re-raises to $16",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1029"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1007"
             },
             "result": {
               "status": "skipped",
@@ -1250,7 +1250,7 @@
             "line": 117,
             "name": "Player3 calls $10 more",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1865"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1854"
             },
             "result": {
               "status": "skipped",
@@ -1263,7 +1263,7 @@
             "line": 118,
             "name": "Player4 folds",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:959"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:949"
             },
             "result": {
               "status": "skipped",
@@ -1276,7 +1276,7 @@
             "line": 119,
             "name": "Player1 folds",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:959"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:949"
             },
             "result": {
               "status": "skipped",
@@ -1289,7 +1289,7 @@
             "line": 120,
             "name": "the pot should be $41",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:744"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:734"
             },
             "result": {
               "status": "skipped",
@@ -1302,7 +1302,7 @@
             "line": 121,
             "name": "2 players should remain in the hand: Player2, Player3",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1192"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1159"
             },
             "result": {
               "status": "skipped",
@@ -1315,7 +1315,7 @@
             "line": 122,
             "name": "Player4 should have $94 remaining",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1202"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1169"
             },
             "result": {
               "status": "skipped",
@@ -1328,7 +1328,7 @@
             "line": 123,
             "name": "Player1 should have $93 remaining",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1202"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1169"
             },
             "result": {
               "status": "skipped",
@@ -1341,7 +1341,7 @@
             "line": 124,
             "name": "Player5 should have $100 remaining",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1202"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1169"
             },
             "result": {
               "status": "skipped",
@@ -1353,7 +1353,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 50332
+              "duration": 62125
             }
           },
           {
@@ -1361,7 +1361,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2867675957
+              "duration": 2870227916
             }
           },
           {
@@ -1369,7 +1369,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 98250
+              "duration": 99750
             }
           }
         ],
@@ -1388,7 +1388,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2828062541
+              "duration": 2830551124
             }
           },
           {
@@ -1397,12 +1397,12 @@
             "line": 7,
             "name": "both servers are force restarted and verified working correctly",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:317"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:307"
             },
             "result": {
               "status": "failed",
-              "duration": 178667,
-              "error_message": "Error: 🛑 Test execution stopped due to previous critical failure. Total failures: 1\n    at checkForCriticalFailure (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:113:11)\n    at World.<anonymous> (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:318:3)"
+              "duration": 440249,
+              "error_message": "Error: 🛑 Test execution stopped due to previous critical failure. Total failures: 1\n    at checkForCriticalFailure (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:113:11)\n    at World.<anonymous> (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:308:3)"
             }
           },
           {
@@ -1411,7 +1411,7 @@
             "line": 8,
             "name": "I have a clean game state",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:340"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:330"
             },
             "result": {
               "status": "skipped",
@@ -1424,7 +1424,7 @@
             "line": 9,
             "name": "the card order is deterministic for testing",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:352"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:342"
             },
             "result": {
               "status": "skipped",
@@ -1437,7 +1437,7 @@
             "line": 127,
             "name": "2 players remain after pre-flop: Player2, Player3",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1210"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1177"
             },
             "result": {
               "status": "skipped",
@@ -1450,7 +1450,7 @@
             "line": 128,
             "name": "the pot is $41",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:892"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:882"
             },
             "result": {
               "status": "skipped",
@@ -1463,7 +1463,7 @@
             "line": 129,
             "name": "the flop is dealt: K♠, Q♠, 10♥",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1886"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1875"
             },
             "result": {
               "status": "skipped",
@@ -1476,7 +1476,7 @@
             "line": 130,
             "name": "Player2 checks",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1059"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1037"
             },
             "result": {
               "status": "skipped",
@@ -1489,7 +1489,7 @@
             "line": 131,
             "name": "Player3 bets $20",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1118"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1092"
             },
             "result": {
               "status": "skipped",
@@ -1502,7 +1502,7 @@
             "line": 132,
             "name": "Player2 calls $20",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:938"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:928"
             },
             "result": {
               "status": "skipped",
@@ -1515,7 +1515,7 @@
             "line": 133,
             "name": "the pot should be $81",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:744"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:734"
             },
             "result": {
               "status": "skipped",
@@ -1528,7 +1528,7 @@
             "line": 134,
             "name": "both players should see the 3 flop cards",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1215"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1182"
             },
             "result": {
               "status": "skipped",
@@ -1541,7 +1541,7 @@
             "line": 135,
             "name": "Player2 should have top pair with Q♥",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1895"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1884"
             },
             "result": {
               "status": "skipped",
@@ -1554,7 +1554,7 @@
             "line": 136,
             "name": "Player3 should have top pair with K♣ and straight draw potential",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1904"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1893"
             },
             "result": {
               "status": "skipped",
@@ -1566,7 +1566,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 65916
+              "duration": 89291
             }
           },
           {
@@ -1574,7 +1574,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2875527749
+              "duration": 2883453165
             }
           },
           {
@@ -1582,7 +1582,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 193500
+              "duration": 265083
             }
           }
         ],
@@ -1601,7 +1601,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2821395166
+              "duration": 2843562292
             }
           },
           {
@@ -1610,12 +1610,12 @@
             "line": 7,
             "name": "both servers are force restarted and verified working correctly",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:317"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:307"
             },
             "result": {
               "status": "failed",
-              "duration": 272500,
-              "error_message": "Error: 🛑 Test execution stopped due to previous critical failure. Total failures: 1\n    at checkForCriticalFailure (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:113:11)\n    at World.<anonymous> (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:318:3)"
+              "duration": 353125,
+              "error_message": "Error: 🛑 Test execution stopped due to previous critical failure. Total failures: 1\n    at checkForCriticalFailure (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:113:11)\n    at World.<anonymous> (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:308:3)"
             }
           },
           {
@@ -1624,7 +1624,7 @@
             "line": 8,
             "name": "I have a clean game state",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:340"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:330"
             },
             "result": {
               "status": "skipped",
@@ -1637,7 +1637,7 @@
             "line": 9,
             "name": "the card order is deterministic for testing",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:352"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:342"
             },
             "result": {
               "status": "skipped",
@@ -1650,7 +1650,7 @@
             "line": 139,
             "name": "the flop betting is complete with pot at $81",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1246"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1213"
             },
             "result": {
               "status": "skipped",
@@ -1663,7 +1663,7 @@
             "line": 140,
             "name": "the turn card J♥ is dealt",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1252"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1219"
             },
             "result": {
               "status": "skipped",
@@ -1676,7 +1676,7 @@
             "line": 141,
             "name": "Player2 bets $30",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1118"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1092"
             },
             "result": {
               "status": "skipped",
@@ -1689,7 +1689,7 @@
             "line": 142,
             "name": "Player3 raises to $60",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:908"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:898"
             },
             "result": {
               "status": "skipped",
@@ -1702,7 +1702,7 @@
             "line": 143,
             "name": "Player2 goes all-in for $54 total remaining",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1277"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1244"
             },
             "result": {
               "status": "skipped",
@@ -1715,7 +1715,7 @@
             "line": 144,
             "name": "Player3 calls the remaining $24",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1327"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1281"
             },
             "result": {
               "status": "skipped",
@@ -1728,7 +1728,7 @@
             "line": 145,
             "name": "the pot should be $195",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:744"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:734"
             },
             "result": {
               "status": "skipped",
@@ -1741,7 +1741,7 @@
             "line": 146,
             "name": "Player2 should be all-in",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1376"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1317"
             },
             "result": {
               "status": "skipped",
@@ -1754,7 +1754,7 @@
             "line": 147,
             "name": "Player3 should have chips remaining",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1380"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1321"
             },
             "result": {
               "status": "skipped",
@@ -1767,7 +1767,7 @@
             "line": 148,
             "name": "Player2 should have two pair potential",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1913"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1902"
             },
             "result": {
               "status": "skipped",
@@ -1780,7 +1780,7 @@
             "line": 149,
             "name": "Player3 should have two pair: K♣ and J♠",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1918"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1907"
             },
             "result": {
               "status": "skipped",
@@ -1792,7 +1792,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 80207
+              "duration": 481500
             }
           },
           {
@@ -1800,7 +1800,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2876706124
+              "duration": 2870011416
             }
           },
           {
@@ -1808,7 +1808,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 92750
+              "duration": 212041
             }
           }
         ],
@@ -1827,7 +1827,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2831310707
+              "duration": 2837633667
             }
           },
           {
@@ -1836,12 +1836,12 @@
             "line": 7,
             "name": "both servers are force restarted and verified working correctly",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:317"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:307"
             },
             "result": {
               "status": "failed",
-              "duration": 143291,
-              "error_message": "Error: 🛑 Test execution stopped due to previous critical failure. Total failures: 1\n    at checkForCriticalFailure (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:113:11)\n    at World.<anonymous> (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:318:3)"
+              "duration": 123583,
+              "error_message": "Error: 🛑 Test execution stopped due to previous critical failure. Total failures: 1\n    at checkForCriticalFailure (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:113:11)\n    at World.<anonymous> (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:308:3)"
             }
           },
           {
@@ -1850,7 +1850,7 @@
             "line": 8,
             "name": "I have a clean game state",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:340"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:330"
             },
             "result": {
               "status": "skipped",
@@ -1863,7 +1863,7 @@
             "line": 9,
             "name": "the card order is deterministic for testing",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:352"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:342"
             },
             "result": {
               "status": "skipped",
@@ -1876,7 +1876,7 @@
             "line": 152,
             "name": "both players are committed to showdown",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1385"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1326"
             },
             "result": {
               "status": "skipped",
@@ -1889,7 +1889,7 @@
             "line": 153,
             "name": "the pot is $195",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:892"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:882"
             },
             "result": {
               "status": "skipped",
@@ -1902,7 +1902,7 @@
             "line": 154,
             "name": "the river card 8♥ is dealt",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1389"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1330"
             },
             "result": {
               "status": "skipped",
@@ -1915,7 +1915,7 @@
             "line": 155,
             "name": "the final board should be: K♠, Q♠, 10♥, J♥, 8♥",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1403"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1344"
             },
             "result": {
               "status": "skipped",
@@ -1928,7 +1928,7 @@
             "line": 156,
             "name": "the showdown should occur automatically",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1424"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1365"
             },
             "result": {
               "status": "skipped",
@@ -1940,7 +1940,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 67832
+              "duration": 33790
             }
           },
           {
@@ -1948,7 +1948,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2887204083
+              "duration": 2871909790
             }
           },
           {
@@ -1956,7 +1956,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 177042
+              "duration": 110958
             }
           }
         ],
@@ -1975,7 +1975,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2830202332
+              "duration": 2845299916
             }
           },
           {
@@ -1984,12 +1984,12 @@
             "line": 7,
             "name": "both servers are force restarted and verified working correctly",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:317"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:307"
             },
             "result": {
               "status": "failed",
-              "duration": 361042,
-              "error_message": "Error: 🛑 Test execution stopped due to previous critical failure. Total failures: 1\n    at checkForCriticalFailure (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:113:11)\n    at World.<anonymous> (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:318:3)"
+              "duration": 179875,
+              "error_message": "Error: 🛑 Test execution stopped due to previous critical failure. Total failures: 1\n    at checkForCriticalFailure (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:113:11)\n    at World.<anonymous> (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:308:3)"
             }
           },
           {
@@ -1998,7 +1998,7 @@
             "line": 8,
             "name": "I have a clean game state",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:340"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:330"
             },
             "result": {
               "status": "skipped",
@@ -2011,7 +2011,7 @@
             "line": 9,
             "name": "the card order is deterministic for testing",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:352"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:342"
             },
             "result": {
               "status": "skipped",
@@ -2024,7 +2024,7 @@
             "line": 159,
             "name": "the showdown occurs with final board: K♠, Q♠, 10♥, J♥, 8♥",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1436"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1377"
             },
             "result": {
               "status": "skipped",
@@ -2066,7 +2066,7 @@
             "line": 160,
             "name": "hands are evaluated:",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1441"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1382"
             },
             "result": {
               "status": "skipped",
@@ -2079,7 +2079,7 @@
             "line": 164,
             "name": "Player2 should win with \"Ace-high flush\"",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1475"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1416"
             },
             "result": {
               "status": "skipped",
@@ -2092,7 +2092,7 @@
             "line": 165,
             "name": "Player2 should receive the pot of $195",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1502"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1443"
             },
             "result": {
               "status": "skipped",
@@ -2105,7 +2105,7 @@
             "line": 166,
             "name": "the action history should show the complete game sequence",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1513"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1454"
             },
             "result": {
               "status": "skipped",
@@ -2117,7 +2117,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 75708
+              "duration": 62624
             }
           },
           {
@@ -2125,7 +2125,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2883692333
+              "duration": 2881679333
             }
           },
           {
@@ -2133,7 +2133,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 87583
+              "duration": 177207
             }
           }
         ],
@@ -2152,7 +2152,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2830229833
+              "duration": 2831744124
             }
           },
           {
@@ -2161,12 +2161,12 @@
             "line": 7,
             "name": "both servers are force restarted and verified working correctly",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:317"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:307"
             },
             "result": {
               "status": "failed",
-              "duration": 173458,
-              "error_message": "Error: 🛑 Test execution stopped due to previous critical failure. Total failures: 1\n    at checkForCriticalFailure (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:113:11)\n    at World.<anonymous> (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:318:3)"
+              "duration": 153208,
+              "error_message": "Error: 🛑 Test execution stopped due to previous critical failure. Total failures: 1\n    at checkForCriticalFailure (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:113:11)\n    at World.<anonymous> (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:308:3)"
             }
           },
           {
@@ -2175,7 +2175,7 @@
             "line": 8,
             "name": "I have a clean game state",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:340"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:330"
             },
             "result": {
               "status": "skipped",
@@ -2188,7 +2188,7 @@
             "line": 9,
             "name": "the card order is deterministic for testing",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:352"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:342"
             },
             "result": {
               "status": "skipped",
@@ -2201,7 +2201,7 @@
             "line": 169,
             "name": "the game is complete",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1542"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1483"
             },
             "result": {
               "status": "skipped",
@@ -2214,7 +2214,7 @@
             "line": 170,
             "name": "final stacks are calculated",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1546"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1487"
             },
             "result": {
               "status": "skipped",
@@ -2274,7 +2274,7 @@
             "line": 171,
             "name": "the stack distribution should be:",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1555"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1496"
             },
             "result": {
               "status": "skipped",
@@ -2287,7 +2287,7 @@
             "line": 178,
             "name": "the total chips should remain $500",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1622"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1563"
             },
             "result": {
               "status": "skipped",
@@ -2300,7 +2300,7 @@
             "line": 179,
             "name": "the game state should be ready for a new hand",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1655"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1596"
             },
             "result": {
               "status": "skipped",
@@ -2312,7 +2312,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 206125
+              "duration": 129958
             }
           },
           {
@@ -2320,7 +2320,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2870024208
+              "duration": 2951818958
             }
           },
           {
@@ -2328,7 +2328,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 86833
+              "duration": 93708
             }
           }
         ],
@@ -2347,7 +2347,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2833180290
+              "duration": 2823554334
             }
           },
           {
@@ -2356,12 +2356,12 @@
             "line": 7,
             "name": "both servers are force restarted and verified working correctly",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:317"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:307"
             },
             "result": {
               "status": "failed",
-              "duration": 158125,
-              "error_message": "Error: 🛑 Test execution stopped due to previous critical failure. Total failures: 1\n    at checkForCriticalFailure (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:113:11)\n    at World.<anonymous> (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:318:3)"
+              "duration": 174249,
+              "error_message": "Error: 🛑 Test execution stopped due to previous critical failure. Total failures: 1\n    at checkForCriticalFailure (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:113:11)\n    at World.<anonymous> (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:308:3)"
             }
           },
           {
@@ -2370,7 +2370,7 @@
             "line": 8,
             "name": "I have a clean game state",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:340"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:330"
             },
             "result": {
               "status": "skipped",
@@ -2383,7 +2383,7 @@
             "line": 9,
             "name": "the card order is deterministic for testing",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:352"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:342"
             },
             "result": {
               "status": "skipped",
@@ -2396,7 +2396,7 @@
             "line": 182,
             "name": "the 5-player game scenario is complete",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1663"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1604"
             },
             "result": {
               "status": "skipped",
@@ -2576,7 +2576,7 @@
             "line": 183,
             "name": "the action history should contain all actions in sequence:",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1923"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1912"
             },
             "result": {
               "status": "skipped",
@@ -2589,7 +2589,7 @@
             "line": 202,
             "name": "each action should include player name, action type, amount, and resulting pot size",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1941"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1930"
             },
             "result": {
               "status": "skipped",
@@ -2601,7 +2601,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 60333
+              "duration": 56041
             }
           },
           {
@@ -2609,7 +2609,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2865239207
+              "duration": 2872786082
             }
           },
           {
@@ -2617,7 +2617,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 92667
+              "duration": 211540
             }
           }
         ],
@@ -2636,7 +2636,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2839161250
+              "duration": 2825970167
             }
           },
           {
@@ -2645,12 +2645,12 @@
             "line": 7,
             "name": "both servers are force restarted and verified working correctly",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:317"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:307"
             },
             "result": {
               "status": "failed",
-              "duration": 293416,
-              "error_message": "Error: 🛑 Test execution stopped due to previous critical failure. Total failures: 1\n    at checkForCriticalFailure (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:113:11)\n    at World.<anonymous> (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:318:3)"
+              "duration": 186333,
+              "error_message": "Error: 🛑 Test execution stopped due to previous critical failure. Total failures: 1\n    at checkForCriticalFailure (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:113:11)\n    at World.<anonymous> (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/5-player-complete-game-steps.js:308:3)"
             }
           },
           {
@@ -2659,7 +2659,7 @@
             "line": 8,
             "name": "I have a clean game state",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:340"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:330"
             },
             "result": {
               "status": "skipped",
@@ -2672,7 +2672,7 @@
             "line": 9,
             "name": "the card order is deterministic for testing",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:352"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:342"
             },
             "result": {
               "status": "skipped",
@@ -2685,7 +2685,7 @@
             "line": 205,
             "name": "a 5-player scenario is being executed",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1946"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1935"
             },
             "result": {
               "status": "skipped",
@@ -2767,7 +2767,7 @@
             "line": 206,
             "name": "the game should transition through states correctly:",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1968"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1957"
             },
             "result": {
               "status": "skipped",
@@ -2780,7 +2780,7 @@
             "line": 215,
             "name": "each transition should be properly recorded and validated",
             "match": {
-              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1985"
+              "location": "selenium/step_definitions/5-player-complete-game-steps.js:1974"
             },
             "result": {
               "status": "skipped",
@@ -2792,7 +2792,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 102666
+              "duration": 51624
             }
           },
           {
@@ -2800,7 +2800,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2873456667
+              "duration": 2858926500
             }
           },
           {
@@ -2808,7 +2808,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 102917
+              "duration": 87958
             }
           }
         ],

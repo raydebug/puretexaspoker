@@ -241,13 +241,15 @@ async function createBrowserForScreenshots(playerName, seatNumber) {
   }
 }
 
-// Modify the autoSeatPlayer function to create browsers for screenshots
+// Modify the autoSeatPlayer function to work with existing player structure
 async function autoSeatPlayer(player, tableId = 1, seatNumber, buyInAmount = 100) {
   console.log(`🚀 ${player.name} using auto-seat to join table ${tableId}, seat ${seatNumber} with $${buyInAmount}...`);
   
-  // Create browser for screenshots if needed
-  if (!player.driver && process.env.SCREENSHOT_MODE === 'true') {
-    player.driver = await createBrowserForScreenshots(player.name, seatNumber);
+  // Ensure we have a driver for real UI interaction
+  if (!player.driver) {
+    console.log(`🚀 Creating browser for ${player.name}...`);
+    const newPlayer = await createPlayerBrowser(player.name, process.env.HEADLESS === 'true', Object.keys(players).length);
+    player.driver = newPlayer.driver;
   }
   
   // Take screenshot before auto-seat
@@ -256,12 +258,6 @@ async function autoSeatPlayer(player, tableId = 1, seatNumber, buyInAmount = 100
   // Navigate directly to auto-seat URL with parameters
   const autoSeatUrl = `http://localhost:3000/auto-seat?player=${encodeURIComponent(player.name)}&table=${tableId}&seat=${seatNumber}&buyin=${buyInAmount}`;
   console.log(`📍 ${player.name} navigating to: ${autoSeatUrl}`);
-  
-  // Ensure we have a driver for real UI interaction
-  if (!player.driver) {
-    console.log(`🚀 Creating browser for ${player.name}...`);
-    player.driver = await createPlayerBrowser(player.name, process.env.HEADLESS === 'true', Object.keys(players).length);
-  }
   
   try {
     await player.driver.get(autoSeatUrl);
