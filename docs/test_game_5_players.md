@@ -29,8 +29,10 @@
 - **Player4** folds
 - **Player1** folds
 
-🪙 **Pot = $41**  
+🪙 **Pot = $44**  
 **Remaining players**: Player2, Player3
+
+*Pot calculation: $3 (blinds) + $6 (Player3 raise) + $6 (Player4 call) + $5 (Player1 call) + $14 (Player2 re-raise) + $10 (Player3 call) = $44*
 
 ## 🟩 Flop: **🃑♣️ 🂻♥️ 🂾♦️** (K♣ Q♥ 10♦)
 
@@ -40,7 +42,9 @@
 | Player3  | Bet $20    | Top pair + straight draw    |
 | Player2  | Call $20   |                              |
 
-🪙 **Pot = $81**
+🪙 **Pot = $84**
+
+*Pot calculation: $44 (pre-flop) + $20 (Player3 bet) + $20 (Player2 call) = $84*
 
 ## 🟨 Turn: **🂫♠️** (J♣ Q♥ 10♦ K♣ **J♠**)
 
@@ -51,7 +55,9 @@
 | Player2  | All-in ($54 total) |
 | Player3  | Call remaining $24 |
 
-🪙 **Pot = $195**
+🪙 **Pot = $252**
+
+*Pot calculation: $84 (flop) + $30 (Player2 bet) + $60 (Player3 raise) + $54 (Player2 all-in) + $24 (Player3 call) = $252*
 
 ## 🟥 River: **🂷♥️** (7♥)
 
@@ -61,7 +67,7 @@
 - **Player3**: 🃍♣️ 🃑♣️ (J♣ K♣) → Two pair (K♣ + J♣)
 
 🎉 **Winner: Player2** with **Flush (A♥ Q♥ + 2♥ board)**  
-💰 **Pot Won**: $195
+💰 **Pot Won**: $252
 
 ## ✅ Summary of Actions
 

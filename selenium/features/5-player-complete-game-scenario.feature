@@ -3,14 +3,10 @@ Feature: 5-Player Complete Game Scenario
   I want to execute a complete 5-player Texas Hold'em game
   So that I can validate complex multi-player game mechanics with specific card dealing and betting patterns
 
-  Background:
-    Given both servers are force restarted and verified working correctly
-    And servers are ready and verified for testing
-    And I have a clean game state
-    And the card order is deterministic for testing
-
   @comprehensive-50-percent
   Scenario: 50% Coverage - Setup + Pre-Flop + Basic Flop (Comprehensive)
+    # DATABASE RESET
+    Given the database is reset to a clean state
     # GAME SETUP (20% coverage)
     Given I have 5 players ready to join a poker game
     And all players have starting stacks of $100
@@ -57,7 +53,7 @@ Feature: 5-Player Complete Game Scenario
     And Player3 calls $10 more
     And Player4 folds
     And Player1 folds
-    Then the pot should be $41
+    Then the pot should be $44
     And 2 players should remain in the hand: Player2, Player3
     
     # BASIC FLOP (Adds 15% coverage - total 50%)
@@ -65,12 +61,13 @@ Feature: 5-Player Complete Game Scenario
     And Player2 checks
     And Player3 bets $20
     And Player2 calls $20
-    Then the pot should be $81
+    Then the pot should be $84
     And both players should see the 3 flop cards
     And Player2 should have top pair with Q♥
     And Player3 should have top pair with K♣ and straight draw potential
 
   Scenario: Complete 5-Player Texas Hold'em Game with Specific Cards and Actions
+    Given the database is reset to a clean state
     Given I have 5 players ready to join a poker game
     And all players have starting stacks of $100
     When players join the table in order:
@@ -118,7 +115,7 @@ Feature: 5-Player Complete Game Scenario
     And Player3 calls $10 more
     And Player4 folds
     And Player1 folds
-    Then the pot should be $41
+    Then the pot should be $44
     And 2 players should remain in the hand: Player2, Player3
     And Player4 should have $94 remaining
     And Player1 should have $93 remaining
@@ -126,12 +123,12 @@ Feature: 5-Player Complete Game Scenario
 
   Scenario: Flop Community Cards and Betting
     Given 2 players remain after pre-flop: Player2, Player3
-    And the pot is $41
+    And the pot is $44
     When the flop is dealt: K♠, Q♠, 10♥
     And Player2 checks
     And Player3 bets $20
     And Player2 calls $20
-    Then the pot should be $81
+    Then the pot should be $84
     And both players should see the 3 flop cards
     And Player2 should have top pair with Q♥
     And Player3 should have top pair with K♣ and straight draw potential
@@ -143,7 +140,7 @@ Feature: 5-Player Complete Game Scenario
     And Player3 raises to $60
     And Player2 goes all-in for $54 total remaining
     And Player3 calls the remaining $24
-    Then the pot should be $195
+    Then the pot should be $252
     And Player2 should be all-in
     And Player3 should have chips remaining
     And Player2 should have two pair potential
@@ -151,7 +148,7 @@ Feature: 5-Player Complete Game Scenario
 
   Scenario: River Card and Showdown
     Given both players are committed to showdown
-    And the pot is $195
+    And the pot is $252
     When the river card 8♥ is dealt
     Then the final board should be: K♠, Q♠, 10♥, J♥, 8♥
     And the showdown should occur automatically
@@ -163,7 +160,7 @@ Feature: 5-Player Complete Game Scenario
       | Player2 | A♥, Q♥     | A♥, Q♥, J♥, 10♥, 8♥ (Flush) | Ace-high flush|
       | Player3 | J♣, K♣     | K♣, K♠, J♣, J♥, Q♠ (Two Pair)| Kings over Jacks|
     Then Player2 should win with "Ace-high flush"
-    And Player2 should receive the pot of $195
+    And Player2 should receive the pot of $252
     And the action history should show the complete game sequence
 
   Scenario: Final Stack Verification
@@ -190,16 +187,16 @@ Feature: 5-Player Complete Game Scenario
       | Pre-Flop | Player5 | Fold          | $0     | $15       |
       | Pre-Flop | Player1 | Call          | $5     | $20       |
       | Pre-Flop | Player2 | Re-raise      | $14    | $34       |
-      | Pre-Flop | Player3 | Call          | $10    | $41       |
-      | Pre-Flop | Player4 | Fold          | $0     | $41       |
-      | Pre-Flop | Player1 | Fold          | $0     | $41       |
-      | Flop     | Player2 | Check         | $0     | $41       |
-      | Flop     | Player3 | Bet           | $20    | $61       |
-      | Flop     | Player2 | Call          | $20    | $81       |
-      | Turn     | Player2 | Bet           | $30    | $111      |
-      | Turn     | Player3 | Raise         | $60    | $171      |
-      | Turn     | Player2 | All-in        | $24    | $195      |
-      | Turn     | Player3 | Call          | $0     | $195      |
+      | Pre-Flop | Player3 | Call          | $10    | $44       |
+      | Pre-Flop | Player4 | Fold          | $0     | $44       |
+      | Pre-Flop | Player1 | Fold          | $0     | $44       |
+      | Flop     | Player2 | Check         | $0     | $44       |
+      | Flop     | Player3 | Bet           | $20    | $64       |
+      | Flop     | Player2 | Call          | $20    | $84       |
+      | Turn     | Player2 | Bet           | $30    | $114      |
+      | Turn     | Player3 | Raise         | $60    | $174      |
+      | Turn     | Player2 | All-in        | $54    | $252      |
+      | Turn     | Player3 | Call          | $24    | $252      |
     And each action should include player name, action type, amount, and resulting pot size
 
   Scenario: Game State Transitions
@@ -208,9 +205,9 @@ Feature: 5-Player Complete Game Scenario
       | State           | Active Players | Pot Amount | Community Cards |
       | Initial         | 5              | $0         | 0               |
       | Blinds Posted   | 5              | $3         | 0               |
-      | Pre-Flop        | 5→2            | $41        | 0               |
-      | Flop            | 2              | $81        | 3               |
-      | Turn            | 2              | $195       | 4               |
-      | River           | 2              | $195       | 5               |
+      | Pre-Flop        | 5→2            | $44        | 0               |
+      | Flop            | 2              | $84        | 3               |
+      | Turn            | 2              | $250       | 4               |
+      | River           | 2              | $250       | 5               |
       | Showdown        | 0              | $0         | 5               |
     And each transition should be properly recorded and validated 

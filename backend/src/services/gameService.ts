@@ -5,6 +5,7 @@ import { SeatManager } from './seatManager';
 import { SidePotManager, PotDistribution } from './sidePotManager';
 import { CardOrderService } from './cardOrderService';
 import { EnhancedBlindManager } from './enhancedBlindManager';
+import { memoryCache, OnlinePlayer } from './MemoryCache';
 
 export class GameService {
   private gameState: GameState;
@@ -59,8 +60,8 @@ export class GameService {
       status: 'waiting',
       currentBet: 0,
       minBet: 0,
-      smallBlind: 5,
-      bigBlind: 10,
+      smallBlind: 1,
+      bigBlind: 2,
       handEvaluation: undefined,
       winner: undefined,
       isHandComplete: false
@@ -68,55 +69,80 @@ export class GameService {
   }
 
   public startGame(): void {
-    if (this.gameState.players.length < 2) {
+    console.log(`🎮 Starting game ${this.gameId}...`);
+    
+    // Get players from memory cache instead of database
+    const onlineGame = memoryCache.getGame(this.gameId);
+    if (!onlineGame) {
+      throw new Error(`Game ${this.gameId} not found in memory cache`);
+    }
+
+    const onlinePlayers = onlineGame.players;
+    if (onlinePlayers.length < 2) {
       throw new Error('Not enough players to start the game');
     }
 
-    // Reset game state for new hand
-    this.gameState.status = 'playing';
-    this.gameState.phase = 'preflop';
-    this.gameState.isHandComplete = false;
-    this.gameState.winner = undefined;
-    this.gameState.handEvaluation = undefined;
-    this.gameState.pot = 0;
-    this.gameState.currentBet = 0;
-    this.gameState.communityCards = [];
-    this.gameState.burnedCards = [];
-    
-    // Clear action tracking for new hand
-    this.playersActedThisRound.clear();
-    
-    // Reset player states and ensure all seated players are active
+    console.log(`✅ Found ${onlinePlayers.length} players in memory cache for game ${this.gameId}`);
+
+    // Convert online players to game players
+    this.gameState.players = onlinePlayers.map((onlinePlayer, index) => ({
+      id: onlinePlayer.id,
+      name: onlinePlayer.nickname,
+      seatNumber: onlinePlayer.seatNumber,
+      position: index,
+      chips: onlinePlayer.chips,
+      currentBet: 0,
+      isDealer: index === 0, // First player is dealer for now
+      isAway: false,
+      isActive: onlinePlayer.isActive,
+      cards: [],
+      avatar: {
+        type: 'initials',
+        initials: onlinePlayer.nickname.substring(0, 2).toUpperCase(),
+        color: '#4CAF50'
+      }
+    }));
+
+    // Set up positions
+    this.gameState.dealerPosition = 0;
+    this.gameState.smallBlindPosition = 1;
+    this.gameState.bigBlindPosition = 2;
+
+    // Deal cards to all players
+    this.deckService.shuffle(this.deckService['deck']);
     this.gameState.players.forEach(player => {
-      player.cards = [];
-      player.currentBet = 0;
-      // Only activate players who are actually seated
-      player.isActive = this.seatManager.isPlayerSeated(player.id);
-    });
-
-    // Verify we have enough active players
-    const activePlayers = this.gameState.players.filter(p => p.isActive);
-    if (activePlayers.length < 2) {
-      throw new Error('Not enough active players to start the game');
-    }
-
-    // Update positions using seat manager
-    this.updatePositionsWithSeatManager();
-
-    // Generate pre-determined card order with hash for transparency
-    const cardOrderData = this.cardOrderService.generateCardOrder(this.gameId);
-    this.cardOrderHash = cardOrderData.hash;
-    
-    // Use the pre-determined deck order
-    this.deck = [...cardOrderData.cardOrder];
-    
-    // Deal cards to active players from pre-determined order
-    activePlayers.forEach(player => {
-      player.cards = this.deckService.dealCards(2, this.deck);
+      player.cards = this.deckService.dealCards(2, this.deckService['deck']);
     });
 
     // Post blinds
     this.postBlinds();
+
+    // Set current player to first player after big blind
+    this.gameState.currentPlayerPosition = 3;
+    this.gameState.currentPlayerId = this.gameState.players[3]?.id || this.gameState.players[0]?.id;
+
+    // Update game state
+    this.gameState.phase = 'preflop';
+    this.gameState.status = 'playing';
+
+    // Update memory cache
+    memoryCache.updateGame(this.gameId, {
+      status: 'active',
+      phase: 'preflop',
+      pot: this.gameState.pot,
+      players: this.gameState.players.map(p => ({
+        id: p.id,
+        nickname: p.name,
+        seatNumber: p.seatNumber,
+        chips: p.chips,
+        holeCards: p.cards.map(c => `${c.rank}${c.suit}`),
+        isActive: p.isActive,
+        isAllIn: false
+      })),
+      currentPlayer: this.gameState.currentPlayerId || undefined
+    });
+
+    console.log(`✅ Game ${this.gameId} started successfully with ${this.gameState.players.length} players`);
   }
 
   private updatePositionsWithSeatManager(): void {
@@ -332,6 +358,9 @@ export class GameService {
     this.playersActedThisRound.add(playerId);
     
     this.moveToNextPlayer();
+
+    // Update memory cache
+    this.updateMemoryCache();
   }
 
   public raise(playerId: string, totalAmount: number): void {
@@ -398,6 +427,9 @@ export class GameService {
     this.playersActedThisRound.add(playerId);
     
     this.moveToNextPlayer();
+
+    // Update memory cache
+    this.updateMemoryCache();
   }
 
   public fold(playerId: string): void {
@@ -420,6 +452,9 @@ export class GameService {
     this.playersActedThisRound.add(playerId);
     
     this.moveToNextPlayer();
+
+    // Update memory cache
+    this.updateMemoryCache();
   }
 
   private moveToNextPlayer(): void {
@@ -1148,5 +1183,24 @@ export class GameService {
   // ENHANCED BLIND SYSTEM: Force post dead blinds for a player
   public forcePostDeadBlinds(playerId: string): boolean {
     return this.enhancedBlindManager.postDeadBlinds(playerId);
+  }
+
+  private updateMemoryCache(): void {
+    memoryCache.updateGame(this.gameId, {
+      status: this.gameState.status as any,
+      phase: this.gameState.phase as any,
+      pot: this.gameState.pot,
+      communityCards: this.gameState.communityCards.map(c => `${c.rank}${c.suit}`),
+      players: this.gameState.players.map(p => ({
+        id: p.id,
+        nickname: p.name,
+        seatNumber: p.seatNumber,
+        chips: p.chips,
+        holeCards: p.cards.map(c => `${c.rank}${c.suit}`),
+        isActive: p.isActive,
+        isAllIn: p.chips === 0
+      })),
+      currentPlayer: this.gameState.currentPlayerId || undefined
+    });
   }
 } 

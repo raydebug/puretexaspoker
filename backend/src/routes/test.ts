@@ -1,5 +1,5 @@
 import express from 'express';
-import { clearDatabase } from '../services/testService';
+import { clearDatabase, cleanupTestData } from '../services/testService';
 import { PrismaClient } from '@prisma/client';
 import { CardOrderService } from '../services/cardOrderService';
 import { Card } from '../types/shared';
@@ -170,6 +170,51 @@ router.delete('/clear-card-order/:gameId?', (req, res) => {
 // Helper function to get test card order for other services
 export function getTestCardOrder(gameId: string): Card[] | null {
   return testCardOrders.get(gameId) || null;
+}
+
+// Set up 5-player test card order based on MD file specifications
+export function setup5PlayerTestCardOrder(): void {
+  // Card order based on MD file:
+  // Player1: 6♠ 8♦ (hole cards 1-2)
+  // Player2: A♥ Q♥ (hole cards 3-4) 
+  // Player3: J♣ K♣ (hole cards 5-6)
+  // Player4: J♠ 10♠ (hole cards 7-8)
+  // Player5: Q♦ 2♦ (hole cards 9-10)
+  // Flop: K♣ Q♥ 10♦ (cards 11-13)
+  // Turn: J♠ (card 14)
+  // River: 7♥ (card 15)
+  
+  const testCardOrder = [
+    // Player1 hole cards
+    { rank: '6', suit: 'spades' },
+    { rank: '8', suit: 'diamonds' },
+    // Player2 hole cards  
+    { rank: 'A', suit: 'hearts' },
+    { rank: 'Q', suit: 'hearts' },
+    // Player3 hole cards
+    { rank: 'J', suit: 'clubs' },
+    { rank: 'K', suit: 'clubs' },
+    // Player4 hole cards
+    { rank: 'J', suit: 'spades' },
+    { rank: '10', suit: 'spades' },
+    // Player5 hole cards
+    { rank: 'Q', suit: 'diamonds' },
+    { rank: '2', suit: 'diamonds' },
+    // Flop
+    { rank: 'K', suit: 'clubs' },
+    { rank: 'Q', suit: 'hearts' },
+    { rank: '10', suit: 'diamonds' },
+    // Turn
+    { rank: 'J', suit: 'spades' },
+    // River
+    { rank: '7', suit: 'hearts' }
+  ];
+  
+  // Set for table-1 (which is used by the 5-player test)
+  testCardOrders.set('table-1', testCardOrder);
+  console.log(`🎯 5-player test card order set for table-1: ${testCardOrder.length} cards`);
+  console.log(`🃏 Hole cards: ${testCardOrder.slice(0, 10).map(c => `${c.rank}${c.suit[0]}`).join(', ')}`);
+  console.log(`🃏 Community: ${testCardOrder.slice(10).map(c => `${c.rank}${c.suit[0]}`).join(', ')}`);
 }
 
 // Basic connection check for tests
@@ -513,17 +558,61 @@ router.post('/start-game', async (req, res) => {
       }
       
       // Find the game for this database table
-      const existingGame = activeDbTable.games[0];
+      let existingGame = activeDbTable.games[0];
       
       if (!existingGame) {
-        return res.status(404).json({ 
-          success: false, 
-          error: `No active game found for table ${tableId}. Found table ${activeDbTable.id} with ${activeDbTable.playerTables.length} players`
+        console.log(`🎮 Creating new game for table ${tableId}...`);
+        
+        // Create a new game for this table
+        existingGame = await prisma.game.create({
+          data: {
+            tableId: activeDbTable.id,
+            status: 'waiting',
+            pot: 0,
+            deck: null,
+            board: null
+          }
         });
+        
+        console.log(`✅ Created new game ${existingGame.id} for table ${tableId}`);
       }
       
       targetGameId = existingGame.id;
-      console.log(`✅ Found game ${targetGameId} for table ${tableId}`);
+      console.log(`✅ Using game ${targetGameId} for table ${tableId}`);
+      
+      // Create game in GameManager (memory cache)
+      const { GameManager } = require('../services/gameManager');
+      const { memoryCache } = require('../services/MemoryCache');
+      const gm = GameManager.getInstance();
+      gm.createGame(targetGameId, tableId.toString());
+
+      // Populate memory cache with seated players
+      const seatedPlayers = await Promise.all(
+        activeDbTable.playerTables.map(async (pt) => {
+          const player = await prisma.player.findUnique({
+            where: { id: pt.playerId }
+          });
+          return {
+            id: player?.id || pt.playerId,
+            nickname: player?.nickname || `Player${pt.seatNumber}`,
+            seatNumber: pt.seatNumber,
+            chips: pt.buyIn || 100,
+            isActive: true,
+            isAllIn: false
+          };
+        })
+      );
+
+      memoryCache.updateGame(targetGameId, {
+        status: 'waiting',
+        phase: 'waiting',
+        pot: 0,
+        players: seatedPlayers,
+        communityCards: [],
+        currentPlayer: undefined
+      });
+
+      console.log(`✅ Populated memory cache with ${seatedPlayers.length} players for game ${targetGameId}`);
     }
     
     if (!targetGameId) {
@@ -1272,6 +1361,193 @@ router.post('/set_player_chips', async (req, res) => {
   } catch (error) {
     console.error('Error setting player chips:', error);
     res.status(500).json({ success: false, error: 'Failed to set player chips' });
+  }
+});
+
+// Database reset endpoint
+router.post('/reset-database', async (req, res) => {
+  try {
+    console.log('🗄️ Resetting database to clean state...');
+    
+    // Clean up all test data
+    await cleanupTestData();
+    
+    // Reset any game state
+    testCardOrders.clear();
+    
+    // Ensure we have at least one table for testing
+    const existingTables = await prisma.table.findMany();
+    if (existingTables.length === 0) {
+      console.log('Creating default table for testing...');
+      await prisma.table.create({
+        data: {
+          name: 'No Limit $0.01/$0.02 Micro Table 1 (ID: 1)',
+          maxPlayers: 6,
+          smallBlind: 1,
+          bigBlind: 2,
+          minBuyIn: 100,
+          maxBuyIn: 1000
+        }
+      });
+    }
+    
+    console.log('✅ Database reset completed successfully');
+    
+    res.json({
+      success: true,
+      message: 'Database reset to clean state',
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Database reset failed:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Create player-table associations for testing
+router.post('/create-player-table-associations', async (req, res) => {
+  try {
+    const { players } = req.body;
+    
+    if (!players || !Array.isArray(players)) {
+      return res.status(400).json({
+        success: false,
+        error: 'players array is required'
+      });
+    }
+    
+    console.log('👥 Creating player-table associations for testing...');
+    
+    const results = [];
+    
+    for (const playerData of players) {
+      const { playerName, seatNumber, buyIn, tableId = 1 } = playerData;
+      
+      try {
+        // Find or create the player
+        let player = await prisma.player.findFirst({
+          where: { nickname: playerName }
+        });
+        
+        if (!player) {
+          player = await prisma.player.create({
+            data: {
+              nickname: playerName,
+              chips: buyIn
+            }
+          });
+          console.log(`✅ Created player: ${playerName}`);
+        } else {
+          // Update player chips
+          player = await prisma.player.update({
+            where: { id: player.id },
+            data: { chips: buyIn }
+          });
+          console.log(`✅ Updated player: ${playerName} with $${buyIn} chips`);
+        }
+        
+        // Find the table
+        const table = await prisma.table.findFirst({
+          where: { name: { contains: `(ID: ${tableId})` } }
+        });
+        
+        if (!table) {
+          throw new Error(`Table with ID ${tableId} not found`);
+        }
+        
+        // Create or update player-table association
+        const existingAssociation = await prisma.playerTable.findFirst({
+          where: {
+            playerId: player.id,
+            tableId: table.id
+          }
+        });
+        
+        if (existingAssociation) {
+          // Update existing association
+          await prisma.playerTable.update({
+            where: { id: existingAssociation.id },
+            data: {
+              seatNumber: seatNumber,
+              buyIn: buyIn
+            }
+          });
+        } else {
+          // Create new association
+          await prisma.playerTable.create({
+            data: {
+              playerId: player.id,
+              tableId: table.id,
+              seatNumber: seatNumber,
+              buyIn: buyIn
+            }
+          });
+        }
+        
+        results.push({
+          playerName,
+          seatNumber,
+          buyIn,
+          success: true
+        });
+        
+        console.log(`✅ Associated ${playerName} with seat ${seatNumber} at table ${tableId}`);
+        
+      } catch (error) {
+        console.error(`❌ Failed to associate ${playerName}: ${(error as Error).message}`);
+        results.push({
+          playerName,
+          seatNumber,
+          buyIn,
+          success: false,
+          error: (error as Error).message
+        });
+      }
+    }
+    
+    console.log(`✅ Player-table associations completed: ${results.filter(r => r.success).length}/${results.length} successful`);
+    
+    res.json({
+      success: true,
+      results,
+      message: 'Player-table associations created for testing',
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Failed to create player-table associations:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// GET /api/test/memory-cache-stats - Get memory cache statistics
+router.get('/memory-cache-stats', async (req, res) => {
+  try {
+    const { memoryCache } = require('../services/MemoryCache');
+    const stats = memoryCache.getStats();
+    
+    res.json({
+      success: true,
+      stats,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Failed to get memory cache stats:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message,
+      timestamp: new Date().toISOString()
+    });
   }
 });
 

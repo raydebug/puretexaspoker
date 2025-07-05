@@ -4,6 +4,8 @@ const { WebDriverHelpers } = require('../utils/webdriverHelpers.js')
 const axios = require('axios')
 const { exec } = require('child_process')
 const { promisify } = require('util')
+const path = require('path')
+const fs = require('fs')
 
 const execAsync = promisify(exec)
 
@@ -208,12 +210,60 @@ Before({timeout: 90000}, async function() {
   }
 })
 
-// Enhanced cleanup after each scenario
+// Enhanced cleanup after each scenario with screenshot capture
 After({timeout: 60000}, async function(scenario) {
   console.log('🧹 Starting enhanced scenario cleanup...')
   
   const scenarioStatus = scenario.result.status
   console.log(`📊 Scenario "${scenario.pickle.name}" status: ${scenarioStatus}`)
+  
+  // Capture screenshot on failure
+  if (scenarioStatus === Status.FAILED) {
+    console.log('📸 Scenario failed - capturing screenshots...')
+    
+    try {
+      // Create screenshots directory if it doesn't exist
+      const screenshotsDir = path.join(__dirname, '../screenshots')
+      if (!fs.existsSync(screenshotsDir)) {
+        fs.mkdirSync(screenshotsDir, { recursive: true })
+      }
+      
+      // Capture screenshot for each player browser if available
+      if (global.players && typeof global.players === 'object') {
+        for (const [playerName, player] of Object.entries(global.players)) {
+          if (player && player.driver) {
+            try {
+              const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+              const screenshotPath = path.join(screenshotsDir, `failure_${scenario.pickle.name}_${playerName}_${timestamp}.png`)
+              await player.driver.takeScreenshot().then(data => {
+                fs.writeFileSync(screenshotPath, data, 'base64')
+                console.log(`📸 Screenshot saved for ${playerName}: ${screenshotPath}`)
+              })
+            } catch (screenshotError) {
+              console.log(`⚠️ Failed to capture screenshot for ${playerName}: ${screenshotError.message}`)
+            }
+          }
+        }
+      }
+      
+      // Also capture screenshot from single browser if available
+      if (helpers && helpers.driver) {
+        try {
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+          const screenshotPath = path.join(screenshotsDir, `failure_${scenario.pickle.name}_single_${timestamp}.png`)
+          await helpers.driver.takeScreenshot().then(data => {
+            fs.writeFileSync(screenshotPath, data, 'base64')
+            console.log(`📸 Screenshot saved for single browser: ${screenshotPath}`)
+          })
+        } catch (screenshotError) {
+          console.log(`⚠️ Failed to capture single browser screenshot: ${screenshotError.message}`)
+        }
+      }
+      
+    } catch (error) {
+      console.log(`⚠️ Screenshot capture failed: ${error.message}`)
+    }
+  }
   
   // Skip single-browser cleanup for multi-browser tests
   if (process.env.MULTI_BROWSER_TEST !== 'true') {

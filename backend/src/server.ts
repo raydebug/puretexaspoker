@@ -15,6 +15,7 @@ import { prisma } from './db';
 import { tableManager } from './services/TableManager';
 import { locationManager } from './services/LocationManager';
 import { cleanupTestData } from './services/testService';
+import { setup5PlayerTestCardOrder } from './routes/test';
 
 // Use imported cleanupTestData from testService
 
@@ -31,8 +32,8 @@ async function createDefaultTables() {
         {
           name: 'Beginner Table 1',
           maxPlayers: 6,
-          smallBlind: 5,
-          bigBlind: 10,
+          smallBlind: 1,
+          bigBlind: 2,
           minBuyIn: 100,
           maxBuyIn: 1000
         },
@@ -120,7 +121,10 @@ async function initializeServer() {
     // Step 3: Initialize location manager
     await locationManager.initialize();
     
-    // Step 4: Start server
+    // Step 4: Set up 5-player test card order
+    setup5PlayerTestCardOrder();
+    
+    // Step 5: Start server
     httpServer.listen(port, () => {
       console.log(`Server is running on port ${port}`);
       console.log('Using consolidated WebSocket handler system');

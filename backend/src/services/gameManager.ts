@@ -4,6 +4,7 @@ import { prisma } from '../db';
 import { Server } from 'socket.io';
 import { CardOrderService } from './cardOrderService';
 import { GamePersistenceManager } from './gamePersistenceManager';
+import { memoryCache, OnlineGame, OnlinePlayer, GameResult } from './MemoryCache';
 
 export class GameManager {
   private games: Map<string, GameService> = new Map();
@@ -119,7 +120,7 @@ export class GameManager {
     }
   }
 
-  public createGame(gameId: string): GameState {
+  public createGame(gameId: string, tableId?: string): GameState {
     console.log(`DEBUG: GameManager.createGame called with gameId: ${gameId}`);
     if (this.games.has(gameId)) {
       console.log(`DEBUG: Game ${gameId} already exists, returning existing state`);
@@ -131,6 +132,20 @@ export class GameManager {
     gameService.setPhaseTransitionCallback(this.handleAutomaticPhaseTransition.bind(this));
     
     this.games.set(gameId, gameService);
+    
+    // Create game in memory cache
+    const onlineGame: OnlineGame = {
+      id: gameId,
+      tableId: tableId || 'unknown',
+      status: 'waiting',
+      phase: 'preflop',
+      players: [],
+      pot: 0,
+      communityCards: [],
+      lastAction: new Date()
+    };
+    memoryCache.addGame(onlineGame);
+    
     console.log(`DEBUG: GameManager created game ${gameId}, map size: ${this.games.size}`);
     console.log(`DEBUG: GameManager games map keys: ${Array.from(this.games.keys())}`);
     return gameService.getGameState();
@@ -165,6 +180,23 @@ export class GameManager {
 
     // Start the game (deals cards, posts blinds, etc.)
     gameService.startGame();
+
+    // Update memory cache
+    const gameState = gameService.getGameState();
+    memoryCache.updateGame(gameId, {
+      status: 'active',
+      phase: gameState.phase as any,
+      pot: gameState.pot,
+      players: gameState.players.map(p => ({
+        id: p.id,
+        nickname: p.name,
+        seatNumber: p.seatNumber,
+        chips: p.chips,
+        isActive: p.isActive,
+        isAllIn: false // Player type doesn't have isAllIn, default to false
+      })),
+      currentPlayer: gameState.currentPlayerId || undefined
+    });
 
     // Update database
     await prisma.game.update({
