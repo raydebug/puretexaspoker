@@ -175,32 +175,9 @@ When('players join the table in order:', { timeout: 120 * 1000 }, async function
     
     console.log(`✅ All players seated at the table!`);
     
-    // Create player-table associations in the database
-    console.log(`🗄️ Creating player-table associations in database...`);
-    const playerAssociations = rows.map(row => ({
-      playerName: row.Player,
-      seatNumber: parseInt(row.Seat),
-      buyIn: parseInt(row['Buy-in'] ? row['Buy-in'].replace('$', '') : row.Stack.replace('$', '')),
-      tableId: 1
-    }));
-    
-    const associationResponse = await fetch('http://localhost:3001/api/test/create-player-table-associations', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        players: playerAssociations
-      })
-    });
-    
-    if (!associationResponse.ok) {
-      const errorText = await associationResponse.text();
-      throw new Error(`Failed to create player-table associations: ${associationResponse.status} - ${errorText}`);
-    }
-    
-    const associationResult = await associationResponse.json();
-    console.log('✅ Player-table associations created successfully:', associationResult);
+    // Note: Player-table associations are automatically created by the auto-seat URLs
+    // No need to create duplicate associations here
+    console.log(`ℹ️ Player-table associations handled automatically by auto-seat URLs`);
     
     // Populate player name to ID mapping
     console.log('🔍 Populating player name to ID mapping...');

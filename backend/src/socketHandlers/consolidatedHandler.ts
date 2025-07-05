@@ -649,7 +649,24 @@ export function registerConsolidatedHandlers(io: Server) {
             });
             
             const currentPlayerName = currentPlayer?.nickname || `Player ${seatOccupant.playerId}`;
-            throw new Error(`Seat ${seatNumber} is already taken by ${currentPlayerName}`);
+            
+            // Enhanced logging for seat conflict
+            console.log(`[CONSOLIDATED] SEAT CONFLICT:`, {
+              attemptingUser: {
+                socketId: socket.id,
+                playerId: socket.data.playerId,
+                nickname: socket.data.nickname
+              },
+              currentOccupant: {
+                playerId: seatOccupant.playerId,
+                nickname: currentPlayerName
+              },
+              seatNumber: seatNumber,
+              tableId: socket.data.tableId,
+              timestamp: new Date().toISOString()
+            });
+            
+            throw new Error(`Seat ${seatNumber} is already taken by ${currentPlayerName} when ${socket.data.nickname} wants to take this seat`);
           }
 
           // **STEP 5**: Remove any remaining stale records at this specific seat (redundant but safe)
@@ -837,6 +854,20 @@ export function registerConsolidatedHandlers(io: Server) {
         console.log(`[CONSOLIDATED] Successfully seated ${socket.data.nickname} at seat ${seatNumber}`);
         
       } catch (error) {
+        // Enhanced error logging with user information
+        console.error(`[CONSOLIDATED] SEAT CONFLICT DETAILS:`, {
+          attemptingUser: {
+            socketId: socket.id,
+            playerId: socket.data.playerId,
+            nickname: socket.data.nickname,
+            tableId: socket.data.tableId
+          },
+          targetSeat: seatNumber,
+          buyIn: buyIn,
+          error: (error as Error).message,
+          timestamp: new Date().toISOString()
+        });
+        
         handleError(socket, error as Error, 'takeSeat', { seatNumber, buyIn });
         socket.emit('seatError', (error as Error).message);
       }
