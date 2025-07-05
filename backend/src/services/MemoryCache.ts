@@ -60,11 +60,27 @@ export interface UserProfile {
   lastActive: Date;
 }
 
+export interface GameAction {
+  id: string;
+  gameId: string;
+  playerId: string;
+  playerName: string;
+  action: 'bet' | 'call' | 'raise' | 'fold' | 'check' | 'allIn';
+  amount?: number;
+  phase: 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
+  handNumber: number;
+  actionSequence: number;
+  timestamp: Date;
+  gameStateBefore?: string;
+  gameStateAfter?: string;
+}
+
 class MemoryCache extends EventEmitter {
   private users: Map<string, OnlineUser> = new Map();
   private games: Map<string, OnlineGame> = new Map();
   private gameResults: Map<string, GameResult> = new Map();
   private userProfiles: Map<string, UserProfile> = new Map();
+  private gameActions: Map<string, GameAction[]> = new Map(); // gameId -> actions[]
   
   // Sync intervals (in milliseconds)
   private readonly USER_SYNC_INTERVAL = 30000; // 30 seconds
@@ -118,6 +134,12 @@ class MemoryCache extends EventEmitter {
   // ===== GAME MANAGEMENT =====
   
   addGame(game: OnlineGame): void {
+    // Validate game before adding
+    if (!game.id || !game.tableId) {
+      console.error('❌ Invalid game data:', game);
+      return;
+    }
+    
     this.games.set(game.id, game);
     this.emit('gameAdded', game);
   }
@@ -180,6 +202,56 @@ class MemoryCache extends EventEmitter {
   
   getUpdatedProfiles(): UserProfile[] {
     return Array.from(this.userProfiles.values());
+  }
+  
+  // ===== ACTION HISTORY =====
+  
+  addGameAction(gameId: string, action: Omit<GameAction, 'id' | 'timestamp'>): void {
+    const actions = this.gameActions.get(gameId) || [];
+    const newAction: GameAction = {
+      ...action,
+      id: `${gameId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: new Date()
+    };
+    
+    actions.push(newAction);
+    this.gameActions.set(gameId, actions);
+    this.emit('actionAdded', newAction);
+  }
+  
+  getGameActions(gameId: string, handNumber?: number): GameAction[] {
+    const actions = this.gameActions.get(gameId) || [];
+    if (handNumber !== undefined) {
+      return actions.filter(action => action.handNumber === handNumber);
+    }
+    return actions;
+  }
+  
+  getGameActionsByPhase(gameId: string, phase: string): GameAction[] {
+    const actions = this.gameActions.get(gameId) || [];
+    return actions.filter(action => action.phase === phase);
+  }
+  
+  getLatestAction(gameId: string): GameAction | undefined {
+    const actions = this.gameActions.get(gameId) || [];
+    return actions[actions.length - 1];
+  }
+  
+  clearGameActions(gameId: string): void {
+    this.gameActions.delete(gameId);
+    this.emit('actionsCleared', gameId);
+  }
+  
+  getActionHistoryStats(): { totalGames: number; totalActions: number } {
+    let totalActions = 0;
+    this.gameActions.forEach(actions => {
+      totalActions += actions.length;
+    });
+    
+    return {
+      totalGames: this.gameActions.size,
+      totalActions
+    };
   }
   
   // ===== PERIODIC SYNC =====
@@ -247,26 +319,50 @@ class MemoryCache extends EventEmitter {
       const { PrismaClient } = require('@prisma/client');
       const prisma = new PrismaClient();
       
+      let syncedCount = 0;
+      let skippedCount = 0;
+      
       for (const game of games) {
-        await prisma.game.upsert({
-          where: { id: game.id },
-          update: {
-            status: game.status,
-            pot: game.pot,
-            board: game.communityCards.length > 0 ? JSON.stringify(game.communityCards) : null,
-            updatedAt: new Date()
-          },
-          create: {
-            id: game.id,
-            tableId: game.tableId,
-            status: game.status,
-            pot: game.pot,
-            board: game.communityCards.length > 0 ? JSON.stringify(game.communityCards) : null
+        try {
+          // Check if table exists before trying to create/update game
+          const table = await prisma.table.findFirst({
+            where: { id: game.tableId }
+          });
+          
+          if (!table) {
+            console.log(`⚠️ Table ${game.tableId} not found, skipping game ${game.id} sync`);
+            skippedCount++;
+            // Remove invalid game from memory cache
+            this.removeGame(game.id);
+            continue;
           }
-        });
+          
+          await prisma.game.upsert({
+            where: { id: game.id },
+            update: {
+              status: game.status,
+              pot: game.pot,
+              board: game.communityCards.length > 0 ? JSON.stringify(game.communityCards) : null,
+              updatedAt: new Date()
+            },
+            create: {
+              id: game.id,
+              tableId: game.tableId,
+              status: game.status,
+              pot: game.pot,
+              board: game.communityCards.length > 0 ? JSON.stringify(game.communityCards) : null
+            }
+          });
+          
+          syncedCount++;
+          
+        } catch (gameError) {
+          console.error(`❌ Failed to sync game ${game.id}:`, gameError);
+          // Continue with other games even if one fails
+        }
       }
       
-      console.log(`✅ Synced ${games.length} active games`);
+      console.log(`✅ Completed active games sync: ${syncedCount} synced, ${skippedCount} skipped`);
       
     } catch (error) {
       console.error('❌ Failed to sync active games:', error);
@@ -323,12 +419,14 @@ class MemoryCache extends EventEmitter {
     activeGames: number;
     pendingResults: number;
     updatedProfiles: number;
+    actionHistory: { totalGames: number; totalActions: number };
   } {
     return {
       onlineUsers: this.getOnlineUsers().length,
       activeGames: this.getActiveGames().length,
       pendingResults: this.getPendingResults().length,
-      updatedProfiles: this.getUpdatedProfiles().length
+      updatedProfiles: this.getUpdatedProfiles().length,
+      actionHistory: this.getActionHistoryStats()
     };
   }
   
@@ -337,6 +435,7 @@ class MemoryCache extends EventEmitter {
     this.games.clear();
     this.gameResults.clear();
     this.userProfiles.clear();
+    this.gameActions.clear();
     this.emit('cacheCleared');
   }
   

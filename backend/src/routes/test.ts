@@ -636,6 +636,9 @@ router.post('/start-game', async (req, res) => {
       });
     }
     
+    // Skip database record creation for now - work with memory cache only
+    console.log(`🚀 Starting game ${targetGameId} in memory cache only`);
+    
     // Start the game
     const gameState = await gameManager.startGame(targetGameId);
     
@@ -1543,6 +1546,190 @@ router.get('/memory-cache-stats', async (req, res) => {
     
   } catch (error) {
     console.error('❌ Failed to get memory cache stats:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// POST /api/test/game-state - Get current game state
+router.post('/game-state', async (req, res) => {
+  try {
+    const { gameId } = req.body;
+    
+    if (!gameId) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'gameId is required'
+      });
+    }
+    
+    const { gameManager } = require('../services/gameManager');
+    
+    // Get game state from memory
+    const gameState = gameManager.getGameState(gameId);
+    
+    if (!gameState) {
+      return res.status(404).json({ 
+        success: false, 
+        error: `Game ${gameId} not found in memory`
+      });
+    }
+    
+    res.json({
+      success: true,
+      gameId,
+      pot: gameState.pot,
+      phase: gameState.phase,
+      status: gameState.status,
+      players: gameState.players.length,
+      currentPlayerId: gameState.currentPlayerId,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Failed to get game state:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// POST /api/test/player-action - Perform player action
+router.post('/player-action', async (req, res) => {
+  try {
+    const { gameId, playerId, action, amount } = req.body;
+    
+    if (!gameId || !playerId || !action) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'gameId, playerId, and action are required'
+      });
+    }
+    
+    const { gameManager } = require('../services/gameManager');
+    
+    // Get the game service to find player by name
+    const gameService = gameManager.getGame(gameId);
+    if (!gameService) {
+      return res.status(404).json({ 
+        success: false, 
+        error: `Game ${gameId} not found`
+      });
+    }
+    
+    // Find player by name (playerId is actually the player name like "Player3")
+    const player = gameService.getPlayerByName(playerId);
+    if (!player) {
+      return res.status(404).json({ 
+        success: false, 
+        error: `Player ${playerId} not found in game`
+      });
+    }
+    
+    const actualPlayerId = player.id;
+    console.log(`🎯 Found player ${playerId} with ID ${actualPlayerId}`);
+    
+    let result;
+    
+    switch (action) {
+      case 'fold':
+        result = await gameManager.fold(gameId, actualPlayerId);
+        break;
+      case 'call':
+        result = await gameManager.call(gameId, actualPlayerId);
+        break;
+      case 'raise':
+        if (!amount) {
+          return res.status(400).json({ 
+            success: false, 
+            error: 'amount is required for raise action'
+          });
+        }
+        result = await gameManager.raise(gameId, actualPlayerId, amount);
+        break;
+      case 'check':
+        result = await gameManager.check(gameId, actualPlayerId);
+        break;
+      case 'bet':
+        if (!amount) {
+          return res.status(400).json({ 
+            success: false, 
+            error: 'amount is required for bet action'
+          });
+        }
+        result = await gameManager.placeBet(gameId, actualPlayerId, amount);
+        break;
+      default:
+        return res.status(400).json({ 
+          success: false, 
+          error: `Unknown action: ${action}`
+        });
+    }
+    
+    res.json({
+      success: true,
+      action,
+      playerId,
+      amount,
+      gameState: result,
+      message: `${playerId} performed ${action}${amount ? ` for ${amount}` : ''}`
+    });
+    
+  } catch (error) {
+    console.error('❌ Failed to perform player action:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// POST /api/test/find-player - Find player by name and return their ID
+router.post('/find-player', async (req, res) => {
+  try {
+    const { playerName } = req.body;
+    
+    if (!playerName) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'playerName is required'
+      });
+    }
+    
+    // Find player in the database
+    const player = await prisma.player.findFirst({
+      where: {
+        nickname: playerName
+      },
+      select: {
+        id: true,
+        nickname: true
+      }
+    });
+    
+    if (!player) {
+      return res.status(404).json({ 
+        success: false, 
+        error: `Player ${playerName} not found`
+      });
+    }
+    
+    res.json({
+      success: true,
+      playerId: player.id,
+      playerName: player.nickname,
+      message: `Found player ${playerName} with ID ${player.id}`,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Failed to find player:', error);
     res.status(500).json({
       success: false,
       error: (error as Error).message,

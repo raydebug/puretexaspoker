@@ -103,6 +103,11 @@ export class GameService {
       }
     }));
 
+    // Initialize seat manager with player data
+    this.gameState.players.forEach(player => {
+      this.seatManager.assignSeat(player.id, player.seatNumber);
+    });
+
     // Set up positions
     this.gameState.dealerPosition = 0;
     this.gameState.smallBlindPosition = 1;
@@ -117,9 +122,14 @@ export class GameService {
     // Post blinds
     this.postBlinds();
 
-    // Set current player to first player after big blind
-    this.gameState.currentPlayerPosition = 3;
-    this.gameState.currentPlayerId = this.gameState.players[3]?.id || this.gameState.players[0]?.id;
+    // Set current player to first player after big blind (Texas Hold'em rule)
+    const activePlayers = this.gameState.players.filter(p => p.isActive);
+    const firstToAct = this.seatManager.getFirstToAct(activePlayers, true);
+    if (firstToAct) {
+      this.gameState.currentPlayerId = firstToAct;
+      const currentPlayerIndex = activePlayers.findIndex(p => p.id === firstToAct);
+      this.gameState.currentPlayerPosition = currentPlayerIndex;
+    }
 
     // Update game state
     this.gameState.phase = 'preflop';
@@ -807,6 +817,10 @@ export class GameService {
 
   public getPlayer(playerId: string): Player | undefined {
     return this.gameState.players.find(p => p.id === playerId);
+  }
+
+  public getPlayerByName(playerName: string): Player | undefined {
+    return this.gameState.players.find(p => p.name === playerName);
   }
 
   public addPlayer(player: Player): void {

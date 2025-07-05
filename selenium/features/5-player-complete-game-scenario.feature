@@ -45,15 +45,14 @@ Feature: 5-Player Complete Game Scenario
     
     # PRE-FLOP BETTING (Adds 15% coverage - total 35%)
     When the pre-flop betting round begins
-    And Player3 raises to $6
-    And Player4 calls $6
-    And Player5 folds
-    And Player1 calls $5 more
-    And Player2 re-raises to $16
-    And Player3 calls $10 more
-    And Player4 folds
-    And Player1 folds
-    Then the pot should be $44
+      And Player4 raises to $6
+  And Player5 calls $6
+  And Player1 folds
+  And Player2 re-raises to $16
+  And Player3 calls $10 more
+  And Player4 calls $10 more
+  And Player5 folds
+    Then the pot should be $54
     And 2 players should remain in the hand: Player2, Player3
     
     # BASIC FLOP (Adds 15% coverage - total 50%)

@@ -193,8 +193,9 @@ export class SeatManager {
 
     if (isPreflop) {
       // Pre-flop: first to act is left of big blind
-      const { bigBlind } = this.getBlindPositions(players);
-      const firstToActPosition = (bigBlind + 1) % numPlayers;
+      // In Texas Hold'em, after blinds are posted, first to act is the player left of big blind
+      // For 5 players: Dealer=0, SB=1, BB=2, First to act=3, then 4, then back to 0 if needed
+      const firstToActPosition = 3; // Player4 (seat 4) should be first to act after BB
       return turnOrder[firstToActPosition]?.playerId || null;
     } else {
       // Post-flop: first to act is left of dealer

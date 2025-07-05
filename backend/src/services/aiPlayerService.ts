@@ -1,7 +1,6 @@
-import * as io from 'socket.io-client';
+import io from 'socket.io-client';
+import type { Socket } from 'socket.io-client/build/esm/socket';
 import { GameState, Player } from '../types/game';
-
-type Socket = io.Socket;
 
 export interface AIPlayerConfig {
   name: string;
@@ -11,7 +10,7 @@ export interface AIPlayerConfig {
 }
 
 export class AIPlayer {
-  private socket: Socket;
+  private socket: ReturnType<typeof io>;
   private config: AIPlayerConfig;
   private gameState: GameState | null = null;
   private isConnected = false;
