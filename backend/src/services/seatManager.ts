@@ -189,6 +189,8 @@ export class SeatManager {
     const turnOrder = this.calculateTurnOrder(players);
     const numPlayers = turnOrder.length;
 
+    console.log(`🔍 getFirstToAct called - isPreflop: ${isPreflop}, numPlayers: ${numPlayers}, dealerPosition: ${this.dealerPosition}`);
+
     if (numPlayers === 0) return null;
 
     if (isPreflop) {
@@ -196,11 +198,32 @@ export class SeatManager {
       // In Texas Hold'em, after blinds are posted, first to act is the player left of big blind
       // For 5 players: Dealer=0, SB=1, BB=2, First to act=3, then 4, then back to 0 if needed
       const firstToActPosition = 3; // Player4 (seat 4) should be first to act after BB
-      return turnOrder[firstToActPosition]?.playerId || null;
+      const result = turnOrder[firstToActPosition]?.playerId || null;
+      console.log(`🔍 Preflop: firstToActPosition=${firstToActPosition}, result=${result}`);
+      return result;
     } else {
       // Post-flop: first to act is left of dealer
-      const firstToActPosition = (this.dealerPosition + 1) % numPlayers;
-      return turnOrder[firstToActPosition]?.playerId || null;
+      // Find the first active player to the left of the dealer
+      const dealerSeat = this.dealerPosition + 1; // Convert to 1-based seat number
+      
+      console.log(`🔍 Postflop: dealerSeat=${dealerSeat}, maxSeats=${this.maxSeats}`);
+      
+      // Find the first active player to the left of dealer
+      let firstToActPlayer = null;
+      
+      // Start from dealer position and go clockwise to find first active player
+      for (let i = 1; i <= this.maxSeats; i++) {
+        const checkSeat = ((dealerSeat + i - 1) % this.maxSeats) + 1; // Convert back to 1-based
+        const playerAtSeat = players.find(p => p.seatNumber === checkSeat && p.isActive);
+        console.log(`🔍 Checking seat ${checkSeat}: ${playerAtSeat ? playerAtSeat.name : 'no active player'}`);
+        if (playerAtSeat) {
+          firstToActPlayer = playerAtSeat;
+          break;
+        }
+      }
+      
+      console.log(`🔍 Postflop result: ${firstToActPlayer?.name} (${firstToActPlayer?.id})`);
+      return firstToActPlayer?.id || null;
     }
   }
 

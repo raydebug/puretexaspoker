@@ -1202,7 +1202,7 @@ router.post('/test/get_game_state', async (req, res) => {
     
     const gameManager = GameManager.getInstance();
     
-    // PRIORITIZE REAL GAME MANAGER - this is the source of truth for game logic
+    // ALWAYS USE REAL GAME MANAGER - ignore test games completely
     const realGame = gameManager.getGame(gameId);
     if (realGame) {
       const gameState = realGame.getGameState();
@@ -1213,9 +1213,10 @@ router.post('/test/get_game_state', async (req, res) => {
       });
     }
     
-    // Fallback to test games only if real game not found
+    // Only return test games if no real game exists (for backward compatibility)
     const testGames = (gameManager as any).testGames;
     if (testGames && testGames.has(gameId)) {
+      console.log(`⚠️ WARNING: Using test game for ${gameId} - real game not found`);
       const gameState = testGames.get(gameId);
       return res.json({
         success: true,

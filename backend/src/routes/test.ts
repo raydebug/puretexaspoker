@@ -1378,6 +1378,24 @@ router.post('/reset-database', async (req, res) => {
     // Reset any game state
     testCardOrders.clear();
     
+    // Clear all GameManager games to ensure clean state
+    const { gameManager } = require('../services/gameManager');
+    const gm = gameManager.getInstance();
+    
+    // Clear test games
+    const testGames = (gm as any).testGames;
+    if (testGames) {
+      testGames.clear();
+      console.log('🧹 Cleared all test games');
+    }
+    
+    // Clear real games
+    const realGames = (gm as any).games;
+    if (realGames) {
+      realGames.clear();
+      console.log('🧹 Cleared all real games');
+    }
+    
     // Ensure we have at least one table for testing
     const existingTables = await prisma.table.findMany();
     if (existingTables.length === 0) {
