@@ -20,6 +20,7 @@ export class GameService {
   private playersActedThisRound: Set<string> = new Set();
   private gameId: string;
   private cardOrderHash?: string;
+  private previousBetLevel: number = 0; // Track previous bet level to detect raises
   
   // ENHANCED AUTOMATION: Callback for automatic phase transitions
   private phaseTransitionCallback?: (gameId: string, fromPhase: string, toPhase: string, gameState: GameState) => void;
@@ -260,6 +261,7 @@ export class GameService {
 
   private resetBettingRound(): void {
     this.gameState.currentBet = 0;
+    this.previousBetLevel = 0; // Reset bet level tracking for new betting round
     this.gameState.players.forEach(player => {
       if (player.isActive) {
         player.currentBet = 0;
@@ -468,7 +470,9 @@ export class GameService {
   }
 
   private moveToNextPlayer(): void {
-    const activePlayers = this.gameState.players.filter(p => p.isActive);
+    const allPlayers = this.gameState.players;
+    const activePlayers = allPlayers.filter(p => p.isActive);
+    let nextPlayerId: string | null = null;
     
     // Check if only one player remains
     if (activePlayers.length === 1) {
@@ -484,8 +488,33 @@ export class GameService {
       return;
     }
 
-    // Get next player using seat manager
-    const nextPlayerId = this.seatManager.getNextPlayer(this.gameState.currentPlayerId!, activePlayers);
+    // Check if the current player just raised the bet level
+    const justRaised = this.gameState.currentBet > this.previousBetLevel && this.gameState.phase !== 'preflop';
+    
+    if (justRaised) {
+      // Post-flop: after a raise, action continues with the next active player in seat order after the raiser
+      const raiser = allPlayers.find(p => p.id === this.gameState.currentPlayerId);
+      if (!raiser) throw new Error('Raiser not found');
+      let seat = raiser.seatNumber;
+      let found = false;
+      for (let i = 1; i <= allPlayers.length; i++) {
+        const nextSeat = ((seat - 1 + i) % allPlayers.length) + 1;
+        const nextPlayer = allPlayers.find(p => p.seatNumber === nextSeat && p.isActive);
+        if (nextPlayer) {
+          nextPlayerId = nextPlayer.id;
+          found = true;
+          break;
+        }
+      }
+      if (!found || !nextPlayerId) throw new Error('No next active player found after raiser');
+      console.log(`🎯 Post-flop raise detected (${this.previousBetLevel} → ${this.gameState.currentBet}), next to act after raiser (seat order): ${nextPlayerId}`);
+    } else {
+      // Normal turn progression: get next player in turn order
+      nextPlayerId = this.seatManager.getNextPlayer(this.gameState.currentPlayerId!, activePlayers);
+    }
+    
+    // Update previous bet level for next comparison
+    this.previousBetLevel = this.gameState.currentBet;
     
     if (!nextPlayerId) {
       throw new Error('Could not determine next player');

@@ -1379,8 +1379,8 @@ router.post('/reset-database', async (req, res) => {
     testCardOrders.clear();
     
     // Clear all GameManager games to ensure clean state
-    const { gameManager } = require('../services/gameManager');
-    const gm = gameManager.getInstance();
+    const { GameManager } = require('../services/gameManager');
+    const gm = GameManager.getInstance();
     
     // Clear test games
     const testGames = (gm as any).testGames;
@@ -1748,6 +1748,84 @@ router.post('/find-player', async (req, res) => {
     
   } catch (error) {
     console.error('❌ Failed to find player:', error);
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// POST /api/test/reset-and-seed-users - Reset User table and seed with test players
+router.post('/reset-and-seed-users', async (req, res) => {
+  try {
+    console.log('🧹 Starting User table reset and seed...');
+    
+    // First, delete all existing users
+    const deletedUsers = await prisma.user.deleteMany({});
+    console.log(`🗑️ Deleted ${deletedUsers.count} existing users`);
+    
+    // Get or create the default player role
+    let playerRole = await prisma.role.findFirst({
+      where: { name: 'player' }
+    });
+    
+    if (!playerRole) {
+      playerRole = await prisma.role.create({
+        data: {
+          name: 'player',
+          displayName: 'Player',
+          description: 'Regular poker player',
+          level: 0
+        }
+      });
+      console.log(`✅ Created default player role: ${playerRole.id}`);
+    }
+    
+    // Create test players for the 5-player game
+    const testPlayers = [
+      { username: 'player1', displayName: 'Player1', email: 'player1@test.com' },
+      { username: 'player2', displayName: 'Player2', email: 'player2@test.com' },
+      { username: 'player3', displayName: 'Player3', email: 'player3@test.com' },
+      { username: 'player4', displayName: 'Player4', email: 'player4@test.com' },
+      { username: 'player5', displayName: 'Player5', email: 'player5@test.com' }
+    ];
+    
+    const createdUsers = [];
+    
+    for (const player of testPlayers) {
+      const user = await prisma.user.create({
+        data: {
+          username: player.username,
+          displayName: player.displayName,
+          email: player.email,
+          password: 'test-password-hash', // Simple hash for testing
+          roleId: playerRole.id
+        }
+      });
+      
+      createdUsers.push({
+        id: user.id,
+        username: user.username,
+        displayName: user.displayName,
+        email: user.email
+      });
+      
+      console.log(`✅ Created user: ${user.displayName} (${user.id})`);
+    }
+    
+    console.log(`🎯 Successfully seeded ${createdUsers.length} test players`);
+    
+    res.json({
+      success: true,
+      message: `Reset and seeded User table with ${createdUsers.length} test players`,
+      deletedCount: deletedUsers.count,
+      createdUsers,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Failed to reset and seed users:', error);
     res.status(500).json({
       success: false,
       error: (error as Error).message,

@@ -7,6 +7,7 @@ Feature: 5-Player Complete Game Scenario
   Scenario: 50% Coverage - Setup + Pre-Flop + Basic Flop (Comprehensive)
     # DATABASE RESET
     Given the database is reset to a clean state
+    And the User table is seeded with test players
     # GAME SETUP (20% coverage)
     Given I have 5 players ready to join a poker game
     And all players have starting stacks of $100
@@ -67,6 +68,7 @@ Feature: 5-Player Complete Game Scenario
 
   Scenario: Complete 5-Player Texas Hold'em Game with Specific Cards and Actions
     Given the database is reset to a clean state
+    And the User table is seeded with test players
     Given I have 5 players ready to join a poker game
     And all players have starting stacks of $100
     When players join the table in order:

@@ -195,35 +195,32 @@ export class SeatManager {
 
     if (isPreflop) {
       // Pre-flop: first to act is left of big blind
-      // In Texas Hold'em, after blinds are posted, first to act is the player left of big blind
-      // For 5 players: Dealer=0, SB=1, BB=2, First to act=3, then 4, then back to 0 if needed
       const firstToActPosition = 3; // Player4 (seat 4) should be first to act after BB
       const result = turnOrder[firstToActPosition]?.playerId || null;
       console.log(`🔍 Preflop: firstToActPosition=${firstToActPosition}, result=${result}`);
       return result;
     } else {
-      // Post-flop: first to act is left of dealer
-      // Find the first active player to the left of the dealer
-      const dealerSeat = this.dealerPosition + 1; // Convert to 1-based seat number
-      
-      console.log(`🔍 Postflop: dealerSeat=${dealerSeat}, maxSeats=${this.maxSeats}`);
-      
-      // Find the first active player to the left of dealer
-      let firstToActPlayer = null;
-      
-      // Start from dealer position and go clockwise to find first active player
-      for (let i = 1; i <= this.maxSeats; i++) {
-        const checkSeat = ((dealerSeat + i - 1) % this.maxSeats) + 1; // Convert back to 1-based
-        const playerAtSeat = players.find(p => p.seatNumber === checkSeat && p.isActive);
-        console.log(`🔍 Checking seat ${checkSeat}: ${playerAtSeat ? playerAtSeat.name : 'no active player'}`);
-        if (playerAtSeat) {
-          firstToActPlayer = playerAtSeat;
-          break;
+      // Post-flop: first to act is the first active player left of the dealer
+      // Get the dealer's seat number
+      const dealerSeat = players.find(p => p.isActive && p.isDealer)?.seatNumber;
+      if (!dealerSeat) {
+        // Fallback: use dealerPosition from turnOrder
+        const dealerTurnOrder = turnOrder[this.dealerPosition];
+        if (!dealerTurnOrder) return null;
+        return dealerTurnOrder.playerId;
+      }
+      // Sort active players by seat number
+      const activePlayers = players.filter(p => p.isActive).sort((a, b) => a.seatNumber - b.seatNumber);
+      // Find the first active player after dealerSeat, wrapping around
+      for (let i = 1; i <= activePlayers.length; i++) {
+        const nextSeat = ((dealerSeat - 1 + i) % this.maxSeats) + 1;
+        const player = activePlayers.find(p => p.seatNumber === nextSeat);
+        if (player) {
+          console.log(`🔍 Postflop: dealerSeat=${dealerSeat}, firstToActSeat=${nextSeat}, player=${player.name}`);
+          return player.id;
         }
       }
-      
-      console.log(`🔍 Postflop result: ${firstToActPlayer?.name} (${firstToActPlayer?.id})`);
-      return firstToActPlayer?.id || null;
+      return null;
     }
   }
 

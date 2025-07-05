@@ -2639,4 +2639,57 @@ router.post('/force_complete_phase', async (req, res) => {
   }
 });
 
+/**
+ * TEST API: Force current player for testing
+ * POST /api/test/force_current_player
+ */
+router.post('/test/force_current_player', async (req, res) => {
+  try {
+    const { gameId, playerId } = req.body;
+    
+    if (!gameId || !playerId) {
+      return res.status(400).json({
+        success: false,
+        error: 'gameId and playerId are required'
+      });
+    }
+    
+    const gameManager = GameManager.getInstance();
+    const realGame = gameManager.getGame(gameId);
+    
+    if (!realGame) {
+      return res.status(404).json({
+        success: false,
+        error: 'Game not found'
+      });
+    }
+    
+    // Force the current player
+    (realGame as any).gameState.currentPlayerId = playerId;
+    
+    // Find the player position
+    const players = (realGame as any).gameState.players;
+    const playerIndex = players.findIndex((p: any) => p.id === playerId);
+    if (playerIndex !== -1) {
+      (realGame as any).gameState.currentPlayerPosition = playerIndex;
+    }
+    
+    console.log(`🧪 TEST API: Forced current player to ${playerId} for game ${gameId}`);
+    
+    res.json({
+      success: true,
+      message: `Current player forced to ${playerId}`,
+      gameId,
+      playerId
+    });
+    
+  } catch (error) {
+    console.error('❌ TEST API: Error forcing current player:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to force current player'
+    });
+  }
+});
+
 export default router; 

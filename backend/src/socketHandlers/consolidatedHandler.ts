@@ -641,7 +641,15 @@ export function registerConsolidatedHandlers(io: Server) {
           // **STEP 4**: Only block if another player (not this player) has the seat
           if (seatOccupant && seatOccupant.playerId !== socket.data.playerId) {
             console.log(`[CONSOLIDATED] BLOCKING: Seat ${seatNumber} is occupied by different player ${seatOccupant.playerId}`);
-            throw new Error(`Seat ${seatNumber} is already taken by another player`);
+            
+            // Get the player name who is currently in the seat from the Player table
+            const currentPlayer = await tx.player.findUnique({
+              where: { id: seatOccupant.playerId },
+              select: { nickname: true }
+            });
+            
+            const currentPlayerName = currentPlayer?.nickname || `Player ${seatOccupant.playerId}`;
+            throw new Error(`Seat ${seatNumber} is already taken by ${currentPlayerName}`);
           }
 
           // **STEP 5**: Remove any remaining stale records at this specific seat (redundant but safe)

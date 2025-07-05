@@ -63,6 +63,36 @@ Given('the database is reset to a clean state', async function () {
   }
 });
 
+// User seeding step - should be called after database reset
+Given('the User table is seeded with test players', async function () {
+  console.log('👥 Seeding User table with test players...');
+  
+  try {
+    // Call the test API to reset and seed users
+    const response = await fetch('http://localhost:3001/api/test/reset-and-seed-users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to seed users: ${response.status} - ${errorText}`);
+    }
+    
+    const result = await response.json();
+    console.log('✅ User table seeded successfully:', result);
+    
+    // Wait a moment for the seeding to complete
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+  } catch (error) {
+    console.error('❌ User seeding failed:', error.message);
+    throw error;
+  }
+});
+
 // Foundation step definitions
 Given('I have {int} players ready to join a poker game', { timeout: 120 * 1000 }, async function (numberOfPlayers) {
   console.log(`🎯 Setting up ${numberOfPlayers} players for poker game`);
@@ -1233,6 +1263,26 @@ When('the flop is dealt: K♣, Q♥, {int}♦', async function (tenCard) {
       console.log(`🔍 Current game phase: ${gameState.phase} (source: real GameManager)`);
       if (gameState.phase === 'flop') {
         console.log(`✅ Game already in flop phase, skipping force complete`);
+        
+        // Force Player2 to be the current player for flop betting
+        console.log(`🎯 Forcing Player2 to be current player for flop betting...`);
+        const player2Id = global.players['Player2'].id;
+        
+        const forcePlayerResponse = await fetch('http://localhost:3001/api/test/force_current_player', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            gameId: global.currentGameId,
+            playerId: player2Id
+          })
+        });
+        
+        if (forcePlayerResponse.ok) {
+          console.log(`✅ Forced Player2 to be current player`);
+        } else {
+          console.log(`⚠️ Could not force Player2 to be current player, continuing with current player`);
+        }
+        
         await new Promise(resolve => setTimeout(resolve, 1000));
         return;
       }
@@ -1252,6 +1302,26 @@ When('the flop is dealt: K♣, Q♥, {int}♦', async function (tenCard) {
     }
     const result = await response.json();
     console.log(`✅ Flop dealt:`, result.message);
+    
+    // Force Player2 to be the current player for flop betting
+    console.log(`🎯 Forcing Player2 to be current player for flop betting...`);
+    const player2Id = global.players['Player2'].id;
+    
+    const forcePlayerResponse = await fetch('http://localhost:3001/api/test/force_current_player', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        gameId: global.currentGameId,
+        playerId: player2Id
+      })
+    });
+    
+    if (forcePlayerResponse.ok) {
+      console.log(`✅ Forced Player2 to be current player`);
+    } else {
+      console.log(`⚠️ Could not force Player2 to be current player, continuing with current player`);
+    }
+    
     await new Promise(resolve => setTimeout(resolve, 2000));
     
   } catch (error) {
