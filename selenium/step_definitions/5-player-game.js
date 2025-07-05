@@ -274,8 +274,8 @@ Then('the pot should be ${int}', async function (expectedPot) {
   console.log(`💰 Verifying pot amount is $${expectedPot}...`);
   
   try {
-    // Wait for pot to update
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Wait longer for pot to update and UI to stabilize
+    await new Promise(resolve => setTimeout(resolve, 5000));
     
     // Check pot amount in Player1's browser (as reference)
     const player1 = global.players['Player1'];
@@ -283,12 +283,34 @@ Then('the pot should be ${int}', async function (expectedPot) {
       throw new Error('Player1 browser not available for pot verification');
     }
     
-    const potElement = await player1.driver.findElement(By.css('[data-testid="pot-amount"], .pot-amount, #pot-amount'));
+    // Wait for pot element to be present with explicit wait
+    const potElement = await player1.driver.wait(
+      until.elementLocated(By.css('[data-testid="pot-amount"]')),
+      10000,
+      'Pot element not found within 10 seconds'
+    );
+    
+    // Wait for element to be visible
+    await player1.driver.wait(
+      until.elementIsVisible(potElement),
+      5000,
+      'Pot element not visible within 5 seconds'
+    );
+    
     const potText = await potElement.getText();
-    const actualPot = parseInt(potText.replace(/[^0-9]/g, ''));
+    console.log(`🔍 Found pot text: "${potText}"`);
+    
+    // Extract number from text like "Main Pot: $3" or "$3"
+    const potMatch = potText.match(/\$(\d+)/);
+    if (!potMatch) {
+      throw new Error(`Could not extract pot amount from text: "${potText}"`);
+    }
+    
+    const actualPot = parseInt(potMatch[1]);
+    console.log(`🔍 Extracted pot amount: $${actualPot}`);
     
     if (actualPot !== expectedPot) {
-      throw new Error(`Expected pot $${expectedPot}, but found $${actualPot}`);
+      throw new Error(`Expected pot $${expectedPot}, but found $${actualPot} (from text: "${potText}")`);
     }
     
     global.expectedPotAmount = expectedPot;
@@ -296,6 +318,20 @@ Then('the pot should be ${int}', async function (expectedPot) {
     
   } catch (error) {
     console.error(`❌ Pot verification failed: ${error.message}`);
+    
+    // Take screenshot for debugging
+    try {
+      const player1 = global.players['Player1'];
+      if (player1 && player1.driver) {
+        const screenshot = await player1.driver.takeScreenshot();
+        const filename = `pot-verification-error-${Date.now()}.png`;
+        require('fs').writeFileSync(filename, screenshot, 'base64');
+        console.log(`📸 Screenshot saved: ${filename}`);
+      }
+    } catch (screenshotError) {
+      console.error(`Failed to take screenshot: ${screenshotError.message}`);
+    }
+    
     throw error;
   }
 });

@@ -14,7 +14,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2475946791
+              "duration": 2471157750
             }
           },
           {
@@ -27,7 +27,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 2039579041
+              "duration": 2015587792
             }
           },
           {
@@ -40,7 +40,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 18633400625
+              "duration": 10487490834
             }
           },
           {
@@ -53,7 +53,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 467708
+              "duration": 579625
             }
           },
           {
@@ -113,7 +113,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 822646791
+              "duration": 1057438750
             }
           },
           {
@@ -167,7 +167,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 403666
+              "duration": 265583
             }
           },
           {
@@ -180,7 +180,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3013831458
+              "duration": 3010548208
             }
           },
           {
@@ -219,7 +219,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 693709
+              "duration": 558415
             }
           },
           {
@@ -232,7 +232,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 5002206667,
+              "duration": 5004844791,
               "error_message": "Error: function timed out, ensure the promise resolves within 5000 milliseconds\n    at Timeout.<anonymous> (/Volumes/Data/work/puretexaspoker/node_modules/@cucumber/cucumber/lib/time.js:54:20)\n    at listOnTimeout (node:internal/timers:594:17)\n    at process.processTimers (node:internal/timers:529:7)"
             }
           },
@@ -289,7 +289,7 @@
             "line": 37,
             "name": "hole cards are dealt according to the test scenario:",
             "match": {
-              "location": "selenium/step_definitions/5-player-game.js:303"
+              "location": "selenium/step_definitions/5-player-game.js:339"
             },
             "result": {
               "status": "skipped",
@@ -302,7 +302,7 @@
             "line": 44,
             "name": "each player should see their own hole cards",
             "match": {
-              "location": "selenium/step_definitions/5-player-game.js:334"
+              "location": "selenium/step_definitions/5-player-game.js:370"
             },
             "result": {
               "status": "skipped",
@@ -315,7 +315,7 @@
             "line": 47,
             "name": "the pre-flop betting round begins",
             "match": {
-              "location": "selenium/step_definitions/5-player-game.js:362"
+              "location": "selenium/step_definitions/5-player-game.js:398"
             },
             "result": {
               "status": "skipped",
@@ -484,7 +484,7 @@
             "line": 65,
             "name": "both players should see the 3 flop cards",
             "match": {
-              "location": "selenium/step_definitions/5-player-game.js:559"
+              "location": "selenium/step_definitions/5-player-game.js:595"
             },
             "result": {
               "status": "skipped",
@@ -516,7 +516,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 211749
+              "duration": 155709
             }
           },
           {
@@ -524,7 +524,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 15777155291
+              "duration": 18783017582
             }
           },
           {
@@ -532,7 +532,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 51647582
+              "duration": 53347709
             }
           }
         ],
@@ -556,7 +556,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2486133582
+              "duration": 2479598832
             }
           },
           {
@@ -569,7 +569,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 2023358584
+              "duration": 2019429791
             }
           },
           {
@@ -582,7 +582,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 8989601125
+              "duration": 9041746959
             }
           },
           {
@@ -595,7 +595,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 252666
+              "duration": 242791
             }
           },
           {
@@ -655,7 +655,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 805799291
+              "duration": 812009459
             }
           },
           {
@@ -709,7 +709,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 394167
+              "duration": 144041
             }
           },
           {
@@ -722,7 +722,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3010420625
+              "duration": 3009466625
             }
           },
           {
@@ -761,7 +761,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 262707
+              "duration": 214332
             }
           },
           {
@@ -774,7 +774,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 5000434499,
+              "duration": 5001312374,
               "error_message": "Error: function timed out, ensure the promise resolves within 5000 milliseconds\n    at Timeout.<anonymous> (/Volumes/Data/work/puretexaspoker/node_modules/@cucumber/cucumber/lib/time.js:54:20)\n    at listOnTimeout (node:internal/timers:594:17)\n    at process.processTimers (node:internal/timers:529:7)"
             }
           },
@@ -783,7 +783,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 70540
+              "duration": 77583
             }
           },
           {
@@ -791,7 +791,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 15919694417
+              "duration": 18795972915
             }
           },
           {
@@ -799,7 +799,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 52660417
+              "duration": 53480291
             }
           }
         ],
@@ -818,7 +818,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2475044790
+              "duration": 2483733042
             }
           },
           {
@@ -884,7 +884,7 @@
             "line": 96,
             "name": "hole cards are dealt according to the test scenario:",
             "match": {
-              "location": "selenium/step_definitions/5-player-game.js:303"
+              "location": "selenium/step_definitions/5-player-game.js:339"
             },
             "result": {
               "status": "skipped",
@@ -897,7 +897,7 @@
             "line": 103,
             "name": "each player should see their own hole cards",
             "match": {
-              "location": "selenium/step_definitions/5-player-game.js:334"
+              "location": "selenium/step_definitions/5-player-game.js:370"
             },
             "result": {
               "status": "skipped",
@@ -919,7 +919,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 106375
+              "duration": 187500
             }
           },
           {
@@ -927,7 +927,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2465617791
+              "duration": 2485051082
             }
           },
           {
@@ -935,7 +935,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 214834
+              "duration": 364125
             }
           }
         ],
@@ -954,7 +954,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2488439708
+              "duration": 2474083707
             }
           },
           {
@@ -983,7 +983,7 @@
             "line": 109,
             "name": "the pre-flop betting round begins",
             "match": {
-              "location": "selenium/step_definitions/5-player-game.js:362"
+              "location": "selenium/step_definitions/5-player-game.js:398"
             },
             "result": {
               "status": "skipped",
@@ -1128,7 +1128,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 107042
+              "duration": 67416
             }
           },
           {
@@ -1136,7 +1136,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2482135249
+              "duration": 2477929125
             }
           },
           {
@@ -1144,7 +1144,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 156290
+              "duration": 215333
             }
           }
         ],
@@ -1163,7 +1163,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2480240458
+              "duration": 2485274749
             }
           },
           {
@@ -1245,7 +1245,7 @@
             "line": 132,
             "name": "both players should see the 3 flop cards",
             "match": {
-              "location": "selenium/step_definitions/5-player-game.js:559"
+              "location": "selenium/step_definitions/5-player-game.js:595"
             },
             "result": {
               "status": "skipped",
@@ -1277,7 +1277,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 133291
+              "duration": 89833
             }
           },
           {
@@ -1285,7 +1285,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2479712916
+              "duration": 2492371292
             }
           },
           {
@@ -1293,7 +1293,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 155625
+              "duration": 259042
             }
           }
         ],
@@ -1312,7 +1312,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2477298666
+              "duration": 2486699708
             }
           },
           {
@@ -1433,7 +1433,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 77416
+              "duration": 60833
             }
           },
           {
@@ -1441,7 +1441,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2480743999
+              "duration": 2481429916
             }
           },
           {
@@ -1449,7 +1449,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 132541
+              "duration": 254667
             }
           }
         ],
@@ -1468,7 +1468,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2478563875
+              "duration": 2482105416
             }
           },
           {
@@ -1526,7 +1526,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 73166
+              "duration": 69708
             }
           },
           {
@@ -1534,7 +1534,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2478412500
+              "duration": 2487216124
             }
           },
           {
@@ -1542,7 +1542,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 142917
+              "duration": 235249
             }
           }
         ],
@@ -1561,7 +1561,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2478032833
+              "duration": 2489138374
             }
           },
           {
@@ -1648,7 +1648,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 65708
+              "duration": 59249
             }
           },
           {
@@ -1656,7 +1656,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2468731833
+              "duration": 2479788916
             }
           },
           {
@@ -1664,7 +1664,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 118833
+              "duration": 167874
             }
           }
         ],
@@ -1683,7 +1683,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2466179542
+              "duration": 2482967666
             }
           },
           {
@@ -1788,7 +1788,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 56666
+              "duration": 57500
             }
           },
           {
@@ -1796,7 +1796,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2476206208
+              "duration": 2480189959
             }
           },
           {
@@ -1804,7 +1804,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 423249
+              "duration": 316124
             }
           }
         ],
@@ -1823,7 +1823,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2475367750
+              "duration": 2473597541
             }
           },
           {
@@ -2028,7 +2028,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 94542
+              "duration": 62334
             }
           },
           {
@@ -2036,7 +2036,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2468638624
+              "duration": 2481029042
             }
           },
           {
@@ -2044,7 +2044,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 205165
+              "duration": 295124
             }
           }
         ],
@@ -2063,7 +2063,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2474321167
+              "duration": 2479382958
             }
           },
           {
@@ -2170,7 +2170,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 122375
+              "duration": 50874
             }
           },
           {
@@ -2178,7 +2178,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2488747042
+              "duration": 2486214042
             }
           },
           {
@@ -2186,7 +2186,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 250791
+              "duration": 140958
             }
           }
         ],
