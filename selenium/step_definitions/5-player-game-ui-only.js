@@ -336,15 +336,34 @@ When('I manually start the game for table {int}', async function (tableId) {
   if (!player1 || !player1.driver) throw new Error('Player1 not available for game start');
   
   try {
-    console.log('🎯 Waiting for game phase to change in Player1 browser...');
+    console.log('🎯 Waiting for table phase to change in Player1 browser...');
     // Wait for phase to change from 'waiting' to something else
     await player1.driver.wait(async () => {
-      const phaseEls = await player1.driver.findElements(By.css('[data-testid="game-phase"]'));
-      if (phaseEls.length === 0) return false;
-      const phaseText = await phaseEls[0].getText();
-      return phaseText && phaseText.toLowerCase() !== 'waiting';
-    }, 20000, 'Game phase did not change from waiting');
-    console.log('✅ Game started (phase changed from waiting)');
+      const phaseSelectors = [
+        '[data-testid="table-phase"]',
+        '[data-testid="game-phase"]',
+        '.table-phase',
+        '.game-phase',
+        '.phase-indicator'
+      ];
+      
+      for (const selector of phaseSelectors) {
+        try {
+          const phaseEls = await player1.driver.findElements(By.css(selector));
+          if (phaseEls.length > 0) {
+            const phaseText = await phaseEls[0].getText();
+            if (phaseText && phaseText.toLowerCase() !== 'waiting') {
+              console.log(`✅ Found phase element with selector: ${selector}, phase: ${phaseText}`);
+              return true;
+            }
+          }
+        } catch (e) {
+          // Continue to next selector
+        }
+      }
+      return false;
+    }, 20000, 'Table phase did not change from waiting');
+    console.log('✅ Table game started (phase changed from waiting)');
   } catch (error) {
     await takeScreenshot(player1.driver, `game-start-error-${Date.now()}.png`);
     throw new Error(`Game start failed: ${error.message}`);
