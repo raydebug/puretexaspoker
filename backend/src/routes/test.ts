@@ -3,7 +3,7 @@ import { clearDatabase, cleanupTestData } from '../services/testService';
 import { PrismaClient } from '@prisma/client';
 import { CardOrderService } from '../services/cardOrderService';
 import { Card } from '../types/shared';
-import { GameManager } from '../services/gameManager';
+import { tableManager } from '../services/TableManager';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -630,51 +630,14 @@ router.post('/start-game', async (req, res) => {
       targetGameId = tableId.toString();
       console.log(`✅ Using table ID as game ID: ${targetGameId}`);
       
-      // Create game in GameManager (memory cache)
-      const { GameManager } = require('../services/gameManager');
-      const { memoryCache } = require('../services/MemoryCache');
-      const gm = GameManager.getInstance();
-      console.log(`🔧 DEBUG: Creating game ${targetGameId} in GameManager...`);
-      gm.createGame(targetGameId, tableId.toString());
-      console.log(`✅ DEBUG: Game ${targetGameId} created in GameManager`);
+      // Use TableManager for game state (already imported above)
+      console.log(`🔧 DEBUG: Using TableManager for table ${tableId}...`);
 
-      // Populate memory cache with seated players
-      const seatedPlayers = await Promise.all(
-        activeDbTable.playerTables.map(async (pt) => {
-          const player = await prisma.player.findUnique({
-            where: { id: pt.playerId }
-          });
-          return {
-            id: player?.id || pt.playerId,
-            nickname: player?.nickname || `Player${pt.seatNumber}`,
-            seatNumber: pt.seatNumber,
-            chips: pt.buyIn || 100,
-            isActive: true,
-            isAllIn: false
-          };
-        })
-      );
-
-      console.log(`👥 DEBUG: Found ${seatedPlayers.length} seated players:`, seatedPlayers.map(p => `${p.nickname} (seat ${p.seatNumber})`));
-
-      memoryCache.updateGame(targetGameId, {
-        status: 'waiting',
-        phase: 'waiting',
-        pot: 0,
-        players: seatedPlayers,
-        communityCards: [],
-        currentPlayer: undefined
-      });
-
-      console.log(`✅ Populated memory cache with ${seatedPlayers.length} players for game ${targetGameId}`);
+      // Check if players are seated in TableManager
+      const tablePlayers = tableManager.getTablePlayers(tableId);
+      const seatedPlayers = tablePlayers.filter((p: any) => p.role === 'player');
       
-      // Verify game exists in GameManager after creation
-      const gameService = gm.getGame(targetGameId);
-      if (gameService) {
-        console.log(`✅ DEBUG: Game ${targetGameId} confirmed in GameManager after creation`);
-      } else {
-        console.log(`❌ DEBUG: Game ${targetGameId} NOT found in GameManager after creation`);
-      }
+      console.log(`👥 DEBUG: Found ${seatedPlayers.length} seated players in TableManager:`, seatedPlayers.map((p: any) => `${p.nickname} (seat ${p.seatNumber})`));
     }
     
     if (!targetGameId) {
@@ -684,35 +647,34 @@ router.post('/start-game', async (req, res) => {
       });
     }
     
-    console.log(`🚀 Starting game ${targetGameId}...`);
+    console.log(`🚀 Starting table ${tableId} game...`);
     
-    // Import GameManager and get instance
-    const { GameManager } = require('../services/gameManager');
-    const gameManager = GameManager.getInstance();
-    
-    // Log all games in memory for debugging
-    console.log(`🔍 DEBUG: All games in GameManager: ${Array.from(gameManager['games'].keys())}`);
-    
-    // Check if game exists in memory
-    const gameService = gameManager.getGame(targetGameId);
-    if (!gameService) {
-      console.log(`❌ DEBUG: Game ${targetGameId} not found in memory. Available games: ${Array.from(gameManager['games'].keys())}`);
+    // Check if table has game state
+    const tableGameState = tableManager.getTableGameState(tableId);
+    if (!tableGameState) {
+      console.log(`❌ DEBUG: Table ${tableId} game state not found`);
       return res.status(404).json({ 
         success: false, 
-        error: `Game ${targetGameId} not found in memory`
+        error: `Table ${tableId} game state not found`
       });
     }
     
-    console.log(`✅ DEBUG: Game ${targetGameId} found in memory`);
+    console.log(`✅ DEBUG: Table ${tableId} game state found`);
     
-    // Skip database record creation for now - work with memory cache only
-    console.log(`🚀 Starting game ${targetGameId} in memory cache only`);
+    // Start the table game
+    console.log(`🎮 DEBUG: About to start table ${tableId} game...`);
+    const result = await tableManager.startTableGame(tableId);
     
-    // Start the game
-    console.log(`🎮 DEBUG: About to start game ${targetGameId}...`);
-    const gameState = await gameManager.startGame(targetGameId);
+    if (!result.success) {
+      console.log(`❌ Failed to start table ${tableId} game:`, result.error);
+      return res.status(400).json({ 
+        success: false, 
+        error: result.error || 'Failed to start table game'
+      });
+    }
     
-    console.log(`✅ Game ${targetGameId} started successfully`);
+    const gameState = result.gameState!;
+    console.log(`✅ Table ${tableId} game started successfully`);
     console.log(`🎯 Game status: ${gameState.status}, phase: ${gameState.phase}`);
     console.log(`👥 DEBUG: Game has ${gameState.players.length} players`);
     console.log(`💰 DEBUG: Game pot: ${gameState.pot}`);
@@ -728,21 +690,21 @@ router.post('/start-game', async (req, res) => {
         const sockets = Array.from(rooms.get(room) || []);
         console.log(`📡 DEBUG: Room "${room}" has sockets:`, sockets);
       }
-      // Log emission to game room
-      const gameRoom = `game:${targetGameId}`;
-      console.log(`📡 DEBUG: Emitting gameState to room: ${gameRoom}`);
-      io.to(gameRoom).emit('gameState', gameState);
+      // Log emission to table room
+      const tableRoom = `table:${tableId}`;
+      console.log(`📡 DEBUG: Emitting tableState to room: ${tableRoom}`);
+      io.to(tableRoom).emit('tableState', gameState);
     } else {
       console.log(`⚠️ DEBUG: Socket.IO instance not available for WebSocket emission`);
     }
     
     res.json({ 
       success: true, 
-      gameId: targetGameId,
+      tableId: tableId,
       status: gameState.status,
       phase: gameState.phase,
       players: gameState.players.length,
-      message: `Game ${targetGameId} started successfully`
+      message: `Table ${tableId} game started successfully`
     });
     
   } catch (error) {
