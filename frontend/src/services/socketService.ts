@@ -1282,7 +1282,7 @@ export class SocketService {
   emitUserLogin(nickname: string) {
     if (this.socket && this.socket.connected) {
       console.log(`Emitting user login for: ${nickname}`);
-      this.socket.emit('userLogin', { nickname });
+      this.socket.emit('authenticate', { nickname });
     }
   }
 

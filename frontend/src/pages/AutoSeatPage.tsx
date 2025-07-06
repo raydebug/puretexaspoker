@@ -95,11 +95,34 @@ const AutoSeatPage: React.FC = () => {
         // Store nickname for socketService
         localStorage.setItem('nickname', playerName);
         
+        // Set up authentication success listener
+        let authSuccess = false;
+        const authSuccessHandler = () => {
+          authSuccess = true;
+          console.log(`🎯 AUTO-SEAT: Authentication successful for ${playerName}`);
+        };
+        
+        const socket = socketService.getSocket();
+        socket?.on('authenticated', authSuccessHandler);
+        
         // Authenticate with the player name
         socketService.emitUserLogin(playerName);
         
-        // Wait for authentication
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Wait for authentication to complete
+        let authAttempts = 0;
+        const maxAuthAttempts = 10;
+        while (!authSuccess && authAttempts < maxAuthAttempts) {
+          console.log(`🎯 AUTO-SEAT: Waiting for authentication... attempt ${authAttempts + 1}`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          authAttempts++;
+        }
+        
+        // Clean up auth listener
+        socket?.off('authenticated', authSuccessHandler);
+        
+        if (!authSuccess) {
+          throw new Error('Authentication failed - timeout');
+        }
         
         setStatus('🏃 Joining table...');
         
@@ -116,59 +139,63 @@ const AutoSeatPage: React.FC = () => {
           const actualTableId = tables[0].id;
           console.log(`🎯 Using actual table ID: ${actualTableId} instead of table number: ${tableNumber}`);
           
+          // Set up table join success listener
+          let tableJoined = false;
+          const tableJoinHandler = () => {
+            tableJoined = true;
+            console.log(`🎯 AUTO-SEAT: Table joined successfully`);
+          };
+          
+          socket?.on('tableJoined', tableJoinHandler);
+          
           // Join the table
           socketService.joinTable(actualTableId, buyInAmount);
           
-          // Wait for table join
-          await new Promise(resolve => setTimeout(resolve, 3000));
+          // Wait for table join to complete
+          let joinAttempts = 0;
+          const maxJoinAttempts = 10;
+          while (!tableJoined && joinAttempts < maxJoinAttempts) {
+            console.log(`🎯 AUTO-SEAT: Waiting for table join... attempt ${joinAttempts + 1}`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            joinAttempts++;
+          }
+          
+          // Clean up table join listener
+          socket?.off('tableJoined', tableJoinHandler);
+          
+          if (!tableJoined) {
+            throw new Error('Table join failed - timeout');
+          }
           
           setStatus('💺 Taking seat ' + seatNumber + ' with $' + buyInAmount + ' buy-in...');
+          
+          // Set up seat taken success listener
+          let seatTaken = false;
+          const seatTakenHandler = () => {
+            seatTaken = true;
+            console.log(`🎯 AUTO-SEAT: Seat taken successfully`);
+          };
+          
+          socket?.on('seatTaken', seatTakenHandler);
           
           // Take the specified seat with specified buy-in amount
           console.log(`🎯 AUTO-SEAT: Attempting to take seat ${seatNumber} with buy-in ${buyInAmount}`);
           socketService.takeSeat(parseInt(seatNumber), buyInAmount);
           
-          // Wait longer for seat taken and add debug logging
-          console.log(`🎯 AUTO-SEAT: Waiting for seat confirmation...`);
-          await new Promise(resolve => setTimeout(resolve, 5000)); // Wait longer for seat taken
+          // Wait for seat taken to complete
+          let seatAttempts = 0;
+          const maxSeatAttempts = 10;
+          while (!seatTaken && seatAttempts < maxSeatAttempts) {
+            console.log(`🎯 AUTO-SEAT: Waiting for seat confirmation... attempt ${seatAttempts + 1}`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            seatAttempts++;
+          }
           
-          // Check if we're still connected
-          const socket = socketService.getSocket();
-          console.log(`🎯 AUTO-SEAT: Socket status - exists: ${!!socket}, connected: ${socket?.connected}, id: ${socket?.id}`);
-
-          // Check if we received any error events
-          let seatError = false;
-          const errorTimeout = setTimeout(() => {
-            seatError = true;
-            console.log(`🎯 AUTO-SEAT: Seat taking timed out or failed`);
-          }, 3000);
-
-          // Listen for seat taken event
-          const seatTakenHandler = () => {
-            clearTimeout(errorTimeout);
-            console.log(`🎯 AUTO-SEAT: Seat taken successfully`);
-          };
+          // Clean up seat taken listener
+          socket?.off('seatTaken', seatTakenHandler);
           
-          const seatErrorHandler = (error: any) => {
-            clearTimeout(errorTimeout);
-            seatError = true;
-            console.log(`🎯 AUTO-SEAT: Seat taking error:`, error);
-          };
-
-          socket?.on('seatTaken', seatTakenHandler);
-          socket?.on('error', seatErrorHandler);
-
-          // Wait for seat confirmation or error
-          await new Promise(resolve => {
-            setTimeout(() => {
-              socket?.off('seatTaken', seatTakenHandler);
-              socket?.off('error', seatErrorHandler);
-              resolve(true);
-            }, 3000);
-          });
-
-          if (seatError) {
-            throw new Error('Failed to take seat - timeout or error occurred');
+          if (!seatTaken) {
+            throw new Error('Seat taking failed - timeout');
           }
 
           setStatus('✅ Successfully seated! Redirecting to game...');
