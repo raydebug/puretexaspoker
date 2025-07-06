@@ -73,7 +73,7 @@ const AutoSeatPage: React.FC = () => {
   const buyInAmount = parseInt(searchParams.get('buyin') || searchParams.get('chips') || '200');
 
   useEffect(() => {
-    const autoSeatPlayer = async () => {
+    const performAutoSeat = async () => {
       try {
         // Validate parameters
         if (!playerName || !tableNumber || !seatNumber) {
@@ -82,100 +82,118 @@ const AutoSeatPage: React.FC = () => {
           return;
         }
 
-        setStatus('🔄 Connecting to server...');
-        setStatusType('loading');
-
-        // Store nickname for socketService
-        localStorage.setItem('nickname', playerName);
-
-        // Connect to socket service
+        setStatus('🔌 Connecting to server...');
+        
+        // Connect to WebSocket
         socketService.connect();
         
-        // Wait for connection to be established
-        let connectionAttempts = 0;
-        const maxAttempts = 10;
-        while (connectionAttempts < maxAttempts) {
-          const socket = socketService.getSocket();
-          if (socket && socket.connected) {
-            console.log(`🎯 AUTO-SEAT: Socket connected successfully after ${connectionAttempts + 1} attempts`);
-            break;
-          }
-          console.log(`🎯 AUTO-SEAT: Waiting for socket connection... attempt ${connectionAttempts + 1}`);
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          connectionAttempts++;
-        }
+        // Wait for connection
+        await new Promise(resolve => setTimeout(resolve, 2000));
         
-        if (connectionAttempts >= maxAttempts) {
-          throw new Error('Failed to establish socket connection after 10 attempts');
-        }
-
-        setStatus('🔐 Logging in as ' + playerName + '...');
+        setStatus('🔐 Authenticating as ' + playerName + '...');
         
-        // Login with the provided player name
+        // Store nickname for socketService
+        localStorage.setItem('nickname', playerName);
+        
+        // Authenticate with the player name
         socketService.emitUserLogin(playerName);
         
-        // Wait for login to complete
-        console.log(`🎯 AUTO-SEAT: Waiting for login to complete...`);
-        await new Promise(resolve => setTimeout(resolve, 3000)); // Wait longer for login
-
-        setStatus('🏃 Joining table ' + tableNumber + '...');
+        // Wait for authentication
+        await new Promise(resolve => setTimeout(resolve, 2000));
         
-        // Join the specified table as observer first
-        socketService.joinTable(parseInt(tableNumber));
+        setStatus('🏃 Joining table...');
         
-        // Wait for table join to complete
-        console.log(`🎯 AUTO-SEAT: Waiting for table join to complete...`);
-        await new Promise(resolve => setTimeout(resolve, 3000)); // Wait longer for table join
-
-        setStatus('💺 Taking seat ' + seatNumber + ' with $' + buyInAmount + ' buy-in...');
-        
-        // Take the specified seat with specified buy-in amount
-        console.log(`🎯 AUTO-SEAT: Attempting to take seat ${seatNumber} with buy-in ${buyInAmount}`);
-        socketService.takeSeat(parseInt(seatNumber), buyInAmount);
-        
-        // Wait longer for seat taken and add debug logging
-        console.log(`🎯 AUTO-SEAT: Waiting for seat confirmation...`);
-        await new Promise(resolve => setTimeout(resolve, 5000)); // Wait longer for seat taken
-        
-        // Check if we're still connected
-        const socket = socketService.getSocket();
-        console.log(`🎯 AUTO-SEAT: Socket status - exists: ${!!socket}, connected: ${socket?.connected}, id: ${socket?.id}`);
-
-        setStatus('✅ Successfully seated! Redirecting to game...');
-        setStatusType('success');
-        
-        // Wait a moment and then redirect to the game using the actual game ID received from backend
-        setTimeout(() => {
-          // Get the game ID from navigationService which should have been set during navigation
-          const actualGameId = navigationService.getCurrentGameId();
-          if (actualGameId) {
-            navigate(`/game/${actualGameId}`);
-          } else {
-            // Fallback to table-based URL if no game ID available
-            navigate(`/game/${tableNumber}`);
+        // Get the actual table ID from the database
+        try {
+          const response = await fetch('http://localhost:3001/api/tables');
+          const tables = await response.json();
+          
+          if (tables.length === 0) {
+            throw new Error('No tables available');
           }
-        }, 2000);
+          
+          // Use the first table (or you could add logic to select specific table)
+          const actualTableId = tables[0].id;
+          console.log(`🎯 Using actual table ID: ${actualTableId} instead of table number: ${tableNumber}`);
+          
+          // Join the table
+          socketService.joinTable(actualTableId, buyInAmount);
+          
+          // Wait for table join
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          
+          setStatus('💺 Taking seat ' + seatNumber + ' with $' + buyInAmount + ' buy-in...');
+          
+          // Take the specified seat with specified buy-in amount
+          console.log(`🎯 AUTO-SEAT: Attempting to take seat ${seatNumber} with buy-in ${buyInAmount}`);
+          socketService.takeSeat(parseInt(seatNumber), buyInAmount);
+          
+          // Wait longer for seat taken and add debug logging
+          console.log(`🎯 AUTO-SEAT: Waiting for seat confirmation...`);
+          await new Promise(resolve => setTimeout(resolve, 5000)); // Wait longer for seat taken
+          
+          // Check if we're still connected
+          const socket = socketService.getSocket();
+          console.log(`🎯 AUTO-SEAT: Socket status - exists: ${!!socket}, connected: ${socket?.connected}, id: ${socket?.id}`);
 
-      } catch (error: any) {
-        console.error('Auto-seat failed:', error);
-        setStatus('❌ Failed: ' + error.message);
+          // Check if we received any error events
+          let seatError = false;
+          const errorTimeout = setTimeout(() => {
+            seatError = true;
+            console.log(`🎯 AUTO-SEAT: Seat taking timed out or failed`);
+          }, 3000);
+
+          // Listen for seat taken event
+          const seatTakenHandler = () => {
+            clearTimeout(errorTimeout);
+            console.log(`🎯 AUTO-SEAT: Seat taken successfully`);
+          };
+          
+          const seatErrorHandler = (error: any) => {
+            clearTimeout(errorTimeout);
+            seatError = true;
+            console.log(`🎯 AUTO-SEAT: Seat taking error:`, error);
+          };
+
+          socket?.on('seatTaken', seatTakenHandler);
+          socket?.on('error', seatErrorHandler);
+
+          // Wait for seat confirmation or error
+          await new Promise(resolve => {
+            setTimeout(() => {
+              socket?.off('seatTaken', seatTakenHandler);
+              socket?.off('error', seatErrorHandler);
+              resolve(true);
+            }, 3000);
+          });
+
+          if (seatError) {
+            throw new Error('Failed to take seat - timeout or error occurred');
+          }
+
+          setStatus('✅ Successfully seated! Redirecting to game...');
+          setStatusType('success');
+          
+          // Wait a moment and then redirect to the game using actual table ID
+          setTimeout(() => {
+            // Use actual table ID for redirection in table-only architecture
+            navigate(`/game/${actualTableId}`);
+          }, 2000);
+          
+        } catch (error) {
+          console.error('🎯 AUTO-SEAT: Error getting tables or joining:', error);
+          setStatus('❌ Failed to join table: ' + (error as Error).message);
+          setStatusType('error');
+        }
+        
+      } catch (error) {
+        console.error('🎯 AUTO-SEAT: Error during auto-seat process:', error);
+        setStatus('❌ Auto-seat failed: ' + (error as Error).message);
         setStatusType('error');
       }
     };
 
-    // Set up error listener
-    const errorHandler = (error: { message: string }) => {
-      setStatus('❌ Error: ' + error.message);
-      setStatusType('error');
-    };
-    socketService.onError(errorHandler);
-
-    autoSeatPlayer();
-
-    // Cleanup is handled by socketService internally
-    return () => {
-      // No manual cleanup needed for public API
-    };
+    performAutoSeat();
   }, [playerName, tableNumber, seatNumber, buyInAmount, navigate]);
 
   return (

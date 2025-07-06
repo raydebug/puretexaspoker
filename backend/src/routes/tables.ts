@@ -5,38 +5,12 @@ import { locationManager } from '../services/LocationManager';
 
 const router = express.Router();
 
-// Create a new table
-router.post('/', async (req, res) => {
-  try {
-    const { name, maxPlayers, smallBlind, bigBlind, minBuyIn, maxBuyIn } = req.body;
-
-    const table = await prisma.table.create({
-      data: {
-        name: name || 'Default Table',
-        maxPlayers: maxPlayers || 9,
-        smallBlind: smallBlind || 10,
-        bigBlind: bigBlind || 20,
-        minBuyIn: minBuyIn || 100,
-        maxBuyIn: maxBuyIn || 1000
-      }
-    });
-
-    res.status(200).json(table);
-  } catch (error) {
-    console.error('Error creating table:', error);
-    res.status(500).json({ error: 'Failed to create table' });
-  }
-});
-
-// Get all tables
+// Get all tables (only the default 3 tables)
 router.get('/', async (req, res) => {
   try {
-    const tables = await prisma.table.findMany({
-      include: {
-        playerTables: true
-      }
-    });
-
+    // Use TableManager to get the default tables
+    const tables = tableManager.getAllTables();
+    console.log('API: Returning', tables.length, 'tables from TableManager');
     res.status(200).json(tables);
   } catch (error) {
     console.error('Error getting tables:', error);
@@ -44,26 +18,28 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Join a table
+// Join a table (only works with default tables 1, 2, 3)
 router.post('/:tableId/join', async (req, res) => {
   try {
     const { tableId } = req.params;
     const { playerId, buyIn } = req.body;
 
-    // Check if table exists
-    const table = await prisma.table.findUnique({
-      where: { id: tableId },
-      include: {
-        playerTables: true
-      }
-    });
+    // Only allow joining default tables (1, 2, 3)
+    const tableNumber = parseInt(tableId);
+    if (tableNumber < 1 || tableNumber > 3) {
+      return res.status(400).json({ error: 'Only tables 1, 2, and 3 are available' });
+    }
 
+    // Check if table exists in TableManager
+    const table = tableManager.getTable(tableNumber);
     if (!table) {
       return res.status(404).json({ error: 'Table not found' });
     }
 
     // Check if table is full
-    if (table.playerTables.length >= table.maxPlayers) {
+    const tablePlayers = tableManager.getTablePlayers(tableNumber);
+    const seatedPlayers = tablePlayers.filter(p => p.role === 'player');
+    if (seatedPlayers.length >= table.maxPlayers) {
       return res.status(400).json({ error: 'Table is full' });
     }
 
@@ -75,24 +51,17 @@ router.post('/:tableId/join', async (req, res) => {
       return res.status(400).json({ error: 'Invalid buy-in amount' });
     }
 
-    // Find next available seat
-    const occupiedSeats = table.playerTables.map(pt => pt.seatNumber);
-    let seatNumber = 0;
-    while (occupiedSeats.includes(seatNumber)) {
-      seatNumber++;
+    // Join table using TableManager
+    const result = tableManager.joinTable(tableNumber, playerId, 'Player');
+    if (!result.success) {
+      return res.status(400).json({ error: result.error });
     }
 
-    // Join table
-    const playerTable = await prisma.playerTable.create({
-      data: {
-        playerId,
-        tableId,
-        seatNumber,
-        buyIn: actualBuyIn
-      }
+    res.status(200).json({ 
+      success: true, 
+      tableId: tableNumber,
+      gameId: tableNumber.toString() // Use table ID as game ID
     });
-
-    res.status(200).json({ ...playerTable, gameId: `game-${tableId}` });
   } catch (error) {
     console.error('Error joining table:', error);
     res.status(500).json({ error: 'Failed to join table' });
@@ -156,28 +125,24 @@ router.get('/monitor', async (req, res) => {
   }
 });
 
-// Get specific table - placed after /monitor to avoid route conflicts
+// Get specific table (only default tables 1, 2, 3)
 router.get('/:tableId', async (req, res) => {
   try {
     const { tableId } = req.params;
+    const tableNumber = parseInt(tableId);
 
-    const table = await prisma.table.findUnique({
-      where: { id: tableId },
-      include: {
-        playerTables: {
-          include: {
-            player: true
-          }
-        }
-      }
-    });
+    // Only allow access to default tables (1, 2, 3)
+    if (tableNumber < 1 || tableNumber > 3) {
+      return res.status(400).json({ error: 'Only tables 1, 2, and 3 are available' });
+    }
 
+    const table = tableManager.getTable(tableNumber);
     if (!table) {
       return res.status(404).json({ error: 'Table not found' });
     }
 
     // Add currentGameId to response (using table ID as game ID)
-    const currentGameId = `game-${tableId}`;
+    const currentGameId = tableNumber.toString();
     
     res.status(200).json({
       ...table,
@@ -189,25 +154,33 @@ router.get('/:tableId', async (req, res) => {
   }
 });
 
-// Spectate a table
+// Spectate a table (only default tables 1, 2, 3)
 router.post('/:tableId/spectate', async (req, res) => {
   try {
     const { tableId } = req.params;
     const { playerId } = req.body;
 
-    // Check if table exists
-    const table = await prisma.table.findUnique({
-      where: { id: tableId }
-    });
+    const tableNumber = parseInt(tableId);
+    if (tableNumber < 1 || tableNumber > 3) {
+      return res.status(400).json({ error: 'Only tables 1, 2, and 3 are available' });
+    }
 
+    // Check if table exists in TableManager
+    const table = tableManager.getTable(tableNumber);
     if (!table) {
       return res.status(404).json({ error: 'Table not found' });
     }
 
-    // For now, just return success - in a real implementation you'd track spectators
+    // Join as observer using TableManager
+    const result = tableManager.joinTable(tableNumber, playerId, 'Observer');
+    if (!result.success) {
+      return res.status(400).json({ error: result.error });
+    }
+
     res.status(200).json({ 
       success: true, 
-      message: `Player ${playerId} is now spectating table ${tableId}` 
+      tableId: tableNumber,
+      message: 'Successfully joined as spectator'
     });
   } catch (error) {
     console.error('Error spectating table:', error);

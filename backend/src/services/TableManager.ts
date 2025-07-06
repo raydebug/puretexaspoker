@@ -11,7 +11,7 @@ import { Card, Player, GameState } from '../types/shared';
 import { createHash } from 'crypto';
 
 export interface TableData {
-  id: number;
+  id: string;
   name: string;
   players: number;
   maxPlayers: number;
@@ -33,7 +33,7 @@ interface TablePlayer {
 }
 
 interface TableGameState {
-  tableId: number;
+  tableId: string;
   status: 'waiting' | 'playing' | 'finished';
   phase: 'waiting' | 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
   pot: number;
@@ -51,9 +51,9 @@ interface TableGameState {
 }
 
 class TableManager {
-  private tables: Map<number, TableData>;
-  private tablePlayers: Map<number, Map<string, TablePlayer>>;
-  private tableGameStates: Map<number, TableGameState>;
+  private tables: Map<string, TableData>;
+  private tablePlayers: Map<string, Map<string, TablePlayer>>;
+  private tableGameStates: Map<string, TableGameState>;
   private deckService: DeckService;
   private handEvaluator: HandEvaluator;
 
@@ -64,22 +64,94 @@ class TableManager {
     this.tableGameStates = new Map();
     this.deckService = new DeckService();
     this.handEvaluator = new HandEvaluator();
-
-    this.initializeTables();
   }
 
-  private initializeTables(): void {
-    const initialTables = generateInitialTables();
-    console.log(`TableManager: Creating ${initialTables.length} initial tables`);
-    initialTables.forEach((table) => {
-      this.tables.set(table.id, table);
-      this.tablePlayers.set(table.id, new Map());
-      this.initializeTableGameState(table.id);
-    });
-    console.log(`TableManager: Initialized with ${this.tables.size} tables`);
+  public async init(): Promise<void> {
+    await this.initializeTables();
   }
 
-  private initializeTableGameState(tableId: number): void {
+  private async initializeTables(): Promise<void> {
+    try {
+      // Load actual tables from database
+      const dbTables = await prisma.table.findMany();
+      console.log(`TableManager: Found ${dbTables.length} tables in database`);
+      
+      if (dbTables.length === 0) {
+        console.log('TableManager: No tables found in database, creating default tables...');
+        // Create default tables if none exist
+        const defaultTables = [
+          {
+            name: 'No Limit $0.01/$0.02 Micro Table 1',
+            maxPlayers: 9,
+            smallBlind: 1,
+            bigBlind: 2,
+            minBuyIn: 40,
+            maxBuyIn: 200
+          },
+          {
+            name: 'Pot Limit $0.25/$0.50 Low Table 1',
+            maxPlayers: 9,
+            smallBlind: 25,
+            bigBlind: 50,
+            minBuyIn: 1000,
+            maxBuyIn: 5000
+          },
+          {
+            name: 'Fixed Limit $1/$2 Medium Table 1',
+            maxPlayers: 9,
+            smallBlind: 100,
+            bigBlind: 200,
+            minBuyIn: 4000,
+            maxBuyIn: 20000
+          }
+        ];
+        
+        for (const tableData of defaultTables) {
+          await prisma.table.create({ data: tableData });
+        }
+        
+        // Reload tables after creation
+        const newDbTables = await prisma.table.findMany();
+        dbTables.push(...newDbTables);
+      }
+      
+      // Convert database tables to TableData format
+      dbTables.forEach((dbTable, index) => {
+        const tableData: TableData = {
+          id: dbTable.id, // Use the actual database UUID
+          name: dbTable.name,
+          players: 0,
+          maxPlayers: dbTable.maxPlayers,
+          observers: 0,
+          status: 'waiting',
+          stakes: `$${dbTable.smallBlind}/${dbTable.bigBlind}`,
+          gameType: 'No Limit' as const, // Default game type
+          smallBlind: dbTable.smallBlind,
+          bigBlind: dbTable.bigBlind,
+          minBuyIn: dbTable.minBuyIn,
+          maxBuyIn: dbTable.maxBuyIn
+        };
+        
+        this.tables.set(tableData.id, tableData);
+        this.tablePlayers.set(tableData.id, new Map());
+        this.initializeTableGameState(tableData.id);
+      });
+      
+      console.log(`TableManager: Initialized with ${this.tables.size} tables from database`);
+    } catch (error) {
+      console.error('TableManager: Error initializing tables:', error);
+      // Fallback to hardcoded tables if database fails
+      const initialTables = generateInitialTables();
+      console.log(`TableManager: Fallback to ${initialTables.length} hardcoded tables`);
+      initialTables.forEach((table) => {
+        this.tables.set(table.id, table);
+        this.tablePlayers.set(table.id, new Map());
+        this.initializeTableGameState(table.id);
+      });
+    }
+  }
+
+  private initializeTableGameState(tableId: string): void {
     this.tableGameStates.set(tableId, {
       tableId,
       status: 'waiting',
@@ -104,16 +176,16 @@ class TableManager {
     return tables;
   }
 
-  public getTable(tableId: number): TableData | undefined {
+  public getTable(tableId: string): TableData | undefined {
     return this.tables.get(tableId);
   }
 
-  public getTableGameState(tableId: number): TableGameState | undefined {
+  public getTableGameState(tableId: string): TableGameState | undefined {
     return this.tableGameStates.get(tableId);
   }
 
   public joinTable(
-    tableId: number,
+    tableId: string,
     playerId: string,
     nickname: string
   ): { success: boolean; error?: string } {
@@ -149,7 +221,7 @@ class TableManager {
     return { success: true };
   }
 
-  public leaveTable(tableId: number, playerId: string): boolean {
+  public leaveTable(tableId: string, playerId: string): boolean {
     const table = this.tables.get(tableId);
     const players = this.tablePlayers.get(tableId);
 
@@ -177,7 +249,7 @@ class TableManager {
   }
 
   public sitDown(
-    tableId: number,
+    tableId: string,
     playerId: string,
     buyIn: number
   ): { success: boolean; error?: string } {
@@ -224,7 +296,7 @@ class TableManager {
     return { success: true };
   }
 
-  public standUp(tableId: number, playerId: string): boolean {
+  public standUp(tableId: string, playerId: string): boolean {
     const table = this.tables.get(tableId);
     const players = this.tablePlayers.get(tableId);
 
@@ -252,13 +324,13 @@ class TableManager {
     return true;
   }
 
-  public getTablePlayers(tableId: number): TablePlayer[] {
+  public getTablePlayers(tableId: string): TablePlayer[] {
     const players = this.tablePlayers.get(tableId);
     return players ? Array.from(players.values()) : [];
   }
 
   // NEW: Game management methods
-  public async startTableGame(tableId: number): Promise<{ success: boolean; error?: string; gameState?: TableGameState }> {
+  public async startTableGame(tableId: string): Promise<{ success: boolean; error?: string; gameState?: TableGameState }> {
     const table = this.tables.get(tableId);
     const gameState = this.tableGameStates.get(tableId);
     
@@ -338,7 +410,7 @@ class TableManager {
       this.tableGameStates.set(tableId, newGameState);
 
       // Update memory cache
-      memoryCache.updateTable(tableId.toString(), {
+      memoryCache.updateTable(tableId, {
         status: 'playing',
         phase: 'preflop',
         pot: newGameState.pot,
@@ -366,7 +438,7 @@ class TableManager {
   }
 
   public async playerAction(
-    tableId: number, 
+    tableId: string, 
     playerId: string, 
     action: string, 
     amount?: number
@@ -446,7 +518,7 @@ class TableManager {
       }
 
       // Update memory cache
-      memoryCache.updateTable(tableId.toString(), {
+      memoryCache.updateTable(tableId, {
         status: gameState.status,
         phase: gameState.phase,
         pot: gameState.pot,
@@ -488,7 +560,7 @@ class TableManager {
     return activePlayers.every(p => p.currentBet === gameState.currentBet);
   }
 
-  private async advanceToNextPhase(tableId: number, gameState: TableGameState): Promise<void> {
+  private async advanceToNextPhase(tableId: string, gameState: TableGameState): Promise<void> {
     const phaseOrder = ['preflop', 'flop', 'turn', 'river', 'showdown'];
     const currentIndex = phaseOrder.indexOf(gameState.phase);
     
@@ -524,7 +596,7 @@ class TableManager {
     // Update memory cache (database operations removed for now)
   }
 
-  private async determineWinner(tableId: number, gameState: TableGameState): Promise<void> {
+  private async determineWinner(tableId: string, gameState: TableGameState): Promise<void> {
     const activePlayers = gameState.players.filter(p => p.isActive);
     
     if (activePlayers.length === 1) {
@@ -576,7 +648,7 @@ class TableManager {
     // Update memory cache (database operations removed for now)
   }
 
-  private generateSimpleCardOrderHash(tableId: number): string {
+  private generateSimpleCardOrderHash(tableId: string): string {
     const timestamp = Date.now();
     const hashInput = `table-${tableId}-${timestamp}`;
     return createHash('sha256').update(hashInput).digest('hex');

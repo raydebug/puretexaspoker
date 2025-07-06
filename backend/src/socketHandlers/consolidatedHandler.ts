@@ -9,7 +9,7 @@ import { prisma } from '../db';
  */
 
 // Track authenticated users
-const authenticatedUsers = new Map<string, { nickname: string; socketId: string; location: 'lobby' | number }>();
+const authenticatedUsers = new Map<string, { nickname: string; socketId: string; location: 'lobby' | string }>();
 
 export function registerConsolidatedHandlers(io: Server) {
   // Global error handler
@@ -44,6 +44,19 @@ export function registerConsolidatedHandlers(io: Server) {
         if (!nickname || nickname.trim().length === 0) {
           throw new Error('Nickname is required');
         }
+
+        // Create or update player record in database
+        await prisma.player.upsert({
+          where: { id: socket.id },
+          update: { nickname: nickname.trim() },
+          create: { 
+            id: socket.id, 
+            nickname: nickname.trim(),
+            chips: 1000, // Default chips for new players
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        });
 
         // Store authenticated user
         authenticatedUsers.set(socket.id, {
@@ -108,7 +121,7 @@ export function registerConsolidatedHandlers(io: Server) {
         }
 
         // Take seat in TableManager
-        const result = tableManager.sitDown(user.location, socket.id, buyIn);
+        const result = tableManager.sitDown(user.location as string, socket.id, buyIn);
         if (!result.success) {
           throw new Error(result.error || 'Failed to take seat');
         }
@@ -117,10 +130,9 @@ export function registerConsolidatedHandlers(io: Server) {
         await prisma.playerTable.create({
           data: {
             playerId: socket.id,
-            tableId: user.location.toString(),
+            tableId: user.location,
             seatNumber,
-            buyIn,
-            chips: buyIn
+            buyIn
           }
         });
 

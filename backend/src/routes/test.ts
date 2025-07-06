@@ -496,99 +496,66 @@ router.post('/start-game', async (req, res) => {
     
     console.log(`🎮 TEST API: Start game request - gameId: ${gameId}, tableId: ${tableId}`);
     
-    let targetGameId = gameId;
+    let targetTableId = tableId;
     
-    if (!targetGameId && tableId) {
-      console.log(`🔍 Finding game for table ${tableId}...`);
-      
-      // Find the database table by tableId (lobby table ID)
-      const { tableManager } = require('../services/TableManager');
-      const tables = tableManager.getAllTables();
-      const lobbyTable = tables.find((t: any) => t.id === tableId);
-      
-      if (!lobbyTable) {
-        return res.status(404).json({ 
-          success: false, 
-          error: `Table ${tableId} not found in lobby`
-        });
-      }
-      
-      // Find the corresponding database table that actually has players
-      const dbTableName = `${lobbyTable.name} (ID: ${tableId})`;
-      console.log(`🔍 DEBUG: Looking for database table with name: "${dbTableName}"`);
-      
-      // Try to find table by exact name first
-      let dbTable = await prisma.table.findFirst({
-        where: { name: dbTableName }
-      });
-      
-      // If not found by exact name, try to find any table with players
-      if (!dbTable) {
-        console.log(`❌ DEBUG: No table found with name "${dbTableName}", looking for any table with players...`);
-        dbTable = await prisma.table.findFirst({
-          where: {
-            playerTables: {
-              some: {} // Has at least one player
-            }
-          }
-        });
-        
-        if (dbTable) {
-          console.log(`✅ DEBUG: Found table "${dbTable.name}" as fallback`);
-        }
-      }
-      
-      if (!dbTable) {
-        console.log(`❌ DEBUG: No table found with name "${dbTableName}" and no tables with players found`);
-        return res.status(404).json({ 
-          success: false, 
-          error: `Database table not found for table ${tableId}`
-        });
-      }
-      
-      console.log(`✅ DEBUG: Found database table "${dbTable.name}"`);
-      
-      // Use table ID as game ID instead of database-generated ID
-      targetGameId = tableId.toString();
-      console.log(`✅ Using table ID as game ID: ${targetGameId}`);
-      
-      // Use TableManager for game state (already imported above)
-      console.log(`🔧 DEBUG: Using TableManager for table ${tableId}...`);
-
-      // Check if players are seated in TableManager
-      const tablePlayers = tableManager.getTablePlayers(tableId);
-      const seatedPlayers = tablePlayers.filter((p: any) => p.role === 'player');
-      
-      console.log(`👥 DEBUG: Found ${seatedPlayers.length} seated players in TableManager:`, seatedPlayers.map((p: any) => `${p.nickname} (seat ${p.seatNumber})`));
+    if (!targetTableId && gameId) {
+      // If only gameId provided, use it as tableId
+      targetTableId = parseInt(gameId);
     }
     
-    if (!targetGameId) {
+    if (!targetTableId) {
       return res.status(400).json({ 
         success: false, 
-        error: 'No gameId provided and could not find game for table'
+        error: 'No tableId provided'
       });
     }
     
-    console.log(`🚀 Starting table ${tableId} game...`);
+    console.log(`🔍 Starting game for table ${targetTableId}...`);
     
-    // Check if table has game state
-    const tableGameState = tableManager.getTableGameState(tableId);
-    if (!tableGameState) {
-      console.log(`❌ DEBUG: Table ${tableId} game state not found`);
+    // Check if table exists in TableManager
+    const table = tableManager.getTable(targetTableId);
+    if (!table) {
+      console.log(`❌ Table ${targetTableId} not found in TableManager`);
       return res.status(404).json({ 
         success: false, 
-        error: `Table ${tableId} game state not found`
+        error: `Table ${targetTableId} not found`
       });
     }
     
-    console.log(`✅ DEBUG: Table ${tableId} game state found`);
+    console.log(`✅ Table ${targetTableId} found in TableManager: ${table.name}`);
+    
+    // Check if players are seated in TableManager
+    const tablePlayers = tableManager.getTablePlayers(targetTableId);
+    const seatedPlayers = tablePlayers.filter((p: any) => p.role === 'player');
+    
+    console.log(`👥 Found ${seatedPlayers.length} seated players in TableManager:`, seatedPlayers.map((p: any) => `${p.nickname} (seat ${p.seatNumber})`));
+    
+    if (seatedPlayers.length === 0) {
+      console.log(`❌ No players seated at table ${targetTableId}`);
+      return res.status(400).json({ 
+        success: false, 
+        error: `No players seated at table ${targetTableId}`
+      });
+    }
+    
+    // Check if table has game state
+    const tableGameState = tableManager.getTableGameState(targetTableId);
+    if (!tableGameState) {
+      console.log(`❌ Table ${targetTableId} game state not found`);
+      return res.status(404).json({ 
+        success: false, 
+        error: `Table ${targetTableId} game state not found`
+      });
+    }
+    
+    console.log(`✅ Table ${targetTableId} game state found`);
     
     // Start the table game
-    console.log(`🎮 DEBUG: About to start table ${tableId} game...`);
-    const result = await tableManager.startTableGame(tableId);
+    console.log(`🎮 Starting table ${targetTableId} game...`);
+    const result = await tableManager.startTableGame(targetTableId);
     
     if (!result.success) {
-      console.log(`❌ Failed to start table ${tableId} game:`, result.error);
+      console.log(`❌ Failed to start table ${targetTableId} game:`, result.error);
       return res.status(400).json({ 
         success: false, 
         error: result.error || 'Failed to start table game'
@@ -596,10 +563,10 @@ router.post('/start-game', async (req, res) => {
     }
     
     const gameState = result.gameState!;
-    console.log(`✅ Table ${tableId} game started successfully`);
+    console.log(`✅ Table ${targetTableId} game started successfully`);
     console.log(`🎯 Game status: ${gameState.status}, phase: ${gameState.phase}`);
-    console.log(`👥 DEBUG: Game has ${gameState.players.length} players`);
-    console.log(`💰 DEBUG: Game pot: ${gameState.pot}`);
+    console.log(`👥 Game has ${gameState.players.length} players`);
+    console.log(`💰 Game pot: ${gameState.pot}`);
     
     // Log WebSocket emission
     const io = (global as any).socketIO;
@@ -607,26 +574,26 @@ router.post('/start-game', async (req, res) => {
       // List all rooms and sockets
       const rooms = io.sockets.adapter.rooms;
       const roomList = Array.from(rooms.keys());
-      console.log(`📡 DEBUG: Socket.IO instance available, rooms:`, roomList);
+      console.log(`📡 Socket.IO instance available, rooms:`, roomList);
       for (const room of roomList) {
         const sockets = Array.from(rooms.get(room) || []);
-        console.log(`📡 DEBUG: Room "${room}" has sockets:`, sockets);
+        console.log(`📡 Room "${room}" has sockets:`, sockets);
       }
       // Log emission to table room
-      const tableRoom = `table:${tableId}`;
-      console.log(`📡 DEBUG: Emitting tableState to room: ${tableRoom}`);
+      const tableRoom = `table:${targetTableId}`;
+      console.log(`📡 Emitting tableState to room: ${tableRoom}`);
       io.to(tableRoom).emit('tableState', gameState);
     } else {
-      console.log(`⚠️ DEBUG: Socket.IO instance not available for WebSocket emission`);
+      console.log(`⚠️ Socket.IO instance not available for WebSocket emission`);
     }
     
     res.json({ 
       success: true, 
-      tableId: tableId,
+      tableId: targetTableId,
       status: gameState.status,
       phase: gameState.phase,
       players: gameState.players.length,
-      message: `Table ${tableId} game started successfully`
+      message: `Table ${targetTableId} game started successfully`
     });
     
   } catch (error) {

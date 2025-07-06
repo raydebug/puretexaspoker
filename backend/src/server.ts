@@ -30,28 +30,28 @@ async function createDefaultTables() {
       
       const defaultTables = [
         {
-          name: 'Beginner Table 1',
-          maxPlayers: 6,
+          name: 'No Limit $0.01/$0.02 Micro Table 1',
+          maxPlayers: 9,
           smallBlind: 1,
           bigBlind: 2,
-          minBuyIn: 100,
-          maxBuyIn: 1000
+          minBuyIn: 40,
+          maxBuyIn: 200
         },
         {
-          name: 'Beginner Table 2',
+          name: 'Pot Limit $0.25/$0.50 Low Table 1',
           maxPlayers: 9,
-          smallBlind: 10,
-          bigBlind: 20,
-          minBuyIn: 200,
-          maxBuyIn: 2000
+          smallBlind: 25,
+          bigBlind: 50,
+          minBuyIn: 1000,
+          maxBuyIn: 5000
         },
         {
-          name: 'High Stakes Table',
-          maxPlayers: 6,
-          smallBlind: 50,
-          bigBlind: 100,
-          minBuyIn: 1000,
-          maxBuyIn: 10000
+          name: 'Fixed Limit $1/$2 Medium Table 1',
+          maxPlayers: 9,
+          smallBlind: 100,
+          bigBlind: 200,
+          minBuyIn: 4000,
+          maxBuyIn: 20000
         }
       ];
       
@@ -118,13 +118,16 @@ async function initializeServer() {
     // Step 2: Create default tables if needed
     await createDefaultTables();
     
-    // Step 3: Initialize location manager
+    // Step 3: Initialize TableManager with database tables
+    await tableManager.init();
+    
+    // Step 4: Initialize location manager
     await locationManager.initialize();
     
-    // Step 4: Set up 5-player test card order
+    // Step 5: Set up 5-player test card order
     setup5PlayerTestCardOrder();
     
-    // Step 5: Start server
+    // Step 6: Start server
     httpServer.listen(port, () => {
       console.log(`Server is running on port ${port}`);
       console.log('Using consolidated WebSocket handler system');
