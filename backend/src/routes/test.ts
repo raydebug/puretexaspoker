@@ -517,30 +517,9 @@ router.post('/start-game', async (req, res) => {
       const dbTableName = `${lobbyTable.name} (ID: ${tableId})`;
       console.log(`🔍 DEBUG: Looking for database table with name: "${dbTableName}"`);
       
-      // List all tables for debugging
-      const allTables = await prisma.table.findMany({
-        include: {
-          playerTables: true,
-          games: {
-            where: {
-              status: { in: ['waiting', 'active'] }
-            }
-          }
-        }
-      });
-      console.log(`📋 DEBUG: All tables in database:`, allTables.map(t => `"${t.name}" (ID: ${t.id}, players: ${t.playerTables.length}, games: ${t.games.length})`));
-      
       // Try to find table by exact name first
       let dbTable = await prisma.table.findFirst({
-        where: { name: dbTableName },
-        include: {
-          playerTables: true,
-          games: {
-            where: {
-              status: { in: ['waiting', 'active'] }
-            }
-          }
-        }
+        where: { name: dbTableName }
       });
       
       // If not found by exact name, try to find any table with players
@@ -551,19 +530,11 @@ router.post('/start-game', async (req, res) => {
             playerTables: {
               some: {} // Has at least one player
             }
-          },
-          include: {
-            playerTables: true,
-            games: {
-              where: {
-                status: { in: ['waiting', 'active'] }
-              }
-            }
           }
         });
         
         if (dbTable) {
-          console.log(`✅ DEBUG: Found table "${dbTable.name}" with ${dbTable.playerTables.length} players as fallback`);
+          console.log(`✅ DEBUG: Found table "${dbTable.name}" as fallback`);
         }
       }
       
@@ -575,56 +546,7 @@ router.post('/start-game', async (req, res) => {
         });
       }
       
-      console.log(`✅ DEBUG: Found database table "${dbTable.name}" with ${dbTable.playerTables.length} players`);
-      
-      // Find the table that actually has players (in case there are duplicates)
-      let activeDbTable = dbTable;
-      if (dbTable.playerTables.length === 0 && dbTable.games.length === 0) {
-        // This table is empty, look for another one with the same name that has players
-        const allTables = await prisma.table.findMany({
-          where: { name: dbTableName },
-          include: {
-            playerTables: true,
-            games: {
-              where: {
-                status: { in: ['waiting', 'active'] }
-              }
-            }
-          }
-        });
-        
-        const tableWithPlayers = allTables.find(t => t.playerTables.length > 0 || t.games.length > 0);
-        if (tableWithPlayers) {
-          activeDbTable = tableWithPlayers;
-          console.log(`🔧 Found table with players: ${tableWithPlayers.id} (${tableWithPlayers.playerTables.length} players)`);
-        }
-      }
-      
-      // Find the game for this database table using table ID as game ID
-      let existingGame = activeDbTable.games.find(g => g.id === tableId.toString());
-      
-      if (!existingGame) {
-        console.log(`🎮 Creating new game for table ${tableId}...`);
-        
-        // Create a new game for this table using table ID as game ID
-        existingGame = await prisma.game.upsert({
-          where: { id: tableId.toString() },
-          create: {
-            id: tableId.toString(),
-            tableId: activeDbTable.id,
-            status: 'waiting',
-            pot: 0,
-            deck: null,
-            board: null
-          },
-          update: {
-            status: 'waiting',
-            pot: 0
-          }
-        });
-        
-        console.log(`✅ Created/updated game ${existingGame.id} for table ${tableId}`);
-      }
+      console.log(`✅ DEBUG: Found database table "${dbTable.name}"`);
       
       // Use table ID as game ID instead of database-generated ID
       targetGameId = tableId.toString();
@@ -1420,186 +1342,49 @@ router.post('/set_player_chips', async (req, res) => {
   }
 });
 
-// Database reset endpoint
+// Reset database to a clean state (table-only)
 router.post('/reset-database', async (req, res) => {
   try {
-    console.log('🗄️ Resetting database to clean state...');
-    
-    // Clean up all test data
-    await cleanupTestData();
-    
-    // Reset any game state
-    testCardOrders.clear();
-    
-    // Clear all GameManager games to ensure clean state
-    const { GameManager } = require('../services/gameManager');
-    const gm = GameManager.getInstance();
-    
-    // Clear test games
-    const testGames = (gm as any).testGames;
-    if (testGames) {
-      testGames.clear();
-      console.log('🧹 Cleared all test games');
-    }
-    
-    // Clear real games
-    const realGames = (gm as any).games;
-    if (realGames) {
-      realGames.clear();
-      console.log('🧹 Cleared all real games');
-    }
-    
-    // Ensure we have at least one table for testing
-    const existingTables = await prisma.table.findMany();
-    if (existingTables.length === 0) {
-      console.log('Creating default table for testing...');
-      await prisma.table.create({
-        data: {
-          name: 'No Limit $0.01/$0.02 Micro Table 1 (ID: 1)',
-          maxPlayers: 6,
-          smallBlind: 1,
-          bigBlind: 2,
-          minBuyIn: 100,
-          maxBuyIn: 1000
-        }
-      });
-    }
-    
-    console.log('✅ Database reset completed successfully');
-    
-    res.json({
-      success: true,
-      message: 'Database reset to clean state',
-      timestamp: new Date().toISOString()
-    });
-    
+    await clearDatabase();
+    res.json({ success: true, message: 'Database reset to clean state' });
   } catch (error) {
-    console.error('❌ Database reset failed:', error);
-    res.status(500).json({
-      success: false,
-      error: (error as Error).message,
-      timestamp: new Date().toISOString()
-    });
+    console.error('Error resetting database:', error);
+    res.status(500).json({ success: false, error: 'Failed to reset database' });
   }
 });
 
-// Create player-table associations for testing
-router.post('/create-player-table-associations', async (req, res) => {
+// Seed User table with test players (table-only)
+router.post('/reset-and-seed-users', async (req, res) => {
   try {
-    const { players } = req.body;
+    await clearDatabase();
     
-    if (!players || !Array.isArray(players)) {
-      return res.status(400).json({
-        success: false,
-        error: 'players array is required'
-      });
-    }
-    
-    console.log('👥 Creating player-table associations for testing...');
-    
-    const results = [];
-    
-    for (const playerData of players) {
-      const { playerName, seatNumber, buyIn, tableId = 1 } = playerData;
-      
-      try {
-        // Find or create the player
-        let player = await prisma.player.findFirst({
-          where: { nickname: playerName }
-        });
-        
-        if (!player) {
-          player = await prisma.player.create({
-            data: {
-              nickname: playerName,
-              chips: buyIn
-            }
-          });
-          console.log(`✅ Created player: ${playerName}`);
-        } else {
-          // Update player chips
-          player = await prisma.player.update({
-            where: { id: player.id },
-            data: { chips: buyIn }
-          });
-          console.log(`✅ Updated player: ${playerName} with $${buyIn} chips`);
-        }
-        
-        // Find the table
-        const table = await prisma.table.findFirst({
-          where: { name: { contains: `(ID: ${tableId})` } }
-        });
-        
-        if (!table) {
-          throw new Error(`Table with ID ${tableId} not found`);
-        }
-        
-        // Create or update player-table association
-        const existingAssociation = await prisma.playerTable.findFirst({
-          where: {
-            playerId: player.id,
-            tableId: table.id
-          }
-        });
-        
-        if (existingAssociation) {
-          // Update existing association
-          await prisma.playerTable.update({
-            where: { id: existingAssociation.id },
-            data: {
-              seatNumber: seatNumber,
-              buyIn: buyIn
-            }
-          });
-        } else {
-          // Create new association
-          await prisma.playerTable.create({
-            data: {
-              playerId: player.id,
-              tableId: table.id,
-              seatNumber: seatNumber,
-              buyIn: buyIn
-            }
-          });
-        }
-        
-        results.push({
-          playerName,
-          seatNumber,
-          buyIn,
-          success: true
-        });
-        
-        console.log(`✅ Associated ${playerName} with seat ${seatNumber} at table ${tableId}`);
-        
-      } catch (error) {
-        console.error(`❌ Failed to associate ${playerName}: ${(error as Error).message}`);
-        results.push({
-          playerName,
-          seatNumber,
-          buyIn,
-          success: false,
-          error: (error as Error).message
-        });
+    // Create default roles first
+    const playerRole = await prisma.role.create({
+      data: {
+        name: 'player',
+        displayName: 'Player',
+        description: 'Regular poker player',
+        level: 0
       }
+    });
+    
+    // Add 5 test users
+    const users = [];
+    for (let i = 1; i <= 5; i++) {
+      users.push(await prisma.user.create({
+        data: {
+          username: `player${i}`,
+          displayName: `Player${i}`,
+          email: `player${i}@test.com`,
+          password: 'test',
+          roleId: playerRole.id
+        }
+      }));
     }
-    
-    console.log(`✅ Player-table associations completed: ${results.filter(r => r.success).length}/${results.length} successful`);
-    
-    res.json({
-      success: true,
-      results,
-      message: 'Player-table associations created for testing',
-      timestamp: new Date().toISOString()
-    });
-    
+    res.json({ success: true, users });
   } catch (error) {
-    console.error('❌ Failed to create player-table associations:', error);
-    res.status(500).json({
-      success: false,
-      error: (error as Error).message,
-      timestamp: new Date().toISOString()
-    });
+    console.error('Error seeding users:', error);
+    res.status(500).json({ success: false, error: 'Failed to seed users' });
   }
 });
 
@@ -1801,84 +1586,6 @@ router.post('/find-player', async (req, res) => {
     
   } catch (error) {
     console.error('❌ Failed to find player:', error);
-    res.status(500).json({
-      success: false,
-      error: (error as Error).message,
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-// POST /api/test/reset-and-seed-users - Reset User table and seed with test players
-router.post('/reset-and-seed-users', async (req, res) => {
-  try {
-    console.log('🧹 Starting User table reset and seed...');
-    
-    // First, delete all existing users
-    const deletedUsers = await prisma.user.deleteMany({});
-    console.log(`🗑️ Deleted ${deletedUsers.count} existing users`);
-    
-    // Get or create the default player role
-    let playerRole = await prisma.role.findFirst({
-      where: { name: 'player' }
-    });
-    
-    if (!playerRole) {
-      playerRole = await prisma.role.create({
-        data: {
-          name: 'player',
-          displayName: 'Player',
-          description: 'Regular poker player',
-          level: 0
-        }
-      });
-      console.log(`✅ Created default player role: ${playerRole.id}`);
-    }
-    
-    // Create test players for the 5-player game
-    const testPlayers = [
-      { username: 'player1', displayName: 'Player1', email: 'player1@test.com' },
-      { username: 'player2', displayName: 'Player2', email: 'player2@test.com' },
-      { username: 'player3', displayName: 'Player3', email: 'player3@test.com' },
-      { username: 'player4', displayName: 'Player4', email: 'player4@test.com' },
-      { username: 'player5', displayName: 'Player5', email: 'player5@test.com' }
-    ];
-    
-    const createdUsers = [];
-    
-    for (const player of testPlayers) {
-      const user = await prisma.user.create({
-        data: {
-          username: player.username,
-          displayName: player.displayName,
-          email: player.email,
-          password: 'test-password-hash', // Simple hash for testing
-          roleId: playerRole.id
-        }
-      });
-      
-      createdUsers.push({
-        id: user.id,
-        username: user.username,
-        displayName: user.displayName,
-        email: user.email
-      });
-      
-      console.log(`✅ Created user: ${user.displayName} (${user.id})`);
-    }
-    
-    console.log(`🎯 Successfully seeded ${createdUsers.length} test players`);
-    
-    res.json({
-      success: true,
-      message: `Reset and seeded User table with ${createdUsers.length} test players`,
-      deletedCount: deletedUsers.count,
-      createdUsers,
-      timestamp: new Date().toISOString()
-    });
-    
-  } catch (error) {
-    console.error('❌ Failed to reset and seed users:', error);
     res.status(500).json({
       success: false,
       error: (error as Error).message,
