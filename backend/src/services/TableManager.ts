@@ -3,11 +3,12 @@ import { DeckService } from './deckService';
 import { HandEvaluator } from './handEvaluator';
 import { SeatManager } from './seatManager';
 import { SidePotManager } from './sidePotManager';
-import { CardOrderService } from './cardOrderService';
+
 import { EnhancedBlindManager } from './enhancedBlindManager';
 import { memoryCache } from './MemoryCache';
 import { prisma } from '../db';
 import { Card, Player, GameState } from '../types/shared';
+import { createHash } from 'crypto';
 
 export interface TableData {
   id: number;
@@ -55,7 +56,7 @@ class TableManager {
   private tableGameStates: Map<number, TableGameState>;
   private deckService: DeckService;
   private handEvaluator: HandEvaluator;
-  private cardOrderService: CardOrderService;
+
 
   constructor() {
     this.tables = new Map();
@@ -63,7 +64,7 @@ class TableManager {
     this.tableGameStates = new Map();
     this.deckService = new DeckService();
     this.handEvaluator = new HandEvaluator();
-    this.cardOrderService = new CardOrderService();
+
     this.initializeTables();
   }
 
@@ -271,8 +272,8 @@ class TableManager {
     }
 
     try {
-      // Generate card order for transparency
-      const cardOrderData = this.cardOrderService.generateCardOrder(tableId.toString());
+      // Generate simple card order hash for transparency
+      const cardOrderHash = this.generateSimpleCardOrderHash(tableId);
 
       // Initialize game state
       const newGameState: TableGameState = {
@@ -306,7 +307,7 @@ class TableManager {
         currentBet: table.bigBlind,
         minBet: table.bigBlind,
         handNumber: gameState.handNumber,
-        cardOrderHash: cardOrderData.hash
+        cardOrderHash: cardOrderHash
       };
 
       // Deal cards and post blinds
@@ -352,7 +353,7 @@ class TableManager {
         })),
         currentPlayer: newGameState.currentPlayerId || undefined,
         communityCards: [],
-        cardOrderHash: cardOrderData.hash
+        cardOrderHash: cardOrderHash
       });
 
       console.log(`✅ Table ${tableId} game started with ${newGameState.players.length} players`);
@@ -573,6 +574,12 @@ class TableManager {
     });
 
     // Update memory cache (database operations removed for now)
+  }
+
+  private generateSimpleCardOrderHash(tableId: number): string {
+    const timestamp = Date.now();
+    const hashInput = `table-${tableId}-${timestamp}`;
+    return createHash('sha256').update(hashInput).digest('hex');
   }
 }
 

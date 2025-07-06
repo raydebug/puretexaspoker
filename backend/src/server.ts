@@ -8,7 +8,7 @@ import authRoutes from './routes/auth';
 import playerRoutes from './routes/players';
 import tableRoutes from './routes/tables';
 import chatRoutes from './routes/chat';
-import gameRoutes from './routes/games';
+// Game routes removed - using table-based architecture
 import { registerConsolidatedHandlers } from './socketHandlers/consolidatedHandler';
 import { errorHandler } from './middleware/errorHandler';
 import { prisma } from './db';
@@ -89,7 +89,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/players', playerRoutes);
 app.use('/api/tables', tableRoutes);
 app.use('/api/chat', chatRoutes);
-app.use('/api/games', gameRoutes);
+// Game routes removed - using table-based architecture
 
 // Add API routes
 app.get('/api/lobby-tables', (req, res) => {

@@ -2,7 +2,6 @@ import express from 'express';
 import { prisma } from '../db';
 import { tableManager } from '../services/TableManager';
 import { locationManager } from '../services/LocationManager';
-import { gameManager } from '../services/gameManager';
 
 const router = express.Router();
 
@@ -34,16 +33,7 @@ router.get('/', async (req, res) => {
   try {
     const tables = await prisma.table.findMany({
       include: {
-        playerTables: true,
-        games: {
-          where: {
-            status: 'active'
-          },
-          take: 1,
-          orderBy: {
-            createdAt: 'desc'
-          }
-        }
+        playerTables: true
       }
     });
 
@@ -120,42 +110,6 @@ router.get('/monitor', async (req, res) => {
       const observers = locationManager.getObserversAtTable(table.id);
       const players = locationManager.getPlayersAtTable(table.id);
 
-      // Get game information if exists
-      let gameInfo = null;
-      try {
-        // Find active game for this table
-        const dbTable = await prisma.table.findFirst({
-          where: { name: { contains: `(ID: ${table.id})` } },
-          include: {
-            games: {
-              where: { status: { in: ['waiting', 'active'] } },
-              orderBy: { createdAt: 'desc' },
-              take: 1
-            }
-          }
-        });
-
-        if (dbTable && dbTable.games.length > 0) {
-          const game = dbTable.games[0];
-          const gameService = gameManager.getGame(game.id);
-          
-          if (gameService) {
-            const gameState = gameService.getGameState();
-                         gameInfo = {
-               id: game.id,
-               status: gameState.status,
-               phase: gameState.phase,
-               pot: gameState.pot,
-               currentPlayerId: gameState.currentPlayerId,
-               playersCount: gameState.players.length,
-               communityCards: gameState.communityCards.length
-             };
-          }
-        }
-      } catch (gameError) {
-        console.log(`No game found for table ${table.id}:`, gameError);
-      }
-
       // Format observer and player data
       const observersList = observers.map(o => ({
         playerId: o.playerId,
@@ -179,20 +133,14 @@ router.get('/monitor', async (req, res) => {
         maxPlayers: table.maxPlayers,
         minBuyIn: table.minBuyIn,
         maxBuyIn: table.maxBuyIn,
-        
         // Current users
         observers: observersList,
         players: playersList,
         observersCount: observers.length,
         playersCount: players.length,
         totalUsers: observers.length + players.length,
-        
-        // Game state
-        gameInfo,
-        
         // Metadata
         lastUpdated: new Date(),
-        
         // Validation flags
         hasValidCounts: (observers.length + players.length) >= 0,
         hasOverlaps: observersList.some(o => playersList.some(p => p.nickname === o.nickname)),
@@ -201,31 +149,10 @@ router.get('/monitor', async (req, res) => {
       });
     }
 
-    // Sort by total users (most active first)
-    tableDetails.sort((a, b) => b.totalUsers - a.totalUsers);
-
-    res.json({
-      success: true,
-      timestamp: new Date(),
-      tablesCount: tableDetails.length,
-      tables: tableDetails,
-      summary: {
-        totalTables: tableDetails.length,
-        activeTables: tableDetails.filter(t => t.totalUsers > 0).length,
-        totalObservers: tableDetails.reduce((sum, t) => sum + t.observersCount, 0),
-        totalPlayers: tableDetails.reduce((sum, t) => sum + t.playersCount, 0),
-        totalUsers: tableDetails.reduce((sum, t) => sum + t.totalUsers, 0),
-        tablesWithGames: tableDetails.filter(t => t.gameInfo !== null).length,
-        tablesWithIssues: tableDetails.filter(t => t.hasOverlaps || t.hasDuplicateObservers || t.hasDuplicatePlayers).length
-      }
-    });
+    res.status(200).json(tableDetails);
   } catch (error) {
-    console.error('Error getting table monitoring data:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Failed to get table monitoring data',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    });
+    console.error('Error getting table monitor info:', error);
+    res.status(500).json({ error: 'Failed to get table monitor info' });
   }
 });
 
@@ -241,15 +168,6 @@ router.get('/:tableId', async (req, res) => {
           include: {
             player: true
           }
-        },
-        games: {
-          where: {
-            status: 'active'
-          },
-          take: 1,
-          orderBy: {
-            createdAt: 'desc'
-          }
         }
       }
     });
@@ -258,14 +176,12 @@ router.get('/:tableId', async (req, res) => {
       return res.status(404).json({ error: 'Table not found' });
     }
 
-    // Add currentGameId to response
-    const currentGameId = table.games.length > 0 ? table.games[0].id : `game-${tableId}`;
+    // Add currentGameId to response (using table ID as game ID)
+    const currentGameId = `game-${tableId}`;
     
     res.status(200).json({
       ...table,
-      currentGameId,
-      players: table.playerTables.length,
-      status: table.games.length > 0 ? 'active' : 'waiting'
+      currentGameId
     });
   } catch (error) {
     console.error('Error getting table:', error);
