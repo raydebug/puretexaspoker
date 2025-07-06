@@ -63,8 +63,9 @@ const ParameterInfo = styled.div`
 const AutoSeatPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [status, setStatus] = useState<string>('Initializing...');
+  const [status, setStatus] = useState('🔄 Initializing...');
   const [statusType, setStatusType] = useState<'loading' | 'success' | 'error'>('loading');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Get parameters from URL
   const playerName = searchParams.get('player') || searchParams.get('name');
@@ -74,6 +75,14 @@ const AutoSeatPage: React.FC = () => {
 
   useEffect(() => {
     const performAutoSeat = async () => {
+      // Prevent multiple auto-seat attempts
+      if (isProcessing) {
+        console.log('🎯 AUTO-SEAT: Already processing, skipping duplicate call');
+        return;
+      }
+      
+      setIsProcessing(true);
+      
       try {
         // Validate parameters
         if (!playerName || !tableNumber || !seatNumber) {
@@ -176,7 +185,14 @@ const AutoSeatPage: React.FC = () => {
             console.log(`🎯 AUTO-SEAT: Seat taken successfully`);
           };
           
+          // Also listen for "already seated" which means success
+          const alreadySeatedHandler = () => {
+            seatTaken = true;
+            console.log(`🎯 AUTO-SEAT: Already seated - this is success`);
+          };
+          
           socket?.on('seatTaken', seatTakenHandler);
+          socket?.on('alreadySeated', alreadySeatedHandler);
           
           // Take the specified seat with specified buy-in amount
           console.log(`🎯 AUTO-SEAT: Attempting to take seat ${seatNumber} with buy-in ${buyInAmount}`);
@@ -193,6 +209,7 @@ const AutoSeatPage: React.FC = () => {
           
           // Clean up seat taken listener
           socket?.off('seatTaken', seatTakenHandler);
+          socket?.off('alreadySeated', alreadySeatedHandler);
           
           if (!seatTaken) {
             throw new Error('Seat taking failed - timeout');
@@ -217,11 +234,13 @@ const AutoSeatPage: React.FC = () => {
         console.error('🎯 AUTO-SEAT: Error during auto-seat process:', error);
         setStatus('❌ Auto-seat failed: ' + (error as Error).message);
         setStatusType('error');
+      } finally {
+        setIsProcessing(false);
       }
     };
 
     performAutoSeat();
-  }, [playerName, tableNumber, seatNumber, buyInAmount, navigate]);
+  }, [playerName, tableNumber, seatNumber, buyInAmount, navigate, isProcessing]);
 
   return (
     <Container>

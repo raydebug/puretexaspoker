@@ -1410,7 +1410,7 @@ export class SocketService {
   /**
    * Join a table as observer or player
    */
-  joinTable(tableId: number, buyIn?: number) {
+  joinTable(tableId: string, buyIn?: number) {
     if (!this.socket) {
       throw new Error('Socket not initialized. Please connect first.');
     }
@@ -1428,7 +1428,7 @@ export class SocketService {
     
     // Always join as observer first (observer-first flow)
     // The backend expects 'joinTable' event and will handle the observer flow
-    this.socket.emit('joinTable', { tableId, nickname, buyIn });
+    this.socket.emit('joinTable', { tableId, buyIn });
   }
 
   /**
@@ -1439,35 +1439,15 @@ export class SocketService {
     console.log(`🎯 SOCKET: takeSeat parameters - seatNumber: ${seatNumber}, buyIn: ${buyIn}`);
     
     if (!this.socket) {
-      console.error('🎯 SOCKET: Socket not initialized, attempting to reconnect...');
-      this.connect();
-      throw new Error('Socket not initialized. Reconnecting...');
+      throw new Error('Socket not initialized. Please connect first.');
     }
     
     if (!this.socket.connected) {
-      console.error('🎯 SOCKET: Socket not connected, attempting to reconnect...');
-      this.connect();
-      throw new Error('Socket not connected. Reconnecting...');
+      throw new Error('Socket not connected. Please wait for connection or try again.');
     }
     
-    console.log(`🎯 SOCKET: SENDING takeSeat WebSocket event - seatNumber: ${seatNumber}, buyIn: ${buyIn}`);
-    console.log(`🎯 SOCKET: Socket ID: ${this.socket.id}, connected: ${this.socket.connected}`);
-    console.log(`🎯 SOCKET: Current user data - nickname: ${localStorage.getItem('nickname')}, tableId: ${this.currentUserTable}`);
-    
-    // **CRITICAL**: Emit the takeSeat event
+    console.log(`🎯 SOCKET: Emitting takeSeat event with seatNumber: ${seatNumber}, buyIn: ${buyIn}`);
     this.socket.emit('takeSeat', { seatNumber, buyIn });
-    
-    console.log(`🎯 SOCKET: takeSeat event SENT successfully`);
-    
-    // Add listener for seat confirmation
-    this.socket.once('seatTaken', (data) => {
-      console.log(`🎯 SOCKET: Seat taken confirmation received:`, data);
-    });
-    
-    // Add listener for seat error
-    this.socket.once('seatError', (error) => {
-      console.error(`🎯 SOCKET: Seat error received:`, error);
-    });
   }
 
   /**

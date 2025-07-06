@@ -9,7 +9,7 @@ import { prisma } from '../db';
  */
 
 // Track authenticated users
-const authenticatedUsers = new Map<string, { nickname: string; socketId: string; location: 'lobby' | string }>();
+const authenticatedUsers = new Map<string, { nickname: string; socketId: string; playerId: string; location: 'lobby' | string }>();
 
 export function registerConsolidatedHandlers(io: Server) {
   // Global error handler
@@ -45,12 +45,18 @@ export function registerConsolidatedHandlers(io: Server) {
           throw new Error('Nickname is required');
         }
 
-        // Create or update player record in database
-        await prisma.player.upsert({
-          where: { id: socket.id },
-          update: { nickname: nickname.trim() },
-          create: { 
-            id: socket.id, 
+        // Check if user is already authenticated
+        const existingUser = authenticatedUsers.get(socket.id);
+        if (existingUser) {
+          // User is already authenticated - just emit success
+          socket.emit('authenticated', { nickname: existingUser.nickname });
+          console.log(`[SOCKET] User ${existingUser.nickname} already authenticated`);
+          return;
+        }
+
+        // Create a new player record in database (since nickname is not unique)
+        const player = await prisma.player.create({
+          data: { 
             nickname: nickname.trim(),
             chips: 1000, // Default chips for new players
             createdAt: new Date(),
@@ -58,17 +64,18 @@ export function registerConsolidatedHandlers(io: Server) {
           }
         });
 
-        // Store authenticated user
+        // Store authenticated user with player ID
         authenticatedUsers.set(socket.id, {
           nickname: nickname.trim(),
           socketId: socket.id,
+          playerId: player.id, // Store the actual player ID
           location: 'lobby'
         });
 
         socket.emit('authenticated', { nickname: nickname.trim() });
         broadcastOnlineUsersUpdate();
         
-        console.log(`[SOCKET] User authenticated: ${nickname}`);
+        console.log(`[SOCKET] User authenticated: ${nickname} (Player ID: ${player.id})`);
       } catch (error) {
         handleError(socket, error as Error, 'authenticate');
       }
@@ -82,6 +89,14 @@ export function registerConsolidatedHandlers(io: Server) {
           throw new Error('Must authenticate first');
         }
 
+        // Check if user is already at this table
+        if (user.location === tableId) {
+          // User is already at this table - just emit success
+          socket.emit('tableJoined', { tableId, role: 'observer', buyIn });
+          console.log(`[SOCKET] User ${user.nickname} already at table ${tableId}`);
+          return;
+        }
+
         // Join table in TableManager
         const result = tableManager.joinTable(tableId, socket.id, user.nickname);
         if (!result.success) {
@@ -89,7 +104,7 @@ export function registerConsolidatedHandlers(io: Server) {
         }
 
         // Update user location
-        await locationManager.moveToTableObserver(socket.id, user.nickname, tableId);
+        await locationManager.moveToTableObserver(user.playerId, user.nickname, tableId);
         user.location = tableId;
 
         // Join table room
@@ -120,6 +135,34 @@ export function registerConsolidatedHandlers(io: Server) {
           throw new Error('Invalid seat number. Must be between 1 and 9.');
         }
 
+        // Check if player is already seated at this table
+        const existingSeat = await prisma.playerTable.findFirst({
+          where: {
+            playerId: user.playerId,
+            tableId: user.location
+          }
+        });
+
+        if (existingSeat) {
+          // Player is already seated - just emit success
+          socket.emit('seatTaken', { tableId: user.location, seatNumber: existingSeat.seatNumber, buyIn: existingSeat.buyIn });
+          socket.emit('alreadySeated', { tableId: user.location, seatNumber: existingSeat.seatNumber, buyIn: existingSeat.buyIn });
+          console.log(`[SOCKET] User ${user.nickname} already seated at seat ${existingSeat.seatNumber} at table ${user.location}`);
+          return;
+        }
+
+        // Check if seat is already taken by another player
+        const seatTaken = await prisma.playerTable.findFirst({
+          where: {
+            tableId: user.location,
+            seatNumber
+          }
+        });
+
+        if (seatTaken) {
+          throw new Error(`Seat ${seatNumber} is already taken`);
+        }
+
         // Take seat in TableManager
         const result = tableManager.sitDown(user.location as string, socket.id, buyIn);
         if (!result.success) {
@@ -129,7 +172,7 @@ export function registerConsolidatedHandlers(io: Server) {
         // Update database
         await prisma.playerTable.create({
           data: {
-            playerId: socket.id,
+            playerId: user.playerId,
             tableId: user.location,
             seatNumber,
             buyIn
