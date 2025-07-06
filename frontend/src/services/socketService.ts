@@ -46,12 +46,12 @@ export class SocketService {
   private isTestMode = false;
   private eventEmitter = new EventEmitter();
   private heartbeatInterval: NodeJS.Timeout | undefined;
-  private gameState: GameState | null = null;
+  private tableState: any | null = null;
   private currentPlayer: Player | null = null;
   private observers: string[] = [];
   private processedLocationUpdates: Set<string> = new Set(); // Track processed location updates
   private lobbyTables: TableData[] = [];
-  private currentGameId: string | null = null;
+  private currentTableId: number | null = null;
   private retryQueue: Array<{ event: string; data: any; attempts: number }> = [];
   private isJoiningTable = false;
   private players: any[] = [];
@@ -127,20 +127,20 @@ export class SocketService {
     return this.connectionLock;
   }
 
-  // Add onGameState method
-  onGameState(callback: (state: GameState) => void): () => void {
+  // Add onTableState method
+  onTableState(callback: (state: any) => void): () => void {
     if (this.socket) {
-      this.socket.on('gameState', callback);
-      return () => this.socket?.off('gameState', callback);
+      this.socket.on('tableState', callback);
+      return () => this.socket?.off('tableState', callback);
     }
     return () => {};
   }
 
   // Add setPlayerAway method
   setPlayerAway(isAway: boolean) {
-    if (this.socket?.connected && this.gameState && this.currentPlayer) {
+    if (this.socket?.connected && this.tableState && this.currentPlayer) {
       this.socket.emit('player:status', {
-        gameId: this.gameState.id,
+        tableId: this.currentTableId,
         playerId: this.currentPlayer.id,
         isAway
       });
@@ -1345,8 +1345,8 @@ export class SocketService {
   /**
    * Get current game state
    */
-  getGameState() {
-    return this.gameState;
+  getTableState() {
+    return this.tableState;
   }
 
   /**
