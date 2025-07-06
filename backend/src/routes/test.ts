@@ -515,7 +515,23 @@ router.post('/start-game', async (req, res) => {
       
       // Find the corresponding database table that actually has players
       const dbTableName = `${lobbyTable.name} (ID: ${tableId})`;
-      const dbTable = await prisma.table.findFirst({
+      console.log(`🔍 DEBUG: Looking for database table with name: "${dbTableName}"`);
+      
+      // List all tables for debugging
+      const allTables = await prisma.table.findMany({
+        include: {
+          playerTables: true,
+          games: {
+            where: {
+              status: { in: ['waiting', 'active'] }
+            }
+          }
+        }
+      });
+      console.log(`📋 DEBUG: All tables in database:`, allTables.map(t => `"${t.name}" (ID: ${t.id}, players: ${t.playerTables.length}, games: ${t.games.length})`));
+      
+      // Try to find table by exact name first
+      let dbTable = await prisma.table.findFirst({
         where: { name: dbTableName },
         include: {
           playerTables: true,
@@ -527,12 +543,39 @@ router.post('/start-game', async (req, res) => {
         }
       });
       
+      // If not found by exact name, try to find any table with players
       if (!dbTable) {
+        console.log(`❌ DEBUG: No table found with name "${dbTableName}", looking for any table with players...`);
+        dbTable = await prisma.table.findFirst({
+          where: {
+            playerTables: {
+              some: {} // Has at least one player
+            }
+          },
+          include: {
+            playerTables: true,
+            games: {
+              where: {
+                status: { in: ['waiting', 'active'] }
+              }
+            }
+          }
+        });
+        
+        if (dbTable) {
+          console.log(`✅ DEBUG: Found table "${dbTable.name}" with ${dbTable.playerTables.length} players as fallback`);
+        }
+      }
+      
+      if (!dbTable) {
+        console.log(`❌ DEBUG: No table found with name "${dbTableName}" and no tables with players found`);
         return res.status(404).json({ 
           success: false, 
           error: `Database table not found for table ${tableId}`
         });
       }
+      
+      console.log(`✅ DEBUG: Found database table "${dbTable.name}" with ${dbTable.playerTables.length} players`);
       
       // Find the table that actually has players (in case there are duplicates)
       let activeDbTable = dbTable;
@@ -557,34 +600,43 @@ router.post('/start-game', async (req, res) => {
         }
       }
       
-      // Find the game for this database table
-      let existingGame = activeDbTable.games[0];
+      // Find the game for this database table using table ID as game ID
+      let existingGame = activeDbTable.games.find(g => g.id === tableId.toString());
       
       if (!existingGame) {
         console.log(`🎮 Creating new game for table ${tableId}...`);
         
-        // Create a new game for this table
-        existingGame = await prisma.game.create({
-          data: {
+        // Create a new game for this table using table ID as game ID
+        existingGame = await prisma.game.upsert({
+          where: { id: tableId.toString() },
+          create: {
+            id: tableId.toString(),
             tableId: activeDbTable.id,
             status: 'waiting',
             pot: 0,
             deck: null,
             board: null
+          },
+          update: {
+            status: 'waiting',
+            pot: 0
           }
         });
         
-        console.log(`✅ Created new game ${existingGame.id} for table ${tableId}`);
+        console.log(`✅ Created/updated game ${existingGame.id} for table ${tableId}`);
       }
       
-      targetGameId = existingGame.id;
-      console.log(`✅ Using game ${targetGameId} for table ${tableId}`);
+      // Use table ID as game ID instead of database-generated ID
+      targetGameId = tableId.toString();
+      console.log(`✅ Using table ID as game ID: ${targetGameId}`);
       
       // Create game in GameManager (memory cache)
       const { GameManager } = require('../services/gameManager');
       const { memoryCache } = require('../services/MemoryCache');
       const gm = GameManager.getInstance();
+      console.log(`🔧 DEBUG: Creating game ${targetGameId} in GameManager...`);
       gm.createGame(targetGameId, tableId.toString());
+      console.log(`✅ DEBUG: Game ${targetGameId} created in GameManager`);
 
       // Populate memory cache with seated players
       const seatedPlayers = await Promise.all(
@@ -603,6 +655,8 @@ router.post('/start-game', async (req, res) => {
         })
       );
 
+      console.log(`👥 DEBUG: Found ${seatedPlayers.length} seated players:`, seatedPlayers.map(p => `${p.nickname} (seat ${p.seatNumber})`));
+
       memoryCache.updateGame(targetGameId, {
         status: 'waiting',
         phase: 'waiting',
@@ -613,6 +667,14 @@ router.post('/start-game', async (req, res) => {
       });
 
       console.log(`✅ Populated memory cache with ${seatedPlayers.length} players for game ${targetGameId}`);
+      
+      // Verify game exists in GameManager after creation
+      const gameService = gm.getGame(targetGameId);
+      if (gameService) {
+        console.log(`✅ DEBUG: Game ${targetGameId} confirmed in GameManager after creation`);
+      } else {
+        console.log(`❌ DEBUG: Game ${targetGameId} NOT found in GameManager after creation`);
+      }
     }
     
     if (!targetGameId) {
@@ -624,26 +686,55 @@ router.post('/start-game', async (req, res) => {
     
     console.log(`🚀 Starting game ${targetGameId}...`);
     
-    // Import gameManager
-    const { gameManager } = require('../services/gameManager');
+    // Import GameManager and get instance
+    const { GameManager } = require('../services/gameManager');
+    const gameManager = GameManager.getInstance();
+    
+    // Log all games in memory for debugging
+    console.log(`🔍 DEBUG: All games in GameManager: ${Array.from(gameManager['games'].keys())}`);
     
     // Check if game exists in memory
     const gameService = gameManager.getGame(targetGameId);
     if (!gameService) {
+      console.log(`❌ DEBUG: Game ${targetGameId} not found in memory. Available games: ${Array.from(gameManager['games'].keys())}`);
       return res.status(404).json({ 
         success: false, 
         error: `Game ${targetGameId} not found in memory`
       });
     }
     
+    console.log(`✅ DEBUG: Game ${targetGameId} found in memory`);
+    
     // Skip database record creation for now - work with memory cache only
     console.log(`🚀 Starting game ${targetGameId} in memory cache only`);
     
     // Start the game
+    console.log(`🎮 DEBUG: About to start game ${targetGameId}...`);
     const gameState = await gameManager.startGame(targetGameId);
     
     console.log(`✅ Game ${targetGameId} started successfully`);
     console.log(`🎯 Game status: ${gameState.status}, phase: ${gameState.phase}`);
+    console.log(`👥 DEBUG: Game has ${gameState.players.length} players`);
+    console.log(`💰 DEBUG: Game pot: ${gameState.pot}`);
+    
+    // Log WebSocket emission
+    const io = (global as any).socketIO;
+    if (io) {
+      // List all rooms and sockets
+      const rooms = io.sockets.adapter.rooms;
+      const roomList = Array.from(rooms.keys());
+      console.log(`📡 DEBUG: Socket.IO instance available, rooms:`, roomList);
+      for (const room of roomList) {
+        const sockets = Array.from(rooms.get(room) || []);
+        console.log(`📡 DEBUG: Room "${room}" has sockets:`, sockets);
+      }
+      // Log emission to game room
+      const gameRoom = `game:${targetGameId}`;
+      console.log(`📡 DEBUG: Emitting gameState to room: ${gameRoom}`);
+      io.to(gameRoom).emit('gameState', gameState);
+    } else {
+      console.log(`⚠️ DEBUG: Socket.IO instance not available for WebSocket emission`);
+    }
     
     res.json({ 
       success: true, 
@@ -1830,6 +1921,72 @@ router.post('/reset-and-seed-users', async (req, res) => {
       success: false,
       error: (error as Error).message,
       timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// GET /api/test/game-state - Get current game state for debugging
+router.get('/game-state/:gameId', async (req, res) => {
+  try {
+    const { gameId } = req.params;
+    
+    console.log(`🔍 TEST API: Get game state request - gameId: ${gameId}`);
+    
+    // Import required services
+    const { gameManager } = require('../services/gameManager');
+    const { memoryCache } = require('../services/MemoryCache');
+    
+    // Get the game service
+    const gameService = gameManager.getGame(gameId);
+    if (!gameService) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Game not found in GameManager'
+      });
+    }
+    
+    // Get game state
+    const gameState = gameService.getGameState();
+    
+    // Get memory cache state
+    const onlineGame = memoryCache.getGame(gameId);
+    
+    res.json({
+      success: true,
+      gameState: {
+        id: gameState.id,
+        phase: gameState.phase,
+        players: gameState.players.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          seatNumber: p.seatNumber,
+          chips: p.chips,
+          isActive: p.isActive
+        })),
+        currentPlayer: gameState.currentPlayer,
+        pot: gameState.pot,
+        communityCards: gameState.communityCards
+      },
+      memoryCache: onlineGame ? {
+        players: onlineGame.players.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          seatNumber: p.seatNumber,
+          chips: p.chips
+        }))
+      } : null,
+      gameManagerStats: {
+        totalGames: (gameManager as any).games?.size || 0,
+        gameIds: Array.from((gameManager as any).games?.keys() || [])
+      },
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Error getting game state:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to get game state' 
     });
   }
 });

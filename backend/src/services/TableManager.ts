@@ -1,4 +1,13 @@
 import { generateInitialTables } from '../utils/tableUtils';
+import { DeckService } from './deckService';
+import { HandEvaluator } from './handEvaluator';
+import { SeatManager } from './seatManager';
+import { SidePotManager } from './sidePotManager';
+import { CardOrderService } from './cardOrderService';
+import { EnhancedBlindManager } from './enhancedBlindManager';
+import { memoryCache } from './MemoryCache';
+import { prisma } from '../db';
+import { Card, Player, GameState } from '../types/shared';
 
 export interface TableData {
   id: number;
@@ -22,13 +31,39 @@ interface TablePlayer {
   chips: number;
 }
 
+interface TableGameState {
+  tableId: number;
+  status: 'waiting' | 'playing' | 'finished';
+  phase: 'waiting' | 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
+  pot: number;
+  deck: Card[];
+  board: Card[];
+  players: Player[];
+  currentPlayerId: string | null;
+  dealerPosition: number;
+  smallBlindPosition: number;
+  bigBlindPosition: number;
+  currentBet: number;
+  minBet: number;
+  handNumber: number;
+  cardOrderHash?: string;
+}
+
 class TableManager {
   private tables: Map<number, TableData>;
   private tablePlayers: Map<number, Map<string, TablePlayer>>;
+  private tableGameStates: Map<number, TableGameState>;
+  private deckService: DeckService;
+  private handEvaluator: HandEvaluator;
+  private cardOrderService: CardOrderService;
 
   constructor() {
     this.tables = new Map();
     this.tablePlayers = new Map();
+    this.tableGameStates = new Map();
+    this.deckService = new DeckService();
+    this.handEvaluator = new HandEvaluator();
+    this.cardOrderService = new CardOrderService();
     this.initializeTables();
   }
 
@@ -38,8 +73,28 @@ class TableManager {
     initialTables.forEach((table) => {
       this.tables.set(table.id, table);
       this.tablePlayers.set(table.id, new Map());
+      this.initializeTableGameState(table.id);
     });
     console.log(`TableManager: Initialized with ${this.tables.size} tables`);
+  }
+
+  private initializeTableGameState(tableId: number): void {
+    this.tableGameStates.set(tableId, {
+      tableId,
+      status: 'waiting',
+      phase: 'waiting',
+      pot: 0,
+      deck: [],
+      board: [],
+      players: [],
+      currentPlayerId: null,
+      dealerPosition: 0,
+      smallBlindPosition: 1,
+      bigBlindPosition: 2,
+      currentBet: 0,
+      minBet: 0,
+      handNumber: 1
+    });
   }
 
   public getAllTables(): TableData[] {
@@ -50,6 +105,10 @@ class TableManager {
 
   public getTable(tableId: number): TableData | undefined {
     return this.tables.get(tableId);
+  }
+
+  public getTableGameState(tableId: number): TableGameState | undefined {
+    return this.tableGameStates.get(tableId);
   }
 
   public joinTable(
@@ -141,14 +200,6 @@ class TableManager {
       return { success: false, error: 'Table is full' };
     }
 
-    // DISABLED FOR TESTING: Buy-in validation temporarily disabled
-    // if (buyIn < table.minBuyIn || buyIn > table.maxBuyIn) {
-    //   return {
-    //     success: false,
-    //     error: `Buy-in must be between ${table.minBuyIn} and ${table.maxBuyIn}`,
-    //   };
-    // }
-    
     // Basic validation: just ensure buyIn is a positive number
     if (buyIn <= 0) {
       return {
@@ -203,6 +254,325 @@ class TableManager {
   public getTablePlayers(tableId: number): TablePlayer[] {
     const players = this.tablePlayers.get(tableId);
     return players ? Array.from(players.values()) : [];
+  }
+
+  // NEW: Game management methods
+  public async startTableGame(tableId: number): Promise<{ success: boolean; error?: string; gameState?: TableGameState }> {
+    const table = this.tables.get(tableId);
+    const gameState = this.tableGameStates.get(tableId);
+    
+    if (!table || !gameState) {
+      return { success: false, error: 'Table not found' };
+    }
+
+    const seatedPlayers = this.getTablePlayers(tableId).filter(p => p.role === 'player');
+    if (seatedPlayers.length < 2) {
+      return { success: false, error: 'Need at least 2 players to start' };
+    }
+
+    try {
+      // Generate card order for transparency
+      const cardOrderData = this.cardOrderService.generateCardOrder(tableId.toString());
+
+      // Initialize game state
+      const newGameState: TableGameState = {
+        ...gameState,
+        status: 'playing',
+        phase: 'preflop',
+        pot: 0,
+        deck: this.deckService.createNewDeck(),
+        board: [],
+        players: seatedPlayers.map((p, index) => ({
+          id: p.id,
+          name: p.nickname,
+          seatNumber: index + 1,
+          position: index,
+          chips: p.chips,
+          currentBet: 0,
+          isDealer: index === 0,
+          isAway: false,
+          isActive: true,
+          cards: [],
+          avatar: {
+            type: 'initials',
+            initials: p.nickname.substring(0, 2).toUpperCase(),
+            color: '#4CAF50'
+          }
+        })),
+        currentPlayerId: seatedPlayers[2]?.id || seatedPlayers[0]?.id || null, // First to act after blinds
+        dealerPosition: 0,
+        smallBlindPosition: 1,
+        bigBlindPosition: 2,
+        currentBet: table.bigBlind,
+        minBet: table.bigBlind,
+        handNumber: gameState.handNumber,
+        cardOrderHash: cardOrderData.hash
+      };
+
+      // Deal cards and post blinds
+      this.deckService.shuffle(newGameState.deck);
+      newGameState.players.forEach(player => {
+        player.cards = this.deckService.dealCards(2, newGameState.deck);
+      });
+
+      // Post blinds
+      const smallBlindPlayer = newGameState.players[newGameState.smallBlindPosition];
+      const bigBlindPlayer = newGameState.players[newGameState.bigBlindPosition];
+      
+      if (smallBlindPlayer) {
+        const smallBlindAmount = Math.min(table.smallBlind, smallBlindPlayer.chips);
+        smallBlindPlayer.chips -= smallBlindAmount;
+        smallBlindPlayer.currentBet = smallBlindAmount;
+        newGameState.pot += smallBlindAmount;
+      }
+      
+      if (bigBlindPlayer) {
+        const bigBlindAmount = Math.min(table.bigBlind, bigBlindPlayer.chips);
+        bigBlindPlayer.chips -= bigBlindAmount;
+        bigBlindPlayer.currentBet = bigBlindAmount;
+        newGameState.pot += bigBlindAmount;
+      }
+
+      // Update game state
+      this.tableGameStates.set(tableId, newGameState);
+
+      // Update memory cache
+      memoryCache.updateTable(tableId.toString(), {
+        status: 'playing',
+        phase: 'preflop',
+        pot: newGameState.pot,
+        players: newGameState.players.map(p => ({
+          id: p.id,
+          nickname: p.name,
+          seatNumber: p.seatNumber,
+          chips: p.chips,
+          holeCards: p.cards.map(c => `${c.rank}${c.suit}`),
+          isActive: p.isActive,
+          isAllIn: false
+        })),
+        currentPlayer: newGameState.currentPlayerId || undefined,
+        communityCards: [],
+        cardOrderHash: cardOrderData.hash
+      });
+
+      console.log(`✅ Table ${tableId} game started with ${newGameState.players.length} players`);
+      return { success: true, gameState: newGameState };
+
+    } catch (error) {
+      console.error(`❌ Failed to start table ${tableId} game:`, error);
+      return { success: false, error: (error as Error).message };
+    }
+  }
+
+  public async playerAction(
+    tableId: number, 
+    playerId: string, 
+    action: string, 
+    amount?: number
+  ): Promise<{ success: boolean; error?: string; gameState?: TableGameState }> {
+    const gameState = this.tableGameStates.get(tableId);
+    if (!gameState || gameState.status !== 'playing') {
+      return { success: false, error: 'Game not in progress' };
+    }
+
+    const player = gameState.players.find(p => p.id === playerId);
+    if (!player) {
+      return { success: false, error: 'Player not found' };
+    }
+
+    if (gameState.currentPlayerId !== playerId) {
+      return { success: false, error: 'Not your turn' };
+    }
+
+    try {
+      // Record action in memory (database operations removed for now)
+
+      // Process action
+      switch (action) {
+        case 'fold':
+          player.isActive = false;
+          break;
+        case 'check':
+          // Only allowed if no current bet
+          if (gameState.currentBet > player.currentBet) {
+            return { success: false, error: 'Cannot check when there is a bet' };
+          }
+          break;
+        case 'call':
+          const callAmount = gameState.currentBet - player.currentBet;
+          if (callAmount > player.chips) {
+            return { success: false, error: 'Not enough chips to call' };
+          }
+          player.chips -= callAmount;
+          player.currentBet = gameState.currentBet;
+          gameState.pot += callAmount;
+          break;
+        case 'bet':
+        case 'raise':
+          if (!amount || amount <= gameState.currentBet) {
+            return { success: false, error: 'Invalid bet amount' };
+          }
+          if (amount > player.chips) {
+            return { success: false, error: 'Not enough chips' };
+          }
+          const betAmount = amount - player.currentBet;
+          player.chips -= betAmount;
+          player.currentBet = amount;
+          gameState.pot += betAmount;
+          gameState.currentBet = amount;
+          gameState.minBet = amount;
+          break;
+        case 'allIn':
+          const allInAmount = player.chips;
+          player.chips = 0;
+          player.currentBet += allInAmount;
+          gameState.pot += allInAmount;
+          if (player.currentBet > gameState.currentBet) {
+            gameState.currentBet = player.currentBet;
+            gameState.minBet = player.currentBet;
+          }
+          break;
+        default:
+          return { success: false, error: 'Invalid action' };
+      }
+
+      // Move to next player
+      this.moveToNextPlayer(gameState);
+
+      // Check if betting round is complete
+      if (this.isBettingRoundComplete(gameState)) {
+        await this.advanceToNextPhase(tableId, gameState);
+      }
+
+      // Update memory cache
+      memoryCache.updateTable(tableId.toString(), {
+        status: gameState.status,
+        phase: gameState.phase,
+        pot: gameState.pot,
+        players: gameState.players.map(p => ({
+          id: p.id,
+          nickname: p.name,
+          seatNumber: p.seatNumber,
+          chips: p.chips,
+          holeCards: p.cards.map(c => `${c.rank}${c.suit}`),
+          isActive: p.isActive,
+          isAllIn: p.chips === 0
+        })),
+        currentPlayer: gameState.currentPlayerId || undefined,
+        communityCards: gameState.board.map(c => `${c.rank}${c.suit}`)
+      });
+
+      return { success: true, gameState };
+
+    } catch (error) {
+      console.error(`❌ Player action failed:`, error);
+      return { success: false, error: (error as Error).message };
+    }
+  }
+
+  private moveToNextPlayer(gameState: TableGameState): void {
+    const activePlayers = gameState.players.filter(p => p.isActive);
+    if (activePlayers.length <= 1) return;
+
+    const currentIndex = activePlayers.findIndex(p => p.id === gameState.currentPlayerId);
+    const nextIndex = (currentIndex + 1) % activePlayers.length;
+    gameState.currentPlayerId = activePlayers[nextIndex].id;
+  }
+
+  private isBettingRoundComplete(gameState: TableGameState): boolean {
+    const activePlayers = gameState.players.filter(p => p.isActive);
+    if (activePlayers.length <= 1) return true;
+
+    // Check if all active players have acted and bets are equal
+    return activePlayers.every(p => p.currentBet === gameState.currentBet);
+  }
+
+  private async advanceToNextPhase(tableId: number, gameState: TableGameState): Promise<void> {
+    const phaseOrder = ['preflop', 'flop', 'turn', 'river', 'showdown'];
+    const currentIndex = phaseOrder.indexOf(gameState.phase);
+    
+    if (currentIndex === -1 || currentIndex >= phaseOrder.length - 1) {
+      // Game is complete, determine winner
+      await this.determineWinner(tableId, gameState);
+      return;
+    }
+
+    const nextPhase = phaseOrder[currentIndex + 1];
+    gameState.phase = nextPhase as any;
+    gameState.currentBet = 0;
+    gameState.minBet = 0;
+
+    // Reset player bets
+    gameState.players.forEach(p => {
+      p.currentBet = 0;
+    });
+
+    // Deal community cards
+    if (nextPhase === 'flop') {
+      gameState.board = this.deckService.dealCards(3, gameState.deck);
+    } else if (nextPhase === 'turn' || nextPhase === 'river') {
+      gameState.board.push(...this.deckService.dealCards(1, gameState.deck));
+    }
+
+    // Set first to act
+    const activePlayers = gameState.players.filter(p => p.isActive);
+    if (activePlayers.length > 0) {
+      gameState.currentPlayerId = activePlayers[0].id;
+    }
+
+    // Update memory cache (database operations removed for now)
+  }
+
+  private async determineWinner(tableId: number, gameState: TableGameState): Promise<void> {
+    const activePlayers = gameState.players.filter(p => p.isActive);
+    
+    if (activePlayers.length === 1) {
+      // Last player standing wins
+      const winner = activePlayers[0];
+      winner.chips += gameState.pot;
+      gameState.pot = 0;
+    } else {
+      // Evaluate hands
+      const hands = activePlayers.map(player => ({
+        player,
+        hand: this.handEvaluator.evaluateHand([...player.cards, ...gameState.board], [])
+      }));
+
+      // Find winner(s)
+      const bestHand = hands.reduce((best, current) => 
+        this.handEvaluator.compareHands(current.hand, best.hand) > 0 ? current : best
+      );
+
+      const winners = hands.filter(h => 
+        this.handEvaluator.compareHands(h.hand, bestHand.hand) === 0
+      );
+
+      // Split pot among winners
+      const winAmount = Math.floor(gameState.pot / winners.length);
+      winners.forEach(({ player }) => {
+        player.chips += winAmount;
+      });
+      gameState.pot = 0;
+    }
+
+    // End hand
+    gameState.status = 'waiting';
+    gameState.phase = 'waiting';
+    gameState.handNumber++;
+    gameState.board = [];
+    gameState.pot = 0;
+    gameState.currentBet = 0;
+    gameState.minBet = 0;
+    gameState.currentPlayerId = null;
+
+    // Reset players for next hand
+    gameState.players.forEach(p => {
+      p.cards = [];
+      p.currentBet = 0;
+      p.isActive = true;
+    });
+
+    // Update memory cache (database operations removed for now)
   }
 }
 

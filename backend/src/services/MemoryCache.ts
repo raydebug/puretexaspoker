@@ -231,6 +231,13 @@ class MemoryCache extends EventEmitter {
     const actions = this.gameActions.get(gameId) || [];
     return actions.filter(action => action.phase === phase);
   }
+
+  // ===== TABLE MANAGEMENT =====
+  
+  updateTable(tableId: string, updates: any): void {
+    // For now, just emit an event for table updates
+    this.emit('tableUpdated', { tableId, updates });
+  }
   
   getLatestAction(gameId: string): GameAction | undefined {
     const actions = this.gameActions.get(gameId) || [];

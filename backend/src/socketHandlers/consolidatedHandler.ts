@@ -699,10 +699,20 @@ export function registerConsolidatedHandlers(io: Server) {
         
         console.log(`[CONSOLIDATED] Database transaction completed successfully for ${socket.data.nickname} at seat ${seatNumber}`);
 
-        // Get game service (gameManager is source of truth)
-        const gameService = gameManager.getGame(socket.data.gameId);
+        // Get or create game service (gameManager is source of truth)
+        let gameService = gameManager.getGame(socket.data.gameId);
         if (!gameService) {
-          throw new Error('Game not found');
+          console.log(`[CONSOLIDATED] Game ${socket.data.gameId} not found in GameManager, creating it...`);
+          
+          // Create the game in GameManager
+          gameManager.createGame(socket.data.gameId, socket.data.tableId.toString());
+          gameService = gameManager.getGame(socket.data.gameId);
+          
+          if (!gameService) {
+            throw new Error('Failed to create game in GameManager');
+          }
+          
+          console.log(`[CONSOLIDATED] Created game ${socket.data.gameId} in GameManager`);
         }
 
         // Create player data

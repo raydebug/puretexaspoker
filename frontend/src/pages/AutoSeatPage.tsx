@@ -90,25 +90,56 @@ const AutoSeatPage: React.FC = () => {
 
         // Connect to socket service
         socketService.connect();
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for connection
+        
+        // Wait for connection to be established
+        let connectionAttempts = 0;
+        const maxAttempts = 10;
+        while (connectionAttempts < maxAttempts) {
+          const socket = socketService.getSocket();
+          if (socket && socket.connected) {
+            console.log(`🎯 AUTO-SEAT: Socket connected successfully after ${connectionAttempts + 1} attempts`);
+            break;
+          }
+          console.log(`🎯 AUTO-SEAT: Waiting for socket connection... attempt ${connectionAttempts + 1}`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          connectionAttempts++;
+        }
+        
+        if (connectionAttempts >= maxAttempts) {
+          throw new Error('Failed to establish socket connection after 10 attempts');
+        }
 
         setStatus('🔐 Logging in as ' + playerName + '...');
         
         // Login with the provided player name
         socketService.emitUserLogin(playerName);
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for login
+        
+        // Wait for login to complete
+        console.log(`🎯 AUTO-SEAT: Waiting for login to complete...`);
+        await new Promise(resolve => setTimeout(resolve, 3000)); // Wait longer for login
 
         setStatus('🏃 Joining table ' + tableNumber + '...');
         
         // Join the specified table as observer first
         socketService.joinTable(parseInt(tableNumber));
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for table join
+        
+        // Wait for table join to complete
+        console.log(`🎯 AUTO-SEAT: Waiting for table join to complete...`);
+        await new Promise(resolve => setTimeout(resolve, 3000)); // Wait longer for table join
 
         setStatus('💺 Taking seat ' + seatNumber + ' with $' + buyInAmount + ' buy-in...');
         
         // Take the specified seat with specified buy-in amount
+        console.log(`🎯 AUTO-SEAT: Attempting to take seat ${seatNumber} with buy-in ${buyInAmount}`);
         socketService.takeSeat(parseInt(seatNumber), buyInAmount);
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for seat taken
+        
+        // Wait longer for seat taken and add debug logging
+        console.log(`🎯 AUTO-SEAT: Waiting for seat confirmation...`);
+        await new Promise(resolve => setTimeout(resolve, 5000)); // Wait longer for seat taken
+        
+        // Check if we're still connected
+        const socket = socketService.getSocket();
+        console.log(`🎯 AUTO-SEAT: Socket status - exists: ${!!socket}, connected: ${socket?.connected}, id: ${socket?.id}`);
 
         setStatus('✅ Successfully seated! Redirecting to game...');
         setStatusType('success');

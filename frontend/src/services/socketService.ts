@@ -1452,11 +1452,22 @@ export class SocketService {
     
     console.log(`🎯 SOCKET: SENDING takeSeat WebSocket event - seatNumber: ${seatNumber}, buyIn: ${buyIn}`);
     console.log(`🎯 SOCKET: Socket ID: ${this.socket.id}, connected: ${this.socket.connected}`);
+    console.log(`🎯 SOCKET: Current user data - nickname: ${localStorage.getItem('nickname')}, tableId: ${this.currentUserTable}`);
     
     // **CRITICAL**: Emit the takeSeat event
     this.socket.emit('takeSeat', { seatNumber, buyIn });
     
     console.log(`🎯 SOCKET: takeSeat event SENT successfully`);
+    
+    // Add listener for seat confirmation
+    this.socket.once('seatTaken', (data) => {
+      console.log(`🎯 SOCKET: Seat taken confirmation received:`, data);
+    });
+    
+    // Add listener for seat error
+    this.socket.once('seatError', (error) => {
+      console.error(`🎯 SOCKET: Seat error received:`, error);
+    });
   }
 
   /**

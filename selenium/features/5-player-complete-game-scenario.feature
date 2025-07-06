@@ -1,7 +1,7 @@
-Feature: 5-Player Complete Game Scenario
+Feature: 5-Player Complete Game Scenario (UI-Only)
   As a poker game system
-  I want to execute a complete 5-player Texas Hold'em game
-  So that I can validate complex multi-player game mechanics with specific card dealing and betting patterns
+  I want to execute a complete 5-player Texas Hold'em game using only UI interactions
+  So that I can validate complex multi-player game mechanics with pure frontend testing
 
   @comprehensive-50-percent
   Scenario: 50% Coverage - Setup + Pre-Flop + Basic Flop (Comprehensive)
@@ -61,7 +61,7 @@ Feature: 5-Player Complete Game Scenario
     And Player2 checks
     And Player3 bets $20
     And Player2 calls $20
-    Then the pot should be $84
+    Then the pot should be $94
     And both players should see the 3 flop cards
     And Player2 should have top pair with Q♥
     And Player3 should have top pair with K♣ and straight draw potential

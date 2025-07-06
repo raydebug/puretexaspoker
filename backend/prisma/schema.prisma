@@ -18,8 +18,8 @@ model User {
   displayName String
   avatar      String?
   chips       Int       @default(10000)
-  gamesPlayed Int       @default(0)
-  gamesWon    Int       @default(0)
+  tablesPlayed Int      @default(0)
+  tablesWon   Int       @default(0)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   lastLoginAt DateTime?
@@ -40,10 +40,6 @@ model User {
   // USER ROLE MANAGEMENT: Administrative actions
   moderatedBy ModerationAction[] @relation("ModeratedUser")
   moderatorActions ModerationAction[] @relation("ModeratorUser")
-  
-  // GAME PERSISTENCE: Session and connection tracking
-  playerSessions PlayerSession[]
-  connectionLogs ConnectionLog[]
 }
 
 // USER ROLE MANAGEMENT: Role definitions with hierarchical permissions
@@ -65,10 +61,10 @@ model Role {
 // USER ROLE MANAGEMENT: Granular permission system
 model Permission {
   id          String   @id @default(uuid())
-  name        String   @unique // join_game, place_bet, kick_player, etc.
+  name        String   @unique // join_table, place_bet, kick_player, etc.
   displayName String   // Human-readable name
   description String?  // Permission description
-  category    String   // game, moderation, administration
+  category    String   // table, moderation, administration
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   
@@ -118,7 +114,7 @@ model Player {
   user        User?         @relation(fields: [userId], references: [id])
   playerTables PlayerTable[]
   messages    Message[]
-  gameActions GameAction[]
+  tableActions TableAction[]
 }
 
 model Table {
@@ -138,11 +134,29 @@ model Table {
   password    String?       // Optional table password
   isActive    Boolean       @default(true)
   
-  playerTables PlayerTable[]
-  games       Game[]
+  // TABLE STATE: All game state is now stored in the table
+  status      String        @default("waiting") // waiting, playing, finished
+  phase       String        @default("waiting") // waiting, preflop, flop, turn, river, showdown
+  pot         Int           @default(0)
+  deck        String?       // JSON string of remaining cards
+  board       String?       // JSON string of community cards
+  currentPlayerId String?   // ID of current player to act
+  dealerPosition Int        @default(0)
+  smallBlindPosition Int    @default(1)
+  bigBlindPosition Int      @default(2)
+  currentBet  Int           @default(0)
+  minBet      Int           @default(0)
+  handNumber  Int           @default(1)
   
-  // GAME PERSISTENCE: Active game sessions at this table
-  gameSessions GameSession[]
+  // CARD ORDER TRANSPARENCY
+  cardOrderSeed String?     // Random seed used for shuffling
+  cardOrder    String?      // JSON string of complete 52-card order
+  cardOrderHash String?     // SHA-256 hash of card order
+  isCardOrderRevealed Boolean @default(false)
+  
+  playerTables PlayerTable[]
+  actions      TableAction[]
+  messages     Message[]
 }
 
 model PlayerTable {
@@ -159,130 +173,32 @@ model PlayerTable {
   @@unique([tableId, seatNumber])
 }
 
-model Game {
-  id        String      @id @default(uuid())
-  tableId   String
-  status    String      @default("waiting")
-  pot       Int         @default(0)
-  deck      String?     // JSON string of remaining cards
-  board     String?     // JSON string of community cards
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  table     Table       @relation(fields: [tableId], references: [id])
-  actions   GameAction[]
-  cardOrder CardOrder?
-}
-
-model GameAction {
+model TableAction {
   id        String   @id @default(uuid())
-  gameId    String
+  tableId   String
   playerId  String
-  type      String   // bet, fold, check, etc.
+  type      String   // bet, fold, check, raise, call, allIn
   amount    Int?     // for bets/raises
-  createdAt DateTime @default(now())
-  game      Game     @relation(fields: [gameId], references: [id])
+  phase     String   // preflop, flop, turn, river, showdown
+  handNumber Int     @default(1)
+  actionSequence Int // Sequence number within the hand
+  timestamp DateTime @default(now())
+  gameStateBefore String? // Game state before action (compressed)
+  gameStateAfter String?  // Game state after action (compressed)
+  
+  table     Table    @relation(fields: [tableId], references: [id])
   player    Player   @relation(fields: [playerId], references: [id])
+  
+  @@index([tableId, handNumber, actionSequence])
+  @@index([tableId, timestamp])
 }
 
 model Message {
   id        String   @id @default(uuid())
   content   String
   playerId  String
+  tableId   String
   createdAt DateTime @default(now())
   player    Player   @relation(fields: [playerId], references: [id])
-}
-
-model CardOrder {
-  id           String   @id @default(uuid())
-  gameId       String   @unique
-  seed         String   // Random seed used for shuffling
-  cardOrder    String   // JSON string of complete 52-card order
-  hash         String   // SHA-256 hash of card order
-  isRevealed   Boolean  @default(false) // Whether order is publicly revealed
-  createdAt    DateTime @default(now())
-  game         Game     @relation(fields: [gameId], references: [id])
-}
-
-// GAME PERSISTENCE: Session management for reconnection
-model PlayerSession {
-  id           String   @id @default(uuid())
-  userId       String   
-  gameId       String   
-  playerId     String   // Player ID within the game
-  socketId     String?  // Current WebSocket connection ID
-  isConnected  Boolean  @default(true)
-  lastSeen     DateTime @default(now())
-  joinedAt     DateTime @default(now())
-  leftAt       DateTime?
-  isActive     Boolean  @default(true) // Still in game vs left permanently
-  reconnectToken String?  // Secure token for reconnection
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
-  user         User     @relation(fields: [userId], references: [id])
-  gameSession  GameSession @relation(fields: [gameId], references: [gameId])
-  
-  @@unique([userId, gameId])
-  @@index([gameId])
-  @@index([socketId])
-}
-
-// GAME PERSISTENCE: Persistent game state storage
-model GameSession {
-  id                String   @id @default(uuid())
-  gameId            String   @unique
-  tableId           String   
-  gameState         String   // JSON serialized GameState
-  lastAction        String?  // Last action performed
-  lastActionTime    DateTime @default(now())
-  currentPhase      String   @default("waiting")
-  isActive          Boolean  @default(true)
-  isPaused          Boolean  @default(false)
-  pauseReason       String?
-  pausedAt          DateTime?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  
-  table            Table    @relation(fields: [tableId], references: [id])
-  playerSessions   PlayerSession[]
-  gameActions      GameActionHistory[]
-}
-
-// GAME PERSISTENCE: Comprehensive action history for replay and audit
-model GameActionHistory {
-  id             String   @id @default(uuid())
-  gameId         String
-  playerId       String
-  playerName     String   // Store name for history even if player leaves
-  action         String   // bet, call, raise, fold, check, allIn
-  amount         Int?     // Amount for betting actions
-  phase          String   // preflop, flop, turn, river, showdown
-  handNumber     Int      @default(1) // Hand number within the game
-  actionSequence Int      // Sequence number within the hand
-  timestamp      DateTime @default(now())
-  gameStateBefore String? // Game state before action (compressed)
-  gameStateAfter String?  // Game state after action (compressed)
-  
-  gameSession    GameSession @relation(fields: [gameId], references: [gameId])
-  
-  @@index([gameId, handNumber, actionSequence])
-  @@index([gameId, timestamp])
-}
-
-// GAME PERSISTENCE: Connection tracking for WebSocket management
-model ConnectionLog {
-  id           String   @id @default(uuid())
-  userId       String   
-  socketId     String   
-  gameId       String?  
-  action       String   // connect, disconnect, reconnect, timeout
-  timestamp    DateTime @default(now())
-  userAgent    String?
-  ipAddress    String?
-  reason       String?  // Reason for disconnect or timeout
-  
-  user         User     @relation(fields: [userId], references: [id])
-  
-  @@index([userId, timestamp])
-  @@index([gameId, timestamp])
+  table     Table    @relation(fields: [tableId], references: [id])
 } 

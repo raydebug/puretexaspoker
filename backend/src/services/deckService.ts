@@ -45,4 +45,8 @@ export class DeckService {
   public getRemainingCards(deck: Card[]): number {
     return deck.length;
   }
+
+  public createNewDeck(): Card[] {
+    return this.createDeck();
+  }
 } 
