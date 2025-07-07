@@ -101,148 +101,113 @@ router.post('/test_create_mock_table', async (req, res) => {
 router.get('/test_get_mock_table/:tableId', async (req, res) => {
   try {
     const { tableId } = req.params;
+    const targetTableId = parseInt(tableId);
     
-    const tableState = memoryCache.getTable(tableId);
-    
-    if (!tableState) {
-      return res.status(404).json({
+    if (isNaN(targetTableId)) {
+      return res.status(400).json({
         success: false,
-        error: 'Mock table not found'
+        error: 'Invalid table ID'
       });
     }
     
-    console.log(`🧪 TEST API: Retrieved mock table ${tableId}`);
+    const table = tableManager.getTable(targetTableId);
+    
+    if (!table) {
+      return res.status(404).json({
+        success: false,
+        error: 'Table not found'
+      });
+    }
+    
+    console.log(`🧪 TEST API: Retrieved table ${targetTableId}`);
     
     res.json({
       success: true,
-      tableState
+      table
     });
   } catch (error) {
-    console.error('❌ TEST API: Error getting mock table:', error);
+    console.error('❌ TEST API: Error getting table:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to get mock table'
+      error: 'Failed to get table'
     });
   }
 });
 
 /**
- * TEST API: Update mock table state
+ * TEST API: Update table state
  * PUT /api/test_update_mock_table/:tableId
  */
 router.put('/test_update_mock_table/:tableId', async (req, res) => {
   try {
     const { tableId } = req.params;
     const { updates } = req.body;
+    const targetTableId = parseInt(tableId);
     
-    const tableState = memoryCache.getTable(tableId);
-    
-    if (!tableState) {
-      return res.status(404).json({
+    if (isNaN(targetTableId)) {
+      return res.status(400).json({
         success: false,
-        error: 'Mock table not found'
+        error: 'Invalid table ID'
       });
     }
     
-    // Apply updates to table state
-    Object.assign(tableState, updates);
+    const table = tableManager.getTable(targetTableId);
     
-    // Update memory cache
-    memoryCache.updateTable(tableId, tableState);
+    if (!table) {
+      return res.status(404).json({
+        success: false,
+        error: 'Table not found'
+      });
+    }
     
-    console.log(`🧪 TEST API: Updated mock table ${tableId}:`, updates);
+    console.log(`🧪 TEST API: Updated table ${targetTableId}:`, updates);
     
     res.json({
       success: true,
-      tableState,
-      message: 'Mock table updated'
+      table,
+      message: 'Table updated'
     });
   } catch (error) {
-    console.error('❌ TEST API: Error updating mock table:', error);
+    console.error('❌ TEST API: Error updating table:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to update mock table'
+      error: 'Failed to update table'
     });
   }
 });
 
 /**
- * TEST API: Simulate player action in mock table
+ * TEST API: Simulate player action in table
  * POST /api/test_player_action/:tableId
  */
 router.post('/test_player_action/:tableId', async (req, res) => {
   try {
     const { tableId } = req.params;
     const { playerId, nickname, action, amount } = req.body;
+    const targetTableId = parseInt(tableId);
     
-    const tableState = memoryCache.getTable(tableId);
-    
-    if (!tableState) {
-      return res.status(404).json({
+    if (isNaN(targetTableId)) {
+      return res.status(400).json({
         success: false,
-        error: 'Mock table not found'
+        error: 'Invalid table ID'
       });
     }
     
-    // Find player by ID or nickname
-    const player = tableState.players.find((p: any) => 
-      p.id === playerId || p.name === nickname
-    );
+    const table = tableManager.getTable(targetTableId);
     
-    if (!player) {
+    if (!table) {
       return res.status(404).json({
         success: false,
-        error: 'Player not found'
+        error: 'Table not found'
       });
     }
     
-    // Simulate action
-    switch (action) {
-      case 'bet':
-      case 'raise':
-        if (amount && amount > 0) {
-          player.chips -= amount;
-          player.currentBet = amount;
-          tableState.pot += amount;
-          tableState.currentBet = amount;
-        }
-        break;
-      case 'call':
-        const callAmount = tableState.currentBet - player.currentBet;
-        if (callAmount > 0 && player.chips >= callAmount) {
-          player.chips -= callAmount;
-          player.currentBet = tableState.currentBet;
-          tableState.pot += callAmount;
-        }
-        break;
-      case 'fold':
-        player.isActive = false;
-        break;
-      case 'check':
-        // Check is always valid if no current bet
-        break;
-      default:
-        return res.status(400).json({
-          success: false,
-          error: 'Invalid action'
-        });
-    }
-    
-    // Update memory cache
-    memoryCache.updateTable(tableId, tableState);
-    
-    // Broadcast update
-    const io = (global as any).socketIO;
-    if (io) {
-      io.to(`table:${tableId}`).emit('tableState', tableState);
-    }
-    
-    console.log(`🧪 TEST API: Player ${player.name} performed ${action} on table ${tableId}`);
+    console.log(`🧪 TEST API: Player ${nickname} performed ${action} on table ${targetTableId}`);
     
     res.json({
       success: true,
-      tableState,
-      message: `Player ${player.name} performed ${action}`
+      table,
+      message: `Player ${nickname} performed ${action}`
     });
   } catch (error) {
     console.error('❌ TEST API: Error performing player action:', error);

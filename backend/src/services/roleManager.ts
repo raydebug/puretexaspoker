@@ -29,7 +29,7 @@ export interface ModerationActionData {
   moderatorId: string;
   reason?: string;
   duration?: number; // Duration in minutes for temporary actions
-  tableId?: string;
+  tableId?: number;
 }
 
 export class RoleManager {

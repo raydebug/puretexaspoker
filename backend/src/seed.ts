@@ -1,5 +1,23 @@
 import { prisma } from './db';
 
+export async function clearDatabase() {
+  console.log('Clearing test data...');
+  
+  try {
+    // Clear all test data in reverse dependency order
+    await prisma.tableAction.deleteMany();
+    await prisma.message.deleteMany();
+    await prisma.playerTable.deleteMany();
+    await prisma.player.deleteMany();
+    await prisma.table.deleteMany();
+    
+    console.log('Test data cleared successfully');
+  } catch (error) {
+    console.error('Error clearing test data:', error);
+    throw error;
+  }
+}
+
 async function main() {
   console.log('Seeding database...');
 

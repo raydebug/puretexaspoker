@@ -20,8 +20,8 @@ export interface UserProfile {
   displayName: string;
   avatar?: string;
   chips: number;
-  gamesPlayed: number;
-  gamesWon: number;
+  tablesPlayed: number;
+  tablesWon: number;
   createdAt: Date;
   lastLoginAt?: Date;
   // USER ROLE MANAGEMENT: Enhanced user profile with role information
@@ -328,8 +328,8 @@ export class AuthService {
     await prisma.user.update({
       where: { id: userId },
       data: {
-        gamesPlayed: { increment: 1 },
-        gamesWon: won ? { increment: 1 } : undefined,
+        tablesPlayed: { increment: 1 },
+        tablesWon: won ? { increment: 1 } : undefined,
         chips: { increment: chipsWon }
       }
     });
@@ -362,8 +362,8 @@ export class AuthService {
       displayName: user.displayName,
       avatar: user.avatar || undefined,
       chips: user.chips,
-      gamesPlayed: user.gamesPlayed,
-      gamesWon: user.gamesWon,
+      tablesPlayed: user.tablesPlayed,
+      tablesWon: user.tablesWon,
       createdAt: user.createdAt,
       lastLoginAt: user.lastLoginAt || undefined,
       role: roleInfo ? {

@@ -15,7 +15,7 @@ import { prisma } from './db';
 import { tableManager } from './services/TableManager';
 import { locationManager } from './services/LocationManager';
 import { cleanupTestData } from './services/testService';
-import { setup5PlayerTestCardOrder } from './routes/test';
+
 
 // Use imported cleanupTestData from testService
 
@@ -124,8 +124,7 @@ async function initializeServer() {
     // Step 4: Initialize location manager
     await locationManager.initialize();
     
-    // Step 5: Set up 5-player test card order
-    setup5PlayerTestCardOrder();
+
     
     // Step 6: Start server
     httpServer.listen(port, () => {

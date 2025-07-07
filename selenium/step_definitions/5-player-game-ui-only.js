@@ -84,17 +84,9 @@ When('players join the table in order:', { timeout: 120000 }, async function (da
   
   const rows = dataTable.hashes();
   
-  // Get the actual table ID from the API
-  console.log('📋 Getting actual table ID from API...');
-  const tablesResponse = await fetch('http://localhost:3001/api/tables');
-  const tables = await tablesResponse.json();
-  
-  if (tables.length === 0) {
-    throw new Error('No tables available');
-  }
-  
-  const actualTableId = tables[0].id;
-  console.log(`🎯 Using actual table ID: ${actualTableId}`);
+  // Use table 1 (ID 25) as requested
+  const actualTableId = 25;
+  console.log(`🎯 Using table 1 (ID: ${actualTableId}) as requested`);
   
   for (const row of rows) {
     const playerName = row.Player;
@@ -261,17 +253,9 @@ Then('all players should be seated correctly:', async function (dataTable) {
 When('I manually start the game for table {int}', async function (tableId) {
   console.log(`🚀 Starting game for table ${tableId} via UI validation with new browser...`);
   
-  // Get the actual tableId from the API (not the hardcoded number)
-  console.log('📋 Getting actual table ID from API...');
-  const tablesResponse = await fetch('http://localhost:3001/api/tables');
-  const tables = await tablesResponse.json();
-  
-  if (tables.length === 0) {
-    throw new Error('No tables available');
-  }
-  
-  const actualTableId = tables[0].id;
-  console.log(`🎯 Using actual table ID: ${actualTableId}`);
+  // Use table 1 (ID 25) as requested
+  const actualTableId = 25;
+  console.log(`🎯 Using table 1 (ID: ${actualTableId}) as requested`);
   
   // First, check if players are actually seated in the database
   console.log('🔍 Checking database for seated players...');
