@@ -510,6 +510,15 @@ router.post('/start-game', async (req, res) => {
       });
     }
     
+    // Ensure tableId is an integer
+    targetTableId = parseInt(targetTableId);
+    if (isNaN(targetTableId)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid tableId - must be a number'
+      });
+    }
+    
     console.log(`🔍 Starting game for table ${targetTableId}...`);
     
     // Check if table exists in TableManager
