@@ -1,0 +1,13 @@
+# Test Data and UI-Only Testing
+
+- Restart servers parallelly in different terminal in ide code area
+- Do not kill servers in test scripts.
+- Kill all running Chrome instances before starting UI tests.
+- All test data setup must use UI flows or dedicated test APIs with proper prefixes.
+- No backend-only or simulated/mocked mode is allowed for UI-based BDD Cucumber tests.
+- Always check to avoid duplicate or conflicting tests.
+- Use actual tableId from the API, not hardcoded values.
+description:
+globs:
+alwaysApply: false
+---

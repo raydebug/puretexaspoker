@@ -1,0 +1,8 @@
+# Port and Server Management
+
+- Always ensure only one backend server is running on port 3001 to avoid EADDRINUSE errors.
+- Restart servers by default when port conflicts occur.
+description:
+globs:
+alwaysApply: false
+---

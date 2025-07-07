@@ -261,11 +261,23 @@ Then('all players should be seated correctly:', async function (dataTable) {
 When('I manually start the game for table {int}', async function (tableId) {
   console.log(`🚀 Starting game for table ${tableId} via UI validation with new browser...`);
   
+  // Get the actual tableId from the API (not the hardcoded number)
+  console.log('📋 Getting actual table ID from API...');
+  const tablesResponse = await fetch('http://localhost:3001/api/tables');
+  const tables = await tablesResponse.json();
+  
+  if (tables.length === 0) {
+    throw new Error('No tables available');
+  }
+  
+  const actualTableId = tables[0].id;
+  console.log(`🎯 Using actual table ID: ${actualTableId}`);
+  
   // First, check if players are actually seated in the database
   console.log('🔍 Checking database for seated players...');
   try {
     const { execSync } = require('child_process');
-    const result = execSync('curl -s http://localhost:3001/api/test/start-game -H "Content-Type: application/json" -d \'{"tableId": 1}\' 2>&1', { encoding: 'utf8' });
+    const result = execSync(`curl -s http://localhost:3001/api/test/start-game -H "Content-Type: application/json" -d '{"tableId": "${actualTableId}"}' 2>&1`, { encoding: 'utf8' });
     console.log(`📊 Database check result: ${result}`);
   } catch (error) {
     console.log(`📊 Database check error: ${error.message}`);
@@ -293,13 +305,13 @@ When('I manually start the game for table {int}', async function (tableId) {
       <html>
       <head><title>API Test</title></head>
       <body>
-        <h1>Starting Game for Table ${tableId}</h1>
+        <h1>Starting Game for Table ${actualTableId}</h1>
         <div id="result">Calling API...</div>
         <script>
           fetch('http://localhost:3001/api/test/start-game', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tableId: ${tableId} })
+            body: JSON.stringify({ tableId: "${actualTableId}" })
           })
           .then(response => response.json())
           .then(data => {
