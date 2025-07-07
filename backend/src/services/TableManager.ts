@@ -11,7 +11,7 @@ import { Card, Player, GameState } from '../types/shared';
 import { createHash } from 'crypto';
 
 export interface TableData {
-  id: string;
+  id: number;
   name: string;
   players: number;
   maxPlayers: number;
@@ -33,7 +33,7 @@ interface TablePlayer {
 }
 
 interface TableGameState {
-  tableId: string;
+  tableId: number;
   status: 'waiting' | 'playing' | 'finished';
   phase: 'waiting' | 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
   pot: number;
@@ -51,9 +51,9 @@ interface TableGameState {
 }
 
 class TableManager {
-  private tables: Map<string, TableData>;
-  private tablePlayers: Map<string, Map<string, TablePlayer>>;
-  private tableGameStates: Map<string, TableGameState>;
+  private tables: Map<number, TableData>;
+  private tablePlayers: Map<number, Map<string, TablePlayer>>;
+  private tableGameStates: Map<number, TableGameState>;
   private deckService: DeckService;
   private handEvaluator: HandEvaluator;
 
@@ -118,7 +118,7 @@ class TableManager {
       // Convert database tables to TableData format
       dbTables.forEach((dbTable, index) => {
         const tableData: TableData = {
-          id: dbTable.id, // Use the actual database UUID
+          id: dbTable.id, // Use the actual database integer ID
           name: dbTable.name,
           players: 0,
           maxPlayers: dbTable.maxPlayers,
@@ -151,7 +151,7 @@ class TableManager {
     }
   }
 
-  private initializeTableGameState(tableId: string): void {
+  private initializeTableGameState(tableId: number): void {
     this.tableGameStates.set(tableId, {
       tableId,
       status: 'waiting',
@@ -176,16 +176,16 @@ class TableManager {
     return tables;
   }
 
-  public getTable(tableId: string): TableData | undefined {
+  public getTable(tableId: number): TableData | undefined {
     return this.tables.get(tableId);
   }
 
-  public getTableGameState(tableId: string): TableGameState | undefined {
+  public getTableGameState(tableId: number): TableGameState | undefined {
     return this.tableGameStates.get(tableId);
   }
 
   public joinTable(
-    tableId: string,
+    tableId: number,
     playerId: string,
     nickname: string
   ): { success: boolean; error?: string } {
@@ -221,7 +221,7 @@ class TableManager {
     return { success: true };
   }
 
-  public leaveTable(tableId: string, playerId: string): boolean {
+  public leaveTable(tableId: number, playerId: string): boolean {
     const table = this.tables.get(tableId);
     const players = this.tablePlayers.get(tableId);
 
@@ -249,7 +249,7 @@ class TableManager {
   }
 
   public sitDown(
-    tableId: string,
+    tableId: number,
     playerId: string,
     buyIn: number
   ): { success: boolean; error?: string } {
@@ -296,7 +296,7 @@ class TableManager {
     return { success: true };
   }
 
-  public standUp(tableId: string, playerId: string): boolean {
+  public standUp(tableId: number, playerId: string): boolean {
     const table = this.tables.get(tableId);
     const players = this.tablePlayers.get(tableId);
 
@@ -324,13 +324,13 @@ class TableManager {
     return true;
   }
 
-  public getTablePlayers(tableId: string): TablePlayer[] {
+  public getTablePlayers(tableId: number): TablePlayer[] {
     const players = this.tablePlayers.get(tableId);
     return players ? Array.from(players.values()) : [];
   }
 
   // NEW: Game management methods
-  public async startTableGame(tableId: string): Promise<{ success: boolean; error?: string; gameState?: TableGameState }> {
+  public async startTableGame(tableId: number): Promise<{ success: boolean; error?: string; gameState?: TableGameState }> {
     const table = this.tables.get(tableId);
     const gameState = this.tableGameStates.get(tableId);
     
@@ -438,7 +438,7 @@ class TableManager {
   }
 
   public async playerAction(
-    tableId: string, 
+    tableId: number, 
     playerId: string, 
     action: string, 
     amount?: number
@@ -560,7 +560,7 @@ class TableManager {
     return activePlayers.every(p => p.currentBet === gameState.currentBet);
   }
 
-  private async advanceToNextPhase(tableId: string, gameState: TableGameState): Promise<void> {
+  private async advanceToNextPhase(tableId: number, gameState: TableGameState): Promise<void> {
     const phaseOrder = ['preflop', 'flop', 'turn', 'river', 'showdown'];
     const currentIndex = phaseOrder.indexOf(gameState.phase);
     
@@ -596,7 +596,7 @@ class TableManager {
     // Update memory cache (database operations removed for now)
   }
 
-  private async determineWinner(tableId: string, gameState: TableGameState): Promise<void> {
+  private async determineWinner(tableId: number, gameState: TableGameState): Promise<void> {
     const activePlayers = gameState.players.filter(p => p.isActive);
     
     if (activePlayers.length === 1) {
@@ -648,7 +648,7 @@ class TableManager {
     // Update memory cache (database operations removed for now)
   }
 
-  private generateSimpleCardOrderHash(tableId: string): string {
+  private generateSimpleCardOrderHash(tableId: number): string {
     const timestamp = Date.now();
     const hashInput = `table-${tableId}-${timestamp}`;
     return createHash('sha256').update(hashInput).digest('hex');

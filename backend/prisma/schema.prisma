@@ -93,7 +93,7 @@ model ModerationAction {
   duration     Int?     // Duration in minutes (for temporary actions)
   moderatorId  String   // User who performed the action
   targetUserId String   // User who was moderated
-  tableId      String?  // Table where action occurred (if applicable)
+  tableId      Int?     // Table where action occurred (if applicable)
   createdAt    DateTime @default(now())
   expiresAt    DateTime?
   isActive     Boolean  @default(true)
@@ -106,7 +106,7 @@ model Player {
   id          String        @id @default(uuid())
   nickname    String        // Removed @unique constraint - allow same nickname across different tables
   chips       Int
-  table       String?       // Table ID - null means in lobby (changed from Int? to String?)
+  table       Int?          // Table ID - null means in lobby (changed from String? to Int?)
   seat        Int?          // Seat number - null means observing (if table is not null)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -118,7 +118,7 @@ model Player {
 }
 
 model Table {
-  id          String        @id @default(uuid())
+  id          Int           @id @default(autoincrement())
   name        String
   maxPlayers  Int
   smallBlind  Int
@@ -162,7 +162,7 @@ model Table {
 model PlayerTable {
   id        String   @id @default(uuid())
   playerId  String
-  tableId   String
+  tableId   Int
   seatNumber Int
   buyIn     Int
   createdAt DateTime @default(now())
@@ -175,7 +175,7 @@ model PlayerTable {
 
 model TableAction {
   id        String   @id @default(uuid())
-  tableId   String
+  tableId   Int
   playerId  String
   type      String   // bet, fold, check, raise, call, allIn
   amount    Int?     // for bets/raises
@@ -197,7 +197,7 @@ model Message {
   id        String   @id @default(uuid())
   content   String
   playerId  String
-  tableId   String
+  tableId   Int
   createdAt DateTime @default(now())
   player    Player   @relation(fields: [playerId], references: [id])
   table     Table    @relation(fields: [tableId], references: [id])

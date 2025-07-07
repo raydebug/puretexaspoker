@@ -7,6 +7,7 @@
 - No backend-only or simulated/mocked mode is allowed for UI-based BDD Cucumber tests.
 - Always check to avoid duplicate or conflicting tests.
 - Use actual tableId from the API, not hardcoded values.
+- Dummy player name format "Player<X>"
 description:
 globs:
 alwaysApply: false

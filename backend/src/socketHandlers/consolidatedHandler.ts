@@ -9,7 +9,7 @@ import { prisma } from '../db';
  */
 
 // Track authenticated users
-const authenticatedUsers = new Map<string, { nickname: string; socketId: string; playerId: string; location: 'lobby' | string }>();
+const authenticatedUsers = new Map<string, { nickname: string; socketId: string; playerId: string; location: 'lobby' | number }>();
 
 export function registerConsolidatedHandlers(io: Server) {
   // Global error handler
@@ -139,7 +139,7 @@ export function registerConsolidatedHandlers(io: Server) {
         const existingSeat = await prisma.playerTable.findFirst({
           where: {
             playerId: user.playerId,
-            tableId: user.location
+            tableId: user.location as number
           }
         });
 
@@ -154,7 +154,7 @@ export function registerConsolidatedHandlers(io: Server) {
         // Check if seat is already taken by another player
         const seatTaken = await prisma.playerTable.findFirst({
           where: {
-            tableId: user.location,
+            tableId: user.location as number,
             seatNumber
           }
         });
@@ -164,7 +164,7 @@ export function registerConsolidatedHandlers(io: Server) {
         }
 
         // Take seat in TableManager
-        const result = tableManager.sitDown(user.location as string, socket.id, buyIn);
+        const result = tableManager.sitDown(user.location as number, socket.id, buyIn);
         if (!result.success) {
           throw new Error(result.error || 'Failed to take seat');
         }
@@ -173,7 +173,7 @@ export function registerConsolidatedHandlers(io: Server) {
         await prisma.playerTable.create({
           data: {
             playerId: user.playerId,
-            tableId: user.location,
+            tableId: user.location as number,
             seatNumber,
             buyIn
           }

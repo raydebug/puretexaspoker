@@ -5,7 +5,7 @@ export interface OnlineUser {
   id: string;
   nickname: string;
   socketId: string;
-  tableId?: string;
+  tableId?: number;
   seatNumber?: number;
   lastActive: Date;
   isActive: boolean;
@@ -13,7 +13,7 @@ export interface OnlineUser {
 
 export interface OnlineGame {
   id: string;
-  tableId: string;
+  tableId: number;
   status: 'waiting' | 'active' | 'completed';
   phase: 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
   players: OnlinePlayer[];
@@ -36,7 +36,7 @@ export interface OnlinePlayer {
 
 export interface GameResult {
   gameId: string;
-  tableId: string;
+  tableId: number;
   winnerId: string;
   winnerNickname: string;
   winningHand: string;
@@ -127,7 +127,7 @@ class MemoryCache extends EventEmitter {
     return Array.from(this.users.values()).filter(u => u.isActive);
   }
   
-  getUsersAtTable(tableId: string): OnlineUser[] {
+  getUsersAtTable(tableId: number): OnlineUser[] {
     return Array.from(this.users.values()).filter(u => u.tableId === tableId && u.isActive);
   }
   
@@ -170,7 +170,7 @@ class MemoryCache extends EventEmitter {
     return Array.from(this.games.values()).filter(g => g.status === 'active');
   }
   
-  getGamesAtTable(tableId: string): OnlineGame[] {
+  getGamesAtTable(tableId: number): OnlineGame[] {
     return Array.from(this.games.values()).filter(g => g.tableId === tableId);
   }
   
@@ -234,7 +234,7 @@ class MemoryCache extends EventEmitter {
 
   // ===== TABLE MANAGEMENT =====
   
-  updateTable(tableId: string, updates: any): void {
+  updateTable(tableId: number, updates: any): void {
     // For now, just emit an event for table updates
     this.emit('tableUpdated', { tableId, updates });
   }

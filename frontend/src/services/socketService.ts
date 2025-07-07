@@ -47,6 +47,7 @@ export class SocketService {
   private eventEmitter = new EventEmitter();
   private heartbeatInterval: NodeJS.Timeout | undefined;
   private tableState: any | null = null;
+  private gameState: GameState | null = null;
   private currentPlayer: Player | null = null;
   private observers: string[] = [];
   private processedLocationUpdates: Set<string> = new Set(); // Track processed location updates
@@ -62,6 +63,7 @@ export class SocketService {
   private isObserver: boolean = false;
   private onlineUsersCallback: OnlineUsersCallback | null = null;
   private isConnected = false;
+  private currentGameId: string | null = null;
 
   // Event listeners
   private errorListeners: ErrorCallback[] = [];
@@ -1359,10 +1361,17 @@ export class SocketService {
   /**
    * Get initial game state for a table
    */
-  private getInitialGameState(tableId: string) {
-    if (this.socket && this.socket.connected) {
-      this.socket.emit('game:getState', { tableId });
-    }
+  private getInitialGameState(tableId: number) {
+    return {
+      tableId,
+      status: 'waiting',
+      phase: 'waiting',
+      pot: 0,
+      players: [],
+      currentPlayer: null,
+      communityCards: [],
+      cardOrderHash: null
+    };
   }
 
   /**
@@ -1370,9 +1379,10 @@ export class SocketService {
    */
   onTablesUpdate(callback: TablesUpdateCallback) {
     this.tablesUpdateListeners.push(callback);
-    return () => {
-      this.tablesUpdateListeners = this.tablesUpdateListeners.filter(cb => cb !== callback);
-    };
+    // Immediately emit current tables if available
+    if (this.lobbyTables.length > 0) {
+      callback(this.lobbyTables);
+    }
   }
 
   /**
@@ -1386,49 +1396,33 @@ export class SocketService {
    * Update user location immediately
    */
   updateUserLocationImmediate(tableId: number, nickname: string) {
-    if (this.socket && this.socket.connected) {
-      this.socket.emit('updateUserLocation', { 
-        tableId: tableId, 
-        nickname: nickname
-      });
-    }
+    this.currentUserTable = tableId;
+    this.currentUserId = nickname;
+    console.log(`🔧 FRONTEND: Immediate location update - User: ${nickname}, Table: ${tableId}`);
   }
 
   /**
    * Join a WebSocket room
    */
   joinRoom(roomName: string): void {
-    if (!this.socket || !this.socket.connected) {
-      console.error('Socket not connected - cannot join room');
-      return;
+    if (this.socket?.connected) {
+      this.socket.emit('joinRoom', { roomName });
+      console.log(`🔧 FRONTEND: Joined room: ${roomName}`);
     }
-    
-    console.log(`[SOCKET] Joining room: ${roomName}`);
-    this.socket.emit('joinRoom', roomName);
   }
 
   /**
    * Join a table as observer or player
    */
-  joinTable(tableId: string, buyIn?: number) {
-    if (!this.socket) {
-      throw new Error('Socket not initialized. Please connect first.');
+  joinTable(tableId: number, buyIn?: number) {
+    if (!this.socket?.connected) {
+      console.error('Socket not connected');
+      return;
     }
-    
-    if (!this.socket.connected) {
-      throw new Error('Socket not connected. Please wait for connection or try again.');
-    }
-    
-    const nickname = localStorage.getItem('nickname');
-    if (!nickname) {
-      throw new Error('No nickname set. Please set a nickname first.');
-    }
-    
-    console.log(`🎯 SOCKET: Joining table ${tableId} as ${buyIn ? 'player' : 'observer'} with nickname: ${nickname}`);
-    
-    // Always join as observer first (observer-first flow)
-    // The backend expects 'joinTable' event and will handle the observer flow
-    this.socket.emit('joinTable', { tableId, buyIn });
+
+    console.log(`🔧 FRONTEND: Joining table ${tableId} with buyIn ${buyIn || 200}`);
+    this.socket.emit('joinTable', { tableId, buyIn: buyIn || 200 });
+    this.currentTableId = tableId;
   }
 
   /**
