@@ -64,6 +64,19 @@ Given('the database is reset to a clean state', async function () {
     const { execSync } = require('child_process');
     const result = execSync(`curl -s -X POST http://localhost:3001/api/test/reset_database 2>&1`, { encoding: 'utf8' });
     console.log(`📊 Database reset result: ${result}`);
+    
+    // Extract the first table ID from the response
+    try {
+      const response = JSON.parse(result);
+      if (response.tables && response.tables.length > 0) {
+        const firstTableId = response.tables[0].id;
+        this.latestTableId = firstTableId; // Store for use in subsequent steps
+        console.log(`🎯 Extracted latest table ID: ${firstTableId}`);
+      }
+    } catch (parseError) {
+      console.log(`⚠️ Could not parse table ID from response: ${parseError.message}`);
+    }
+    
     console.log('✅ Database cleaned for UI testing');
   } catch (error) {
     console.log(`⚠️ Database reset failed: ${error.message}`);
@@ -95,8 +108,8 @@ When('players join the table in order:', { timeout: 60000 }, async function (dat
   const rows = dataTable.hashes();
   
   // Use the table ID from the previous database reset step
-  let actualTableId = 238; // fallback - should match the table created in previous step
-  console.log(`🎯 Using table 1 (ID: ${actualTableId}) as requested`);
+  let actualTableId = this.latestTableId || 256; // Use latest table ID or fallback
+  console.log(`🎯 Using latest table (ID: ${actualTableId}) from database reset`);
   
   for (const row of rows) {
     const playerName = row.Player;
