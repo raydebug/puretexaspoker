@@ -909,7 +909,7 @@ Then('force all players to join game rooms', async function () {
       player.driver.executeScript(`
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('test:joinGameRooms', { 
-            detail: { tableId: actualTableId } 
+            detail: { tableId: window.location.pathname.split('/').pop() } // Extract from URL 
           }));
           console.log('🔌 Frontend dispatched test:joinGameRooms event');
         } else {
