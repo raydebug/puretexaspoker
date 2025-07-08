@@ -385,7 +385,7 @@ class TableManager {
         deck: this.deckService.createNewDeck(),
         board: [],
         players: seatedPlayers.map((p, index) => ({
-          id: p.id,
+          id: p.nickname, // Use nickname as ID for simple matching
           name: p.nickname,
           seatNumber: index + 1,
           position: index,
@@ -401,7 +401,7 @@ class TableManager {
             color: '#4CAF50'
           }
         })),
-        currentPlayerId: seatedPlayers[2]?.id || seatedPlayers[0]?.id || null, // First to act after blinds
+        currentPlayerId: seatedPlayers[2]?.nickname || seatedPlayers[0]?.nickname || null, // Use nickname as ID
         dealerPosition: 0,
         smallBlindPosition: 1,
         bigBlindPosition: 2,
@@ -444,7 +444,7 @@ class TableManager {
         phase: 'preflop',
         pot: newGameState.pot,
         players: newGameState.players.map(p => ({
-          id: p.id,
+          id: p.name, // Use name as ID for consistency
           nickname: p.name,
           seatNumber: p.seatNumber,
           chips: p.chips,

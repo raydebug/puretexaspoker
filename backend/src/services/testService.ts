@@ -47,6 +47,13 @@ export const cleanupTestData = async () => {
     console.log('🗑️ Clearing TableManager cache...');
     // Force reinitialization by clearing internal state
     await tableManager.init();
+    
+    // Verify only 3 tables exist
+    const tables = tableManager.getAllTables();
+    console.log(`🗑️ TableManager now has ${tables.length} tables after cleanup`);
+    if (tables.length !== 3) {
+      console.warn(`⚠️ WARNING: TableManager has ${tables.length} tables instead of 3`);
+    }
   }
   
   // Clear MemoryCache
