@@ -397,11 +397,21 @@ router.post('/emit_game_state', async (req, res) => {
  */
 router.post('/reset_database', async (req, res) => {
   try {
+    // Clear TableManager in-memory state BEFORE any DB or table creation
+    if (tableManager) {
+      tableManager["tables"].clear();
+      tableManager["tablePlayers"].clear();
+      tableManager["tableGameStates"].clear();
+      console.log('TableManager: Cleared in-memory state at start of reset_database');
+    }
     console.log('🧹 TEST API: Resetting database to clean state...');
     
     // Clean up all test data
     await cleanupTestData();
-    
+
+    // Delete all tables before creating new ones
+    await prisma.table.deleteMany({});
+
     // Create exactly 3 tables
     const defaultTables = [
       {
@@ -435,6 +445,10 @@ router.post('/reset_database', async (req, res) => {
       await prisma.table.create({ data: tableData });
     }
     
+    // Log number of tables in DB after creation
+    const tablesAfter = await prisma.table.findMany();
+    console.log(`DB now has ${tablesAfter.length} tables after creation`);
+    
     // Reinitialize TableManager to pick up new tables
     await tableManager.init();
     console.log('🔄 TEST API: TableManager reinitialized with new tables');
@@ -444,7 +458,7 @@ router.post('/reset_database', async (req, res) => {
     res.json({
       success: true,
       message: 'Database reset successful',
-      tables: await prisma.table.findMany()
+      tables: tablesAfter
     });
   } catch (error) {
     console.error('❌ TEST API: Error resetting database:', error);

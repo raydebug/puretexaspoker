@@ -79,7 +79,7 @@ class TableManager {
       console.log('TableManager: Cleared existing in-memory state');
       
       // Load actual tables from database
-      const dbTables = await prisma.table.findMany();
+      let dbTables = await prisma.table.findMany();
       console.log(`TableManager: Found ${dbTables.length} tables in database`);
       
       if (dbTables.length === 0) {
@@ -111,14 +111,11 @@ class TableManager {
             maxBuyIn: 20000
           }
         ];
-        
         for (const tableData of defaultTables) {
           await prisma.table.create({ data: tableData });
         }
-        
         // Reload tables after creation
-        const newDbTables = await prisma.table.findMany();
-        dbTables.push(...newDbTables);
+        dbTables = await prisma.table.findMany();
       }
       
       // Load player seating from database

@@ -139,7 +139,7 @@ export function registerConsolidatedHandlers(io: Server) {
         const existingSeat = await prisma.playerTable.findFirst({
           where: {
             playerId: String(user.playerId),
-            tableId: Number(user.location)
+            tableId: user.location === 'lobby' ? 0 : (user.location as number)
           }
         });
 
@@ -154,7 +154,7 @@ export function registerConsolidatedHandlers(io: Server) {
         // Check if seat is already taken by another player
         const seatTaken = await prisma.playerTable.findFirst({
           where: {
-            tableId: Number(user.location),
+            tableId: user.location === 'lobby' ? 0 : (user.location as number),
             seatNumber
           }
         });
@@ -163,8 +163,13 @@ export function registerConsolidatedHandlers(io: Server) {
           throw new Error(`Seat ${seatNumber} is already taken`);
         }
 
+        // Validate that user is at a table (not in lobby)
+        if (user.location === 'lobby') {
+          throw new Error('Must join table as observer before taking a seat');
+        }
+
         // Take seat in TableManager
-        const result = tableManager.sitDown(user.location as number, socket.id, buyIn);
+        const result = tableManager.sitDown(user.location as number, user.nickname, buyIn);
         if (!result.success) {
           throw new Error(result.error || 'Failed to take seat');
         }
@@ -173,7 +178,7 @@ export function registerConsolidatedHandlers(io: Server) {
         await prisma.playerTable.create({
           data: {
             playerId: String(user.playerId),
-            tableId: Number(user.location),
+            tableId: user.location as number,
             seatNumber,
             buyIn
           }

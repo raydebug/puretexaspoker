@@ -45,14 +45,15 @@ export const cleanupTestData = async () => {
   // Clear TableManager cache
   if (tableManager) {
     console.log('🗑️ Clearing TableManager cache...');
-    // Force reinitialization by clearing internal state
-    await tableManager.init();
-    
-    // Verify only 3 tables exist
+    // Only clear in-memory state, do NOT call init() here
+    tableManager["tables"].clear();
+    tableManager["tablePlayers"].clear();
+    tableManager["tableGameStates"].clear();
+    // No tableManager.init() here!
     const tables = tableManager.getAllTables();
     console.log(`🗑️ TableManager now has ${tables.length} tables after cleanup`);
-    if (tables.length !== 3) {
-      console.warn(`⚠️ WARNING: TableManager has ${tables.length} tables instead of 3`);
+    if (tables.length !== 0) {
+      console.warn(`⚠️ WARNING: TableManager has ${tables.length} tables after clear (should be 0)`);
     }
   }
   

@@ -112,7 +112,25 @@ const AutoSeatPage: React.FC = () => {
         };
         
         const socket = socketService.getSocket();
+        console.log(`🎯 AUTO-SEAT: Socket state - exists: ${!!socket}, connected: ${socket?.connected}`);
+        
         socket?.on('authenticated', authSuccessHandler);
+        
+        // Add error listeners to catch any issues
+        const errorHandler = (error: any) => {
+          console.error(`🎯 AUTO-SEAT: WebSocket error during authentication:`, error);
+          setStatus('❌ Authentication error: ' + (error.message || 'Unknown error'));
+          setStatusType('error');
+        };
+        
+        socket?.on('error', errorHandler);
+        socket?.on('tableError', errorHandler);
+        socket?.on('seatError', errorHandler);
+        
+        // Log all incoming events for debugging
+        socket?.onAny((eventName: string, ...args: any[]) => {
+          console.log(`🎯 AUTO-SEAT: Received event: ${eventName}`, args);
+        });
         
         // Authenticate with the player name
         socketService.emitUserLogin(playerName);
@@ -152,6 +170,16 @@ const AutoSeatPage: React.FC = () => {
         
         socket?.on('tableJoined', tableJoinHandler);
         
+        // Add error listeners for table join
+        const tableErrorHandler = (error: any) => {
+          console.error(`🎯 AUTO-SEAT: WebSocket error during table join:`, error);
+          setStatus('❌ Table join error: ' + (error.message || 'Unknown error'));
+          setStatusType('error');
+        };
+        
+        socket?.on('error', tableErrorHandler);
+        socket?.on('tableError', tableErrorHandler);
+        
         // Join the table
         socketService.joinTable(actualTableId, buyInAmount);
         
@@ -188,6 +216,16 @@ const AutoSeatPage: React.FC = () => {
         
         socket?.on('seatTaken', seatTakenHandler);
         socket?.on('alreadySeated', alreadySeatedHandler);
+        
+        // Add error listeners for seat taking
+        const seatErrorHandler = (error: any) => {
+          console.error(`🎯 AUTO-SEAT: WebSocket error during seat taking:`, error);
+          setStatus('❌ Seat taking error: ' + (error.message || 'Unknown error'));
+          setStatusType('error');
+        };
+        
+        socket?.on('error', seatErrorHandler);
+        socket?.on('seatError', seatErrorHandler);
         
         // Take the specified seat with specified buy-in amount
         console.log(`🎯 AUTO-SEAT: Attempting to take seat ${seatNumber} with buy-in ${buyInAmount}`);
