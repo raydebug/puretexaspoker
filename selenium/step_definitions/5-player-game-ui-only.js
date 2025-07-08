@@ -102,6 +102,17 @@ Given('the database is reset to a clean state', async function () {
   }
 });
 
+// Verify first table is available
+Then('the first table should be available for testing', async function () {
+  console.log(`🎯 First table (ID: ${this.latestTableId}) is ready for testing`);
+  
+  if (!this.latestTableId) {
+    throw new Error('No table ID available from database reset');
+  }
+  
+  console.log(`✅ First table (ID: ${this.latestTableId}) is available and ready for testing`);
+});
+
 // User seeding - UI verification only  
 Given('the User table is seeded with test players', async function () {
   console.log('👥 User seeding step - UI verification only');
