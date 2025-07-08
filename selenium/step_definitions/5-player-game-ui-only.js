@@ -936,7 +936,7 @@ Then('manually trigger game state update from backend', async function () {
   
   try {
     // Make API call to get current game state
-    const response = await fetch('http://localhost:3001/api/test/get_game_state', {
+    const response = await fetch('http://localhost:3001/api/test_get_game_state', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -956,7 +956,7 @@ Then('manually trigger game state update from backend', async function () {
       });
       
       // Emit WebSocket event to all connected clients
-      const wsResponse = await fetch('http://localhost:3001/api/test/emit_game_state', {
+      const wsResponse = await fetch('http://localhost:3001/api/test_emit_game_state', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
