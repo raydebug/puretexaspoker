@@ -148,8 +148,8 @@ class TableManager {
         const tableId = Number(pt.tableId);
         const playerMap = this.tablePlayers.get(tableId);
         if (playerMap) {
-          playerMap.set(pt.playerId, {
-            id: pt.playerId,
+          playerMap.set(pt.player.nickname, { // Use nickname as key instead of UUID
+            id: pt.player.nickname, // Use nickname as ID for simple matching
             nickname: pt.player.nickname,
             role: 'player', // All seated players are 'player' role
             chips: pt.buyIn
@@ -236,8 +236,8 @@ class TableManager {
     }
 
     // Add player as observer
-    players.set(playerId, {
-      id: playerId,
+    players.set(nickname, { // Use nickname as key instead of UUID
+      id: nickname, // Use nickname as ID for simple matching
       nickname,
       role: 'observer',
       chips: 0,
