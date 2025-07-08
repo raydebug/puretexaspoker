@@ -909,7 +909,7 @@ Then('force all players to join game rooms', async function () {
       player.driver.executeScript(`
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('test:joinGameRooms', { 
-            detail: { tableId: 25 } 
+            detail: { tableId: actualTableId } 
           }));
           console.log('🔌 Frontend dispatched test:joinGameRooms event');
         } else {
@@ -965,7 +965,7 @@ Then('manually trigger game state update from backend', async function () {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ tableId: 25 })
+      body: JSON.stringify({ tableId: actualTableId })
     });
     
     const data = await response.json();
@@ -986,7 +986,7 @@ Then('manually trigger game state update from backend', async function () {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          tableId: 25,
+          tableId: actualTableId,
           gameState: data.gameState 
         })
       });
