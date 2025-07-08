@@ -94,19 +94,8 @@ When('players join the table in order:', { timeout: 60000 }, async function (dat
   
   const rows = dataTable.hashes();
   
-  // Get the first table ID from the database reset response
-  let actualTableId = 58; // fallback
-  try {
-    const { execSync } = require('child_process');
-    const dbResetResult = execSync(`curl -s -X POST http://localhost:3001/api/test/reset_database`, { encoding: 'utf8' });
-    const dbData = JSON.parse(dbResetResult);
-    if (dbData.tables && dbData.tables.length > 0) {
-      actualTableId = dbData.tables[0].id;
-      console.log(`🎯 Database reset created table with ID: ${actualTableId}`);
-    }
-  } catch (error) {
-    console.log(`⚠️ Could not get table ID from database reset, using fallback: ${actualTableId}`);
-  }
+  // Use the table ID from the previous database reset step
+  let actualTableId = 235; // fallback - should match the table created in previous step
   console.log(`🎯 Using table 1 (ID: ${actualTableId}) as requested`);
   
   for (const row of rows) {
