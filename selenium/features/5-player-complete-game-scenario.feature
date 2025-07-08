@@ -44,18 +44,19 @@ Feature: 5-Player Complete Game Scenario (UI-Only)
       | Player5 | Q♦    | 2♦    |
     Then each player should see their own hole cards
     
-    # PRE-FLOP BETTING (Adds 15% coverage - total 35%)
+        # PRE-FLOP BETTING (Adds 15% coverage - total 35%)
     When the pre-flop betting round begins
     Then force all players to join game rooms
     And verify current player information in all browsers
-    And Player4 raises to $6
-  And Player5 calls $6
-  And Player1 folds
-  And Player2 re-raises to $16
-  And Player3 calls $10 more
-  And Player4 calls $10 more
-  And Player5 folds
-    Then the pot should be $54
+    And Player3 raises to $6
+    And Player4 calls $6
+    And Player5 folds
+    And Player1 calls $5 more
+    And Player2 re-raises to $16
+    And Player3 calls $10 more
+    And Player4 folds
+    And Player1 folds
+    Then the pot should be $44
     And 2 players should remain in the hand: Player2, Player3
     
     # BASIC FLOP (Adds 15% coverage - total 50%)
@@ -63,7 +64,7 @@ Feature: 5-Player Complete Game Scenario (UI-Only)
     And Player2 checks
     And Player3 bets $20
     And Player2 calls $20
-    Then the pot should be $94
+    Then the pot should be $84
     And both players should see the 3 flop cards
     And Player2 should have top pair with Q♥
     And Player3 should have top pair with K♣ and straight draw potential
