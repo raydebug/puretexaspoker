@@ -874,9 +874,6 @@ When('the pre-flop betting round begins', async function () {
 Then('force all players to join game rooms', async function () {
   console.log('🔌 Forcing all players to join game rooms...');
   
-  // Wait for game state to be updated
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  
   // Force all players to join the game room
   for (const [playerName, player] of Object.entries(global.players)) {
     if (!player || !player.driver) continue;
@@ -885,7 +882,7 @@ Then('force all players to join game rooms', async function () {
       console.log(`🔌 ${playerName} joining game room...`);
       
       // Execute JavaScript to dispatch custom event for joining game rooms
-      await player.driver.executeScript(`
+      player.driver.executeScript(`
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('test:joinGameRooms', { 
             detail: { tableId: 25 } 
@@ -896,15 +893,15 @@ Then('force all players to join game rooms', async function () {
         }
       `);
       
-      console.log(`✅ ${playerName} joined game rooms`);
+      console.log(`✅ ${playerName} dispatched join event`);
     } catch (error) {
-      console.log(`⚠️ ${playerName} failed to join game rooms:`, error.message);
+      console.log(`⚠️ ${playerName} failed to dispatch event:`, error.message);
     }
   }
   
   // Wait for WebSocket events to propagate
-  await new Promise(resolve => setTimeout(resolve, 3000));
-  console.log('✅ All players joined game rooms');
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  console.log('✅ All players dispatched join events');
 });
 
 // Verify current player information in all browsers
