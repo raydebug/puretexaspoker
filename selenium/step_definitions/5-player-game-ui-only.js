@@ -94,8 +94,19 @@ When('players join the table in order:', { timeout: 60000 }, async function (dat
   
   const rows = dataTable.hashes();
   
-  // Use table 1 (ID 25) as requested
-  const actualTableId = 25;
+  // Get the first table ID from the database reset response
+  let actualTableId = 58; // fallback
+  try {
+    const { execSync } = require('child_process');
+    const dbResetResult = execSync(`curl -s -X POST http://localhost:3001/api/reset_database`, { encoding: 'utf8' });
+    const dbData = JSON.parse(dbResetResult);
+    if (dbData.tables && dbData.tables.length > 0) {
+      actualTableId = dbData.tables[0].id;
+      console.log(`🎯 Database reset created table with ID: ${actualTableId}`);
+    }
+  } catch (error) {
+    console.log(`⚠️ Could not get table ID from database reset, using fallback: ${actualTableId}`);
+  }
   console.log(`🎯 Using table 1 (ID: ${actualTableId}) as requested`);
   
   for (const row of rows) {
@@ -307,8 +318,19 @@ Then('all players should be seated correctly:', async function (dataTable) {
 When('I manually start the game for table {int}', { timeout: 30000 }, async function (tableId) {
   console.log(`🚀 Starting game for table ${tableId} via UI validation with new browser...`);
   
-  // Use table 1 (ID 25) as requested
-  const actualTableId = 25;
+  // Get the first table ID from the database reset response
+  let actualTableId = 58; // fallback
+  try {
+    const { execSync } = require('child_process');
+    const dbResetResult = execSync(`curl -s -X POST http://localhost:3001/api/reset_database`, { encoding: 'utf8' });
+    const dbData = JSON.parse(dbResetResult);
+    if (dbData.tables && dbData.tables.length > 0) {
+      actualTableId = dbData.tables[0].id;
+      console.log(`🎯 Database reset created table with ID: ${actualTableId}`);
+    }
+  } catch (error) {
+    console.log(`⚠️ Could not get table ID from database reset, using fallback: ${actualTableId}`);
+  }
   console.log(`🎯 Using table 1 (ID: ${actualTableId}) as requested`);
   
   // First, check if players are actually seated in the database
