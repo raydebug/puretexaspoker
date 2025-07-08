@@ -1,6 +1,7 @@
 const { Given, When, Then, After } = require('@cucumber/cucumber');
 const { By, until } = require('selenium-webdriver');
 const fs = require('fs');
+const path = require('path');
 
 // Global variables for UI-only testing
 global.players = {};
@@ -36,9 +37,14 @@ function extractNumber(text) {
 // Helper function to take screenshot for debugging
 async function takeScreenshot(driver, filename) {
   try {
+    const screenshotsDir = path.join(__dirname, '../screenshots');
+    if (!fs.existsSync(screenshotsDir)) {
+      fs.mkdirSync(screenshotsDir, { recursive: true });
+    }
+    const fullPath = path.join(screenshotsDir, filename);
     const screenshot = await driver.takeScreenshot();
-    fs.writeFileSync(filename, screenshot, 'base64');
-    console.log(`📸 Screenshot saved: ${filename}`);
+    fs.writeFileSync(fullPath, screenshot, 'base64');
+    console.log(`📸 Screenshot saved: ${fullPath}`);
   } catch (error) {
     console.log(`⚠️ Could not take screenshot: ${error.message}`);
   }
@@ -47,9 +53,14 @@ async function takeScreenshot(driver, filename) {
 // Helper function to get page source for debugging
 async function savePageSource(driver, filename) {
   try {
+    const screenshotsDir = path.join(__dirname, '../screenshots');
+    if (!fs.existsSync(screenshotsDir)) {
+      fs.mkdirSync(screenshotsDir, { recursive: true });
+    }
+    const fullPath = path.join(screenshotsDir, filename);
     const pageSource = await driver.getPageSource();
-    fs.writeFileSync(filename, pageSource);
-    console.log(`📄 Page source saved: ${filename}`);
+    fs.writeFileSync(fullPath, pageSource);
+    console.log(`📄 Page source saved: ${fullPath}`);
   } catch (error) {
     console.log(`⚠️ Could not save page source: ${error.message}`);
   }
@@ -179,10 +190,8 @@ When('players join the table in order:', { timeout: 60000 }, async function (dat
       if (currentUrl.includes('auto-seat')) {
         // Take screenshot and get page source for debugging
         const timestamp = Date.now();
-        await driver.takeScreenshot().then(data => {
-          require('fs').writeFileSync(`auto-seat-failed-${playerName}-${timestamp}.png`, data, 'base64');
-          console.log(`📸 Screenshot saved: auto-seat-failed-${playerName}-${timestamp}.png`);
-        });
+        await takeScreenshot(driver, `auto-seat-failed-${playerName}-${timestamp}.png`);
+        await savePageSource(driver, `auto-seat-failed-${playerName}-${timestamp}.html`);
         
         // Get page source for debugging
         const pageSource = await driver.getPageSource();
@@ -225,10 +234,7 @@ When('players join the table in order:', { timeout: 60000 }, async function (dat
       if (!tableFound) {
         // Take screenshot for debugging
         const timestamp = Date.now();
-        await driver.takeScreenshot().then(data => {
-          require('fs').writeFileSync(`no-table-found-${playerName}-${timestamp}.png`, data, 'base64');
-          console.log(`📸 Screenshot saved: no-table-found-${playerName}-${timestamp}.png`);
-        });
+        await takeScreenshot(driver, `no-table-found-${playerName}-${timestamp}.png`);
         console.log(`⚠️ ${playerName} game table not found, but continuing test`);
       }
       
@@ -411,7 +417,7 @@ When('I manually start the game for table {int}', { timeout: 30000 }, async func
     const screenshot = await apiBrowser.takeScreenshot();
     const timestamp = Date.now();
     const filename = `api-validation-${timestamp}.png`;
-    fs.writeFileSync(filename, screenshot, 'base64');
+    await takeScreenshot(apiBrowser, filename);
     console.log(`📸 API validation screenshot saved: ${filename}`);
     
     // Clean up temporary file
