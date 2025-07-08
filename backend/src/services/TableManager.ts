@@ -72,6 +72,12 @@ class TableManager {
 
   private async initializeTables(): Promise<void> {
     try {
+      // Clear existing in-memory state first
+      this.tables.clear();
+      this.tablePlayers.clear();
+      this.tableGameStates.clear();
+      console.log('TableManager: Cleared existing in-memory state');
+      
       // Load actual tables from database
       const dbTables = await prisma.table.findMany();
       console.log(`TableManager: Found ${dbTables.length} tables in database`);
