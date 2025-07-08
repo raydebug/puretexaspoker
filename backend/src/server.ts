@@ -82,7 +82,7 @@ app.use(cors());
 app.use(express.json());
 
 // API routes
-app.use('/api', testApiRoutes); // Test APIs with test_ prefix
+app.use('/api/test', testApiRoutes); // Test APIs with /api/test/ prefix
 app.use('/api/auth', authRoutes);
 app.use('/api/players', playerRoutes);
 app.use('/api/tables', tableRoutes);

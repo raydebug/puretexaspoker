@@ -454,6 +454,11 @@ router.post('/reset_database', async (req, res) => {
   }
 });
 
+// Simple test route to verify routing works
+router.get('/test-route', (req, res) => {
+  res.json({ success: true, message: 'Test route works' });
+});
+
 /**
  * TEST API: Start game for a table
  * POST /api/test/start-game
