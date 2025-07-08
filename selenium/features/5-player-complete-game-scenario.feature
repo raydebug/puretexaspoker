@@ -46,7 +46,8 @@ Feature: 5-Player Complete Game Scenario (UI-Only)
     
     # PRE-FLOP BETTING (Adds 15% coverage - total 35%)
     When the pre-flop betting round begins
-      And Player4 raises to $6
+    Then verify current player information in all browsers
+    And Player4 raises to $6
   And Player5 calls $6
   And Player1 folds
   And Player2 re-raises to $16
