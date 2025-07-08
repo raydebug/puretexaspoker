@@ -466,125 +466,21 @@ router.get('/test-route', (req, res) => {
 router.post('/start-game', async (req, res) => {
   try {
     const { tableId } = req.body;
-    
-    console.log(`🚀 TEST API: Start game request - tableId: ${tableId}`);
-    
     if (!tableId) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'No tableId provided'
-      });
+      return res.status(400).json({ success: false, error: 'No tableId provided' });
     }
-    
-    // Ensure tableId is an integer
     const targetTableId = parseInt(tableId);
     if (isNaN(targetTableId)) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Invalid tableId - must be a number'
-      });
+      return res.status(400).json({ success: false, error: 'Invalid tableId - must be a number' });
     }
-    
-    console.log(`🚀 TEST API: Starting game for table ${targetTableId}`);
-    
-    // Get the table from TableManager
-    const table = tableManager.getTable(targetTableId);
-    
-    if (!table) {
-      return res.status(404).json({ 
-        success: false, 
-        error: `Table ${targetTableId} not found` 
-      });
+    // Call TableManager to start the game
+    const result = await req.app.get('tableManager').startTableGame(targetTableId);
+    if (!result.success) {
+      return res.status(400).json({ success: false, error: result.error || 'Failed to start game' });
     }
-    
-    // Check if table has enough players to start
-    const seatedPlayers = await prisma.playerTable.findMany({
-      where: { tableId: targetTableId as any },
-      include: { player: true }
-    });
-    
-    console.log(`🚀 TEST API: Found ${seatedPlayers.length} seated players for table ${targetTableId}`);
-    
-    if (seatedPlayers.length < 2) {
-      return res.status(400).json({ 
-        success: false, 
-        error: `Need at least 2 players to start game. Found ${seatedPlayers.length}` 
-      });
-    }
-    
-    // Update table status to playing
-    await prisma.table.update({
-      where: { id: targetTableId },
-      data: {
-        status: 'playing' as any,
-        phase: 'preflop',
-        handNumber: 1,
-        pot: 0,
-        currentBet: 0,
-        minBet: table.bigBlind
-      }
-    });
-    
-    // Set dealer position and blinds
-    const dealerPosition = 1; // Start with seat 1 as dealer
-    const smallBlindPosition = 2;
-    const bigBlindPosition = 3;
-    
-    await prisma.table.update({
-      where: { id: targetTableId },
-      data: {
-        dealerPosition: dealerPosition as any,
-        smallBlindPosition: smallBlindPosition as any,
-        bigBlindPosition: bigBlindPosition as any,
-        currentPlayerId: seatedPlayers[bigBlindPosition - 1]?.playerId || null
-      }
-    });
-    
-    // Reinitialize TableManager to pick up changes
-    await tableManager.init();
-    
-    console.log(`✅ TEST API: Game started successfully for table ${targetTableId}`);
-    
-    // Get updated game state
-    const gameState = tableManager.getTableGameState(targetTableId);
-    
-    // Emit game state via WebSocket
-    const io = (global as any).socketIO;
-    if (io && gameState) {
-      console.log(`📡 TEST API: Emitting game start to table ${targetTableId}`);
-      
-      // Emit to table room
-      io.to(`table:${targetTableId}`).emit('gameState', gameState);
-      io.to(`table:${targetTableId}`).emit('gameStarted', {
-        tableId: targetTableId,
-        gameState
-      });
-      
-      // Also emit to all clients for debugging
-      io.emit('gameStarted', {
-        tableId: targetTableId,
-        gameState
-      });
-    }
-    
-    res.json({
-      success: true,
-      message: `Game started for table ${targetTableId}`,
-      tableId: targetTableId,
-      gameState,
-      seatedPlayers: seatedPlayers.map(sp => ({
-        id: sp.playerId,
-        name: sp.player.nickname,
-        seat: sp.seatNumber,
-        chips: sp.buyIn
-      }))
-    });
+    return res.json({ success: true, gameState: result.gameState });
   } catch (error) {
-    console.error('🚀 TEST API: Error starting game:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Failed to start game' 
-    });
+    return res.status(500).json({ success: false, error: (error as Error).message });
   }
 });
 
