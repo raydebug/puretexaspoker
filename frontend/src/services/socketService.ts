@@ -1423,7 +1423,7 @@ export class SocketService {
    */
   joinRoom(roomName: string): void {
     if (this.socket?.connected) {
-      this.socket.emit('joinRoom', { roomName });
+      this.socket.emit('joinRoom', roomName);
       console.log(`🔧 FRONTEND: Joined room: ${roomName}`);
     }
   }
