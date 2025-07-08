@@ -15,6 +15,7 @@
 - Never create backup files; delete any that exist.
 - Use test data and test APIs with clear prefixes for setup/teardown.
 - Use the user's advice for high-level direction, but take initiative in technical problem-solving and debugging.
+- NEVER use "if you want to" - show options one by one compact and clearly.
 description:
 globs:
 alwaysApply: false
