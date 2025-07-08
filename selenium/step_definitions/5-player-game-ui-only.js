@@ -884,14 +884,15 @@ Then('force all players to join game rooms', async function () {
     try {
       console.log(`🔌 ${playerName} joining game room...`);
       
-      // Execute JavaScript to join the game room
+      // Execute JavaScript to dispatch custom event for joining game rooms
       await player.driver.executeScript(`
-        if (window.socketService) {
-          window.socketService.joinRoom('game:25');
-          window.socketService.joinRoom('table:25');
-          console.log('🔌 Frontend joined game rooms via JavaScript');
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('test:joinGameRooms', { 
+            detail: { tableId: 25 } 
+          }));
+          console.log('🔌 Frontend dispatched test:joinGameRooms event');
         } else {
-          console.log('⚠️ socketService not available');
+          console.log('⚠️ window not available');
         }
       `);
       

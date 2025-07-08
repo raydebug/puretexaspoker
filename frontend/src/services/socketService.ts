@@ -557,6 +557,12 @@ export class SocketService {
       this.emitGameStateUpdate(gameState);
     });
 
+    // Handle test automation events
+    socket.on('test:joinGameRooms', (data: { tableId: number }) => {
+      console.log('🧪 FRONTEND: Received test:joinGameRooms event for table:', data.tableId);
+      this.joinGameRooms(data.tableId);
+    });
+
     // Handle room join confirmations
     socket.on('roomJoined', (data: { room: string }) => {
       console.log(`🔌 FRONTEND: Successfully joined room: ${data.room}`);
@@ -565,6 +571,14 @@ export class SocketService {
     socket.on('roomLeft', (data: { room: string }) => {
       console.log(`🔌 FRONTEND: Successfully left room: ${data.room}`);
     });
+
+    // Listen for custom events from test automation
+    if (typeof window !== 'undefined') {
+      window.addEventListener('test:joinGameRooms', ((event: CustomEvent) => {
+        console.log('🧪 FRONTEND: Received test:joinGameRooms custom event:', event.detail);
+        this.joinGameRooms(event.detail.tableId);
+      }) as EventListener);
+    }
 
     // PROFESSIONAL TURN ORDER ENFORCEMENT - Handle turn order violations
     socket.on('game:turnOrderViolation', (data: { 
@@ -1426,6 +1440,16 @@ export class SocketService {
       this.socket.emit('joinRoom', roomName);
       console.log(`🔧 FRONTEND: Joined room: ${roomName}`);
     }
+  }
+
+  /**
+   * Join game rooms for test automation
+   */
+  joinGameRooms(tableId: number): void {
+    const gameId = tableId.toString();
+    this.joinRoom(`game:${gameId}`);
+    this.joinRoom(`table:${gameId}`);
+    console.log(`🔧 FRONTEND: Joined game rooms for table ${tableId}`);
   }
 
   /**
