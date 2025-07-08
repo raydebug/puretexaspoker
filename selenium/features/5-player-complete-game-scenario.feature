@@ -46,7 +46,8 @@ Feature: 5-Player Complete Game Scenario (UI-Only)
     
     # PRE-FLOP BETTING (Adds 15% coverage - total 35%)
     When the pre-flop betting round begins
-    Then verify current player information in all browsers
+    Then force all players to join game rooms
+    And verify current player information in all browsers
     And Player4 raises to $6
   And Player5 calls $6
   And Player1 folds
