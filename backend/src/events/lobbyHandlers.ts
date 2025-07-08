@@ -13,6 +13,8 @@ interface ClientToServerEvents {
   updateUserLocation: (data: { tableId: number; nickname: string }) => void;
   userLogin: (data: { nickname: string }) => void;
   userLogout: () => void;
+  joinRoom: (roomName: string) => void;
+  leaveRoom: (roomName: string) => void;
 }
 
 interface ServerToClientEvents {
@@ -31,6 +33,9 @@ interface ServerToClientEvents {
   'player:reconnected': (data: { playerId: string; nickname: string }) => void;
   'player:removedFromSeat': (data: { playerId: string; nickname: string; seatNumber: number; reason: string }) => void;
   'onlineUsers:update': (data: { total: number }) => void;
+  roomJoined: (data: { room: string }) => void;
+  roomLeft: (data: { room: string }) => void;
+  roomError: (data: { room: string; error: string }) => void;
 }
 
 // Connection monitoring state
@@ -507,6 +512,32 @@ export const setupLobbyHandlers = (
     if (tableManager.standUp(tableId, socket.id)) {
       socket.emit('tableJoined', { tableId, role: 'observer', buyIn: 0 });
       broadcastTables();
+    }
+  });
+
+  // Handle room joining requests
+  socket.on('joinRoom', (roomName: string) => {
+    console.log(`DEBUG: Backend received joinRoom event - room: ${roomName}, socket: ${socket.id}`);
+    try {
+      socket.join(roomName);
+      socket.emit('roomJoined', { room: roomName });
+      console.log(`DEBUG: Backend socket ${socket.id} joined room: ${roomName}`);
+    } catch (error) {
+      console.error(`DEBUG: Backend error joining room ${roomName}:`, error);
+      socket.emit('roomError', { room: roomName, error: (error as Error).message });
+    }
+  });
+
+  // Handle room leaving requests
+  socket.on('leaveRoom', (roomName: string) => {
+    console.log(`DEBUG: Backend received leaveRoom event - room: ${roomName}, socket: ${socket.id}`);
+    try {
+      socket.leave(roomName);
+      socket.emit('roomLeft', { room: roomName });
+      console.log(`DEBUG: Backend socket ${socket.id} left room: ${roomName}`);
+    } catch (error) {
+      console.error(`DEBUG: Backend error leaving room ${roomName}:`, error);
+      socket.emit('roomError', { room: roomName, error: (error as Error).message });
     }
   });
 
