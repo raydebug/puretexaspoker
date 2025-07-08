@@ -115,6 +115,12 @@ class TableManager {
         dbTables.push(...newDbTables);
       }
       
+      // Load player seating from database
+      const playerTables = await prisma.playerTable.findMany({
+        include: { player: true }
+      });
+      console.log(`TableManager: Found ${playerTables.length} player-table associations`);
+      
       // Convert database tables to TableData format
       dbTables.forEach((dbTable, index) => {
         const tableData: TableData = {
@@ -137,7 +143,30 @@ class TableManager {
         this.initializeTableGameState(tableData.id);
       });
       
+      // Populate tablePlayers with seated players from database
+      playerTables.forEach((pt) => {
+        const tableId = Number(pt.tableId);
+        const playerMap = this.tablePlayers.get(tableId);
+        if (playerMap) {
+          playerMap.set(pt.playerId, {
+            id: pt.playerId,
+            nickname: pt.player.nickname,
+            role: 'player', // All seated players are 'player' role
+            chips: pt.buyIn
+          });
+          
+          // Update table player count
+          const table = this.tables.get(tableId);
+          if (table) {
+            table.players++;
+            table.status = table.players >= table.maxPlayers ? 'full' : 'active';
+            this.tables.set(tableId, table);
+          }
+        }
+      });
+      
       console.log(`TableManager: Initialized with ${this.tables.size} tables from database`);
+      console.log(`TableManager: Loaded ${playerTables.length} seated players from database`);
     } catch (error) {
       console.error('TableManager: Error initializing tables:', error);
       // Fallback to hardcoded tables if database fails
