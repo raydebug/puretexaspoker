@@ -78,6 +78,9 @@ const io = new Server(httpServer, {
 // Make Socket.IO instance available globally for test APIs
 (global as any).socketIO = io;
 
+// Make TableManager available to routes
+app.set('tableManager', tableManager);
+
 app.use(cors());
 app.use(express.json());
 
