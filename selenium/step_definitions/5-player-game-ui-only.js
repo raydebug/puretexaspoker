@@ -95,7 +95,7 @@ When('players join the table in order:', { timeout: 60000 }, async function (dat
   const rows = dataTable.hashes();
   
   // Use the table ID from the previous database reset step
-  let actualTableId = 235; // fallback - should match the table created in previous step
+  let actualTableId = 238; // fallback - should match the table created in previous step
   console.log(`🎯 Using table 1 (ID: ${actualTableId}) as requested`);
   
   for (const row of rows) {
