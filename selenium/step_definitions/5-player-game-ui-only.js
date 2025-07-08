@@ -320,10 +320,10 @@ When('I manually start the game for table {int}', { timeout: 30000 }, async func
   console.log(`🚀 Starting game for table ${tableId} via UI validation with new browser...`);
   
   // Get the first table ID from the database reset response
-  let actualTableId = 58; // fallback
+  let actualTableId = 172; // fallback
   try {
     const { execSync } = require('child_process');
-    const dbResetResult = execSync(`curl -s -X POST http://localhost:3001/api/reset_database`, { encoding: 'utf8' });
+    const dbResetResult = execSync(`curl -s -X POST http://localhost:3001/api/test/reset_database`, { encoding: 'utf8' });
     const dbData = JSON.parse(dbResetResult);
     if (dbData.tables && dbData.tables.length > 0) {
       actualTableId = dbData.tables[0].id;
@@ -960,7 +960,7 @@ Then('manually trigger game state update from backend', async function () {
   
   try {
     // Get the current table ID from the first player's URL
-    let currentTableId = 142; // fallback
+    let currentTableId = 172; // fallback
     try {
       const firstPlayer = Object.values(global.players)[0];
       if (firstPlayer && firstPlayer.driver) {
