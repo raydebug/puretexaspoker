@@ -124,6 +124,7 @@ When('players join the table in order:', { timeout: 60000 }, async function (dat
     options.addArguments('--no-sandbox');
     options.addArguments('--disable-dev-shm-usage');
     options.addArguments('--disable-gpu');
+    options.addArguments('--headless');
     options.addArguments('--window-size=1200,800');
     
     const driver = await new Builder()
@@ -351,6 +352,7 @@ When('I manually start the game for table {int}', { timeout: 30000 }, async func
   options.addArguments('--no-sandbox');
   options.addArguments('--disable-dev-shm-usage');
   options.addArguments('--disable-gpu');
+  options.addArguments('--headless');
   options.addArguments('--window-size=800,600');
   
   const apiBrowser = await new Builder()
