@@ -902,6 +902,80 @@ Then('force all players to join game rooms', async function () {
   // Wait for WebSocket events to propagate
   await new Promise(resolve => setTimeout(resolve, 2000));
   console.log('✅ All players dispatched join events');
+  
+  // Debug: Check if game state was updated
+  console.log('🔍 Debug: Checking game state after room join...');
+  for (const [playerName, player] of Object.entries(global.players)) {
+    if (!player || !player.driver) continue;
+    
+    try {
+      const gameStateInfo = await player.driver.executeScript(`
+        if (window.socketService && window.socketService.getGameState) {
+          const state = window.socketService.getGameState();
+          return {
+            status: state ? state.status : 'no-state',
+            phase: state ? state.phase : 'no-phase',
+            playersCount: state ? (state.players ? state.players.length : 0) : 0,
+            currentPlayerId: state ? state.currentPlayerId : 'none'
+          };
+        } else {
+          return { error: 'socketService not available' };
+        }
+      `);
+      
+      console.log(`🔍 ${playerName} game state:`, gameStateInfo);
+    } catch (error) {
+      console.log(`🔍 ${playerName} debug failed:`, error.message);
+    }
+  }
+});
+
+// Manually trigger game state update from backend
+Then('manually trigger game state update from backend', async function () {
+  console.log('🔧 Manually triggering game state update from backend...');
+  
+  try {
+    // Make API call to get current game state
+    const response = await fetch('http://localhost:3001/api/test/get_game_state', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ tableId: 25 })
+    });
+    
+    const data = await response.json();
+    console.log('🔧 Backend game state response:', data);
+    
+    if (data.success && data.gameState) {
+      console.log('🔧 Game state from backend:', {
+        status: data.gameState.status,
+        phase: data.gameState.phase,
+        playersCount: data.gameState.players?.length || 0,
+        currentPlayerId: data.gameState.currentPlayerId
+      });
+      
+      // Emit WebSocket event to all connected clients
+      const wsResponse = await fetch('http://localhost:3001/api/test/emit_game_state', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          tableId: 25,
+          gameState: data.gameState 
+        })
+      });
+      
+      const wsData = await wsResponse.json();
+      console.log('🔧 WebSocket emit response:', wsData);
+      
+      // Wait for frontend to receive the update
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+  } catch (error) {
+    console.log('🔧 Manual trigger failed:', error.message);
+  }
 });
 
 // Verify current player information in all browsers
