@@ -233,7 +233,7 @@ class TableManager {
 
     // Check if player is already at another table
     for (const [tid, tablePlayers] of this.tablePlayers) {
-      if (tablePlayers.has(playerId)) {
+      if (tablePlayers.has(nickname)) {  // Use nickname instead of playerId
         return { success: false, error: 'Already joined another table' };
       }
     }
