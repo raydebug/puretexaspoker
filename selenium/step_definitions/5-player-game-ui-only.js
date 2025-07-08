@@ -959,13 +959,29 @@ Then('manually trigger game state update from backend', async function () {
   console.log('🔧 Manually triggering game state update from backend...');
   
   try {
+    // Get the current table ID from the first player's URL
+    let currentTableId = 142; // fallback
+    try {
+      const firstPlayer = Object.values(global.players)[0];
+      if (firstPlayer && firstPlayer.driver) {
+        const currentUrl = await firstPlayer.driver.getCurrentUrl();
+        const match = currentUrl.match(/\/game\/(\d+)/);
+        if (match) {
+          currentTableId = parseInt(match[1]);
+          console.log(`🔧 Using table ID from URL: ${currentTableId}`);
+        }
+      }
+    } catch (error) {
+      console.log(`⚠️ Could not get table ID from URL, using fallback: ${currentTableId}`);
+    }
+    
     // Make API call to get current game state
     const response = await fetch('http://localhost:3001/api/test/get_game_state', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ tableId: actualTableId })
+      body: JSON.stringify({ tableId: currentTableId })
     });
     
     const data = await response.json();
@@ -986,7 +1002,7 @@ Then('manually trigger game state update from backend', async function () {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          tableId: actualTableId,
+          tableId: currentTableId,
           gameState: data.gameState 
         })
       });
