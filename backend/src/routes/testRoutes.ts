@@ -263,4 +263,131 @@ router.delete('/test_data', async (req, res) => {
   }
 });
 
+// POST /api/test/get_game_state - Get current game state for testing
+router.post('/get_game_state', async (req, res) => {
+  try {
+    const { tableId } = req.body;
+    
+    console.log(`🎮 TEST API: Get game state request - tableId: ${tableId}`);
+    
+    if (!tableId) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No tableId provided'
+      });
+    }
+    
+    // Ensure tableId is an integer
+    const targetTableId = parseInt(tableId);
+    if (isNaN(targetTableId)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid tableId - must be a number'
+      });
+    }
+    
+    console.log(`🎮 TEST API: Getting game state for table ${targetTableId}`);
+    
+    // Get the game state from TableManager
+    const gameState = tableManager.getTableGameState(targetTableId);
+    
+    if (gameState) {
+      console.log(`🎮 TEST API: Found game state for table ${targetTableId}:`, {
+        status: gameState.status,
+        phase: gameState.phase,
+        playersCount: gameState.players?.length || 0,
+        currentPlayerId: gameState.currentPlayerId
+      });
+      
+      res.json({ 
+        success: true, 
+        gameState: gameState,
+        tableId: targetTableId
+      });
+    } else {
+      console.log(`🎮 TEST API: No game state found for table ${targetTableId}`);
+      res.status(404).json({ 
+        success: false, 
+        error: `No game state found for table ${targetTableId}` 
+      });
+    }
+  } catch (error) {
+    console.error('🎮 TEST API: Error getting game state:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to get game state' 
+    });
+  }
+});
+
+// POST /api/test/emit_game_state - Emit game state via WebSocket for testing
+router.post('/emit_game_state', async (req, res) => {
+  try {
+    const { tableId, gameState } = req.body;
+    
+    console.log(`📡 TEST API: Emit game state request - tableId: ${tableId}`);
+    
+    if (!tableId) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No tableId provided'
+      });
+    }
+    
+    if (!gameState) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No gameState provided'
+      });
+    }
+    
+    // Ensure tableId is an integer
+    const targetTableId = parseInt(tableId);
+    if (isNaN(targetTableId)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid tableId - must be a number'
+      });
+    }
+    
+    console.log(`📡 TEST API: Emitting game state for table ${targetTableId}`);
+    
+    // Emit WebSocket events to notify frontend
+    const io = (global as any).socketIO;
+    if (io) {
+      console.log(`📡 TEST API: Emitting game state to rooms for table ${targetTableId}`);
+      
+      // In table-only architecture, tableId serves as gameId
+      const gameId = targetTableId.toString();
+      
+      // Emit to both room types for compatibility
+      // 1. Table-based rooms (new architecture)
+      io.to(`table:${gameId}`).emit('gameState', gameState);
+      
+      // 2. Game-based rooms (legacy architecture - for frontend compatibility)
+      io.to(`game:${gameId}`).emit('gameState', gameState);
+      
+      // Also emit to all clients for debugging/fallback
+      io.emit('gameState', gameState);
+      
+      console.log(`📡 TEST API: WebSocket events emitted for table ${targetTableId} (gameId: ${gameId})`);
+    } else {
+      console.log(`⚠️ TEST API: Socket.IO instance not available for table ${targetTableId}`);
+    }
+    
+    console.log(`✅ TEST API: Game state emitted successfully for table ${targetTableId}`);
+    res.json({ 
+      success: true, 
+      message: `Game state emitted for table ${targetTableId}`,
+      tableId: targetTableId
+    });
+  } catch (error) {
+    console.error('📡 TEST API: Error emitting game state:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to emit game state' 
+    });
+  }
+});
+
 export default router; 
