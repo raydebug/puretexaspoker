@@ -4,6 +4,7 @@ import { authService } from '../services/authService';
 import { roleManager } from '../services/roleManager';
 import { memoryCache } from '../services/MemoryCache';
 import { prisma } from '../db';
+import { cleanupTestData } from '../services/testService';
 
 const router = express.Router();
 
@@ -386,6 +387,65 @@ router.post('/emit_game_state', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       error: 'Failed to emit game state' 
+    });
+  }
+});
+
+/**
+ * TEST API: Reset database to clean state
+ * POST /api/reset_database
+ */
+router.post('/reset_database', async (req, res) => {
+  try {
+    console.log('🧹 TEST API: Resetting database to clean state...');
+    
+    // Clean up all test data
+    await cleanupTestData();
+    
+    // Create default tables
+    const defaultTables = [
+      {
+        name: 'No Limit $0.01/$0.02 Micro Table 1',
+        maxPlayers: 9,
+        smallBlind: 1,
+        bigBlind: 2,
+        minBuyIn: 40,
+        maxBuyIn: 200
+      },
+      {
+        name: 'Pot Limit $0.25/$0.50 Low Table 1',
+        maxPlayers: 9,
+        smallBlind: 25,
+        bigBlind: 50,
+        minBuyIn: 1000,
+        maxBuyIn: 5000
+      },
+      {
+        name: 'Fixed Limit $1/$2 Medium Table 1',
+        maxPlayers: 9,
+        smallBlind: 100,
+        bigBlind: 200,
+        minBuyIn: 4000,
+        maxBuyIn: 20000
+      }
+    ];
+    
+    for (const tableData of defaultTables) {
+      await prisma.table.create({ data: tableData });
+    }
+    
+    console.log('✅ TEST API: Database reset completed successfully');
+    
+    res.json({
+      success: true,
+      message: 'Database reset successful',
+      tables: await prisma.table.findMany()
+    });
+  } catch (error) {
+    console.error('❌ TEST API: Error resetting database:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to reset database'
     });
   }
 });

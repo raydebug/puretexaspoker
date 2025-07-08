@@ -62,7 +62,7 @@ Given('the database is reset to a clean state', async function () {
   // Actually clean the database by calling the backend API
   try {
     const { execSync } = require('child_process');
-    const result = execSync(`curl -s -X POST http://localhost:3001/api/test/reset-database 2>&1`, { encoding: 'utf8' });
+    const result = execSync(`curl -s -X POST http://localhost:3001/api/reset_database 2>&1`, { encoding: 'utf8' });
     console.log(`📊 Database reset result: ${result}`);
     console.log('✅ Database cleaned for UI testing');
   } catch (error) {
@@ -936,7 +936,7 @@ Then('manually trigger game state update from backend', async function () {
   
   try {
     // Make API call to get current game state
-    const response = await fetch('http://localhost:3001/api/test_get_game_state', {
+    const response = await fetch('http://localhost:3001/api/get_game_state', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -956,7 +956,7 @@ Then('manually trigger game state update from backend', async function () {
       });
       
       // Emit WebSocket event to all connected clients
-      const wsResponse = await fetch('http://localhost:3001/api/test_emit_game_state', {
+      const wsResponse = await fetch('http://localhost:3001/api/emit_game_state', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
