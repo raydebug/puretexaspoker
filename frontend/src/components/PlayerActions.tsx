@@ -223,7 +223,12 @@ export const PlayerActions: React.FC<PlayerActionsProps> = ({
     isTestMode,
     gameStatus: gameState.status,
     gamePhase: gameState.phase,
-    componentVisible: true
+    componentVisible: true,
+    // Additional debugging for UUID matching
+    playersInGameState: gameState.players?.map(p => ({ name: p.name, id: p.id })),
+    playerMatchByName: gameState.players?.find(p => p.name === currentPlayer.name),
+    playerMatchById: gameState.players?.find(p => p.id === currentPlayer.id),
+    uuidMatch: gameState.players?.find(p => p.name === currentPlayer.name)?.id === gameState.currentPlayerId
   });
   const toCall = Math.max(0, gameState.currentBet - currentPlayer.currentBet);
   const canCheck = toCall === 0;

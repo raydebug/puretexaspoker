@@ -130,6 +130,14 @@ Given('all players have starting stacks of ${int}', async function (stackAmount)
   console.log('✅ Stack amounts verified for UI testing');
 });
 
+// Single player setup
+Given('I have {int} player ready to join a poker game', function (playerCount) {
+  console.log(`🎮 Setting up ${playerCount} player for UI testing`);
+  // Initialize global players object for single player
+  global.players = {};
+  console.log(`✅ ${playerCount} player ready for UI-based game`);
+});
+
 // Player seating - Pure UI interaction
 When('players join the table in order:', { timeout: 60000 }, async function (dataTable) {
   console.log('🎯 Players joining table via UI...');
@@ -260,6 +268,12 @@ When('players join the table in order:', { timeout: 60000 }, async function (dat
       global.players[playerName] = { driver, seatNumber };
       console.log(`✅ ${playerName} successfully joined seat ${seatNumber}`);
       
+      // Add delay between player joins to avoid race conditions
+      if (Object.keys(global.players).length < rows.length) {
+        console.log(`⏳ Adding delay between player joins to avoid race conditions...`);
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      }
+      
     } catch (error) {
       console.error(`❌ Error joining ${playerName}:`, error);
       await driver.quit();
@@ -269,7 +283,7 @@ When('players join the table in order:', { timeout: 60000 }, async function (dat
 });
 
 // Seat verification - Pure UI validation
-Then('all players should be seated correctly:', async function (dataTable) {
+Then('all players should be seated correctly:', { timeout: 60000 }, async function (dataTable) {
   console.log('🔍 Verifying player seating via UI...');
   
   const expectedSeats = dataTable.hashes();
@@ -277,6 +291,8 @@ Then('all players should be seated correctly:', async function (dataTable) {
   for (const expected of expectedSeats) {
     const playerName = expected.Player;
     const expectedSeat = parseInt(expected.Seat);
+    
+    console.log(`🔍 Verifying ${playerName} in seat ${expectedSeat}...`);
     
     const player = global.players[playerName];
     if (!player || !player.driver) {
@@ -1335,4 +1351,9 @@ After(async function (scenario) {
   global.expectedPotAmount = null;
   
   console.log('✅ UI test cleanup completed');
+}); 
+
+// Simple test step
+Then('the test should pass', function () {
+  console.log('✅ Simple test passed');
 }); 

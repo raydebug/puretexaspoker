@@ -1,4 +1,6 @@
 import { prisma } from '../db';
+import { tableManager } from './TableManager';
+import { memoryCache } from './MemoryCache';
 
 export const clearDatabase = async () => {
   console.log('🧹 Starting comprehensive database cleanup...');
@@ -31,4 +33,35 @@ export const clearDatabase = async () => {
   }
 };
 
-export const cleanupTestData = clearDatabase; 
+export const cleanupTestData = async () => {
+  console.log('🧹 Starting comprehensive test data cleanup...');
+  
+  // First clear the database
+  await clearDatabase();
+  
+  // Then clear all in-memory state
+  console.log('🧹 Clearing in-memory state...');
+  
+  // Clear TableManager cache
+  if (tableManager) {
+    console.log('🗑️ Clearing TableManager cache...');
+    // Force reinitialization by clearing internal state
+    await tableManager.init();
+  }
+  
+  // Clear MemoryCache
+  if (memoryCache) {
+    console.log('🗑️ Clearing MemoryCache...');
+    memoryCache.clearCache();
+  }
+  
+  // Clear any global socket state
+  const io = (global as any).socketIO;
+  if (io) {
+    console.log('🗑️ Clearing WebSocket rooms...');
+    // Disconnect all clients to clear room state
+    io.sockets.disconnectSockets();
+  }
+  
+  console.log('✅ Test data cleanup completed successfully!');
+}; 
