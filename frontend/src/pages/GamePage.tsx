@@ -299,6 +299,21 @@ const GamePage: React.FC = () => {
               }
             }
             
+            // CRITICAL FIX: If no currentPlayer is set, try to set it from game state
+            if (!currentPlayer && state.players.length > 0) {
+              // Try to find the current player by name from URL params
+              const urlParams = new URLSearchParams(window.location.search);
+              const playerParam = urlParams.get('player');
+              if (playerParam) {
+                const playerFromState = state.players.find(p => p.name === playerParam);
+                if (playerFromState) {
+                  console.log('🧪 GamePage TEST MODE: Setting currentPlayer from game state:', playerFromState);
+                  setCurrentPlayer(playerFromState);
+                  setIsObserver(false);
+                }
+              }
+            }
+            
             // DEBUG: Log current player matching for test mode
             console.log('🧪 GamePage TEST MODE: Current player matching debug:', {
               currentPlayer: currentPlayer,
@@ -820,7 +835,8 @@ const GamePage: React.FC = () => {
         const shouldShow = currentPlayer && gameIsActive && (
           playerTurnMatch || 
           (isTestMode && gameState.currentPlayerId) || // Show if ANY player has a turn in test mode
-          (isTestMode && gameState.players.some(p => p.id === gameState.currentPlayerId)) // Show if current player exists in game state
+          (isTestMode && gameState.players.some(p => p.id === gameState.currentPlayerId)) || // Show if current player exists in game state
+          (isTestMode && gameState.players.length > 0) // Show if there are any players in test mode
         );
         
         console.log(`🎯 ENHANCED GamePage PlayerActions visibility:`, {
