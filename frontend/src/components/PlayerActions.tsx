@@ -206,9 +206,13 @@ export const PlayerActions: React.FC<PlayerActionsProps> = ({
   const isTestMode = (typeof navigator !== 'undefined' && navigator.webdriver) || 
                     (typeof window !== 'undefined' && window.location.hostname === 'localhost');
   
+  // Enhanced player turn detection for test mode
   const isPlayerTurn = gameState.currentPlayerId === currentPlayer.id || 
                       gameState.currentPlayerId === currentPlayer.name ||
-                      (isTestMode && currentPlayer.name && gameState.currentPlayerId === currentPlayer.name);
+                      (isTestMode && currentPlayer.name && gameState.currentPlayerId === currentPlayer.name) ||
+                      // Additional test mode matching for UUID-based currentPlayerId
+                      (isTestMode && currentPlayer.name && gameState.players && 
+                       gameState.players.find(p => p.name === currentPlayer.name)?.id === gameState.currentPlayerId);
 
   // CRITICAL DEBUGGING for test mode
   console.log(`🎯 PlayerActions DEBUG:`, {
