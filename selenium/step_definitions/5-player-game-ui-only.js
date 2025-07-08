@@ -319,18 +319,20 @@ Then('all players should be seated correctly:', async function (dataTable) {
 When('I manually start the game for table {int}', { timeout: 30000 }, async function (tableId) {
   console.log(`🚀 Starting game for table ${tableId} via UI validation with new browser...`);
   
-  // Get the first table ID from the database reset response
+  // Get the table ID from the first player's URL (where players are actually seated)
   let actualTableId = 172; // fallback
   try {
-    const { execSync } = require('child_process');
-    const dbResetResult = execSync(`curl -s -X POST http://localhost:3001/api/test/reset_database`, { encoding: 'utf8' });
-    const dbData = JSON.parse(dbResetResult);
-    if (dbData.tables && dbData.tables.length > 0) {
-      actualTableId = dbData.tables[0].id;
-      console.log(`🎯 Database reset created table with ID: ${actualTableId}`);
+    const firstPlayer = Object.values(global.players)[0];
+    if (firstPlayer && firstPlayer.driver) {
+      const currentUrl = await firstPlayer.driver.getCurrentUrl();
+      const match = currentUrl.match(/\/game\/(\d+)/);
+      if (match) {
+        actualTableId = parseInt(match[1]);
+        console.log(`🎯 Using table ID from Player1 URL: ${actualTableId}`);
+      }
     }
   } catch (error) {
-    console.log(`⚠️ Could not get table ID from database reset, using fallback: ${actualTableId}`);
+    console.log(`⚠️ Could not get table ID from URL, using fallback: ${actualTableId}`);
   }
   console.log(`🎯 Using table 1 (ID: ${actualTableId}) as requested`);
   
