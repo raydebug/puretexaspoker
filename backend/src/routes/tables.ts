@@ -59,8 +59,7 @@ router.post('/:tableId/join', async (req, res) => {
 
     res.status(200).json({ 
       success: true, 
-      tableId: tableNumber,
-      gameId: tableNumber.toString() // Use table ID as game ID
+      tableId: tableNumber
     });
   } catch (error) {
     console.error('Error joining table:', error);

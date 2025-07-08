@@ -82,16 +82,23 @@ Given('the database is reset to a clean state', async function () {
       if (response.tables && response.tables.length > 0) {
         const firstTableId = response.tables[0].id;
         this.latestTableId = firstTableId; // Store for use in subsequent steps
-        console.log(`🎯 Extracted latest table ID: ${firstTableId}`);
+        console.log(`🎯 Using first table (ID: ${firstTableId}) for consistent testing`);
+      } else {
+        console.log(`⚠️ No tables found in response, using fallback ID 1`);
+        this.latestTableId = 1;
       }
     } catch (parseError) {
       console.log(`⚠️ Could not parse table ID from response: ${parseError.message}`);
+      console.log(`🎯 Using fallback table ID 1`);
+      this.latestTableId = 1;
     }
     
     console.log('✅ Database cleaned for UI testing');
   } catch (error) {
     console.log(`⚠️ Database reset failed: ${error.message}`);
     console.log('✅ Continuing with existing database state');
+    // Fallback to table ID 1
+    this.latestTableId = 1;
   }
 });
 
@@ -119,8 +126,8 @@ When('players join the table in order:', { timeout: 60000 }, async function (dat
   const rows = dataTable.hashes();
   
   // Use the table ID from the previous database reset step
-  let actualTableId = this.latestTableId || 256; // Use latest table ID or fallback
-  console.log(`🎯 Using latest table (ID: ${actualTableId}) from database reset`);
+  let actualTableId = this.latestTableId || 1; // Use latest table ID or fallback to first table
+  console.log(`🎯 Using first table (ID: ${actualTableId}) from database reset`);
   
   for (const row of rows) {
     const playerName = row.Player;

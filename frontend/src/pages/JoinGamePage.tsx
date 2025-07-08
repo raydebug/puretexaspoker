@@ -151,7 +151,6 @@ export const JoinGamePage: React.FC = () => {
         const socket = socketService.getSocket();
         if (socket) {
           socket.off('tableJoined', handleTableJoined);
-          socket.off('gameJoined', handleGameJoined);
         }
       };
       
@@ -171,12 +170,6 @@ export const JoinGamePage: React.FC = () => {
         }
       };
       
-      // Listen for game joined event as additional confirmation
-      const handleGameJoined = (data: { gameId: string; playerId: string | null; gameState: any }) => {
-        console.log('✅ JoinGamePage: Received gameJoined event:', data);
-        // This confirms the session is fully established
-      };
-      
       // Set timeout for tableJoined event
       const joinTimeout = setTimeout(() => {
         console.warn('⚠️ JoinGamePage: Timeout waiting for tableJoined event');
@@ -186,9 +179,6 @@ export const JoinGamePage: React.FC = () => {
       }, 10000); // 10 second timeout
       
       // Connect to socket and wait for connection
-      socketService.connect();
-      
-      // Wait for connection and then join table
       let connectionAttempts = 0;
       const maxAttempts = 50; // 5 seconds total (50 * 100ms)
       
@@ -199,7 +189,6 @@ export const JoinGamePage: React.FC = () => {
         if (socket && socket.connected) {
           // Set up event listeners now that socket is connected
           socket.on('tableJoined', handleTableJoined);
-          socket.on('gameJoined', handleGameJoined);
           
           // Socket is connected, now join the table
           console.log(`🎯 JoinGamePage: Joining table ${table.id} as observer`);

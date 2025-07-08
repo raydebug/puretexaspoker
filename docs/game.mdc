@@ -1,0 +1,36 @@
+# Game Logic (Table-Only Architecture)
+
+## Overview
+- All poker game logic is now managed by the table entity (`tableId`).
+- There is **no separate game or gameId**. The table is the game.
+- All state, actions, events, and persistence are keyed by `tableId`.
+
+## Backend
+- `TableManager` is the single source of truth for all poker logic.
+- All WebSocket events, API endpoints, and session data use `tableId` only.
+- No references to `game` or `gameId` remain in backend logic, events, or database.
+
+## Frontend
+- All navigation, state, and WebSocket subscriptions use `tableId`.
+- UI components receive and use `tableId` and table state only.
+- No `game` or `gameId` logic in React state, props, or URLs.
+
+## Tests
+- All Selenium/Cucumber tests use `tableId` for navigation and validation.
+- No `game` or `gameId` in test data or flows.
+
+## Migration Notes
+- All legacy `game`/`gameId` logic has been removed.
+- If you find any remaining `game` references, refactor to use `table`/`tableId` only.
+
+## Example
+- To start a game: `POST /api/tables/{tableId}/start`
+- To join a table: `POST /api/tables/{tableId}/join`
+- All WebSocket events: `table:{tableId}`
+
+---
+**This file documents the table-only architecture for all poker game logic.**
+description:
+globs:
+alwaysApply: false
+---

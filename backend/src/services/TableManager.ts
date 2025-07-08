@@ -461,32 +461,18 @@ class TableManager {
       const io = (global as any).socketIO;
       if (io) {
         console.log(`📡 TableManager: Emitting game state to rooms for table ${tableId}`);
-        
-        // In table-only architecture, tableId serves as gameId
-        const gameId = tableId.toString();
-        
-        // Emit to both room types for compatibility
-        // 1. Table-based rooms (new architecture)
-        io.to(`table:${gameId}`).emit('gameState', newGameState);
-        
-        // 2. Game-based rooms (legacy architecture - for frontend compatibility)
-        io.to(`game:${gameId}`).emit('gameState', newGameState);
-        
+        // Emit only to table-based rooms (table-only architecture)
+        io.to(`table:${tableId}`).emit('gameState', newGameState);
         // Also emit to all clients for debugging/fallback
         io.emit('gameState', newGameState);
-        
-        // Emit game started event to both room types
+        // Emit game started event to table room only
         const gameStartedData = { 
-          tableId, 
-          gameId,
+          tableId,
           gameState: newGameState,
           message: `Game started at table ${tableId} with ${newGameState.players.length} players`
         };
-        
-        io.to(`table:${gameId}`).emit('gameStarted', gameStartedData);
-        io.to(`game:${gameId}`).emit('gameStarted', gameStartedData);
-        
-        console.log(`📡 TableManager: WebSocket events emitted for table ${tableId} (gameId: ${gameId})`);
+        io.to(`table:${tableId}`).emit('gameStarted', gameStartedData);
+        console.log(`📡 TableManager: WebSocket events emitted for table ${tableId}`);
       } else {
         console.log(`⚠️ TableManager: Socket.IO instance not available for table ${tableId}`);
       }

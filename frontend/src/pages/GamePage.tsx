@@ -129,7 +129,7 @@ const TableNumberDisplay = styled.div`
 const GamePage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { gameId } = useParams<{ gameId: string }>();
+  const { tableId } = useParams<{ tableId: string }>();
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -174,18 +174,18 @@ const GamePage: React.FC = () => {
       return num;
     }
     
-    // 4. Try gameId if it's numeric
-    if (gameId && /^\d+$/.test(gameId)) {
-      const num = parseInt(gameId);
-      console.log('DEBUG: getTableNumber - from gameId:', num);
+    // 4. Try tableId if it's numeric
+    if (tableId && /^\d+$/.test(tableId)) {
+      const num = parseInt(tableId);
+      console.log('DEBUG: getTableNumber - from tableId:', num);
       return num;
     }
     
     // 5. Try extracting from current URL path
     const pathParts = window.location.pathname.split('/');
-    const gameIndex = pathParts.findIndex(part => part === 'game');
-    if (gameIndex >= 0 && pathParts[gameIndex + 1] && /^\d+$/.test(pathParts[gameIndex + 1])) {
-      const num = parseInt(pathParts[gameIndex + 1]);
+    const tableIndex = pathParts.findIndex(part => part === 'game');
+    if (tableIndex >= 0 && pathParts[tableIndex + 1] && /^\d+$/.test(pathParts[tableIndex + 1])) {
+      const num = parseInt(pathParts[tableIndex + 1]);
       console.log('DEBUG: getTableNumber - from URL path:', num);
       return num;
     }
@@ -202,10 +202,10 @@ const GamePage: React.FC = () => {
       console.log('DEBUG: Setting table number from URL change:', tableNumber);
       setCurrentTableNumber(tableNumber);
     }
-  }, [location.pathname, location.search, gameId, table?.id, currentTableNumber]);
+  }, [location.pathname, location.search, tableId, table?.id, currentTableNumber]);
 
   useEffect(() => {
-    console.log('DEBUG: GamePage mounting with gameId:', gameId);
+    console.log('DEBUG: GamePage mounting with tableId:', tableId);
     
     // Reset socket connection state
     socketService.resetConnectionState();
@@ -271,11 +271,11 @@ const GamePage: React.FC = () => {
           await socketService.connect();
           
           // CRITICAL FIX: Join the game room to receive targeted broadcasts
-          if (gameId) {
-            console.log(`🧪 GamePage TEST MODE: Joining room game:${gameId}`);
+          if (tableId) {
+            console.log(`🧪 GamePage TEST MODE: Joining room table:${tableId}`);
             // Wait a bit for connection to be established
             setTimeout(() => {
-              socketService.joinRoom(`game:${gameId}`);
+              socketService.joinRoom(`table:${tableId}`);
             }, 500);
           }
           
@@ -333,7 +333,7 @@ const GamePage: React.FC = () => {
           
           // Create initial minimal game state for UI
           const initialGameState: GameState = {
-            id: gameId || '1',
+            id: tableId || '1',
             players: [], // Will be populated by backend test API
             communityCards: [],
             pot: 0,
@@ -370,7 +370,7 @@ const GamePage: React.FC = () => {
           console.error('Test mode WebSocket setup failed:', err);
           // Still set basic state for UI
           const fallbackGameState: GameState = {
-            id: gameId || '1',
+            id: tableId || '1',
             players: [],
             communityCards: [],
             pot: 0,
@@ -406,8 +406,8 @@ const GamePage: React.FC = () => {
         await socketService.connect();
         
         // Join the table as observer first (this will trigger the backend joinTable logic)
-        if (table && gameId) {
-          socketService.joinTable(parseInt(gameId));
+        if (table && tableId) {
+          socketService.joinTable(parseInt(tableId));
         }
         setIsObserver(true);
         
@@ -522,7 +522,7 @@ const GamePage: React.FC = () => {
           if (!socketService.getGameState()) {
             console.log('DEBUG: Creating minimal game state for observer view');
             const minimalGameState = {
-              id: gameId || 'unknown',
+              id: tableId || 'unknown',
               players: [],
               communityCards: [],
               pot: 0,
@@ -571,7 +571,7 @@ const GamePage: React.FC = () => {
       // DO NOT disconnect socket here - it prevents receiving gameJoined events
       // socketService.disconnect();
     };
-  }, [gameId]);
+  }, [tableId]);
 
   const handleAction = (action: string, amount?: number) => {
     console.log('DEBUG: GamePage handleAction called:', { action, amount });
@@ -731,7 +731,6 @@ const GamePage: React.FC = () => {
         <GameLayout>
           <LeftSidebar>
             <ActionHistory 
-              gameId={gameId || ''} 
               tableId={currentTableNumber || undefined}
               gameState={gameState}
               currentPlayerId={currentPlayer?.id}
@@ -781,7 +780,6 @@ const GamePage: React.FC = () => {
       {pageReady && <div data-testid="page-ready" style={{ display: 'none' }}>Page Ready</div>}
       <LeftSidebar>
         <ActionHistory 
-          gameId={gameId || ''} 
           tableId={currentTableNumber || undefined}
           gameState={gameState}
           currentPlayerId={currentPlayer?.id}

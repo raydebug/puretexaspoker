@@ -350,40 +350,19 @@ export const setupLobbyHandlers = (
 
       // Join the socket room for this table
       socket.join(`table:${tableId}`);
-
-      // In table-only architecture, we don't create games using gameManager
-      // Instead, we just join the table and let TableManager handle game state
-      const gameId = tableId.toString(); // Use tableId as gameId
-      console.log(`DEBUG: Backend using table-only architecture - gameId: ${gameId}`);
-      
       // Store session data for the table
       socket.data.buyIn = buyIn;
-      socket.data.gameId = gameId;
       socket.data.tableId = tableId;
       socket.data.dbTableId = dbTable.id;
       socket.data.nickname = player.nickname;
       socket.data.playerId = socket.id;
-      
-      console.log(`DEBUG: Backend session data SET for socket ${socket.id}:`, {
-        buyIn: socket.data.buyIn,
-        gameId: socket.data.gameId,
-        tableId: socket.data.tableId,
-        dbTableId: socket.data.dbTableId,
-        nickname: socket.data.nickname,
-        playerId: socket.data.playerId
-      });
-      
-      // Join the game room as observer
-      socket.join(`game:${gameId}`);
-      socket.join(`table:${gameId}`); // Also join table room for compatibility
-      
       // Get current table game state from TableManager
       const tableGameState = tableManager.getTableGameState(tableId);
       if (tableGameState) {
         console.log(`DEBUG: Backend found existing table game state for table ${tableId}`);
         
         // Emit location update event
-        io.to(`game:${gameId}`).emit('location:updated', { 
+        io.to(`game:${tableId}`).emit('location:updated', { 
           playerId: socket.id,
           nickname: player.nickname,
           table: tableId,
@@ -391,8 +370,8 @@ export const setupLobbyHandlers = (
         });
         
         // Emit success events - user joins as observer
-        socket.emit('tableJoined', { tableId, role: 'observer', buyIn: buyIn || 0, gameId });
-        socket.emit('gameJoined', { gameId, playerId: socket.id, gameState: tableGameState });
+        socket.emit('tableJoined', { tableId, role: 'observer', buyIn: buyIn || 0, gameId: tableId.toString() });
+        socket.emit('gameJoined', { gameId: tableId.toString(), playerId: socket.id, gameState: tableGameState });
         
         console.log(`DEBUG: Backend successfully joined ${player.nickname} as observer to table ${tableId}`);
       } else {
@@ -400,7 +379,7 @@ export const setupLobbyHandlers = (
         
         // Create minimal game state for observer
         const minimalGameState = {
-          id: gameId,
+          id: tableId.toString(),
           tableId: tableId,
           status: 'waiting' as const,
           phase: 'waiting' as const,
@@ -417,7 +396,7 @@ export const setupLobbyHandlers = (
         };
         
         // Emit location update event
-        io.to(`game:${gameId}`).emit('location:updated', { 
+        io.to(`game:${tableId}`).emit('location:updated', { 
           playerId: socket.id,
           nickname: player.nickname,
           table: tableId,
@@ -425,8 +404,8 @@ export const setupLobbyHandlers = (
         });
         
         // Emit success events - user joins as observer
-        socket.emit('tableJoined', { tableId, role: 'observer', buyIn: buyIn || 0, gameId });
-        socket.emit('gameJoined', { gameId, playerId: socket.id, gameState: minimalGameState });
+        socket.emit('tableJoined', { tableId, role: 'observer', buyIn: buyIn || 0, gameId: tableId.toString() });
+        socket.emit('gameJoined', { gameId: tableId.toString(), playerId: socket.id, gameState: minimalGameState });
         
         console.log(`DEBUG: Backend successfully joined ${player.nickname} as observer to table ${tableId} with minimal state`);
       }
@@ -454,14 +433,13 @@ export const setupLobbyHandlers = (
       }
       
       // Clear session data
-      if (socket.data.gameId) {
-        socket.leave(`game:${socket.data.gameId}`);
+      if (socket.data.tableId) {
+        socket.leave(`game:${socket.data.tableId}`);
         // In table-only architecture, room management is handled by TableManager
       }
       
       // Clear all socket session data
       socket.data.buyIn = undefined;
-      socket.data.gameId = undefined;
       socket.data.tableId = undefined;
       socket.data.dbTableId = undefined;
       socket.data.nickname = undefined;
@@ -483,13 +461,12 @@ export const setupLobbyHandlers = (
       socket.leave(`table:${tableId}`);
       
       // Also leave any associated game
-      if (socket.data.gameId) {
-        socket.leave(`game:${socket.data.gameId}`);
+      if (socket.data.tableId) {
+        socket.leave(`game:${socket.data.tableId}`);
         // In table-only architecture, room management is handled by TableManager
         
         // Clear session data when leaving table
         socket.data.buyIn = undefined;
-        socket.data.gameId = undefined;
         socket.data.tableId = undefined;
         socket.data.dbTableId = undefined;
         socket.data.nickname = undefined;
@@ -548,22 +525,20 @@ export const setupLobbyHandlers = (
     
     try {
       // Validate we have the required data from when they joined as observer
-      let gameId = socket.data.gameId;
       let tableId = socket.data.tableId;
       let dbTableId = socket.data.dbTableId;
       let nickname = socket.data.nickname;
       let playerId = socket.data.playerId;
       
       console.log(`DEBUG: Backend session data check:`, {
-        gameId: !!gameId,
         tableId: !!tableId,
         dbTableId: !!dbTableId,
         nickname: !!nickname,
         playerId: !!playerId,
-        values: { gameId, tableId, dbTableId, nickname, playerId }
+        values: { tableId, dbTableId, nickname, playerId }
       });
       
-      if (!gameId || !tableId || !dbTableId || !nickname || !playerId) {
+      if (!tableId || !dbTableId || !nickname || !playerId) {
         console.log(`DEBUG: Backend missing session data - attempting to reconstruct from user location`);
         
         // CRITICAL FIX: Reconstruct session data from user's current location
@@ -624,7 +599,6 @@ export const setupLobbyHandlers = (
         }
         
         // Reconstruct session data
-        socket.data.gameId = existingGame.id;
         socket.data.tableId = reconstructedTableId;
         socket.data.dbTableId = dbTable.id;
         socket.data.nickname = reconstructedNickname;
@@ -632,7 +606,6 @@ export const setupLobbyHandlers = (
         socket.data.buyIn = buyIn; // Use the provided buyIn
         
         console.log(`DEBUG: Backend successfully reconstructed session data:`, {
-          gameId: socket.data.gameId,
           tableId: socket.data.tableId,
           dbTableId: socket.data.dbTableId,
           nickname: socket.data.nickname,
@@ -641,7 +614,6 @@ export const setupLobbyHandlers = (
         });
         
         // Update variables for the rest of the function
-        gameId = socket.data.gameId;
         tableId = socket.data.tableId;
         dbTableId = socket.data.dbTableId;
         nickname = socket.data.nickname;
@@ -776,7 +748,7 @@ export const setupLobbyHandlers = (
       await locationManager.moveToTableSeat(socket.id, nickname, tableId, seatNumber);
       
       // Emit location update to notify all clients
-      io.to(`game:${gameId}`).emit('location:updated', { 
+      io.to(`game:${tableId}`).emit('location:updated', { 
         playerId: socket.id,
         nickname: nickname,
         table: tableId,
@@ -785,15 +757,15 @@ export const setupLobbyHandlers = (
       console.log(`DEBUG: Backend updated ${nickname} location to table ${tableId}, seat ${seatNumber}`);
 
       // **CONNECTION MONITORING**: Check if this player was disconnected and cancel timeout
-      handlePlayerReconnection(playerId, nickname, gameId);
+      handlePlayerReconnection(playerId, nickname, tableId.toString());
 
       console.log(`DEBUG: Backend successfully seated player in seat ${seatNumber}`);
       socket.emit('seatTaken', { seatNumber, playerId, gameState });
-      socket.emit('tableJoined', { tableId, role: 'player', buyIn, gameId });
-      socket.emit('gameJoined', { gameId, playerId: socket.data.playerId!, gameState });
+      socket.emit('tableJoined', { tableId, role: 'player', buyIn, gameId: tableId.toString() });
+      socket.emit('gameJoined', { gameId: tableId.toString(), playerId: socket.data.playerId!, gameState });
       
       // Broadcast to other players in the game
-      io.to(`game:${gameId}`).emit('gameState', gameState);
+      io.to(`game:${tableId}`).emit('gameState', gameState);
       
       console.log(`DEBUG: Backend seat taking completed successfully`);
       
@@ -825,12 +797,10 @@ export const setupLobbyHandlers = (
 
     // Get user's current location before potential timeout handling
     const userLocation = locationManager.getUserLocation(socket.id);
-    const gameId = socket.data.gameId;
-    const nickname = socket.data.nickname;
     const tableId = socket.data.tableId;
     const dbTableId = socket.data.dbTableId;
 
-    if (gameId && nickname && tableId && dbTableId) {
+    if (tableId && dbTableId) {
       try {
         // Find the player's seat assignment in the database
         const playerTable = await prisma.playerTable.findFirst({
@@ -841,7 +811,7 @@ export const setupLobbyHandlers = (
         });
 
         if (playerTable && playerTable.seatNumber !== null) {
-          console.log(`DEBUG: Player ${nickname} (${socket.id}) was seated at seat ${playerTable.seatNumber}, starting 5-second timeout`);
+          console.log(`DEBUG: Player ${socket.data.nickname} (${socket.id}) was seated at seat ${playerTable.seatNumber}, starting 5-second timeout`);
           
           // Clear any existing timeout for this player
           const existingState = disconnectedPlayers.get(socket.id);
@@ -853,7 +823,7 @@ export const setupLobbyHandlers = (
           const timeoutId = setTimeout(() => {
             const connectionState = disconnectedPlayers.get(socket.id);
             if (connectionState) {
-              console.log(`DEBUG: Timeout expired for player ${nickname}, moving to observers`);
+              console.log(`DEBUG: Timeout expired for player ${socket.data.nickname}, moving to observers`);
               movePlayerToObserver(connectionState);
             }
           }, DISCONNECT_TIMEOUT_MS);
@@ -861,8 +831,8 @@ export const setupLobbyHandlers = (
           // Store connection state for timeout tracking
           const connectionState: PlayerConnectionState = {
             playerId: socket.id,
-            nickname,
-            gameId,
+            nickname: socket.data.nickname,
+            gameId: tableId.toString(),
             seatNumber: playerTable.seatNumber,
             tableId,
             dbTableId,
@@ -873,15 +843,15 @@ export const setupLobbyHandlers = (
           disconnectedPlayers.set(socket.id, connectionState);
 
           // Notify other players that this player is disconnected
-          io.to(`game:${gameId}`).emit('player:disconnected', {
+          io.to(`game:${tableId}`).emit('player:disconnected', {
             playerId: socket.id,
-            nickname,
+            nickname: socket.data.nickname,
             timeoutSeconds: DISCONNECT_TIMEOUT_MS / 1000
           });
 
-          console.log(`DEBUG: Set up ${DISCONNECT_TIMEOUT_MS}ms timeout for player ${nickname}`);
+          console.log(`DEBUG: Set up ${DISCONNECT_TIMEOUT_MS}ms timeout for player ${socket.data.nickname}`);
         } else {
-          console.log(`DEBUG: Player ${nickname} was not seated, removing from location tracking`);
+          console.log(`DEBUG: Player ${socket.data.nickname} was not seated, removing from location tracking`);
           // If player was just observing, remove immediately from location tracking
           locationManager.removeUser(socket.id);
         }

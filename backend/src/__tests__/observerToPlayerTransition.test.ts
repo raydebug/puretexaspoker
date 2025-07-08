@@ -50,15 +50,7 @@ describe('Observer to Player Transition Bug Fix', () => {
     await prisma.playerTable.deleteMany();
     await prisma.player.deleteMany();
     await prisma.table.deleteMany();
-
-    // CRITICAL FIX: Clean up in-memory game state from GameManager
-    const { gameManager } = await import('../services/gameManager');
-    // Clear all games to prevent cross-test contamination
-    gameManager['games'].clear();
-    
-    // CRITICAL FIX: Clean up LocationManager in-memory state
-    const { locationManager } = await import('../services/LocationManager');
-    locationManager['userLocations'].clear();
+    // No gameManager cleanup needed in table-only architecture
 
     // Create test table
     const table = await prisma.table.create({

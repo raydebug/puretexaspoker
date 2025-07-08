@@ -402,7 +402,7 @@ router.post('/reset_database', async (req, res) => {
     // Clean up all test data
     await cleanupTestData();
     
-    // Create default tables
+    // Create exactly 3 tables
     const defaultTables = [
       {
         name: 'No Limit $0.01/$0.02 Micro Table 1',
@@ -430,6 +430,7 @@ router.post('/reset_database', async (req, res) => {
       }
     ];
     
+    // Create tables (they will get auto-incremented IDs)
     for (const tableData of defaultTables) {
       await prisma.table.create({ data: tableData });
     }

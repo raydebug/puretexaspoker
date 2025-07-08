@@ -138,8 +138,8 @@ export function registerConsolidatedHandlers(io: Server) {
         // Check if player is already seated at this table
         const existingSeat = await prisma.playerTable.findFirst({
           where: {
-            playerId: user.playerId,
-            tableId: user.location as number
+            playerId: String(user.playerId),
+            tableId: Number(user.location)
           }
         });
 
@@ -147,14 +147,14 @@ export function registerConsolidatedHandlers(io: Server) {
           // Player is already seated - just emit success
           socket.emit('seatTaken', { tableId: user.location, seatNumber: existingSeat.seatNumber, buyIn: existingSeat.buyIn });
           socket.emit('alreadySeated', { tableId: user.location, seatNumber: existingSeat.seatNumber, buyIn: existingSeat.buyIn });
-          console.log(`[SOCKET] User ${user.nickname} already seated at seat ${existingSeat.seatNumber} at table ${user.location}`);
+          console.log(`[SOCKET] User ${user.nickname} already seated at seat ${existingSeat.seatNumber} at table ${user.location} (playerId: ${user.playerId})`);
           return;
         }
 
         // Check if seat is already taken by another player
         const seatTaken = await prisma.playerTable.findFirst({
           where: {
-            tableId: user.location as number,
+            tableId: Number(user.location),
             seatNumber
           }
         });
@@ -172,8 +172,8 @@ export function registerConsolidatedHandlers(io: Server) {
         // Update database
         await prisma.playerTable.create({
           data: {
-            playerId: user.playerId,
-            tableId: user.location as number,
+            playerId: String(user.playerId),
+            tableId: Number(user.location),
             seatNumber,
             buyIn
           }

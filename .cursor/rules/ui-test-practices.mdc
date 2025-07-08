@@ -8,6 +8,7 @@
 - Always check to avoid duplicate or conflicting tests.
 - Use actual tableId from the API, not hardcoded values.
 - Dummy player name format "Player<X>"
+- Screenshots should be in selenium/screenshots
 description:
 globs:
 alwaysApply: false
