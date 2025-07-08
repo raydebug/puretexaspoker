@@ -1359,6 +1359,23 @@ export class SocketService {
   }
 
   /**
+   * Subscribe to game state updates
+   */
+  onGameState(callback: (state: GameState) => void): () => void {
+    this.gameStateListeners.push(callback);
+    return () => {
+      this.gameStateListeners = this.gameStateListeners.filter(cb => cb !== callback);
+    };
+  }
+
+  /**
+   * Get current game state
+   */
+  getGameState(): GameState | null {
+    return this.gameState;
+  }
+
+  /**
    * Get initial game state for a table
    */
   private getInitialGameState(tableId: number) {
@@ -1423,6 +1440,14 @@ export class SocketService {
     console.log(`🔧 FRONTEND: Joining table ${tableId} with buyIn ${buyIn || 200}`);
     this.socket.emit('joinTable', { tableId, buyIn: buyIn || 200 });
     this.currentTableId = tableId;
+    
+    // Also join the WebSocket room to receive game state updates
+    // In table-only architecture, tableId serves as gameId
+    const gameId = tableId.toString();
+    this.joinRoom(`table:${gameId}`);
+    this.joinRoom(`game:${gameId}`); // For backward compatibility
+    
+    console.log(`🔧 FRONTEND: Joined WebSocket rooms table:${gameId} and game:${gameId}`);
   }
 
   /**

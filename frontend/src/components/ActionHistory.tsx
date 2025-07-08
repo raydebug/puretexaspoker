@@ -14,8 +14,11 @@ interface ActionHistoryItem {
 }
 
 interface ActionHistoryProps {
-  gameId: string;
+  gameId?: string;
+  tableId?: number;
   handNumber?: number;
+  gameState?: any; // Add game state to access current player info
+  currentPlayerId?: string; // Add current player ID for debugging
 }
 
 const Container = styled.div`
@@ -126,7 +129,7 @@ const ErrorMessage = styled.div`
   font-size: 0.9rem;
 `;
 
-export const ActionHistory: React.FC<ActionHistoryProps> = ({ gameId, handNumber }) => {
+export const ActionHistory: React.FC<ActionHistoryProps> = ({ gameId, tableId, handNumber, gameState, currentPlayerId }) => {
   const [actions, setActions] = useState<ActionHistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -136,10 +139,20 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ gameId, handNumber
       setLoading(true);
       setError(null);
 
-      const url = handNumber 
-        ? `/api/games/${gameId}/actions/history?handNumber=${handNumber}`
-        : `/api/games/${gameId}/actions/history`;
+      // Use tableId if available, otherwise fall back to gameId
+      const id = tableId || gameId;
+      if (!id) {
+        console.log('⚠️ ActionHistory: No gameId or tableId provided');
+        setActions([]);
+        setLoading(false);
+        return;
+      }
 
+      const url = handNumber 
+        ? `/api/tables/${id}/actions/history?handNumber=${handNumber}`
+        : `/api/tables/${id}/actions/history`;
+
+      console.log(`🎯 ActionHistory: Fetching from ${url}`);
       const response = await fetch(url);
       
       if (!response.ok) {
@@ -150,6 +163,7 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ gameId, handNumber
       
       if (data.success) {
         setActions(data.actionHistory || []);
+        console.log(`✅ ActionHistory: Loaded ${data.actionHistory?.length || 0} actions`);
       } else {
         throw new Error(data.error || 'Failed to fetch action history');
       }
@@ -160,13 +174,13 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ gameId, handNumber
     } finally {
       setLoading(false);
     }
-  }, [gameId, handNumber]);
+  }, [gameId, tableId, handNumber]);
 
   useEffect(() => {
-    if (gameId) {
+    if (gameId || tableId) {
       fetchActionHistory();
     }
-  }, [gameId, handNumber, fetchActionHistory]);
+  }, [gameId, tableId, handNumber, fetchActionHistory]);
 
   const formatAmount = (amount: number | null) => {
     if (amount === null || amount === 0) return '';
@@ -192,13 +206,45 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ gameId, handNumber
     return actionText;
   };
 
+  // Get current player info from game state
+  const currentPlayer = gameState?.currentPlayerId ? gameState.players?.find((p: any) => p.id === gameState.currentPlayerId) : null;
+  const isCurrentPlayerTurn = currentPlayerId === gameState?.currentPlayerId;
+  
   return (
-    <Container data-testid="action-history">
-      <Title>
-        Action History
+    <Container data-testid="game-history">
+      <Title data-testid="game-history-title">
+        Game History
         {handNumber && ` (Hand ${handNumber})`}
         {actions.length > 0 && ` (${actions.length})`}
       </Title>
+      
+      {/* Current Player Information */}
+      <div data-testid="current-player-info" style={{ 
+        fontSize: '11px', 
+        color: '#ffd700', 
+        marginBottom: '8px',
+        padding: '4px 8px',
+        background: isCurrentPlayerTurn ? 'rgba(0, 255, 0, 0.2)' : 'rgba(255, 255, 255, 0.1)',
+        borderRadius: '4px',
+        border: isCurrentPlayerTurn ? '1px solid #00ff00' : '1px solid #666'
+      }}>
+        <strong>Current Player:</strong> {currentPlayer?.name || 'None'} 
+        {isCurrentPlayerTurn && ' (YOUR TURN!)'}
+        <br />
+        <span style={{ fontSize: '10px', color: '#ccc' }}>
+          Game Phase: {gameState?.phase || 'unknown'} | 
+          Status: {gameState?.status || 'unknown'} | 
+          Players: {gameState?.players?.length || 0}
+        </span>
+      </div>
+      
+      <div data-testid="game-history-debug" style={{ fontSize: '10px', color: '#666' }}>
+        Debug: gameId={gameId}, tableId={tableId}, loading={loading.toString()}, error={error || 'none'}
+        <br />
+        Current Player ID: {currentPlayerId || 'none'} | 
+        Game Current Player: {gameState?.currentPlayerId || 'none'} | 
+        Is My Turn: {isCurrentPlayerTurn ? 'YES' : 'NO'}
+      </div>
       
       {loading && <LoadingMessage>Loading action history...</LoadingMessage>}
       

@@ -410,7 +410,13 @@ const GamePage: React.FC = () => {
         
         // Set up event-driven listeners for game state instead of polling
         const gameStateUnsubscriber = socketService.onGameState((state: GameState) => {
-          console.log('DEBUG: GamePage received game state update via WebSocket:', state);
+          console.log('🎮 GamePage: Received game state update via WebSocket:', {
+            id: state.id,
+            phase: state.phase,
+            status: state.status,
+            playersCount: state.players?.length || 0,
+            currentPlayerId: state.currentPlayerId
+          });
           setGameState(state);
           setIsLoading(false);
           
@@ -665,6 +671,9 @@ const GamePage: React.FC = () => {
           <LeftSidebar>
             <ActionHistory 
               gameId={gameId || ''} 
+              tableId={currentTableNumber || undefined}
+              gameState={gameState}
+              currentPlayerId={currentPlayer?.id}
             />
             
             <OnlineList 
@@ -712,6 +721,9 @@ const GamePage: React.FC = () => {
       <LeftSidebar>
         <ActionHistory 
           gameId={gameId || ''} 
+          tableId={currentTableNumber || undefined}
+          gameState={gameState}
+          currentPlayerId={currentPlayer?.id}
         />
         
         <OnlineList 

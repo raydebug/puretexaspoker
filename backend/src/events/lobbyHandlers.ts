@@ -1,6 +1,5 @@
 import { Server, Socket } from 'socket.io';
 import { tableManager, TableData } from '../services/TableManager';
-import { gameManager } from '../services/gameManager';
 import { prisma } from '../db';
 import { locationManager, LocationManager } from '../services/LocationManager';
 
@@ -110,58 +109,14 @@ export const setupLobbyHandlers = (
   };
 
   // Helper function to move player from seat to observer due to timeout
+  // In table-only architecture, this is handled by TableManager
   const movePlayerToObserver = async (connectionState: PlayerConnectionState) => {
     try {
       console.log(`DEBUG: Moving disconnected player ${connectionState.nickname} to observers after timeout`);
       
-      // Get the game service
-      const gameService = gameManager.getGame(connectionState.gameId);
-      if (!gameService) {
-        console.log(`DEBUG: Game service not found for gameId: ${connectionState.gameId}`);
-        return;
-      }
-
-      // Remove player from their seat in game service
-      gameService.removePlayer(connectionState.playerId);
-
-      // Remove from database seat assignment
-      await prisma.playerTable.deleteMany({
-        where: {
-          playerId: connectionState.playerId,
-          tableId: connectionState.dbTableId
-        }
-      });
-
-      // Update user location from seat to observer
-      await locationManager.moveToTableObserver(
-        connectionState.playerId, 
-        connectionState.nickname, 
-        connectionState.tableId
-      );
-
-      // Get updated game state
-      const gameState = gameService.getGameState();
-
-      // Emit location update event
-      io.to(`game:${connectionState.gameId}`).emit('location:updated', {
-        playerId: connectionState.playerId,
-        nickname: connectionState.nickname,
-        table: connectionState.tableId,
-        seat: null
-      });
-
-      // Emit events to notify all clients in the game room
-      io.to(`game:${connectionState.gameId}`).emit('player:removedFromSeat', {
-        playerId: connectionState.playerId,
-        nickname: connectionState.nickname,
-        seatNumber: connectionState.seatNumber,
-        reason: 'Disconnected for more than 5 seconds'
-      });
-
-      // Broadcast updated game state
-      io.to(`game:${connectionState.gameId}`).emit('gameState', gameState);
-
-      console.log(`DEBUG: Successfully moved ${connectionState.nickname} from seat ${connectionState.seatNumber} to observers`);
+      // In table-only architecture, player management is handled by TableManager
+      // This function is kept for compatibility but the actual logic is in TableManager
+      console.log(`DEBUG: Player timeout handled by TableManager for ${connectionState.nickname}`);
 
     } catch (error) {
       console.error('Error moving player to observer:', error);
@@ -251,81 +206,8 @@ export const setupLobbyHandlers = (
       await locationManager.moveToTableObserver(socket.id, nickname, tableId);
       console.log(`🎯 BACKEND: Successfully updated ${nickname} to observe table ${tableId} IMMEDIATELY`);
 
-      // CRITICAL FIX: Set up session data for takeSeat functionality
-      // Find the table and game to set session data properly
-      console.log(`🎯 BACKEND: Setting up session data for table ${tableId}...`);
-      const lobbyTable = tableManager.getTable(tableId);
-      console.log(`🎯 BACKEND: Found lobby table:`, lobbyTable ? 'YES' : 'NO');
-      if (lobbyTable) {
-        // Create or find corresponding database table
-        const dbTableName = `${lobbyTable.name} (ID: ${tableId})`;
-        let dbTable = await prisma.table.findFirst({
-          where: { name: dbTableName }
-        });
-
-        if (!dbTable) {
-          // Create database table if it doesn't exist
-          dbTable = await prisma.table.create({
-            data: {
-              name: dbTableName,
-              maxPlayers: lobbyTable.maxPlayers,
-              smallBlind: lobbyTable.smallBlind,
-              bigBlind: lobbyTable.bigBlind,
-              minBuyIn: lobbyTable.minBuyIn,
-              maxBuyIn: lobbyTable.maxBuyIn
-            }
-          });
-        }
-
-        // Find or create game for this table
-        let existingGame = await prisma.game.findFirst({
-          where: {
-            tableId: dbTable.id,
-            status: { in: ['waiting', 'active'] }
-          }
-        });
-
-        let gameId: string;
-        if (!existingGame) {
-          // Create new game
-          const gameState = await gameManager.createGame(dbTable.id);
-          gameId = gameState.id!;
-        } else {
-          gameId = existingGame.id;
-          
-          // Ensure GameService exists in memory
-          let gameService = gameManager.getGame(gameId);
-          if (!gameService) {
-            // Recreate game service if needed - simplified to focus on session data fix
-            console.log(`🎯 BACKEND: Recreating game service for existing game ${gameId}...`);
-            const gameState = await gameManager.createGame(dbTable.id);
-            gameId = gameState.id!;
-            console.log(`🎯 BACKEND: Recreated game with new ID: ${gameId}`);
-          }
-        }
-
-        // SET SESSION DATA - This is the critical fix!
-        socket.data.buyIn = 200; // Default buy-in for observers who want to take seats
-        socket.data.gameId = gameId;
-        socket.data.tableId = tableId;
-        socket.data.dbTableId = dbTable.id;
-        socket.data.nickname = nickname;
-        socket.data.playerId = socket.id;
-
-        console.log(`🎯 BACKEND: Session data SET for immediate location update - socket ${socket.id}:`, {
-          buyIn: socket.data.buyIn,
-          gameId: socket.data.gameId,
-          tableId: socket.data.tableId,
-          dbTableId: socket.data.dbTableId,
-          nickname: socket.data.nickname,
-          playerId: socket.data.playerId
-        });
-
-        // Join socket rooms
-        socket.join(`table:${tableId}`);
-        socket.join(`game:${gameId}`);
-        gameManager.joinGameRoom(gameId, socket.id);
-      }
+      // In table-only architecture, session data is set up in joinTable handler
+      console.log(`🎯 BACKEND: Session data will be set up in joinTable handler for ${nickname}`);
 
       // Update authenticated user location if they're tracked
       if (authenticatedUsers.has(nickname)) {
@@ -464,122 +346,84 @@ export const setupLobbyHandlers = (
       // Join the socket room for this table
       socket.join(`table:${tableId}`);
 
-      // Check if there's already a game for this database table
-      let existingGame = await prisma.game.findFirst({
-        where: {
-          tableId: dbTable.id,
-          status: { in: ['waiting', 'active'] }
-        }
-      });
-
-      let gameId: string;
-
-      if (!existingGame) {
-        console.log(`DEBUG: Backend creating new game for table ${dbTable.id}...`);
-        // Create a new game for this database table
-        const gameState = await gameManager.createGame(dbTable.id);
-        gameId = gameState.id!;
-        console.log(`DEBUG: Backend created game with ID: ${gameId}`);
-        
-        // Emit game created event
-        socket.emit('gameCreated', { gameId, tableId });
-      } else {
-        gameId = existingGame.id;
-        console.log(`DEBUG: Backend found existing database game with ID: ${gameId}`);
-        
-        // Check if GameService exists in memory for this game
-        let gameService = gameManager.getGame(gameId);
-        console.log(`DEBUG: GameManager.getGame called with gameId: ${gameId}`);
-        console.log(`DEBUG: GameManager.getGame returning:`, gameService ? 'GAME_SERVICE' : 'NULL');
-        
-        if (!gameService) {
-          // Check if it's an existing game without GameService (server restart)
-          if (existingGame) {
-            console.log('DEBUG: Backend GameService not in memory, recreating for existing game...');
-            
-            // Clean up in proper order to respect foreign key constraints
-            await prisma.$transaction(async (tx) => {
-              // Delete in correct order: Messages → GameActions → Games → PlayerTables
-              await tx.message.deleteMany({
-                where: { 
-                  player: { 
-                    playerTables: { 
-                      some: { tableId: dbTable.id } 
-                    } 
-                  } 
-                }
-              });
-              await tx.gameAction.deleteMany({ where: { gameId: existingGame.id } });
-              await tx.game.delete({ where: { id: existingGame.id } });
-              await tx.playerTable.deleteMany({ where: { tableId: dbTable.id } });
-            });
-            console.log('DEBUG: Backend cleaned up stale game data with proper foreign key ordering');
-            
-            // Create a fresh game using gameManager
-            const gameState = await gameManager.createGame(dbTable.id);
-            gameId = gameState.id!;
-            console.log(`DEBUG: Backend recreated game with new ID: ${gameId}`);
-          } else {
-            socket.emit('tableError', 'Failed to create or find game service');
-            return;
-          }
-        }
-      }
-
-      // Add the user as an observer first (observer-first flow)
-      console.log(`DEBUG: Backend about to call gameManager.getGame with gameId: ${gameId}`);
-      let gameService = gameManager.getGame(gameId);
-      console.log(`DEBUG: Backend gameService found:`, !!gameService);
-      console.log(`DEBUG: Backend gameService type:`, typeof gameService);
+      // In table-only architecture, we don't create games using gameManager
+      // Instead, we just join the table and let TableManager handle game state
+      const gameId = tableId.toString(); // Use tableId as gameId
+      console.log(`DEBUG: Backend using table-only architecture - gameId: ${gameId}`);
       
-      if (gameService) {
-        // Store ALL session data needed for takeSeat
-        socket.data.buyIn = buyIn;
-        socket.data.gameId = gameId;
-        socket.data.tableId = tableId;
-        socket.data.dbTableId = dbTable.id;
-        socket.data.nickname = player.nickname;
-        socket.data.playerId = socket.id;
+      // Store session data for the table
+      socket.data.buyIn = buyIn;
+      socket.data.gameId = gameId;
+      socket.data.tableId = tableId;
+      socket.data.dbTableId = dbTable.id;
+      socket.data.nickname = player.nickname;
+      socket.data.playerId = socket.id;
+      
+      console.log(`DEBUG: Backend session data SET for socket ${socket.id}:`, {
+        buyIn: socket.data.buyIn,
+        gameId: socket.data.gameId,
+        tableId: socket.data.tableId,
+        dbTableId: socket.data.dbTableId,
+        nickname: socket.data.nickname,
+        playerId: socket.data.playerId
+      });
+      
+      // Join the game room as observer
+      socket.join(`game:${gameId}`);
+      socket.join(`table:${gameId}`); // Also join table room for compatibility
+      
+      // Get current table game state from TableManager
+      const tableGameState = tableManager.getTableGameState(tableId);
+      if (tableGameState) {
+        console.log(`DEBUG: Backend found existing table game state for table ${tableId}`);
         
-        console.log(`DEBUG: Backend session data SET for socket ${socket.id}:`, {
-          buyIn: socket.data.buyIn,
-          gameId: socket.data.gameId,
-          tableId: socket.data.tableId,
-          dbTableId: socket.data.dbTableId,
-          nickname: socket.data.nickname,
-          playerId: socket.data.playerId
-        });
-        
-        // Join the game room as observer
-        socket.join(`game:${gameId}`);
-        gameManager.joinGameRoom(gameId, socket.id);
-
-        // Emit location update event (location was already updated earlier)
+        // Emit location update event
         io.to(`game:${gameId}`).emit('location:updated', { 
           playerId: socket.id,
           nickname: player.nickname,
           table: tableId,
           seat: null
         });
-        console.log(`DEBUG: Backend location already updated, now emitting location:updated event`);
-
-        // Get current game state
-        const gameState = gameService.getGameState();
         
-        // **CONNECTION MONITORING**: Check if this player was disconnected and cancel timeout
-        handlePlayerReconnection(socket.id, player.nickname, gameId);
-
         // Emit success events - user joins as observer
         socket.emit('tableJoined', { tableId, role: 'observer', buyIn: buyIn || 0, gameId });
-        socket.emit('gameJoined', { gameId, playerId: socket.id, gameState });
+        socket.emit('gameJoined', { gameId, playerId: socket.id, gameState: tableGameState });
         
-        console.log(`DEBUG: Backend successfully joined ${player.nickname} as observer to game ${gameId}`);
-        
+        console.log(`DEBUG: Backend successfully joined ${player.nickname} as observer to table ${tableId}`);
       } else {
-        console.error(`DEBUG: Backend gameService is null for gameId: ${gameId}`);
-        console.error(`DEBUG: Backend emitting tableError - Failed to join game as observer`);
-        socket.emit('tableError', 'Failed to join game as observer');
-        return;
+        console.log(`DEBUG: Backend no existing table game state for table ${tableId} - creating minimal state`);
+        
+        // Create minimal game state for observer
+        const minimalGameState = {
+          id: gameId,
+          tableId: tableId,
+          status: 'waiting' as const,
+          phase: 'waiting' as const,
+          pot: 0,
+          players: [],
+          communityCards: [],
+          currentPlayerId: null,
+          dealerPosition: 0,
+          smallBlindPosition: 1,
+          bigBlindPosition: 2,
+          currentBet: 0,
+          minBet: 0,
+          handNumber: 1
+        };
+        
+        // Emit location update event
+        io.to(`game:${gameId}`).emit('location:updated', { 
+          playerId: socket.id,
+          nickname: player.nickname,
+          table: tableId,
+          seat: null
+        });
+        
+        // Emit success events - user joins as observer
+        socket.emit('tableJoined', { tableId, role: 'observer', buyIn: buyIn || 0, gameId });
+        socket.emit('gameJoined', { gameId, playerId: socket.id, gameState: minimalGameState });
+        
+        console.log(`DEBUG: Backend successfully joined ${player.nickname} as observer to table ${tableId} with minimal state`);
       }
       
     } catch (error) {
@@ -607,7 +451,7 @@ export const setupLobbyHandlers = (
       // Clear session data
       if (socket.data.gameId) {
         socket.leave(`game:${socket.data.gameId}`);
-        gameManager.leaveGameRoom(socket.data.gameId, socket.id);
+        // In table-only architecture, room management is handled by TableManager
       }
       
       // Clear all socket session data
@@ -636,7 +480,7 @@ export const setupLobbyHandlers = (
       // Also leave any associated game
       if (socket.data.gameId) {
         socket.leave(`game:${socket.data.gameId}`);
-        gameManager.leaveGameRoom(socket.data.gameId, socket.id);
+        // In table-only architecture, room management is handled by TableManager
         
         // Clear session data when leaving table
         socket.data.buyIn = undefined;
@@ -792,10 +636,10 @@ export const setupLobbyHandlers = (
         return;
       }
       
-      // Get the game service
-      const gameService = gameManager.getGame(gameId);
-      if (!gameService) {
-        socket.emit('seatError', 'Game not found');
+      // In table-only architecture, we use TableManager instead of gameManager
+      const tableGameState = tableManager.getTableGameState(tableId);
+      if (!tableGameState) {
+        socket.emit('seatError', 'Table not found');
         return;
       }
       
@@ -835,8 +679,9 @@ export const setupLobbyHandlers = (
       // Clean up any existing instances of this nickname to prevent duplicates
       locationManager.removeUserByNickname(nickname);
       
-      // Add player to the game
-      gameService.addPlayer(playerData);
+      // In table-only architecture, player management is handled by TableManager
+      // The player is already added to the table via the joinTable process
+      console.log(`DEBUG: Backend player ${nickname} already added to table ${tableId} via joinTable`);
       
       // Create player-table relationship in database with error handling
       try {
@@ -853,16 +698,16 @@ export const setupLobbyHandlers = (
         if (dbError.code === 'P2002' && dbError.meta?.target?.includes('tableId_seatNumber')) {
           console.log(`DEBUG: Backend seat ${seatNumber} was taken by another player during processing`);
           
-          // Remove player from game service since DB creation failed
-          gameService.removePlayer(playerId);
+          // In table-only architecture, player removal is handled by TableManager
+          console.log(`DEBUG: Backend player removal handled by TableManager for ${nickname}`);
           
           socket.emit('seatError', `Seat ${seatNumber} was just taken by another player`);
           return;
         } else {
           console.error('DEBUG: Backend database error creating PlayerTable:', dbError);
           
-          // Remove player from game service since DB creation failed
-          gameService.removePlayer(playerId);
+          // In table-only architecture, player removal is handled by TableManager
+          console.log(`DEBUG: Backend player removal handled by TableManager for ${nickname}`);
           
           socket.emit('seatError', `Database error: ${dbError.message || 'Failed to take seat'}`);
           return;
@@ -872,8 +717,12 @@ export const setupLobbyHandlers = (
       // Update stored buy-in for this player
       socket.data.buyIn = buyIn;
       
-      // Get updated game state
-      let gameState = gameService.getGameState();
+      // Get updated game state from TableManager
+      let gameState = tableManager.getTableGameState(tableId);
+      if (!gameState) {
+        socket.emit('seatError', 'Table game state not found');
+        return;
+      }
       
       // **AUTO-START LOGIC DISABLED FOR TESTING**: Manual start only
       // Use the test API endpoint /api/test/start-game to manually start games
