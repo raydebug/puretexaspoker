@@ -226,6 +226,33 @@ const GamePage: React.FC = () => {
       setObservers([testNickname]); // Initialize with test user as observer
       setIsLoading(false);
       
+      // CRITICAL FIX: Set currentPlayer for test mode based on URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const playerParam = urlParams.get('player');
+      if (playerParam && playerParam !== testNickname) {
+        console.log('🧪 GamePage TEST MODE: Setting currentPlayer from URL param:', playerParam);
+        // Create a basic currentPlayer object for the test player
+        const testCurrentPlayer = {
+          id: `test-${playerParam}`,
+          name: playerParam,
+          seatNumber: parseInt(urlParams.get('seat') || '1'),
+          position: parseInt(urlParams.get('seat') || '1'),
+          chips: parseInt(urlParams.get('buyin') || '100'),
+          currentBet: 0,
+          isDealer: false,
+          isAway: false,
+          isActive: true,
+          cards: [],
+          avatar: {
+            type: 'default' as const,
+            color: '#ffd700'
+          }
+        };
+        setCurrentPlayer(testCurrentPlayer);
+        setIsObserver(false); // Player is seated, not observing
+        console.log('🧪 GamePage TEST MODE: Current player set:', testCurrentPlayer);
+      }
+      
       // Set table number for test mode
       let tableNumber = getTableNumber();
       console.log('DEBUG TEST: Table number from getTableNumber:', tableNumber);
@@ -262,6 +289,15 @@ const GamePage: React.FC = () => {
             const occupiedSeats = state.players.map(p => p.seatNumber);
             const available = Array.from({ length: 9 }, (_, i) => i + 1).filter(seat => !occupiedSeats.includes(seat));
             setAvailableSeats(available);
+            
+            // CRITICAL FIX: Update currentPlayer with real data from game state
+            if (currentPlayer) {
+              const updatedPlayer = state.players.find(p => p.name === currentPlayer.name);
+              if (updatedPlayer) {
+                console.log('🧪 GamePage TEST MODE: Updating currentPlayer with real data:', updatedPlayer);
+                setCurrentPlayer(updatedPlayer);
+              }
+            }
             
             // Update observers to include test players if any
             const testPlayers = state.players.map(p => p.name);
