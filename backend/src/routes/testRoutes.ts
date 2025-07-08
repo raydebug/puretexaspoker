@@ -473,12 +473,14 @@ router.post('/start-game', async (req, res) => {
     if (isNaN(targetTableId)) {
       return res.status(400).json({ success: false, error: 'Invalid tableId - must be a number' });
     }
+    // Reinitialize TableManager from DB to sync in-memory state
+    await req.app.get('tableManager').init();
     // Call TableManager to start the game
     const result = await req.app.get('tableManager').startTableGame(targetTableId);
     if (!result.success) {
       return res.status(400).json({ success: false, error: result.error || 'Failed to start game' });
     }
-    return res.json({ success: true, gameState: result.gameState });
+    return res.json({ success: true, message: 'Game started for table ' + targetTableId, tableId: targetTableId, gameState: result.gameState });
   } catch (error) {
     return res.status(500).json({ success: false, error: (error as Error).message });
   }
