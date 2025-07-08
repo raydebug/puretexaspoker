@@ -854,13 +854,66 @@ const GamePage: React.FC = () => {
           nameMatch: currentPlayer && gameState.currentPlayerId === currentPlayer.name
         });
         
+        // CRITICAL DEBUG: Log to console for test visibility
+        if (isTestMode) {
+          console.log('🧪 TEST MODE DEBUG - PlayerActions visibility check:', {
+            currentPlayer: currentPlayer?.name,
+            gameStateCurrentPlayerId: gameState.currentPlayerId,
+            shouldShow,
+            gameStatePlayers: gameState.players.map(p => ({ name: p.name, id: p.id })),
+            currentPlayerMatch: gameState.players.find(p => p.id === gameState.currentPlayerId)?.name
+          });
+        }
+        
         return shouldShow ? (
-          <PlayerActions
-            gameState={gameState}
-            currentPlayer={currentPlayer}
-            onAction={handleAction}
-          />
-        ) : null;
+          <>
+            {/* DEBUG: Visible indicator for test mode */}
+            {isTestMode && (
+              <div style={{
+                position: 'fixed',
+                top: '10px',
+                right: '10px',
+                background: 'red',
+                color: 'white',
+                padding: '10px',
+                zIndex: 9999,
+                fontSize: '12px'
+              }}>
+                TEST: PlayerActions should be visible
+                <br />
+                Current: {currentPlayer?.name}
+                <br />
+                Game Current: {gameState.players.find(p => p.id === gameState.currentPlayerId)?.name}
+              </div>
+            )}
+            <PlayerActions
+              gameState={gameState}
+              currentPlayer={currentPlayer}
+              onAction={handleAction}
+            />
+          </>
+        ) : (
+          isTestMode && (
+            <div style={{
+              position: 'fixed',
+              top: '10px',
+              right: '10px',
+              background: 'blue',
+              color: 'white',
+              padding: '10px',
+              zIndex: 9999,
+              fontSize: '12px'
+            }}>
+              TEST: PlayerActions NOT visible
+              <br />
+              Current: {currentPlayer?.name || 'none'}
+              <br />
+              Game Current: {gameState.players.find(p => p.id === gameState.currentPlayerId)?.name || 'none'}
+              <br />
+              Should Show: {shouldShow}
+            </div>
+          )
+        );
       })()}
 
       {/* Seat Selection Dialog for seat changes */}
