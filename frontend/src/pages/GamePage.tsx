@@ -299,6 +299,16 @@ const GamePage: React.FC = () => {
               }
             }
             
+            // DEBUG: Log current player matching for test mode
+            console.log('🧪 GamePage TEST MODE: Current player matching debug:', {
+              currentPlayer: currentPlayer,
+              gameStateCurrentPlayerId: state.currentPlayerId,
+              allPlayers: state.players.map(p => ({ name: p.name, id: p.id })),
+              currentPlayerMatch: currentPlayer && state.players.find(p => p.name === currentPlayer.name),
+              idMatch: currentPlayer && state.currentPlayerId === currentPlayer.id,
+              nameMatch: currentPlayer && state.players.find(p => p.name === currentPlayer.name)?.id === state.currentPlayerId
+            });
+            
             // Update observers to include test players if any
             const testPlayers = state.players.map(p => p.name);
             setObservers([testNickname, ...testPlayers]);
@@ -809,7 +819,8 @@ const GamePage: React.FC = () => {
         // In test mode, be super permissive - show buttons whenever there's a current player turn
         const shouldShow = currentPlayer && gameIsActive && (
           playerTurnMatch || 
-          (isTestMode && gameState.currentPlayerId) // Show if ANY player has a turn in test mode
+          (isTestMode && gameState.currentPlayerId) || // Show if ANY player has a turn in test mode
+          (isTestMode && gameState.players.some(p => p.id === gameState.currentPlayerId)) // Show if current player exists in game state
         );
         
         console.log(`🎯 ENHANCED GamePage PlayerActions visibility:`, {
