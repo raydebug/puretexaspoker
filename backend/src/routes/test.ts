@@ -73,6 +73,63 @@ router.post('/start-game', async (req, res) => {
   }
 });
 
+// POST /api/test/get_game_state - Get current game state for testing
+router.post('/get_game_state', async (req, res) => {
+  try {
+    const { tableId } = req.body;
+    
+    console.log(`🎮 TEST API: Get game state request - tableId: ${tableId}`);
+    
+    if (!tableId) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No tableId provided'
+      });
+    }
+    
+    // Ensure tableId is an integer
+    const targetTableId = parseInt(tableId);
+    if (isNaN(targetTableId)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid tableId - must be a number'
+      });
+    }
+    
+    console.log(`🎮 TEST API: Getting game state for table ${targetTableId}`);
+    
+    // Get the game state from TableManager
+    const gameState = tableManager.getTableGameState(targetTableId);
+    
+    if (gameState) {
+      console.log(`🎮 TEST API: Found game state for table ${targetTableId}:`, {
+        status: gameState.status,
+        phase: gameState.phase,
+        playersCount: gameState.players?.length || 0,
+        currentPlayerId: gameState.currentPlayerId
+      });
+      
+      res.json({ 
+        success: true, 
+        gameState: gameState,
+        tableId: targetTableId
+      });
+    } else {
+      console.log(`🎮 TEST API: No game state found for table ${targetTableId}`);
+      res.status(404).json({ 
+        success: false, 
+        error: `No game state found for table ${targetTableId}` 
+      });
+    }
+  } catch (error) {
+    console.error('🎮 TEST API: Error getting game state:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to get game state' 
+    });
+  }
+});
+
 // POST /api/test/emit_game_state - Emit game state via WebSocket for testing
 router.post('/emit_game_state', async (req, res) => {
   try {
