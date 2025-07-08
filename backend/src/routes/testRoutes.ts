@@ -434,6 +434,10 @@ router.post('/reset_database', async (req, res) => {
       await prisma.table.create({ data: tableData });
     }
     
+    // Reinitialize TableManager to pick up new tables
+    await tableManager.init();
+    console.log('🔄 TEST API: TableManager reinitialized with new tables');
+    
     console.log('✅ TEST API: Database reset completed successfully');
     
     res.json({
