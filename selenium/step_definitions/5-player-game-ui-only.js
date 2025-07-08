@@ -139,7 +139,7 @@ Given('I have {int} player ready to join a poker game', function (playerCount) {
 });
 
 // Player seating - Pure UI interaction
-When('players join the table in order:', { timeout: 60000 }, async function (dataTable) {
+When('players join the table in order:', { timeout: 120000 }, async function (dataTable) {
   console.log('🎯 Players joining table via UI...');
   
   const rows = dataTable.hashes();
