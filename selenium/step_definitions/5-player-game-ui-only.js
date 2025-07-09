@@ -268,6 +268,82 @@ When('players join the table in order:', { timeout: 120000 }, async function (da
       global.players[playerName] = { driver, seatNumber };
       console.log(`✅ ${playerName} successfully joined seat ${seatNumber}`);
       
+      // CRITICAL FIX: Add WebSocket connection stability check
+      console.log(`🔌 ${playerName} checking WebSocket connection stability...`);
+      try {
+        const connectionStatus = await driver.executeScript(`
+          console.log("🔌 Checking WebSocket connection stability for ${playerName}");
+          
+          // Check if socketService is available and connected
+          if (window.socketService && window.socketService.getSocket) {
+            const socket = window.socketService.getSocket();
+            if (socket && socket.connected) {
+              console.log("🔌 SocketService connection is stable");
+              return { 
+                stable: true, 
+                socketId: socket.id,
+                method: 'socketService'
+              };
+            } else {
+              console.log("🔌 SocketService exists but not connected");
+            }
+          }
+          
+          // Check if io is available directly
+          if (window.io) {
+            console.log("🔌 io available directly");
+            return { 
+              stable: false, 
+              method: 'io-available',
+              message: 'io available but no active connection'
+            };
+          }
+          
+          console.log("🔌 No WebSocket connection found");
+          return { 
+            stable: false, 
+            method: 'none',
+            message: 'No WebSocket connection available'
+          };
+        `);
+        
+        console.log(`🔌 ${playerName} connection status:`, connectionStatus);
+        
+        if (!connectionStatus.stable) {
+          console.log(`⚠️ ${playerName} WebSocket connection not stable, attempting to establish...`);
+          
+          // Try to establish a stable connection
+          await driver.executeScript(`
+            console.log("🔌 Attempting to establish stable WebSocket connection...");
+            
+            // Try to connect via socketService if available
+            if (window.socketService && window.socketService.connect) {
+              window.socketService.connect();
+              console.log("🔌 Called socketService.connect()");
+            }
+            
+            // Add a small delay to let connection establish
+            return new Promise(resolve => {
+              setTimeout(() => {
+                if (window.socketService && window.socketService.getSocket) {
+                  const socket = window.socketService.getSocket();
+                  resolve({
+                    connected: socket && socket.connected,
+                    socketId: socket ? socket.id : null
+                  });
+                } else {
+                  resolve({ connected: false, socketId: null });
+                }
+              }, 2000);
+            });
+          `);
+        }
+        
+      } catch (error) {
+        console.log(`⚠️ ${playerName} WebSocket check failed:`, error.message);
+        // Continue with test even if WebSocket check fails
+      }
+      
       // Add delay between player joins to avoid race conditions
       if (Object.keys(global.players).length < rows.length) {
         console.log(`⏳ Adding delay between player joins to avoid race conditions...`);
