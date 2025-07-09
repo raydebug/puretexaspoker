@@ -197,6 +197,7 @@ export function registerConsolidatedHandlers(io: Server) {
     });
 
     // === AUTO SEAT === (Combines join and seat in one operation)
+    /*
     socket.on('autoSeat', async ({ tableId, seatNumber, buyIn = 200 }) => {
       try {
         const user = authenticatedUsers.get(socket.id);
@@ -301,6 +302,7 @@ export function registerConsolidatedHandlers(io: Server) {
         socket.emit('autoSeatError', { error: (error as Error).message });
       }
     });
+    */
 
     // === START GAME ===
     socket.on('startGame', async ({ tableId }) => {
