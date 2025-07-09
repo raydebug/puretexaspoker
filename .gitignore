@@ -51,10 +51,31 @@ Thumbs.db
 backend/prisma/dev.db
 backend/prisma/dev.db-journal
 
-# Selenium test artifacts
-selenium/screenshots/failed-*.png
-selenium/screenshots/*.png
-selenium/reports/complete-analysis-*.json
-selenium/reports/coverage-report-*.json
-selenium/reports/coverage-comparisons/
+# Selenium test artifacts - Comprehensive cleanup
+selenium/screenshots/
+selenium/auto-seat-failed-*.html
+selenium/reports/
 selenium/debug-*.js
+selenium/test-*.js
+selenium/*.png
+selenium/*.jpg
+selenium/*.jpeg
+selenium/*.gif
+selenium/*.html
+selenium/*.log
+
+# Test artifacts and temporary files
+*.screenshot
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.html
+*.pid
+*.lock
+*.cache
+
+# Backup files
+*.backup
+*.bak
+*.old
