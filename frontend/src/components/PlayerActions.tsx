@@ -71,7 +71,7 @@ const PlayerActions: React.FC<PlayerActionsProps> = ({
     playersCount: gameState?.players?.length
   });
   
-  // In test mode, always show actions for debugging
+  // CRITICAL FIX: Always show actions in test mode, regardless of current player
   if (isTestMode) {
     console.log('🧪 TEST MODE: Forcing action buttons to show for debugging');
     return (
