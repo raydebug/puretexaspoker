@@ -929,6 +929,9 @@ const GamePage: React.FC = () => {
           isTestMode
         );
         
+        // In test mode, always show PlayerActions if game is active, even without a current player
+        const finalShouldShow = shouldShow || (isTestMode && gameIsActive);
+        
         console.log(`🎯 SIMPLIFIED GamePage PlayerActions visibility:`, {
           hasCurrentPlayer: !!currentPlayer,
           playerName: currentPlayer?.name,
@@ -939,6 +942,7 @@ const GamePage: React.FC = () => {
           isTestMode,
           gameIsActive,
           shouldShow,
+          finalShouldShow,
           currentPlayerInGameState: gameState.players.find(p => p.id === gameState.currentPlayerId || p.name === gameState.currentPlayerId)
         });
         
@@ -948,15 +952,13 @@ const GamePage: React.FC = () => {
             currentPlayer: currentPlayer?.name,
             gameStateCurrentPlayerId: gameState.currentPlayerId,
             shouldShow,
+            finalShouldShow,
             gameStatePlayers: gameState.players.map(p => ({ name: p.name, id: p.id })),
             currentPlayerMatch: gameState.players.find(p => p.id === gameState.currentPlayerId || p.name === gameState.currentPlayerId)?.name
           });
         }
         
         const effectiveCurrentPlayer = currentPlayer || gameState.players.find(p => p.id === gameState.currentPlayerId || p.name === gameState.currentPlayerId);
-        
-        // In test mode, always show PlayerActions if game is active, even without a current player
-        const finalShouldShow = shouldShow || (isTestMode && gameIsActive);
         
         return finalShouldShow && (effectiveCurrentPlayer || isTestMode) ? (
           <>
