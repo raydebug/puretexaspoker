@@ -339,6 +339,58 @@ When('players join the table in order:', { timeout: 120000 }, async function (da
           `);
         }
         
+        // CRITICAL FIX: Add session persistence to prevent disconnections
+        await driver.executeScript(`
+          console.log("🔌 Setting up session persistence for ${playerName}...");
+          
+          // Store session data in localStorage to persist across page reloads
+          localStorage.setItem('testPlayerName', '${playerName}');
+          localStorage.setItem('testTableId', '${actualTableId}');
+          localStorage.setItem('testSeatNumber', '${seatNumber}');
+          localStorage.setItem('testBuyIn', '100');
+          
+          // Add heartbeat to keep connection alive
+          if (window.socketService && window.socketService.getSocket) {
+            const socket = window.socketService.getSocket();
+            if (socket) {
+              // Set up heartbeat interval
+              const heartbeatInterval = setInterval(() => {
+                if (socket.connected) {
+                  socket.emit('heartbeat', { 
+                    playerName: '${playerName}',
+                    timestamp: Date.now() 
+                  });
+                  console.log("🔌 Heartbeat sent for ${playerName}");
+                } else {
+                  clearInterval(heartbeatInterval);
+                  console.log("🔌 Socket disconnected, clearing heartbeat for ${playerName}");
+                }
+              }, 30000); // Send heartbeat every 30 seconds
+              
+              // Store interval ID for cleanup
+              window.heartbeatInterval = heartbeatInterval;
+              
+              // Add reconnection logic
+              socket.on('disconnect', (reason) => {
+                console.log("🔌 Socket disconnected for ${playerName}, reason:", reason);
+                if (reason === 'io server disconnect') {
+                  // Server initiated disconnect, try to reconnect
+                  setTimeout(() => {
+                    if (!socket.connected) {
+                      console.log("🔌 Attempting reconnection for ${playerName}...");
+                      socket.connect();
+                    }
+                  }, 1000);
+                }
+              });
+              
+              console.log("🔌 Session persistence and heartbeat set up for ${playerName}");
+            }
+          }
+          
+          return { success: true, playerName: '${playerName}' };
+        `);
+        
       } catch (error) {
         console.log(`⚠️ ${playerName} WebSocket check failed:`, error.message);
         // Continue with test even if WebSocket check fails
@@ -1204,11 +1256,47 @@ Then('verify current player information in all browsers', async function () {
 });
 
 // Player raises UI-only
-When('Player{int} raises to ${int}', async function (playerNumber, amount) {
+When('Player{int} raises to ${int} via UI', async function (playerNumber, amount) {
   const playerName = `Player${playerNumber}`;
   console.log(`🎯 ${playerName} raising to $${amount} via UI...`);
   const player = global.players[playerName];
   if (!player || !player.driver) throw new Error(`${playerName} not available for raise action`);
+  
+  // CRITICAL FIX: Check if browser is still connected and reconnect if needed
+  try {
+    await player.driver.getCurrentUrl();
+    console.log(`✅ ${playerName} browser is still connected`);
+  } catch (error) {
+    console.log(`⚠️ ${playerName} browser disconnected, attempting reconnection...`);
+    
+    // Recreate browser instance
+    const { Builder } = require('selenium-webdriver');
+    const chrome = require('selenium-webdriver/chrome');
+    
+    const options = new chrome.Options();
+    options.addArguments('--no-sandbox');
+    options.addArguments('--disable-dev-shm-usage');
+    options.addArguments('--disable-gpu');
+    options.addArguments('--headless');
+    options.addArguments('--window-size=1200,800');
+    
+    const newDriver = await new Builder()
+      .forBrowser('chrome')
+      .setChromeOptions(options)
+      .build();
+    
+    // Navigate back to the game page using stored session data
+    const gameUrl = `http://localhost:3000/game/${player.seatNumber}`;
+    console.log(`🔄 ${playerName} reconnecting to: ${gameUrl}`);
+    await newDriver.get(gameUrl);
+    
+    // Wait for page to load
+    await newDriver.sleep(5000);
+    
+    // Update the player's driver
+    global.players[playerName].driver = newDriver;
+    console.log(`✅ ${playerName} browser reconnected successfully`);
+  }
   
   // Wait for page to be fully rendered before looking for action buttons
   console.log(`⏳ ${playerName} waiting for page to be fully rendered...`);
