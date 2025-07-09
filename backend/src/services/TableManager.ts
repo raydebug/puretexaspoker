@@ -221,19 +221,24 @@ class TableManager {
     playerId: string,
     nickname: string
   ): { success: boolean; error?: string } {
+    console.log(`TableManager: joinTable called - tableId: ${tableId}, playerId: ${playerId}, nickname: ${nickname}`);
+    
     const table = this.tables.get(tableId);
     if (!table) {
+      console.log(`TableManager: Table ${tableId} not found`);
       return { success: false, error: 'Table not found' };
     }
 
     const players = this.tablePlayers.get(tableId);
     if (!players) {
+      console.log(`TableManager: Table ${tableId} not initialized`);
       return { success: false, error: 'Table not initialized' };
     }
 
     // Check if player is already at another table
     for (const [tid, tablePlayers] of this.tablePlayers) {
       if (tablePlayers.has(nickname)) {  // Use nickname instead of playerId
+        console.log(`TableManager: Player ${nickname} already at table ${tid}`);
         return { success: false, error: 'Already joined another table' };
       }
     }
@@ -245,6 +250,9 @@ class TableManager {
       role: 'observer',
       chips: 0,
     });
+    
+    console.log(`TableManager: Added player ${nickname} as observer to table ${tableId}`);
+    console.log(`TableManager: Table ${tableId} now has ${players.size} players:`, Array.from(players.keys()));
 
     // Update table data
     const updatedTable = { ...table, observers: table.observers + 1 };
@@ -285,28 +293,34 @@ class TableManager {
     nickname: string,  // Changed from playerId to nickname
     buyIn: number
   ): { success: boolean; error?: string } {
+    console.log(`TableManager: sitDown called - tableId: ${tableId}, nickname: ${nickname}, buyIn: ${buyIn}`);
     const table = this.tables.get(tableId);
     const players = this.tablePlayers.get(tableId);
 
     if (!table || !players) {
+      console.log(`TableManager: Table ${tableId} or players not found`);
       return { success: false, error: 'Table not found' };
     }
 
     const player = players.get(nickname);  // Use nickname as key
     if (!player) {
+      console.log(`TableManager: Player ${nickname} not found in table ${tableId}`);
       return { success: false, error: 'Not joined as observer' };
     }
 
     if (player.role === 'player') {
+      console.log(`TableManager: Player ${nickname} is already seated at table ${tableId}`);
       return { success: false, error: 'Already seated' };
     }
 
     if (table.players >= table.maxPlayers) {
+      console.log(`TableManager: Table ${tableId} is full`);
       return { success: false, error: 'Table is full' };
     }
 
     // Basic validation: just ensure buyIn is a positive number
     if (buyIn <= 0) {
+      console.log(`TableManager: Invalid buy-in amount: ${buyIn}`);
       return {
         success: false,
         error: 'Buy-in must be a positive number',
@@ -317,6 +331,7 @@ class TableManager {
     player.role = 'player';
     player.chips = buyIn;
     players.set(nickname, player);  // Use nickname as key
+    console.log(`TableManager: Player ${nickname} seated at table ${tableId} with ${buyIn} chips`);
 
     // Update table
     const updatedTable = { ...table };
@@ -324,6 +339,7 @@ class TableManager {
     updatedTable.observers--;
     updatedTable.status = updatedTable.players === updatedTable.maxPlayers ? 'full' : 'active';
     this.tables.set(tableId, updatedTable);
+    console.log(`TableManager: Table ${tableId} updated - players: ${updatedTable.players}, observers: ${updatedTable.observers}`);
 
     return { success: true };
   }
