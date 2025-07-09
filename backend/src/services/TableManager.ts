@@ -282,7 +282,7 @@ class TableManager {
 
   public sitDown(
     tableId: number,
-    playerId: string,
+    nickname: string,  // Changed from playerId to nickname
     buyIn: number
   ): { success: boolean; error?: string } {
     const table = this.tables.get(tableId);
@@ -292,7 +292,7 @@ class TableManager {
       return { success: false, error: 'Table not found' };
     }
 
-    const player = players.get(playerId);
+    const player = players.get(nickname);  // Use nickname as key
     if (!player) {
       return { success: false, error: 'Not joined as observer' };
     }
@@ -316,7 +316,7 @@ class TableManager {
     // Update player
     player.role = 'player';
     player.chips = buyIn;
-    players.set(playerId, player);
+    players.set(nickname, player);  // Use nickname as key
 
     // Update table
     const updatedTable = { ...table };
@@ -328,7 +328,7 @@ class TableManager {
     return { success: true };
   }
 
-  public standUp(tableId: number, playerId: string): boolean {
+  public standUp(tableId: number, nickname: string): boolean {  // Changed from playerId to nickname
     const table = this.tables.get(tableId);
     const players = this.tablePlayers.get(tableId);
 
@@ -336,7 +336,7 @@ class TableManager {
       return false;
     }
 
-    const player = players.get(playerId);
+    const player = players.get(nickname);  // Use nickname as key
     if (!player || player.role !== 'player') {
       return false;
     }
@@ -344,7 +344,7 @@ class TableManager {
     // Update player
     player.role = 'observer';
     player.chips = 0;
-    players.set(playerId, player);
+    players.set(nickname, player);  // Use nickname as key
 
     // Update table
     const updatedTable = { ...table };
