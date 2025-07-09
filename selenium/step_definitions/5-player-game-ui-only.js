@@ -2314,10 +2314,7 @@ When('Player3 raises to ${int}', async function (amount) {
   }
 });
 
-When('Player3 raises to ${float}', async function (amount) {
-  // Convert float to int and call the int version
-  await this.When(`Player3 raises to $${Math.floor(amount)}`);
-});
+// Remove duplicate step definition - only keep the ${int} version
 
 // Cleanup after scenario
 After(async function (scenario) {
