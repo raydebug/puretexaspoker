@@ -71,6 +71,8 @@ selenium/*.log
 *.jpeg
 *.gif
 *.html
+!index.html
+!frontend/index.html
 *.pid
 *.lock
 *.cache
