@@ -656,6 +656,20 @@ const GamePage: React.FC = () => {
     }
   }, [gameState, currentPlayer]);
 
+  // Debug effect to log current state
+  useEffect(() => {
+    console.log('🎯 GamePage DEBUG - Current state:', {
+      currentPlayer,
+      gameState: gameState ? {
+        currentPlayerId: gameState.currentPlayerId,
+        status: gameState.status,
+        phase: gameState.phase,
+        playersCount: gameState.players?.length
+      } : null,
+      nickname: localStorage.getItem('nickname')
+    });
+  }, [currentPlayer, gameState]);
+
   const handleAction = (action: string, amount?: number) => {
     console.log('DEBUG: GamePage handleAction called:', { action, amount });
     
@@ -907,20 +921,15 @@ const GamePage: React.FC = () => {
                             gameState.phase === 'turn' || 
                             gameState.phase === 'river';
         
-        const playerTurnMatch = currentPlayer && (
-          gameState.currentPlayerId === currentPlayer.id || 
-          gameState.currentPlayerId === currentPlayer.name
+        // Simplified logic: In test mode, show PlayerActions if game is active and there's a current player turn
+        const shouldShow = gameIsActive && gameState.currentPlayerId && (
+          // Normal mode: current player matches the current player turn
+          (currentPlayer && (gameState.currentPlayerId === currentPlayer.id || gameState.currentPlayerId === currentPlayer.name)) ||
+          // Test mode: show for any current player turn
+          (isTestMode && gameState.players.some(p => p.id === gameState.currentPlayerId || p.name === gameState.currentPlayerId))
         );
         
-        // In test mode, be super permissive - show buttons whenever there's a current player turn
-        const shouldShow = currentPlayer && gameIsActive && (
-          playerTurnMatch || 
-          (isTestMode && gameState.currentPlayerId) || // Show if ANY player has a turn in test mode
-          (isTestMode && gameState.players.some(p => p.id === gameState.currentPlayerId)) || // Show if current player exists in game state
-          (isTestMode && gameState.players.length > 0) // Show if there are any players in test mode
-        );
-        
-        console.log(`🎯 ENHANCED GamePage PlayerActions visibility:`, {
+        console.log(`🎯 SIMPLIFIED GamePage PlayerActions visibility:`, {
           hasCurrentPlayer: !!currentPlayer,
           playerName: currentPlayer?.name,
           playerId: currentPlayer?.id,
@@ -929,10 +938,8 @@ const GamePage: React.FC = () => {
           currentPlayerId: gameState.currentPlayerId,
           isTestMode,
           gameIsActive,
-          playerTurnMatch,
           shouldShow,
-          idMatch: currentPlayer && gameState.currentPlayerId === currentPlayer.id,
-          nameMatch: currentPlayer && gameState.currentPlayerId === currentPlayer.name
+          currentPlayerInGameState: gameState.players.find(p => p.id === gameState.currentPlayerId || p.name === gameState.currentPlayerId)
         });
         
         // CRITICAL DEBUG: Log to console for test visibility
@@ -942,11 +949,13 @@ const GamePage: React.FC = () => {
             gameStateCurrentPlayerId: gameState.currentPlayerId,
             shouldShow,
             gameStatePlayers: gameState.players.map(p => ({ name: p.name, id: p.id })),
-            currentPlayerMatch: gameState.players.find(p => p.id === gameState.currentPlayerId)?.name
+            currentPlayerMatch: gameState.players.find(p => p.id === gameState.currentPlayerId || p.name === gameState.currentPlayerId)?.name
           });
         }
         
-        return shouldShow ? (
+        const effectiveCurrentPlayer = currentPlayer || gameState.players.find(p => p.id === gameState.currentPlayerId || p.name === gameState.currentPlayerId);
+        
+        return shouldShow && effectiveCurrentPlayer ? (
           <>
             {/* DEBUG: Visible indicator for test mode */}
             {isTestMode && (
@@ -964,12 +973,12 @@ const GamePage: React.FC = () => {
                 <br />
                 Current: {currentPlayer?.name}
                 <br />
-                Game Current: {gameState.players.find(p => p.id === gameState.currentPlayerId)?.name}
+                Game Current: {effectiveCurrentPlayer.name}
               </div>
             )}
             <PlayerActions
               gameState={gameState}
-              currentPlayer={currentPlayer}
+              currentPlayer={effectiveCurrentPlayer}
               onAction={handleAction}
             />
           </>
@@ -989,7 +998,7 @@ const GamePage: React.FC = () => {
               <br />
               Current: {currentPlayer?.name || 'none'}
               <br />
-              Game Current: {gameState.players.find(p => p.id === gameState.currentPlayerId)?.name || 'none'}
+              Game Current: {gameState.players.find(p => p.id === gameState.currentPlayerId || p.name === gameState.currentPlayerId)?.name || 'none'}
               <br />
               Should Show: {shouldShow}
             </div>
