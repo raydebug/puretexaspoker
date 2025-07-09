@@ -197,7 +197,6 @@ export function registerConsolidatedHandlers(io: Server) {
     });
 
     // === AUTO SEAT === (Combines join and seat in one operation)
-    /*
     socket.on('autoSeat', async ({ tableId, seatNumber, buyIn = 200 }) => {
       try {
         const user = authenticatedUsers.get(socket.id);
@@ -219,7 +218,7 @@ export function registerConsolidatedHandlers(io: Server) {
         // Check if seat is available
         const existingSeat = await prisma.playerTable.findFirst({
           where: {
-            tableId: tableId,
+            tableId: tableId as any,
             seatNumber: seatNumber
           }
         });
@@ -232,7 +231,7 @@ export function registerConsolidatedHandlers(io: Server) {
         const playerSeat = await prisma.playerTable.findFirst({
           where: {
             playerId: String(user.playerId),
-            tableId: tableId
+            tableId: tableId as any
           }
         });
 
@@ -271,7 +270,7 @@ export function registerConsolidatedHandlers(io: Server) {
         await prisma.playerTable.create({
           data: {
             playerId: String(user.playerId),
-            tableId: tableId,
+            tableId: tableId as any,
             seatNumber: seatNumber,
             buyIn: buyIn
           }
@@ -302,7 +301,6 @@ export function registerConsolidatedHandlers(io: Server) {
         socket.emit('autoSeatError', { error: (error as Error).message });
       }
     });
-    */
 
     // === START GAME ===
     socket.on('startGame', async ({ tableId }) => {
