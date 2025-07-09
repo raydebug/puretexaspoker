@@ -921,12 +921,12 @@ const GamePage: React.FC = () => {
                             gameState.phase === 'turn' || 
                             gameState.phase === 'river';
         
-        // Simplified logic: In test mode, show PlayerActions if game is active and there's a current player turn
-        const shouldShow = gameIsActive && gameState.currentPlayerId && (
+        // SUPER SIMPLIFIED: In test mode, always show PlayerActions if game is active
+        const shouldShow = gameIsActive && (
           // Normal mode: current player matches the current player turn
           (currentPlayer && (gameState.currentPlayerId === currentPlayer.id || gameState.currentPlayerId === currentPlayer.name)) ||
-          // Test mode: show for any current player turn
-          (isTestMode && gameState.players.some(p => p.id === gameState.currentPlayerId || p.name === gameState.currentPlayerId))
+          // Test mode: always show if game is active
+          isTestMode
         );
         
         console.log(`🎯 SIMPLIFIED GamePage PlayerActions visibility:`, {
@@ -955,7 +955,10 @@ const GamePage: React.FC = () => {
         
         const effectiveCurrentPlayer = currentPlayer || gameState.players.find(p => p.id === gameState.currentPlayerId || p.name === gameState.currentPlayerId);
         
-        return shouldShow && effectiveCurrentPlayer ? (
+        // In test mode, always show PlayerActions if game is active, even without a current player
+        const finalShouldShow = shouldShow || (isTestMode && gameIsActive);
+        
+        return finalShouldShow && (effectiveCurrentPlayer || isTestMode) ? (
           <>
             {/* DEBUG: Visible indicator for test mode */}
             {isTestMode && (
@@ -973,12 +976,12 @@ const GamePage: React.FC = () => {
                 <br />
                 Current: {currentPlayer?.name}
                 <br />
-                Game Current: {effectiveCurrentPlayer.name}
+                Game Current: {effectiveCurrentPlayer?.name || 'none'}
               </div>
             )}
             <PlayerActions
               gameState={gameState}
-              currentPlayer={effectiveCurrentPlayer}
+              currentPlayer={effectiveCurrentPlayer || gameState.players[0]}
               onAction={handleAction}
             />
           </>
