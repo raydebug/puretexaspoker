@@ -1134,6 +1134,46 @@ When('Player{int} raises to ${int}', async function (playerNumber, amount) {
   const player = global.players[playerName];
   if (!player || !player.driver) throw new Error(`${playerName} not available for raise action`);
   
+  // Wait for page to be fully rendered before looking for action buttons
+  console.log(`⏳ ${playerName} waiting for page to be fully rendered...`);
+  
+  try {
+    // Wait for React to finish rendering (check for React root)
+    await waitForElement(player.driver, '#root', 15000);
+    console.log(`✅ ${playerName} React root found`);
+    
+    // Wait for game state to be loaded
+    await waitForElement(player.driver, '[data-testid="game-board"], .game-board, #game-board', 15000);
+    console.log(`✅ ${playerName} game board found`);
+    
+    // Wait for player actions container to be present
+    await waitForElement(player.driver, '[data-testid="player-actions"], .player-actions', 15000);
+    console.log(`✅ ${playerName} player actions container found`);
+    
+    // Wait for any buttons to be present (indicates UI is rendered)
+    await waitForElement(player.driver, 'button', 15000);
+    console.log(`✅ ${playerName} buttons found on page`);
+    
+    // Additional wait for React to finish any pending updates
+    await player.driver.sleep(3000);
+    console.log(`✅ ${playerName} additional wait completed`);
+    
+    // Check if page is fully loaded by looking for key game elements
+    const gameElements = await player.driver.findElements(By.css('[data-testid*="game"], .game, [data-testid*="player"], .player'));
+    console.log(`✅ ${playerName} found ${gameElements.length} game-related elements`);
+    
+    // Verify the page is not in a loading state
+    const loadingElements = await player.driver.findElements(By.css('.loading, [data-testid*="loading"], .spinner'));
+    if (loadingElements.length > 0) {
+      console.log(`⏳ ${playerName} page still loading, waiting additional 5 seconds...`);
+      await player.driver.sleep(5000);
+    }
+    
+  } catch (error) {
+    console.log(`⚠️ ${playerName} page rendering check error: ${error.message}`);
+    // Continue anyway, but log the issue
+  }
+  
   // First verify this player is the current player
   try {
     const currentPlayerInfo = await player.driver.findElements(By.css('[data-testid="current-player-info"]'));
@@ -1178,6 +1218,25 @@ When('Player{int} raises to ${int}', async function (playerNumber, amount) {
     // Check for current player indicator
     const currentPlayerElements = await player.driver.findElements(By.css('.current-player, [data-testid*="current"]'));
     console.log(`🔍 ${playerName} current player indicators: ${currentPlayerElements.length}`);
+    
+    // Additional debugging: Check for game state elements
+    const gameStateElements = await player.driver.findElements(By.css('[data-testid*="game-state"], .game-state'));
+    console.log(`🔍 ${playerName} game state elements: ${gameStateElements.length}`);
+    
+    // Check for any text that might indicate current player
+    const allTextElements = await player.driver.findElements(By.css('*'));
+    let currentPlayerText = '';
+    for (let i = 0; i < Math.min(allTextElements.length, 50); i++) {
+      try {
+        const text = await allTextElements[i].getText();
+        if (text && text.toLowerCase().includes('current') || text.toLowerCase().includes('turn')) {
+          currentPlayerText += `"${text}" `;
+        }
+      } catch (e) {}
+    }
+    if (currentPlayerText) {
+      console.log(`🔍 ${playerName} found current/turn text: ${currentPlayerText}`);
+    }
     
   } catch (error) {
     console.log(`🔍 ${playerName} debug error: ${error.message}`);
@@ -1237,6 +1296,46 @@ When('Player{int} calls ${int}', async function (playerNumber, amount) {
   const player = global.players[playerName];
   if (!player || !player.driver) throw new Error(`${playerName} not available for call action`);
   
+  // Wait for page to be fully rendered before looking for action buttons
+  console.log(`⏳ ${playerName} waiting for page to be fully rendered...`);
+  
+  try {
+    // Wait for React to finish rendering (check for React root)
+    await waitForElement(player.driver, '#root', 15000);
+    console.log(`✅ ${playerName} React root found`);
+    
+    // Wait for game state to be loaded
+    await waitForElement(player.driver, '[data-testid="game-board"], .game-board, #game-board', 15000);
+    console.log(`✅ ${playerName} game board found`);
+    
+    // Wait for player actions container to be present
+    await waitForElement(player.driver, '[data-testid="player-actions"], .player-actions', 15000);
+    console.log(`✅ ${playerName} player actions container found`);
+    
+    // Wait for any buttons to be present (indicates UI is rendered)
+    await waitForElement(player.driver, 'button', 15000);
+    console.log(`✅ ${playerName} buttons found on page`);
+    
+    // Additional wait for React to finish any pending updates
+    await player.driver.sleep(3000);
+    console.log(`✅ ${playerName} additional wait completed`);
+    
+    // Check if page is fully loaded by looking for key game elements
+    const gameElements = await player.driver.findElements(By.css('[data-testid*="game"], .game, [data-testid*="player"], .player'));
+    console.log(`✅ ${playerName} found ${gameElements.length} game-related elements`);
+    
+    // Verify the page is not in a loading state
+    const loadingElements = await player.driver.findElements(By.css('.loading, [data-testid*="loading"], .spinner'));
+    if (loadingElements.length > 0) {
+      console.log(`⏳ ${playerName} page still loading, waiting additional 5 seconds...`);
+      await player.driver.sleep(5000);
+    }
+    
+  } catch (error) {
+    console.log(`⚠️ ${playerName} page rendering check error: ${error.message}`);
+    // Continue anyway, but log the issue
+  }
+  
   const callSelectors = [
     '[data-testid="call-button"]',
     'button:contains("Call")',
@@ -1265,6 +1364,46 @@ When('Player{int} folds', async function (playerNumber) {
   const player = global.players[playerName];
   if (!player || !player.driver) throw new Error(`${playerName} not available for fold action`);
   
+  // Wait for page to be fully rendered before looking for action buttons
+  console.log(`⏳ ${playerName} waiting for page to be fully rendered...`);
+  
+  try {
+    // Wait for React to finish rendering (check for React root)
+    await waitForElement(player.driver, '#root', 15000);
+    console.log(`✅ ${playerName} React root found`);
+    
+    // Wait for game state to be loaded
+    await waitForElement(player.driver, '[data-testid="game-board"], .game-board, #game-board', 15000);
+    console.log(`✅ ${playerName} game board found`);
+    
+    // Wait for player actions container to be present
+    await waitForElement(player.driver, '[data-testid="player-actions"], .player-actions', 15000);
+    console.log(`✅ ${playerName} player actions container found`);
+    
+    // Wait for any buttons to be present (indicates UI is rendered)
+    await waitForElement(player.driver, 'button', 15000);
+    console.log(`✅ ${playerName} buttons found on page`);
+    
+    // Additional wait for React to finish any pending updates
+    await player.driver.sleep(3000);
+    console.log(`✅ ${playerName} additional wait completed`);
+    
+    // Check if page is fully loaded by looking for key game elements
+    const gameElements = await player.driver.findElements(By.css('[data-testid*="game"], .game, [data-testid*="player"], .player'));
+    console.log(`✅ ${playerName} found ${gameElements.length} game-related elements`);
+    
+    // Verify the page is not in a loading state
+    const loadingElements = await player.driver.findElements(By.css('.loading, [data-testid*="loading"], .spinner'));
+    if (loadingElements.length > 0) {
+      console.log(`⏳ ${playerName} page still loading, waiting additional 5 seconds...`);
+      await player.driver.sleep(5000);
+    }
+    
+  } catch (error) {
+    console.log(`⚠️ ${playerName} page rendering check error: ${error.message}`);
+    // Continue anyway, but log the issue
+  }
+  
   const foldSelectors = [
     '[data-testid="fold-button"]',
     'button:contains("Fold")',
@@ -1292,6 +1431,46 @@ When('Player{int} checks', async function (playerNumber) {
   console.log(`🎯 ${playerName} checking via UI...`);
   const player = global.players[playerName];
   if (!player || !player.driver) throw new Error(`${playerName} not available for check action`);
+  
+  // Wait for page to be fully rendered before looking for action buttons
+  console.log(`⏳ ${playerName} waiting for page to be fully rendered...`);
+  
+  try {
+    // Wait for React to finish rendering (check for React root)
+    await waitForElement(player.driver, '#root', 15000);
+    console.log(`✅ ${playerName} React root found`);
+    
+    // Wait for game state to be loaded
+    await waitForElement(player.driver, '[data-testid="game-board"], .game-board, #game-board', 15000);
+    console.log(`✅ ${playerName} game board found`);
+    
+    // Wait for player actions container to be present
+    await waitForElement(player.driver, '[data-testid="player-actions"], .player-actions', 15000);
+    console.log(`✅ ${playerName} player actions container found`);
+    
+    // Wait for any buttons to be present (indicates UI is rendered)
+    await waitForElement(player.driver, 'button', 15000);
+    console.log(`✅ ${playerName} buttons found on page`);
+    
+    // Additional wait for React to finish any pending updates
+    await player.driver.sleep(3000);
+    console.log(`✅ ${playerName} additional wait completed`);
+    
+    // Check if page is fully loaded by looking for key game elements
+    const gameElements = await player.driver.findElements(By.css('[data-testid*="game"], .game, [data-testid*="player"], .player'));
+    console.log(`✅ ${playerName} found ${gameElements.length} game-related elements`);
+    
+    // Verify the page is not in a loading state
+    const loadingElements = await player.driver.findElements(By.css('.loading, [data-testid*="loading"], .spinner'));
+    if (loadingElements.length > 0) {
+      console.log(`⏳ ${playerName} page still loading, waiting additional 5 seconds...`);
+      await player.driver.sleep(5000);
+    }
+    
+  } catch (error) {
+    console.log(`⚠️ ${playerName} page rendering check error: ${error.message}`);
+    // Continue anyway, but log the issue
+  }
   
   const checkSelectors = [
     '[data-testid="check-button"]',
