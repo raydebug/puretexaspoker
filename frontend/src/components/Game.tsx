@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { GameBoard } from './GameBoard';
 import { GameStatus } from './GameStatus';
-import { PlayerActions } from './PlayerActions';
+import PlayerActions from './PlayerActions';
 import { ChatBox } from './ChatBox';
 import { socketService } from '../services/socketService';
 import { cookieService } from '../services/cookieService';
@@ -299,10 +299,11 @@ export const Game: React.FC = () => {
             data-testid="game-board"
           />
           <PlayerActions
+            currentPlayer={currentPlayer.name}
+            currentPlayerId={gameState.currentPlayerId}
             gameState={gameState}
-            currentPlayer={currentPlayer}
             onAction={handlePlayerAction}
-            data-testid="player-actions"
+            isTestMode={false}
           />
           <ChatBox
             currentPlayer={{

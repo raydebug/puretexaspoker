@@ -4,12 +4,16 @@ import { locationManager } from '../services/LocationManager';
 import { prisma } from '../db';
 
 /**
- * Simplified WebSocket Handler for Table-Only Architecture
+ * Enhanced WebSocket Handler for Table-Only Architecture
  * Handles basic table operations: join table, take seat, leave table
+ * Includes enhanced game state synchronization and heartbeat monitoring
  */
 
 // Track authenticated users
-const authenticatedUsers = new Map<string, { nickname: string; socketId: string; playerId: string; location: 'lobby' | number }>();
+const authenticatedUsers = new Map<string, { nickname: string; socketId: string; playerId: string; location: 'lobby' | number; lastHeartbeat: number }>();
+
+// Game state synchronization tracking
+const gameStateSync = new Map<string, { lastUpdate: number; players: string[]; tableId: number }>();
 
 export function registerConsolidatedHandlers(io: Server) {
   // Global error handler
@@ -21,6 +25,69 @@ export function registerConsolidatedHandlers(io: Server) {
       timestamp: Date.now(),
       success: false
     });
+  };
+
+  // Enhanced game state broadcasting with sync tracking
+  const broadcastGameState = (tableId: number, gameState: any, reason: string = 'update') => {
+    const roomId = `table:${tableId}`;
+    const syncKey = `table:${tableId}`;
+    
+    // Track sync state
+    gameStateSync.set(syncKey, {
+      lastUpdate: Date.now(),
+      players: gameState.players?.map((p: any) => p.name) || [],
+      tableId
+    });
+
+    console.log(`📡 [SOCKET] Broadcasting game state to ${roomId} (${reason}):`, {
+      tableId,
+      playersCount: gameState.players?.length || 0,
+      currentPlayer: gameState.currentPlayerId,
+      phase: gameState.phase,
+      pot: gameState.pot
+    });
+
+    // Emit to table room
+    io.to(roomId).emit('gameState', gameState);
+    
+    // Also emit to all clients for debugging/fallback
+    io.emit('gameState', gameState);
+    
+    // Emit sync confirmation
+    io.to(roomId).emit('gameStateSync', {
+      tableId,
+      timestamp: Date.now(),
+      reason,
+      playersCount: gameState.players?.length || 0
+    });
+  };
+
+  // Heartbeat monitoring
+  const startHeartbeatMonitoring = () => {
+    setInterval(() => {
+      const now = Date.now();
+      const heartbeatTimeout = 60000; // 60 seconds
+      
+      for (const [socketId, user] of authenticatedUsers.entries()) {
+        if (now - user.lastHeartbeat > heartbeatTimeout) {
+          console.log(`💓 [SOCKET] User ${user.nickname} heartbeat timeout, removing from tracking`);
+          authenticatedUsers.delete(socketId);
+          
+          // Leave table if at one
+          if (user.location !== 'lobby') {
+            tableManager.leaveTable(user.location, socketId);
+            locationManager.removeUser(socketId);
+          }
+        }
+      }
+      
+      // Clean up stale game state sync records
+      for (const [key, sync] of gameStateSync.entries()) {
+        if (now - sync.lastUpdate > 300000) { // 5 minutes
+          gameStateSync.delete(key);
+        }
+      }
+    }, 30000); // Check every 30 seconds
   };
 
   // Broadcast tables update to all clients
@@ -35,8 +102,20 @@ export function registerConsolidatedHandlers(io: Server) {
     io.emit('onlineUsers:update', { total: totalOnlineUsers });
   };
 
+  // Start heartbeat monitoring
+  startHeartbeatMonitoring();
+
   io.on('connection', (socket: Socket) => {
     console.log(`[SOCKET] Client connected: ${socket.id}`);
+
+    // === HEARTBEAT ===
+    socket.on('ping', () => {
+      const user = authenticatedUsers.get(socket.id);
+      if (user) {
+        user.lastHeartbeat = Date.now();
+        socket.emit('pong', { timestamp: Date.now() });
+      }
+    });
 
     // === AUTHENTICATION ===
     socket.on('authenticate', async ({ nickname }) => {
@@ -64,12 +143,13 @@ export function registerConsolidatedHandlers(io: Server) {
           }
         });
 
-        // Store authenticated user with player ID
+        // Store authenticated user with player ID and heartbeat
         authenticatedUsers.set(socket.id, {
           nickname: nickname.trim(),
           socketId: socket.id,
           playerId: player.id, // Store the actual player ID
-          location: 'lobby'
+          location: 'lobby',
+          lastHeartbeat: Date.now()
         });
 
         socket.emit('authenticated', { nickname: nickname.trim() });
@@ -139,7 +219,7 @@ export function registerConsolidatedHandlers(io: Server) {
         const existingSeat = await prisma.playerTable.findFirst({
           where: {
             playerId: String(user.playerId),
-            tableId: user.location === 'lobby' ? 0 : (user.location as number)
+            tableId: user.location === 'lobby' ? 0 : (user.location as number) as any
           }
         });
 
@@ -154,7 +234,7 @@ export function registerConsolidatedHandlers(io: Server) {
         // Check if seat is already taken by another player
         const seatTaken = await prisma.playerTable.findFirst({
           where: {
-            tableId: user.location === 'lobby' ? 0 : (user.location as number),
+            tableId: (user.location === 'lobby' ? 0 : (user.location as number)) as any,
             seatNumber
           }
         });
@@ -178,7 +258,7 @@ export function registerConsolidatedHandlers(io: Server) {
         await prisma.playerTable.create({
           data: {
             playerId: String(user.playerId),
-            tableId: user.location as number,
+            tableId: (user.location as number) as any,
             seatNumber,
             buyIn
           }
@@ -215,6 +295,27 @@ export function registerConsolidatedHandlers(io: Server) {
           throw new Error('Buy-in must be positive');
         }
 
+        // Check if player is already seated at this table
+        const playerSeat = await prisma.playerTable.findFirst({
+          where: {
+            playerId: String(user.playerId),
+            tableId: tableId as any
+          }
+        });
+
+        if (playerSeat) {
+          // Player is already seated - emit success
+          console.log(`[SOCKET] Emitting autoSeatSuccess event to socket ${socket.id} for user ${user.nickname} (already seated)`);
+          socket.emit('autoSeatSuccess', { 
+            tableId, 
+            seatNumber: playerSeat.seatNumber, 
+            buyIn: playerSeat.buyIn 
+          });
+          console.log(`[SOCKET] autoSeatSuccess event emitted successfully`);
+          console.log(`[SOCKET] User ${user.nickname} already seated at seat ${playerSeat.seatNumber} at table ${tableId}`);
+          return;
+        }
+
         // Check if seat is available
         const existingSeat = await prisma.playerTable.findFirst({
           where: {
@@ -227,36 +328,26 @@ export function registerConsolidatedHandlers(io: Server) {
           throw new Error(`Seat ${seatNumber} is already taken`);
         }
 
-        // Check if player is already seated at this table
-        const playerSeat = await prisma.playerTable.findFirst({
-          where: {
-            playerId: String(user.playerId),
-            tableId: tableId as any
+        // Check if player is already at this table as observer
+        const table = tableManager.getTable(tableId);
+        const tablePlayers = tableManager.getTablePlayers(tableId);
+        const isObserver = tablePlayers.some(p => p.nickname === user.nickname && p.role === 'observer');
+        
+        if (isObserver) {
+          console.log(`[SOCKET] User ${user.nickname} already at table ${tableId} as observer, proceeding to seat`);
+        } else {
+          // Auto-seat: Join table and take seat in one operation
+          const joinResult = tableManager.joinTable(tableId, socket.id, user.nickname);
+          if (!joinResult.success) {
+            throw new Error(joinResult.error || 'Failed to join table');
           }
-        });
 
-        if (playerSeat) {
-          // Player is already seated - emit success
-          socket.emit('autoSeatSuccess', { 
-            tableId, 
-            seatNumber: playerSeat.seatNumber, 
-            buyIn: playerSeat.buyIn 
-          });
-          console.log(`[SOCKET] User ${user.nickname} already seated at seat ${playerSeat.seatNumber} at table ${tableId}`);
-          return;
+          console.log(`[SOCKET] User ${user.nickname} joined table ${tableId} as observer`);
+
+          // Update user location
+          await locationManager.moveToTableObserver(user.playerId, user.nickname, tableId);
+          user.location = tableId;
         }
-
-        // Auto-seat: Join table and take seat in one operation
-        const joinResult = tableManager.joinTable(tableId, socket.id, user.nickname);
-        if (!joinResult.success) {
-          throw new Error(joinResult.error || 'Failed to join table');
-        }
-
-        console.log(`[SOCKET] User ${user.nickname} joined table ${tableId} as observer`);
-
-        // Update user location
-        await locationManager.moveToTableObserver(user.playerId, user.nickname, tableId);
-        user.location = tableId;
 
         // Take seat immediately
         const sitResult = tableManager.sitDown(tableId, user.nickname, buyIn);
@@ -280,7 +371,9 @@ export function registerConsolidatedHandlers(io: Server) {
         socket.join(`table:${tableId}`);
 
         // Emit success
+        console.log(`[SOCKET] Emitting autoSeatSuccess event to socket ${socket.id} for user ${user.nickname}`);
         socket.emit('autoSeatSuccess', { tableId, seatNumber, buyIn });
+        console.log(`[SOCKET] autoSeatSuccess event emitted successfully`);
 
         // Emit to table room
         socket.to(`table:${tableId}`).emit('playerJoined', {
@@ -316,9 +409,9 @@ export function registerConsolidatedHandlers(io: Server) {
           throw new Error(result.error || 'Failed to start game');
         }
 
-        // Emit game state to all players at table
+        // Emit enhanced game state to all players at table
         if (result.gameState) {
-          io.to(`table:${tableId}`).emit('gameState', result.gameState);
+          broadcastGameState(tableId, result.gameState, 'game_started');
         }
 
         socket.emit('gameStarted', { tableId });
@@ -343,9 +436,9 @@ export function registerConsolidatedHandlers(io: Server) {
           throw new Error(result.error || 'Action failed');
         }
 
-        // Emit updated game state to all players at table
+        // Emit enhanced updated game state to all players at table
         if (result.gameState) {
-          io.to(`table:${tableId}`).emit('gameState', result.gameState);
+          broadcastGameState(tableId, result.gameState, 'player_action');
         }
 
         socket.emit('actionSuccess', { action, tableId });
@@ -353,6 +446,27 @@ export function registerConsolidatedHandlers(io: Server) {
         console.log(`[SOCKET] User ${user.nickname} performed ${action} at table ${tableId}`);
       } catch (error) {
         handleError(socket, error as Error, 'playerAction');
+      }
+    });
+
+    // === GAME STATE SYNC REQUEST ===
+    socket.on('requestGameState', async ({ tableId }) => {
+      try {
+        const user = authenticatedUsers.get(socket.id);
+        if (!user) {
+          throw new Error('Must authenticate first');
+        }
+
+        // Get current game state from TableManager
+        const gameState = tableManager.getTableGameState(tableId);
+        if (gameState) {
+          socket.emit('gameState', gameState);
+          console.log(`[SOCKET] Sent game state to ${user.nickname} for table ${tableId}`);
+        } else {
+          socket.emit('gameStateError', { error: 'No game state available' });
+        }
+      } catch (error) {
+        handleError(socket, error as Error, 'requestGameState');
       }
     });
 

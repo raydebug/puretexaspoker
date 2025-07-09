@@ -3,7 +3,7 @@ import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { OnlineList } from '../components/OnlineList';
 import { ActionHistory } from '../components/ActionHistory';
-import { PlayerActions } from '../components/PlayerActions';
+import PlayerActions from '../components/PlayerActions';
 import { socketService } from '../services/socketService';
 import { GameState, Player } from '../types/game';
 import { TableData } from '../types/table';
@@ -519,6 +519,15 @@ const GamePage: React.FC = () => {
         console.log('DEBUG: Final table number to set:', tableNumber);
         if (tableNumber) {
           setCurrentTableNumber(tableNumber);
+          
+          // CRITICAL FIX: Set loading to false immediately if we have a table number
+          // This ensures the page renders even if game state is delayed
+          setTimeout(() => {
+            if (isLoading) {
+              console.log('DEBUG: GamePage - forcing loading to false after table number set');
+              setIsLoading(false);
+            }
+          }, 500);
         }
         
         // Set a timeout to show the observer view if no game state is received
@@ -558,7 +567,7 @@ const GamePage: React.FC = () => {
           }
           
           setIsLoading(false);
-        }, 3000); // Keep timeout as fallback for connection issues
+        }, 1000); // Reduced timeout for faster loading
         
         return () => {
           gameStateUnsubscriber();
@@ -734,11 +743,11 @@ const GamePage: React.FC = () => {
         
         // Create or update player for test mode
         const newPlayer = {
-          id: isExistingPlayer ? currentPlayer.id : 'test-player-' + selectedSeat,
+          id: isExistingPlayer && currentPlayer ? currentPlayer.id : 'test-player-' + selectedSeat,
           name: nickname,
           seatNumber: selectedSeat,
           position: selectedSeat,
-          chips: isExistingPlayer ? currentPlayer.chips : buyInAmount,
+          chips: isExistingPlayer && currentPlayer ? currentPlayer.chips : buyInAmount,
           currentBet: 0,
           isDealer: false,
           isAway: false,
@@ -761,7 +770,7 @@ const GamePage: React.FC = () => {
           if (!prevGameState) return prevGameState;
           
           let updatedPlayers;
-          if (isExistingPlayer) {
+          if (isExistingPlayer && currentPlayer) {
             // Update existing player's seat
             updatedPlayers = prevGameState.players.map(p => 
               p.id === currentPlayer.id ? newPlayer : p
@@ -932,6 +941,9 @@ const GamePage: React.FC = () => {
         // In test mode, always show PlayerActions if game is active, even without a current player
         const finalShouldShow = shouldShow || (isTestMode && gameIsActive);
         
+        // FORCE RENDER IN TEST MODE
+        const forceRenderInTestMode = isTestMode && gameIsActive;
+        
         console.log(`🎯 SIMPLIFIED GamePage PlayerActions visibility:`, {
           hasCurrentPlayer: !!currentPlayer,
           playerName: currentPlayer?.name,
@@ -943,6 +955,7 @@ const GamePage: React.FC = () => {
           gameIsActive,
           shouldShow,
           finalShouldShow,
+          forceRenderInTestMode,
           currentPlayerInGameState: gameState.players.find(p => p.id === gameState.currentPlayerId || p.name === gameState.currentPlayerId)
         });
         
@@ -953,6 +966,7 @@ const GamePage: React.FC = () => {
             gameStateCurrentPlayerId: gameState.currentPlayerId,
             shouldShow,
             finalShouldShow,
+            forceRenderInTestMode,
             gameStatePlayers: gameState.players.map(p => ({ name: p.name, id: p.id })),
             currentPlayerMatch: gameState.players.find(p => p.id === gameState.currentPlayerId || p.name === gameState.currentPlayerId)?.name
           });
@@ -960,7 +974,7 @@ const GamePage: React.FC = () => {
         
         const effectiveCurrentPlayer = currentPlayer || gameState.players.find(p => p.id === gameState.currentPlayerId || p.name === gameState.currentPlayerId);
         
-        return finalShouldShow && (effectiveCurrentPlayer || isTestMode) ? (
+        return (finalShouldShow || forceRenderInTestMode) && (effectiveCurrentPlayer || isTestMode) ? (
           <>
             {/* DEBUG: Visible indicator for test mode */}
             {isTestMode && (
@@ -982,9 +996,11 @@ const GamePage: React.FC = () => {
               </div>
             )}
             <PlayerActions
+              currentPlayer={effectiveCurrentPlayer?.name || null}
+              currentPlayerId={gameState.currentPlayerId}
               gameState={gameState}
-              currentPlayer={effectiveCurrentPlayer || gameState.players[0]}
               onAction={handleAction}
+              isTestMode={true}
             />
           </>
         ) : (

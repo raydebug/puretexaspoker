@@ -158,44 +158,69 @@ export class SocketService {
     this.isConnected = false;
   }
 
-  connect() {
-    if (this.isConnected || this.isConnecting) {
-      console.log('Socket already connected or connecting');
+  /**
+   * Connect to WebSocket server
+   */
+  async connect(): Promise<void> {
+    if (this.socket?.connected) {
+      console.log('🔌 FRONTEND: Socket already connected');
       return;
     }
-
-    if (this.connectionLock) {
-      console.log('Connection locked, waiting for previous attempt to complete');
-      return;
-    }
-
-    this.connectionLock = true;
-    this.isConnecting = true;
-    this.lastConnectionAttempt = Date.now();
 
     try {
-      if (!this.socket) {
-        const socket = io(SOCKET_URL, {
-          transports: ['websocket'],
-          reconnection: true,
-          reconnectionAttempts: this.maxConnectionAttempts,
-          reconnectionDelay: this.reconnectionBackoff,
-        });
-        this.socket = socket as unknown as ExtendedSocket;
-        this.setupListeners();
-      }
+      this.socket = io('http://localhost:3001', {
+        transports: ['websocket', 'polling'],
+        timeout: 20000,
+        forceNew: true
+      }) as ExtendedSocket;
 
-      if (this.socket && !this.socket.connected) {
-        this.socket.connect();
-      }
-
-      this.onSuccessfulConnection();
+      this.setupListeners();
+      
+      // Start heartbeat monitoring
+      this.startHeartbeatMonitoring();
+      
+      console.log('🔌 FRONTEND: Socket connection established');
     } catch (error) {
-      console.error('Error connecting to socket:', error);
-      this.handleConnectionError(error);
-    } finally {
-      this.connectionLock = false;
-      this.isConnecting = false;
+      console.error('❌ FRONTEND: Socket connection failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Start heartbeat monitoring to maintain connection
+   */
+  private startHeartbeatMonitoring(): void {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+    }
+
+    this.heartbeatInterval = setInterval(() => {
+      if (this.socket?.connected) {
+        this.socket.emit('ping');
+        console.log('💓 FRONTEND: Sent heartbeat ping');
+      }
+    }, 30000); // Send heartbeat every 30 seconds
+  }
+
+  /**
+   * Stop heartbeat monitoring
+   */
+  private stopHeartbeatMonitoring(): void {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = undefined;
+    }
+  }
+
+  /**
+   * Request current game state from server
+   */
+  requestGameState(tableId: number): void {
+    if (this.socket?.connected) {
+      console.log(`🔧 FRONTEND: Requesting game state for table ${tableId}`);
+      this.socket.emit('requestGameState', { tableId });
+    } else {
+      console.error('❌ FRONTEND: Cannot request game state - socket not connected');
     }
   }
 
@@ -351,7 +376,67 @@ export class SocketService {
       this.emitError({ message: error, context: 'seat:error' });
     });
 
+    // Handle auto-seat success event
+    socket.on('autoSeatSuccess', (data: { tableId: number; seatNumber: number; buyIn: number }) => {
+      console.log('🎯 FRONTEND: Received autoSeatSuccess event:', data);
+      console.log('🎯 FRONTEND: Current socket state:', {
+        connected: socket.connected,
+        id: socket.id,
+        currentUserTable: this.currentUserTable,
+        currentUserSeat: this.currentUserSeat,
+        currentPlayer: this.currentPlayer,
+        gameState: this.gameState
+      });
+      
+      // Update user location
+      this.currentUserTable = data.tableId;
+      this.currentUserSeat = data.seatNumber;
+      this.isPlayer = true;
+      this.isObserver = false;
+      
+      console.log('🎯 FRONTEND: Updated user location after autoSeatSuccess:', {
+        table: this.currentUserTable,
+        seat: this.currentUserSeat,
+        isPlayer: this.isPlayer,
+        isObserver: this.isObserver
+      });
+      
+      // Find the current player in the game state
+      if (this.gameState && this.gameState.players) {
+        const nickname = localStorage.getItem('nickname');
+        console.log('🎯 FRONTEND: Looking for player with nickname:', nickname);
+        console.log('🎯 FRONTEND: Available players in game state:', this.gameState.players.map(p => ({ name: p.name, id: p.id })));
+        
+        const currentPlayer = this.gameState.players.find(p => p.name === nickname);
+        
+        if (currentPlayer) {
+          this.currentPlayer = currentPlayer;
+          console.log('🎯 FRONTEND: Set current player from autoSeatSuccess:', currentPlayer);
+        } else {
+          console.log('🎯 FRONTEND: Could not find current player in game state for nickname:', nickname);
+          console.log('🎯 FRONTEND: This might be because game state was not updated yet');
+        }
+      } else {
+        console.log('🎯 FRONTEND: No game state available when autoSeatSuccess received');
+      }
+      
+      // Remove from observers list
+      const nickname = localStorage.getItem('nickname');
+      if (nickname) {
+        this.observers = this.observers.filter(observer => observer !== nickname);
+        this.emitOnlineUsersUpdate();
+        console.log('🎯 FRONTEND: Removed from observers list:', nickname);
+      }
+      
+      console.log('🎯 FRONTEND: Auto-seat completed successfully for table', data.tableId, 'seat', data.seatNumber);
+    });
 
+    // Handle auto-seat error event
+    socket.on('autoSeatError', (error: string) => {
+      console.log('🎯 FRONTEND: Received autoSeatError event:', error);
+      this.emitSeatError(error);
+      this.emitError({ message: error, context: 'auto-seat:error' });
+    });
 
     socket.on('playerJoined', (data: { player: Player }) => {
       try {
@@ -542,6 +627,24 @@ export class SocketService {
       }
       
       console.log('👥 FRONTEND: Players list update completed');
+    });
+
+    // === ENHANCED GAME STATE SYNC ===
+    
+    // Handle heartbeat response
+    socket.on('pong', (data: { timestamp: number }) => {
+      console.log('💓 FRONTEND: Received heartbeat pong:', data);
+    });
+
+    // Handle game state sync confirmation
+    socket.on('gameStateSync', (data: { tableId: number; timestamp: number; reason: string; playersCount: number }) => {
+      console.log('🔄 FRONTEND: Received game state sync confirmation:', data);
+    });
+
+    // Handle game state error
+    socket.on('gameStateError', (data: { error: string }) => {
+      console.log('❌ FRONTEND: Received game state error:', data);
+      this.emitError({ message: data.error, context: 'gameState' });
     });
 
     // Also handle direct gameState events for better coverage
@@ -1212,6 +1315,19 @@ export class SocketService {
    * Emit game state update to listeners
    */
   private emitGameStateUpdate(gameState: GameState) {
+    // Fallback: If we don't have a current player but we have a seat and game state,
+    // try to find the current player in the updated game state
+    if (!this.currentPlayer && this.currentUserSeat && this.currentUserTable && gameState.players) {
+      const nickname = localStorage.getItem('nickname');
+      if (nickname) {
+        const currentPlayer = gameState.players.find(p => p.name === nickname);
+        if (currentPlayer) {
+          this.currentPlayer = currentPlayer;
+          console.log('🎯 FRONTEND: Fallback - Set current player from game state update:', currentPlayer);
+        }
+      }
+    }
+    
     this.gameStateListeners.forEach(callback => callback(gameState));
   }
 

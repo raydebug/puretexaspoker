@@ -600,7 +600,7 @@ export const PokerTable: React.FC<PokerTableProps> = ({
     const userPlayerByName = nickname ? gameState.players.find(p => p.name === nickname && p.cards && p.cards.length === 2) : null;
     
     // Method 3: Check if any player has cards that belong to current user (fallback)
-    const hasSeatedPlayerWithCards = gameState.players.some(p => p.cards && p.cards.length === 2);
+    const hasSeatedPlayerWithCards = gameState.players?.some(p => p.cards && p.cards.length === 2) || false;
     
     return userIsSeatedPlayer || userPlayerByName || (!isObserver && hasSeatedPlayerWithCards);
   }, [currentUserPlayer, gameState.players, isObserver]);
@@ -614,13 +614,13 @@ export const PokerTable: React.FC<PokerTableProps> = ({
     // Fallback: try to find by nickname
     const nickname = localStorage.getItem('nickname');
     if (nickname) {
-      const playerByName = gameState.players.find(p => p.name === nickname && p.cards && p.cards.length === 2);
+      const playerByName = gameState.players?.find(p => p.name === nickname && p.cards && p.cards.length === 2);
       if (playerByName) return playerByName;
     }
     
     // Last resort: if user is not observer, show first player with cards (for testing)
     if (!isObserver) {
-      const anyPlayerWithCards = gameState.players.find(p => p.cards && p.cards.length === 2);
+      const anyPlayerWithCards = gameState.players?.find(p => p.cards && p.cards.length === 2);
       if (anyPlayerWithCards) return anyPlayerWithCards;
     }
     
@@ -674,7 +674,7 @@ export const PokerTable: React.FC<PokerTableProps> = ({
 
   const handleSeatClick = (seatNumber: number) => {
     // Allow seat selection if seat is empty and callback is provided
-    const player = gameState.players.find(p => p.seatNumber === seatNumber);
+    const player = gameState.players?.find(p => p.seatNumber === seatNumber);
     const isEmpty = !player;
     
     if (isEmpty && onSeatSelect) {
@@ -683,9 +683,9 @@ export const PokerTable: React.FC<PokerTableProps> = ({
   };
 
   const renderSeat = (seatNumber: number) => {
-    const player = gameState.players.find(p => p.seatNumber === seatNumber);
+    const player = gameState.players?.find(p => p.seatNumber === seatNumber);
     const isEmpty = !player;
-    const positionName = POSITION_NAMES[seatNumber - 1];
+    const positionName = POSITION_NAMES[seatNumber - 1] || `Seat ${seatNumber}`; // Add bounds check
     const isButton = player?.isDealer || false; // Button position
     const isAvailable = isEmpty; // Empty seats are always available to sit in
     const isCurrentPlayer = !isEmpty && gameState.currentPlayerId === player?.id;

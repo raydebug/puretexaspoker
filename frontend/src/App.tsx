@@ -1,61 +1,79 @@
-import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import { ThemeProvider } from 'styled-components';
-import LobbyPage from './pages/LobbyPage';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthDemo } from './pages/AuthDemo';
+import AutoSeatPage from './pages/AutoSeatPage';
+import AutoStartGamePage from './pages/AutoStartGamePage';
 import GamePage from './pages/GamePage';
 import { JoinGamePage } from './pages/JoinGamePage';
 import { JoinPage } from './pages/JoinPage';
-import { AuthDemo } from './pages/AuthDemo';
+import LobbyPage from './pages/LobbyPage';
 import TableMonitorPage from './pages/TableMonitorPage';
-import AutoSeatPage from './pages/AutoSeatPage';
-import AutoStartGamePage from './pages/AutoStartGamePage';
-import { Navigation } from './components/Navigation';
-import GlobalStyles from './styles/GlobalStyles';
-import { theme } from './styles/theme';
-import { navigationService } from './services/navigationService';
 
-// Inner component to access useNavigate hook
-function AppContent() {
-  const navigate = useNavigate();
+console.log('🎯 App component starting...');
 
-  useEffect(() => {
-    // Set up navigation callback for the navigation service
-    navigationService.setNavigationCallback((path: string, replace = false) => {
-      navigate(path, { replace });
-    });
+// Error Boundary Component
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
 
-    return () => {
-      // Clean up on unmount
-      navigationService.setNavigationCallback(() => {});
-    };
-  }, [navigate]);
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
 
-  return (
-    <div data-testid="game-container">
-      <Navigation />
-      <Routes>
-        <Route path="/" element={<LobbyPage />} />
-        <Route path="/auth-demo" element={<AuthDemo />} />
-        <Route path="/join" element={<JoinPage />} />
-        <Route path="/join-table" element={<JoinGamePage />} />
-        <Route path="/game/:gameId" element={<GamePage />} />
-        <Route path="/monitor" element={<TableMonitorPage />} />
-        <Route path="/auto-seat" element={<AutoSeatPage />} />
-        <Route path="/start-game" element={<AutoStartGamePage />} />
-      </Routes>
-    </div>
-  );
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('🎯 React error caught:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '20px', color: 'red' }}>
+          <h1>Something went wrong.</h1>
+          <p>Error: {this.state.error?.message}</p>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
 }
 
 function App() {
-  return (
-    <ThemeProvider theme={theme}>
-      <Router>
-        <GlobalStyles />
-        <AppContent />
-      </Router>
-    </ThemeProvider>
-  );
+  console.log('🎯 App component rendering...');
+  
+  try {
+    return (
+      <ErrorBoundary>
+        <Router>
+          <Routes>
+            <Route path="/" element={<LobbyPage />} />
+            <Route path="/join" element={<JoinPage />} />
+            <Route path="/join-game" element={<JoinGamePage />} />
+            <Route path="/auto-seat" element={<AutoSeatPage />} />
+            <Route path="/auto-start-game" element={<AutoStartGamePage />} />
+            <Route path="/game/:tableId?" element={<GamePage />} />
+            <Route path="/auth-demo" element={<AuthDemo />} />
+            <Route path="/table-monitor" element={<TableMonitorPage />} />
+          </Routes>
+        </Router>
+      </ErrorBoundary>
+    );
+  } catch (error) {
+    console.error('🎯 Error in App component:', error);
+    return (
+      <div style={{ padding: '20px', color: 'red' }}>
+        <h1>App component error</h1>
+        <p>Error: {error instanceof Error ? error.message : 'Unknown error'}</p>
+      </div>
+    );
+  }
 }
+
+console.log('🎯 App component defined');
 
 export default App; 
