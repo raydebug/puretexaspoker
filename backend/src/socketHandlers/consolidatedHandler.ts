@@ -218,7 +218,7 @@ export function registerConsolidatedHandlers(io: Server) {
         // Check if seat is available
         const existingSeat = await prisma.playerTable.findFirst({
           where: {
-            tableId: tableId as any,
+            tableId: tableId,
             seatNumber: seatNumber
           }
         });
@@ -231,7 +231,7 @@ export function registerConsolidatedHandlers(io: Server) {
         const playerSeat = await prisma.playerTable.findFirst({
           where: {
             playerId: String(user.playerId),
-            tableId: tableId as any
+            tableId: tableId
           }
         });
 
@@ -270,7 +270,7 @@ export function registerConsolidatedHandlers(io: Server) {
         await prisma.playerTable.create({
           data: {
             playerId: String(user.playerId),
-            tableId: tableId as any,
+            tableId: tableId,
             seatNumber: seatNumber,
             buyIn: buyIn
           }
