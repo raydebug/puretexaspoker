@@ -216,6 +216,21 @@ export const PlayerActions: React.FC<PlayerActionsProps> = ({
                       // SUPER PERMISSIVE: In test mode, show actions if there's any current player turn
                       (isTestMode && gameState.currentPlayerId && gameState.players && 
                        gameState.players.some(p => p.id === gameState.currentPlayerId || p.name === gameState.currentPlayerId));
+  
+  // Game state checks
+  const gameIsActive = gameState.status === 'playing' || 
+                      gameState.phase === 'preflop' || 
+                      gameState.phase === 'flop' || 
+                      gameState.phase === 'turn' || 
+                      gameState.phase === 'river';
+  
+  // Should show logic
+  const shouldShow = gameIsActive && (
+    // Normal mode: current player matches the current player turn
+    (currentPlayer && (gameState.currentPlayerId === currentPlayer.id || gameState.currentPlayerId === currentPlayer.name)) ||
+    // Test mode: always show if game is active
+    isTestMode
+  );
 
   // CRITICAL DEBUGGING for test mode
   console.log(`🎯 PlayerActions DEBUG:`, {
@@ -231,7 +246,10 @@ export const PlayerActions: React.FC<PlayerActionsProps> = ({
     playersInGameState: gameState.players?.map(p => ({ name: p.name, id: p.id })),
     playerMatchByName: gameState.players?.find(p => p.name === currentPlayer.name),
     playerMatchById: gameState.players?.find(p => p.id === currentPlayer.id),
-    uuidMatch: gameState.players?.find(p => p.name === currentPlayer.name)?.id === gameState.currentPlayerId
+    uuidMatch: gameState.players?.find(p => p.name === currentPlayer.name)?.id === gameState.currentPlayerId,
+    // SUPER DEBUG: Check if component should render
+    shouldRender: !currentPlayer || (!isPlayerTurn && !isTestMode),
+    finalShouldShow: shouldShow || (isTestMode && gameIsActive)
   });
   const toCall = Math.max(0, gameState.currentBet - currentPlayer.currentBet);
   const canCheck = toCall === 0;
