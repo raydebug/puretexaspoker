@@ -405,9 +405,16 @@ const GamePage: React.FC = () => {
         console.log('DEBUG: GamePage attempting to connect to socket...');
         await socketService.connect();
         
+        // Get the table number to join
+        const tableNumber = getTableNumber();
+        console.log('DEBUG: GamePage joining table number:', tableNumber);
+        
         // Join the table as observer first (this will trigger the backend joinTable logic)
-        if (table && tableId) {
-          socketService.joinTable(parseInt(tableId));
+        if (tableNumber) {
+          console.log('DEBUG: GamePage calling joinTable with table number:', tableNumber);
+          socketService.joinTable(tableNumber);
+        } else {
+          console.log('DEBUG: GamePage no table number found, cannot join table');
         }
         setIsObserver(true);
         
@@ -491,24 +498,24 @@ const GamePage: React.FC = () => {
         const existingPlayer = socketService.getCurrentPlayer();
         const existingState = socketService.getGameState();
         
-        if (existingPlayer) {
-          console.log('DEBUG: GamePage found existing player:', existingPlayer);
-          setCurrentPlayer(existingPlayer);
-          setIsObserver(false);
-        }
+        console.log('DEBUG: GamePage existingPlayer from socketService:', existingPlayer);
+        console.log('DEBUG: GamePage existingState from socketService:', existingState);
         
-        if (existingState) {
-          console.log('DEBUG: GamePage found existing state:', existingState);
-          setGameState(existingState);
-          setIsLoading(false);
-          
-          const occupiedSeats = existingState.players.map(p => p.seatNumber);
-          const available = Array.from({ length: 9 }, (_, i) => i + 1).filter(seat => !occupiedSeats.includes(seat));
-          setAvailableSeats(available);
+        // Only set currentPlayer from existing state if it matches the current game state
+        if (existingPlayer && existingState && existingState.players) {
+          const matchingPlayer = existingState.players.find(p => 
+            p.name === existingPlayer.name || p.id === existingPlayer.id
+          );
+          if (matchingPlayer) {
+            console.log('DEBUG: GamePage found matching existing player:', matchingPlayer);
+            setCurrentPlayer(matchingPlayer);
+            setIsObserver(false);
+          } else {
+            console.log('DEBUG: GamePage existing player does not match current game state, will wait for update');
+          }
         }
         
         // Get current table number
-        const tableNumber = getTableNumber();
         console.log('DEBUG: Final table number to set:', tableNumber);
         if (tableNumber) {
           setCurrentTableNumber(tableNumber);
@@ -572,6 +579,82 @@ const GamePage: React.FC = () => {
       // socketService.disconnect();
     };
   }, [tableId]);
+
+  // Listen for game state updates
+  useEffect(() => {
+    const handleGameStateUpdate = (gameState: GameState) => {
+      console.log('🎯 GamePage: Received game state update:', gameState);
+      setGameState(gameState);
+      
+      // Always try to set the current player from the game state
+      if (gameState.players && gameState.currentPlayerId) {
+        const nickname = localStorage.getItem('nickname');
+        console.log('🎯 GamePage: Looking for current player');
+        console.log('🎯 GamePage: Nickname from localStorage:', nickname);
+        console.log('🎯 GamePage: Current player ID from game state:', gameState.currentPlayerId);
+        console.log('🎯 GamePage: Available players:', gameState.players.map(p => ({ name: p.name, id: p.id })));
+        
+        if (nickname) {
+          // Try multiple matching strategies
+          let player = null;
+          
+          // Strategy 1: Match by exact name
+          player = gameState.players.find(p => p.name === nickname);
+          if (player) {
+            console.log('🎯 GamePage: Found player by exact name match:', player);
+            setCurrentPlayer(player);
+            return;
+          }
+          
+          // Strategy 2: Match by exact ID
+          player = gameState.players.find(p => p.id === nickname);
+          if (player) {
+            console.log('🎯 GamePage: Found player by exact ID match:', player);
+            setCurrentPlayer(player);
+            return;
+          }
+          
+          // Strategy 3: Match current player ID from game state
+          player = gameState.players.find(p => p.id === gameState.currentPlayerId);
+          if (player) {
+            console.log('🎯 GamePage: Found player by current player ID match:', player);
+            setCurrentPlayer(player);
+            return;
+          }
+          
+          // Strategy 4: Match current player name from game state
+          player = gameState.players.find(p => p.name === gameState.currentPlayerId);
+          if (player) {
+            console.log('🎯 GamePage: Found player by current player name match:', player);
+            setCurrentPlayer(player);
+            return;
+          }
+          
+          console.log('🎯 GamePage: Could not find current player with any strategy');
+        } else {
+          console.log('🎯 GamePage: No nickname in localStorage');
+        }
+      }
+    };
+
+    const unsubscribe = socketService.onGameState(handleGameStateUpdate);
+    return unsubscribe;
+  }, []); // Remove currentPlayer dependency to avoid circular dependency
+
+  // Fallback effect to set currentPlayer from socketService state if not set from game state
+  useEffect(() => {
+    if (!currentPlayer && gameState?.players) {
+      const nickname = localStorage.getItem('nickname');
+      if (nickname) {
+        // Try to find player in game state by nickname
+        const player = gameState.players.find(p => p.name === nickname);
+        if (player) {
+          console.log('🎯 GamePage: Fallback - setting currentPlayer from gameState:', player);
+          setCurrentPlayer(player);
+        }
+      }
+    }
+  }, [gameState, currentPlayer]);
 
   const handleAction = (action: string, amount?: number) => {
     console.log('DEBUG: GamePage handleAction called:', { action, amount });
