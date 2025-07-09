@@ -196,6 +196,112 @@ export function registerConsolidatedHandlers(io: Server) {
       }
     });
 
+    // === AUTO SEAT === (Combines join and seat in one operation)
+    socket.on('autoSeat', async ({ tableId, seatNumber, buyIn = 200 }) => {
+      try {
+        const user = authenticatedUsers.get(socket.id);
+        if (!user) {
+          throw new Error('Must authenticate first');
+        }
+
+        console.log(`[SOCKET] Auto-seat request from ${user.nickname}: table ${tableId}, seat ${seatNumber}, buyIn ${buyIn}`);
+
+        // Validate input
+        if (!tableId || !seatNumber || seatNumber < 1 || seatNumber > 9) {
+          throw new Error('Invalid table ID or seat number');
+        }
+
+        if (buyIn <= 0) {
+          throw new Error('Buy-in must be positive');
+        }
+
+        // Check if seat is available
+        const existingSeat = await prisma.playerTable.findFirst({
+          where: {
+            tableId: tableId as any,
+            seatNumber: seatNumber
+          }
+        });
+
+        if (existingSeat) {
+          throw new Error(`Seat ${seatNumber} is already taken`);
+        }
+
+        // Check if player is already seated at this table
+        const playerSeat = await prisma.playerTable.findFirst({
+          where: {
+            playerId: String(user.playerId),
+            tableId: tableId as any
+          }
+        });
+
+        if (playerSeat) {
+          // Player is already seated - emit success
+          socket.emit('autoSeatSuccess', { 
+            tableId, 
+            seatNumber: playerSeat.seatNumber, 
+            buyIn: playerSeat.buyIn 
+          });
+          console.log(`[SOCKET] User ${user.nickname} already seated at seat ${playerSeat.seatNumber} at table ${tableId}`);
+          return;
+        }
+
+        // Auto-seat: Join table and take seat in one operation
+        const joinResult = tableManager.joinTable(tableId, socket.id, user.nickname);
+        if (!joinResult.success) {
+          throw new Error(joinResult.error || 'Failed to join table');
+        }
+
+        console.log(`[SOCKET] User ${user.nickname} joined table ${tableId} as observer`);
+
+        // Update user location
+        await locationManager.moveToTableObserver(user.playerId, user.nickname, tableId);
+        user.location = tableId;
+
+        // Take seat immediately
+        const sitResult = tableManager.sitDown(tableId, user.nickname, buyIn);
+        if (!sitResult.success) {
+          throw new Error(sitResult.error || 'Failed to take seat');
+        }
+
+        console.log(`[SOCKET] User ${user.nickname} took seat ${seatNumber} at table ${tableId}`);
+
+        // Create database record
+        await prisma.playerTable.create({
+          data: {
+            playerId: String(user.playerId),
+            tableId: tableId as any,
+            seatNumber: seatNumber,
+            buyIn: buyIn
+          }
+        });
+
+        // Join table room
+        socket.join(`table:${tableId}`);
+
+        // Emit success
+        socket.emit('autoSeatSuccess', { tableId, seatNumber, buyIn });
+
+        // Emit to table room
+        socket.to(`table:${tableId}`).emit('playerJoined', {
+          tableId,
+          player: {
+            id: user.nickname,
+            nickname: user.nickname,
+            seatNumber: seatNumber,
+            chips: buyIn
+          }
+        });
+
+        // Broadcast table update
+        broadcastTables();
+
+      } catch (error) {
+        console.error(`[SOCKET] Error in autoSeat:`, error);
+        socket.emit('autoSeatError', { error: (error as Error).message });
+      }
+    });
+
     // === START GAME ===
     socket.on('startGame', async ({ tableId }) => {
       try {
