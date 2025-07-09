@@ -127,11 +127,6 @@ const AutoSeatPage: React.FC = () => {
         socket?.on('tableError', errorHandler);
         socket?.on('seatError', errorHandler);
         
-        // Log all incoming events for debugging
-        socket?.onAny((eventName: string, ...args: any[]) => {
-          console.log(`🎯 AUTO-SEAT: Received event: ${eventName}`, args);
-        });
-        
         // Authenticate with the player name
         socketService.emitUserLogin(playerName);
         
@@ -151,7 +146,7 @@ const AutoSeatPage: React.FC = () => {
           throw new Error('Authentication failed - timeout');
         }
         
-        setStatus('🏃 Joining table...');
+        setStatus('🎯 Auto-seating at table ' + tableNumber + ', seat ' + seatNumber + '...');
         
         // Use the table ID from URL parameter directly
         const actualTableId = parseInt(tableNumber);
@@ -161,91 +156,42 @@ const AutoSeatPage: React.FC = () => {
           throw new Error('Invalid table ID provided');
         }
         
-        // Set up table join success listener
-        let tableJoined = false;
-        const tableJoinHandler = () => {
-          tableJoined = true;
-          console.log(`🎯 AUTO-SEAT: Table joined successfully`);
+        // Set up auto-seat success listener
+        let autoSeatSuccess = false;
+        const autoSeatSuccessHandler = (data: any) => {
+          autoSeatSuccess = true;
+          console.log(`🎯 AUTO-SEAT: Auto-seat successful:`, data);
         };
         
-        socket?.on('tableJoined', tableJoinHandler);
+        socket?.on('autoSeatSuccess', autoSeatSuccessHandler);
         
-        // Add error listeners for table join
-        const tableErrorHandler = (error: any) => {
-          console.error(`🎯 AUTO-SEAT: WebSocket error during table join:`, error);
-          setStatus('❌ Table join error: ' + (error.message || 'Unknown error'));
+        // Add error listeners for auto-seat
+        const autoSeatErrorHandler = (error: any) => {
+          console.error(`🎯 AUTO-SEAT: WebSocket error during auto-seat:`, error);
+          setStatus('❌ Auto-seat error: ' + (error.error || 'Unknown error'));
           setStatusType('error');
         };
         
-        socket?.on('error', tableErrorHandler);
-        socket?.on('tableError', tableErrorHandler);
+        socket?.on('autoSeatError', autoSeatErrorHandler);
         
-        // Join the table
-        socketService.joinTable(actualTableId, buyInAmount);
+        // Call the new autoSeat method that combines join and seat
+        console.log(`🎯 AUTO-SEAT: Calling autoSeat with table ${actualTableId}, seat ${seatNumber}, buyIn ${buyInAmount}`);
+        socketService.autoSeat(actualTableId, parseInt(seatNumber), buyInAmount);
         
-        // Wait for table join to complete
-        let joinAttempts = 0;
-        const maxJoinAttempts = 10;
-        while (!tableJoined && joinAttempts < maxJoinAttempts) {
-          console.log(`🎯 AUTO-SEAT: Waiting for table join... attempt ${joinAttempts + 1}`);
+        // Wait for auto-seat to complete
+        let autoSeatAttempts = 0;
+        const maxAutoSeatAttempts = 10;
+        while (!autoSeatSuccess && autoSeatAttempts < maxAutoSeatAttempts) {
+          console.log(`🎯 AUTO-SEAT: Waiting for auto-seat confirmation... attempt ${autoSeatAttempts + 1}`);
           await new Promise(resolve => setTimeout(resolve, 1000));
-          joinAttempts++;
+          autoSeatAttempts++;
         }
         
-        // Clean up table join listener
-        socket?.off('tableJoined', tableJoinHandler);
+        // Clean up auto-seat listener
+        socket?.off('autoSeatSuccess', autoSeatSuccessHandler);
         
-        if (!tableJoined) {
-          throw new Error('Table join failed - timeout');
-        }
-        
-        setStatus('💺 Taking seat ' + seatNumber + ' with $' + buyInAmount + ' buy-in...');
-        
-        // Set up seat taken success listener
-        let seatTaken = false;
-        const seatTakenHandler = () => {
-          seatTaken = true;
-          console.log(`🎯 AUTO-SEAT: Seat taken successfully`);
-        };
-        
-        // Also listen for "already seated" which means success
-        const alreadySeatedHandler = () => {
-          seatTaken = true;
-          console.log(`🎯 AUTO-SEAT: Already seated - this is success`);
-        };
-        
-        socket?.on('seatTaken', seatTakenHandler);
-        socket?.on('alreadySeated', alreadySeatedHandler);
-        
-        // Add error listeners for seat taking
-        const seatErrorHandler = (error: any) => {
-          console.error(`🎯 AUTO-SEAT: WebSocket error during seat taking:`, error);
-          setStatus('❌ Seat taking error: ' + (error.message || 'Unknown error'));
-          setStatusType('error');
-        };
-        
-        socket?.on('error', seatErrorHandler);
-        socket?.on('seatError', seatErrorHandler);
-        
-        // Take the specified seat with specified buy-in amount
-        console.log(`🎯 AUTO-SEAT: Attempting to take seat ${seatNumber} with buy-in ${buyInAmount}`);
-        socketService.takeSeat(parseInt(seatNumber), buyInAmount);
-        
-        // Wait for seat taken to complete
-        let seatAttempts = 0;
-        const maxSeatAttempts = 10;
-        while (!seatTaken && seatAttempts < maxSeatAttempts) {
-          console.log(`🎯 AUTO-SEAT: Waiting for seat confirmation... attempt ${seatAttempts + 1}`);
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          seatAttempts++;
-        }
-        
-        // Clean up seat taken listener
-        socket?.off('seatTaken', seatTakenHandler);
-        socket?.off('alreadySeated', alreadySeatedHandler);
-        
-        if (!seatTaken) {
-          throw new Error('Seat taking failed - timeout');
+        if (!autoSeatSuccess) {
+          throw new Error('Auto-seat failed - timeout');
         }
 
         setStatus('✅ Successfully seated! Redirecting to game...');

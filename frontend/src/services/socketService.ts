@@ -1494,6 +1494,18 @@ export class SocketService {
   }
 
   /**
+   * Auto-seat: combines join table and take seat in one operation
+   */
+  autoSeat(tableId: number, seatNumber: number, buyIn: number): void {
+    if (!this.socket) {
+      console.error('Socket not connected');
+      return;
+    }
+    console.log(`🎯 SOCKET: Auto-seating at table ${tableId}, seat ${seatNumber}, buyIn ${buyIn}`);
+    this.socket.emit('autoSeat', { tableId, seatNumber, buyIn });
+  }
+
+  /**
    * Get socket instance
    */
   getSocket() {
