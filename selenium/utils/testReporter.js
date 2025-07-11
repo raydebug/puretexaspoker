@@ -10,11 +10,13 @@ class TestReporter {
         this.scenarioResults = [];
         this.startTime = new Date();
         this.featureReports = new Map(); // Track individual feature reports
+        this.verbose = true; // Enable detailed output
     }
 
     // Initialize reporter
     init() {
         console.log('📊 Test Reporter initialized');
+        console.log(`📁 Reports directory: ${this.reportsDir}`);
         this.ensureReportsDirectory();
     }
 
@@ -22,10 +24,13 @@ class TestReporter {
     ensureReportsDirectory() {
         if (!fs.existsSync(this.reportsDir)) {
             fs.mkdirSync(this.reportsDir, { recursive: true });
+            console.log('📁 Created reports directory');
+        } else {
+            console.log('📁 Reports directory exists');
         }
     }
 
-    // Record scenario result
+    // Record scenario result with detailed output
     recordScenario(scenarioName, status, duration = 0, error = null) {
         const result = {
             name: scenarioName,
@@ -38,14 +43,23 @@ class TestReporter {
         this.scenarioResults.push(result);
         
         const statusIcon = status === 'PASS' ? '✅' : '❌';
-        console.log(`${statusIcon} ${scenarioName} - ${status} (${duration}ms)`);
+        const durationStr = duration > 1000 ? `${(duration / 1000).toFixed(2)}s` : `${duration}ms`;
+        
+        console.log(`${statusIcon} ${scenarioName} - ${status} (${durationStr})`);
+        
+        if (error && this.verbose) {
+            console.log(`   ❌ Error: ${error.substring(0, 200)}${error.length > 200 ? '...' : ''}`);
+        }
         
         return result;
     }
 
-    // Create individual feature report
+    // Create individual feature report with detailed output
     createFeatureReport(featureName, result) {
         const featureReportFile = path.join(this.reportsDir, `${featureName}-report.json`);
+        
+        console.log(`\n📄 Creating feature report for: ${featureName}`);
+        console.log(`   📁 Report file: ${featureReportFile}`);
         
         const featureReport = {
             featureName: featureName,
@@ -56,12 +70,15 @@ class TestReporter {
             summary: {
                 status: result.status,
                 duration: result.duration,
-                success: result.status === 'PASS'
+                success: result.status === 'PASS',
+                stepCount: result.stepCount || 0,
+                scenarioCount: result.scenarioCount || 0
             },
             details: {
                 output: result.output,
                 error: result.error,
-                code: result.code
+                code: result.code,
+                command: result.command || 'N/A'
             }
         };
 
@@ -71,24 +88,30 @@ class TestReporter {
         // Track in memory
         this.featureReports.set(featureName, featureReport);
         
-        console.log(`📄 Feature report saved: ${featureReportFile}`);
+        console.log(`   ✅ Feature report saved: ${featureReportFile}`);
+        console.log(`   📊 Summary: ${result.status} | ${result.duration}ms | ${result.scenarioCount || 0} scenarios | ${result.stepCount || 0} steps`);
         
         return featureReport;
     }
 
-    // Update git with feature report
+    // Update git with feature report with detailed output
     async updateGitWithFeatureReport(featureName) {
         const featureReportFile = path.join(this.reportsDir, `${featureName}-report.json`);
         
         if (fs.existsSync(featureReportFile)) {
             try {
+                console.log(`   📝 Updating git with ${featureName} report...`);
+                
                 // Add to git
                 await this.gitCommand(`add "${featureReportFile}"`);
                 await this.gitCommand(`commit -m "Update test report: ${featureName} - ${new Date().toISOString()}"`);
-                console.log(`📝 Git updated with ${featureName} report`);
+                
+                console.log(`   ✅ Git updated with ${featureName} report`);
             } catch (error) {
-                console.log(`⚠️ Git update failed for ${featureName}: ${error.message}`);
+                console.log(`   ⚠️ Git update failed for ${featureName}: ${error.message}`);
             }
+        } else {
+            console.log(`   ⚠️ Report file not found: ${featureReportFile}`);
         }
     }
 
@@ -107,8 +130,10 @@ class TestReporter {
         });
     }
 
-    // Generate current report
+    // Generate current report with detailed output
     generateReport() {
+        console.log('\n📊 Generating comprehensive test report...');
+        
         const report = {
             timestamp: new Date().toISOString(),
             startTime: this.startTime.toISOString(),
@@ -122,6 +147,11 @@ class TestReporter {
             summary: this.generateSummary()
         };
 
+        console.log(`   📋 Total scenarios: ${report.totalScenarios}`);
+        console.log(`   ✅ Passed: ${report.passedScenarios}`);
+        console.log(`   ❌ Failed: ${report.failedScenarios}`);
+        console.log(`   📊 Success rate: ${report.successRate}%`);
+
         return report;
     }
 
@@ -132,27 +162,37 @@ class TestReporter {
         return ((passed / this.scenarioResults.length) * 100).toFixed(2);
     }
 
-    // Generate summary
+    // Generate summary with detailed output
     generateSummary() {
         const passed = this.scenarioResults.filter(r => r.status === 'PASS').length;
         const failed = this.scenarioResults.filter(r => r.status === 'FAIL').length;
         const total = this.scenarioResults.length;
         const successRate = this.calculateSuccessRate();
 
-        return {
+        const summary = {
             total: total,
             passed: passed,
             failed: failed,
             successRate: `${successRate}%`,
             status: failed === 0 ? 'ALL_PASSED' : failed > 0 && passed > 0 ? 'PARTIAL_SUCCESS' : 'ALL_FAILED'
         };
+
+        console.log(`   🎯 Overall status: ${summary.status}`);
+        console.log(`   📈 Success rate: ${summary.successRate}`);
+
+        return summary;
     }
 
-    // Save current report
+    // Save current report with detailed output
     saveCurrentReport() {
+        console.log('\n💾 Saving current test report...');
+        
         const report = this.generateReport();
         fs.writeFileSync(this.currentReportFile, JSON.stringify(report, null, 2));
-        console.log('📄 Current test report saved');
+        
+        console.log(`   📄 Current test report saved: ${this.currentReportFile}`);
+        console.log(`   📊 Report size: ${(JSON.stringify(report).length / 1024).toFixed(2)} KB`);
+        
         return report;
     }
 
@@ -160,8 +200,10 @@ class TestReporter {
     loadPreviousReport() {
         if (fs.existsSync(this.previousReportFile)) {
             const data = fs.readFileSync(this.previousReportFile, 'utf8');
+            console.log(`   📖 Loaded previous report: ${this.previousReportFile}`);
             return JSON.parse(data);
         }
+        console.log(`   ⚠️ No previous report found: ${this.previousReportFile}`);
         return null;
     }
 
@@ -169,17 +211,21 @@ class TestReporter {
     archiveCurrentAsPrevious() {
         if (fs.existsSync(this.currentReportFile)) {
             fs.copyFileSync(this.currentReportFile, this.previousReportFile);
-            console.log('📋 Current report archived as previous');
+            console.log(`   📋 Current report archived as previous: ${this.previousReportFile}`);
+        } else {
+            console.log(`   ⚠️ No current report to archive`);
         }
     }
 
     // Compare current with previous report
     compareWithPrevious() {
+        console.log('\n🔍 Comparing with previous test run...');
+        
         const current = this.loadCurrentReport();
         const previous = this.loadPreviousReport();
 
         if (!previous) {
-            console.log('📊 No previous report found for comparison');
+            console.log('   📊 No previous report found for comparison');
             return null;
         }
 
@@ -190,6 +236,13 @@ class TestReporter {
             improvements: this.identifyImprovements(current, previous),
             regressions: this.identifyRegressions(current, previous)
         };
+
+        console.log(`   📊 Comparison completed`);
+        console.log(`   🆕 New scenarios: ${comparison.changes.newScenarios.length}`);
+        console.log(`   🗑️ Removed scenarios: ${comparison.changes.removedScenarios.length}`);
+        console.log(`   🔄 Status changes: ${comparison.changes.statusChanges.length}`);
+        console.log(`   🎉 Improvements: ${comparison.improvements.length}`);
+        console.log(`   ⚠️ Regressions: ${comparison.regressions.length}`);
 
         return comparison;
     }
@@ -267,7 +320,7 @@ class TestReporter {
         );
     }
 
-    // Print comparison report
+    // Print comparison report with detailed output
     printComparison(comparison) {
         if (!comparison) {
             console.log('📊 No comparison data available');
@@ -356,20 +409,26 @@ class TestReporter {
         console.log('='.repeat(50));
     }
 
-    // Wait for user input
+    // Wait for user input with detailed prompt
     async waitForUserInput() {
         console.log('\n⏳ Waiting for your opinion and next step...');
-        console.log('Press Enter to continue or type your response:');
+        console.log('📝 You can:');
+        console.log('  - Press Enter to continue');
+        console.log('  - Type "retry" to run tests again');
+        console.log('  - Type "details" to see detailed reports');
+        console.log('  - Type "compare" to see comparison details');
+        console.log('  - Type your custom response:');
         
         return new Promise((resolve) => {
             process.stdin.once('data', (data) => {
                 const input = data.toString().trim();
+                console.log(`📝 User input: "${input}"`);
                 resolve(input);
             });
         });
     }
 
-    // Complete test run
+    // Complete test run with detailed output
     async completeTestRun() {
         console.log('\n📊 COMPLETING TEST RUN');
         console.log('='.repeat(50));
@@ -400,8 +459,10 @@ class TestReporter {
         };
     }
 
-    // Record feature result and create individual report
+    // Record feature result and create individual report with detailed output
     async recordFeatureResult(featureName, result) {
+        console.log(`\n📊 Recording feature result: ${featureName}`);
+        
         // Record in main results
         this.recordScenario(featureName, result.status, result.duration, result.error);
         
