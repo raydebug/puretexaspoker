@@ -2354,7 +2354,7 @@ async function ensurePlayerAvailable(playerName) {
   }
   
   // Enhanced health check with faster retry logic
-  const maxHealthCheckRetries = 3;
+  const maxHealthCheckRetries = 5;
   let healthCheckSuccess = false;
   
   for (let attempt = 1; attempt <= maxHealthCheckRetries; attempt++) {
