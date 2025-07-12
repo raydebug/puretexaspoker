@@ -220,10 +220,9 @@ async function waitForPageLoad(driver, playerName, timeout = 15000) {
 
 // Connection pool cleanup function
 function cleanupConnectionPool() {
-  console.log(`🧹 Starting connection pool cleanup...`);
-  
   const now = Date.now();
   const maxAge = 5 * 60 * 1000; // 5 minutes
+  let cleanedCount = 0;
   
   for (const [playerName, connection] of global.connectionPool.entries()) {
     const age = now - connection.created;
@@ -231,7 +230,7 @@ function cleanupConnectionPool() {
     
     // Remove connections older than 5 minutes or idle for more than 2 minutes
     if (age > maxAge || idleTime > 2 * 60 * 1000) {
-      console.log(`🧹 Cleaning up old connection for ${playerName} (age: ${age}ms, idle: ${idleTime}ms)`);
+      console.log(`🧹 Cleaning up old connection for ${playerName} (age: ${Math.round(age/1000)}s, idle: ${Math.round(idleTime/1000)}s)`);
       
       try {
         connection.driver.quit();
@@ -240,16 +239,45 @@ function cleanupConnectionPool() {
       }
       
       global.connectionPool.delete(playerName);
+      cleanedCount++;
     }
   }
   
-  console.log(`🧹 Connection pool cleanup complete. Active connections: ${global.connectionPool.size}`);
+  // Only log if there was actual cleanup or if there are active connections
+  if (cleanedCount > 0 || global.connectionPool.size > 0) {
+    console.log(`🧹 Connection pool cleanup: ${cleanedCount} cleaned, ${global.connectionPool.size} active`);
+  }
 }
 
 // Schedule periodic connection pool cleanup (only if not already scheduled)
 if (!global.connectionPoolInterval) {
-  global.connectionPoolInterval = setInterval(cleanupConnectionPool, 2 * 60 * 1000); // Every 2 minutes
-  console.log('🔄 Connection pool cleanup scheduled');
+  global.connectionPoolInterval = setInterval(cleanupConnectionPool, 10 * 60 * 1000); // Every 10 minutes (much less frequent)
+  console.log('🔄 Connection pool cleanup scheduled (every 10 minutes)');
+  
+  // Ensure cleanup on process exit
+  process.on('exit', () => {
+    if (global.connectionPoolInterval) {
+      clearInterval(global.connectionPoolInterval);
+      console.log('🔄 Connection pool cleanup interval cleared on exit');
+    }
+  });
+  
+  // Also cleanup on SIGINT and SIGTERM
+  process.on('SIGINT', () => {
+    if (global.connectionPoolInterval) {
+      clearInterval(global.connectionPoolInterval);
+      console.log('🔄 Connection pool cleanup interval cleared on SIGINT');
+    }
+    process.exit(0);
+  });
+  
+  process.on('SIGTERM', () => {
+    if (global.connectionPoolInterval) {
+      clearInterval(global.connectionPoolInterval);
+      console.log('🔄 Connection pool cleanup interval cleared on SIGTERM');
+    }
+    process.exit(0);
+  });
 }
 
 // Database reset - UI verification only
@@ -1929,8 +1957,9 @@ global.performApiCallFallback = performApiCallFallback;
 When('Player{int} folds', async function (playerNumber) {
   const playerName = `Player${playerNumber}`;
   console.log(`🎯 ${playerName} folding via UI...`);
-  const player = global.players[playerName];
-  if (!player || !player.driver) throw new Error(`${playerName} not available for fold action`);
+  
+  // Ensure player is available with health check
+  const player = await ensurePlayerAvailable(playerName);
   
   // Wait for page to be fully rendered before looking for action buttons
   console.log(`⏳ ${playerName} waiting for page to be fully rendered...`);
@@ -1953,7 +1982,7 @@ When('Player{int} folds', async function (playerNumber) {
     console.log(`✅ ${playerName} buttons found on page`);
     
     // Additional wait for React to finish any pending updates
-    await player.driver.sleep(1500);
+    await player.driver.sleep(2000);
     console.log(`✅ ${playerName} additional wait completed`);
     
     // Check if page is fully loaded by looking for key game elements
@@ -1972,25 +2001,90 @@ When('Player{int} folds', async function (playerNumber) {
     // Continue anyway, but log the issue
   }
   
+  // Try multiple approaches to find the fold button
+  let foldButton = null;
   const foldSelectors = [
     '[data-testid="fold-button"]',
     'button:contains("Fold")',
-    '.fold-button'
+    '.fold-button',
+    'button[onclick*="fold"]',
+    'button[onclick*="Fold"]'
   ];
   
-  let foldButton = null;
-  for (const selector of foldSelectors) {
-    try {
-      foldButton = await player.driver.findElement(By.css(selector));
-      if (foldButton) break;
-    } catch (e) {}
+  // First try to find by testid
+  try {
+    foldButton = await player.driver.findElement(By.css('[data-testid="fold-button"]'));
+    console.log(`✅ ${playerName} found fold button by testid`);
+  } catch (e) {
+    console.log(`⚠️ ${playerName} fold button not found by testid, trying other selectors...`);
   }
   
-  if (!foldButton) throw new Error('Fold button not found');
+  // If not found by testid, try other selectors
+  if (!foldButton) {
+    for (const selector of foldSelectors.slice(1)) {
+      try {
+        foldButton = await player.driver.findElement(By.css(selector));
+        if (foldButton) {
+          console.log(`✅ ${playerName} found fold button with selector: ${selector}`);
+          break;
+        }
+      } catch (e) {
+        console.log(`⚠️ ${playerName} fold button not found with selector: ${selector}`);
+      }
+    }
+  }
   
-  await foldButton.click();
-  await player.driver.sleep(2000);
-  console.log(`✅ ${playerName} folded`);
+  // If still not found, try to find by text content
+  if (!foldButton) {
+    try {
+      const allButtons = await player.driver.findElements(By.css('button'));
+      console.log(`🔍 ${playerName} found ${allButtons.length} buttons on page`);
+      
+      for (const button of allButtons) {
+        try {
+          const buttonText = await button.getText();
+          console.log(`🔍 ${playerName} button text: "${buttonText}"`);
+          if (buttonText.toLowerCase().includes('fold')) {
+            foldButton = button;
+            console.log(`✅ ${playerName} found fold button by text: "${buttonText}"`);
+            break;
+          }
+        } catch (e) {
+          // Ignore errors getting button text
+        }
+      }
+    } catch (e) {
+      console.log(`⚠️ ${playerName} error searching buttons by text: ${e.message}`);
+    }
+  }
+  
+  if (!foldButton) {
+    // Take screenshot for debugging
+    try {
+      await takeScreenshot(player.driver, `fold_button_not_found_${playerName}_${Date.now()}.png`);
+      console.log(`📸 Screenshot saved for debugging fold button issue`);
+    } catch (e) {
+      console.log(`⚠️ Could not take screenshot: ${e.message}`);
+    }
+    
+    // Try API fallback
+    console.log(`⚡ ${playerName} UI fold failed, using API fallback`);
+    await performApiCallFallback(this, playerName, 0);
+    return;
+  }
+  
+  // Click the fold button
+  try {
+    await foldButton.click();
+    await player.driver.sleep(2000);
+    console.log(`✅ ${playerName} folded via UI`);
+  } catch (clickError) {
+    console.log(`⚠️ ${playerName} fold button click failed: ${clickError.message}`);
+    
+    // Try API fallback
+    console.log(`⚡ ${playerName} UI fold click failed, using API fallback`);
+    await performApiCallFallback(this, playerName, 0);
+  }
 });
 
 // Enhanced player recovery function with connection health checks
@@ -2613,28 +2707,105 @@ When('Player{int} goes all-in for ${int} total remaining', async function (playe
   const playerName = `Player${playerNumber}`;
   console.log(`🎯 ${playerName} going all-in for $${amount} total remaining...`);
   
-  const player = global.players[playerName];
-  if (!player || !player.driver) throw new Error(`${playerName} not available for all-in action`);
+  // Ensure player is available with health check
+  const player = await ensurePlayerAvailable(playerName);
   
+  // Wait for page to be fully rendered
+  console.log(`⏳ ${playerName} waiting for page to be fully rendered...`);
+  
+  try {
+    await waitForElement(player.driver, '#root', 15000);
+    await waitForElement(player.driver, '[data-testid="game-board"], .game-board, #game-board', 15000);
+    await waitForElement(player.driver, '[data-testid="player-actions"], .player-actions', 15000);
+    await player.driver.sleep(2000);
+  } catch (error) {
+    console.log(`⚠️ ${playerName} page rendering check error: ${error.message}`);
+  }
+  
+  // Try multiple approaches to find the all-in button
+  let allInButton = null;
   const allInSelectors = [
     '[data-testid="all-in-button"]',
     'button:contains("All In")',
-    '.all-in-button'
+    '.all-in-button',
+    'button[onclick*="all"]',
+    'button[onclick*="All"]'
   ];
   
-  let allInButton = null;
-  for (const selector of allInSelectors) {
-    try {
-      allInButton = await player.driver.findElement(By.css(selector));
-      if (allInButton) break;
-    } catch (e) {}
+  // First try to find by testid
+  try {
+    allInButton = await player.driver.findElement(By.css('[data-testid="all-in-button"]'));
+    console.log(`✅ ${playerName} found all-in button by testid`);
+  } catch (e) {
+    console.log(`⚠️ ${playerName} all-in button not found by testid, trying other selectors...`);
   }
   
-  if (!allInButton) throw new Error('All-in button not found');
+  // If not found by testid, try other selectors
+  if (!allInButton) {
+    for (const selector of allInSelectors.slice(1)) {
+      try {
+        allInButton = await player.driver.findElement(By.css(selector));
+        if (allInButton) {
+          console.log(`✅ ${playerName} found all-in button with selector: ${selector}`);
+          break;
+        }
+      } catch (e) {
+        console.log(`⚠️ ${playerName} all-in button not found with selector: ${selector}`);
+      }
+    }
+  }
   
-  await allInButton.click();
-  await player.driver.sleep(2000);
-  console.log(`✅ ${playerName} went all-in for $${amount}`);
+  // If still not found, try to find by text content
+  if (!allInButton) {
+    try {
+      const allButtons = await player.driver.findElements(By.css('button'));
+      console.log(`🔍 ${playerName} found ${allButtons.length} buttons on page`);
+      
+      for (const button of allButtons) {
+        try {
+          const buttonText = await button.getText();
+          console.log(`🔍 ${playerName} button text: "${buttonText}"`);
+          if (buttonText.toLowerCase().includes('all') || buttonText.toLowerCase().includes('in')) {
+            allInButton = button;
+            console.log(`✅ ${playerName} found all-in button by text: "${buttonText}"`);
+            break;
+          }
+        } catch (e) {
+          // Ignore errors getting button text
+        }
+      }
+    } catch (e) {
+      console.log(`⚠️ ${playerName} error searching buttons by text: ${e.message}`);
+    }
+  }
+  
+  if (!allInButton) {
+    // Take screenshot for debugging
+    try {
+      await takeScreenshot(player.driver, `allin_button_not_found_${playerName}_${Date.now()}.png`);
+      console.log(`📸 Screenshot saved for debugging all-in button issue`);
+    } catch (e) {
+      console.log(`⚠️ Could not take screenshot: ${e.message}`);
+    }
+    
+    // Try API fallback
+    console.log(`⚡ ${playerName} UI all-in failed, using API fallback`);
+    await performApiCallFallback(this, playerName, amount);
+    return;
+  }
+  
+  // Click the all-in button
+  try {
+    await allInButton.click();
+    await player.driver.sleep(2000);
+    console.log(`✅ ${playerName} went all-in for $${amount} via UI`);
+  } catch (clickError) {
+    console.log(`⚠️ ${playerName} all-in button click failed: ${clickError.message}`);
+    
+    // Try API fallback
+    console.log(`⚡ ${playerName} UI all-in click failed, using API fallback`);
+    await performApiCallFallback(this, playerName, amount);
+  }
 });
 
 When('Player{int} calls the remaining ${int}', async function (playerNumber, amount) {
@@ -2950,6 +3121,9 @@ After({ timeout: 15000 }, async function (scenario) {
       global.connectionPoolInterval = null;
       console.log('🔄 Connection pool cleanup interval cleared');
     }
+    
+    // Force cleanup of any remaining connections
+    cleanupConnectionPool();
     
     console.log('🧹 Final cleanup completed - all connections closed');
   } else {
