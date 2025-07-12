@@ -31,7 +31,7 @@ Given('I am directly on the game page with test data', { timeout: 30000 }, async
     // Type nickname and join
     console.log('👤 Entering nickname...');
     await this.helpers.waitForElementVisible('[data-testid="nickname-input"]', 10000);
-    await this.helpers.type('[data-testid="nickname-input"]', 'TestPlayer');
+          await this.helpers.type('[data-testid="nickname-input"]', 'Player1');
     await this.helpers.click('[data-testid="join-button"]');
     
     // Wait for login to complete
@@ -114,16 +114,16 @@ Given('I have {int} players already seated:', { timeout: 30000 }, async function
       console.log(`✅ Successfully created mock game with ${players.length} players`);
       console.log(`✅ Game ID: ${createResponse.data.gameId}`);
       
-      // CRITICAL FIX: Make browser user be TestPlayer1 so they can see their hole cards
-      // Step 1: Update localStorage to identify as TestPlayer1
+      // CRITICAL FIX: Make browser user be Player1 so they can see their hole cards
+      // Step 1: Update localStorage to identify as Player1
       await this.driver.executeScript(`
-        localStorage.setItem('nickname', 'TestPlayer1');
+        localStorage.setItem('nickname', 'Player1');
         localStorage.setItem('playerId', 'test-player-1');
-        console.log('🎯 Browser user now identified as TestPlayer1');
+        console.log('🎯 Browser user now identified as Player1');
       `);
       
-      // Step 2: Re-navigate to the game page with TestPlayer1 identity (this applies the new localStorage)
-      console.log('🔄 Re-navigating to apply TestPlayer1 identity...');
+      // Step 2: Re-navigate to the game page with Player1 identity (this applies the new localStorage)
+      console.log('🔄 Re-navigating to apply Player1 identity...');
       const gameUrl = `http://localhost:3000/game/${testGameId}`;
       await this.driver.get(gameUrl);
       await this.driver.sleep(3000);
@@ -145,13 +145,13 @@ Given('I have {int} players already seated:', { timeout: 30000 }, async function
       // Wait a moment for WebSocket propagation and game state update
       await this.driver.sleep(3000);
       
-      // Verify the browser is now identified as TestPlayer1
+      // Verify the browser is now identified as Player1
       const currentNickname = await this.driver.executeScript(`
         return localStorage.getItem('nickname');
       `);
       console.log(`🎯 Browser now identified as: ${currentNickname}`);
       
-      console.log(`✅ ${players.length} players setup completed with TestPlayer1 identity`);
+      console.log(`✅ ${players.length} players setup completed with Player1 identity`);
     } else {
       throw new Error(`Failed to create mock game: ${createResponse.data.error || 'Unknown error'}`);
     }
@@ -306,11 +306,11 @@ Then('each player should be verified in their correct seat with proper order', a
     console.log(`Found ${gameState.players.length} players in game state`);
     
     const expectedSeating = [
-      { nickname: 'TestPlayer1', seat: 1 },
-      { nickname: 'TestPlayer2', seat: 2 },
-      { nickname: 'TestPlayer3', seat: 3 },
-      { nickname: 'TestPlayer4', seat: 5 },
-      { nickname: 'TestPlayer5', seat: 6 }
+      { nickname: 'Player1', seat: 1 },
+      { nickname: 'Player2', seat: 2 },
+      { nickname: 'Player3', seat: 3 },
+      { nickname: 'Player4', seat: 4 },
+      { nickname: 'Player5', seat: 5 }
     ];
     
     console.log('🔍 Available players in game state:', gameState.players.map(p => `${p.name || p.nickname} (seat ${p.seatNumber})`));
@@ -376,8 +376,8 @@ Then('I should see my player information displayed correctly', { timeout: 30000 
     console.log('⚠️ User info not visible (may be in observer mode)');
   }
   
-  // CRITICAL: Verify TestPlayer1 can see their hole cards
-  console.log('🃏 Verifying TestPlayer1 hole cards are visible...');
+      // CRITICAL: Verify Player1 can see their hole cards
+    console.log('🃏 Verifying Player1 hole cards are visible...');
   
   // First, debug what the frontend visibility logic is detecting
   const debugInfo = await this.driver.executeScript(`
@@ -427,7 +427,7 @@ Then('I should see my player information displayed correctly', { timeout: 30000 
       console.log(`🃏 Found ${individualCards.length} individual hole cards`);
       
       if (individualCards.length >= 2) {
-        console.log('✅ TestPlayer1 can see their 2 hole cards!');
+        console.log('✅ Player1 can see their 2 hole cards!');
         
         // Try to read the card values
         for (let i = 0; i < Math.min(individualCards.length, 2); i++) {
@@ -442,7 +442,7 @@ Then('I should see my player information displayed correctly', { timeout: 30000 
         console.log('⚠️ Less than 2 hole cards found, but container exists');
       }
     } else {
-      console.log('⚠️ No hole cards container found - TestPlayer1 cannot see their cards');
+              console.log('⚠️ No hole cards container found - Player1 cannot see their cards');
       
       if (debugInfo.found) {
         console.log(`🔍 DEBUG: Frontend logic should show cards for ${debugInfo.playerName} with ${debugInfo.cardCount} cards, but UI element not found`);
@@ -562,7 +562,7 @@ When('I perform a {string} action', async function (actionType) {
   try {
     const response = await axios.post(`${backendApiUrl}/api/test/execute_player_action`, {
       gameId: testGameId,
-      playerId: 'TestPlayer1',
+      playerId: 'Player1',
       action: actionType.toLowerCase(),
       amount: actionType.toLowerCase() === 'bet' ? 50 : actionType.toLowerCase() === 'raise' ? 100 : undefined
     });
@@ -855,7 +855,7 @@ Then('the action history should update in real-time as actions occur', { timeout
     console.log('🎯 Executing new action to test real-time updates...');
     const response = await axios.post(`${backendApiUrl}/api/test/execute_player_action`, {
       gameId: testGameId,
-      playerId: 'TestPlayer2',
+      playerId: 'Player2',
       action: 'check'
     });
     
@@ -878,7 +878,7 @@ Then('the action history should update in real-time as actions occur', { timeout
         const latestAction = currentItems[currentItems.length - 1] || currentItems[0]; // Try last or first
         const actionText = await latestAction.getText();
         
-        if (actionText.toLowerCase().includes('check') || actionText.toLowerCase().includes('testplayer2')) {
+        if (actionText.toLowerCase().includes('check') || actionText.toLowerCase().includes('player2')) {
           console.log(`✅ New action detected: "${actionText}"`);
         } else {
           console.log(`⚠️ Latest action text: "${actionText}"`);
@@ -1254,7 +1254,7 @@ When('an invalid action is attempted', async function () {
   try {
     const response = await axios.post(`${backendApiUrl}/api/test/execute_player_action`, {
       gameId: testGameId,
-      playerId: 'TestPlayer1',
+      playerId: 'Player1',
       action: 'invalid_action'
     });
     

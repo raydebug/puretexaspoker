@@ -32,7 +32,7 @@ Given('I have an active poker game {string} with {int} players', async function 
     
     const players = [];
     for (let i = 1; i <= playerCount; i++) {
-        const playerName = `TestPlayer${i}`;
+        const playerName = `Player${i}`;
         players.push({
             id: `test-player-${i}`,
             nickname: playerName,
