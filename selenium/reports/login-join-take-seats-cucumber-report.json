@@ -1,0 +1,603 @@
+[
+  {
+    "description": "  As a poker player\n  I want to login, join a table, and take seats\n  So that I can participate in the poker game",
+    "elements": [
+      {
+        "description": "",
+        "id": "login,-join-table,-and-take-seats;complete-flow-from-anonymous-visitor-to-seated-player",
+        "keyword": "Scenario",
+        "line": 10,
+        "name": "Complete flow from anonymous visitor to seated player",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2486385917
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "I am on the poker lobby page",
+            "match": {
+              "location": "selenium/step_definitions/common-steps.js:6"
+            },
+            "result": {
+              "status": "failed",
+              "duration": 422500,
+              "error_message": "TypeError: Cannot read properties of undefined (reading 'navigateTo')\n    at World.<anonymous> (/Volumes/Data/work/puretexaspoker/selenium/step_definitions/common-steps.js:8:17)"
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "tables are loaded and visible",
+            "match": {
+              "location": "selenium/step_definitions/common-steps.js:28"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 11,
+            "name": "I am browsing anonymously",
+            "match": {
+              "location": "selenium/step_definitions/common-steps.js:37"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 12,
+            "name": "I am not logged in",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:4"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 13,
+            "name": "all join tables buttons are inactive now",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:159"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 14,
+            "name": "I click the login button",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:37"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 15,
+            "name": "I should be prompted to login first",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:266"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 17,
+            "name": "I click start playing without entering nickname",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:142"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 18,
+            "name": "I should see error message \"Please enter your nickname\"",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:283"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 20,
+            "name": "I login with nickname \"TestPlayer\"",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:84"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 21,
+            "name": "I should see a welcome message with \"TestPlayer\" on the top right",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:271"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 22,
+            "name": "the online users count should be updated to reflect my login",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:295"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 23,
+            "name": "the online users count should increase by 1",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:300"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 24,
+            "name": "all join table buttons become active now",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:164"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 26,
+            "name": "I click one join table button",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:169"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 27,
+            "name": "I should be on the game page",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:289"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 28,
+            "name": "I should see \"TestPlayer\" in the observers list",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:307"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 29,
+            "name": "I should not see \"TestPlayer\" in the players list",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:312"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 30,
+            "name": "\"TestPlayer\" should appear exactly once in the observers list",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:355"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 31,
+            "name": "\"TestPlayer\" should appear exactly zero times in the players list",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:367"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 33,
+            "name": "I take an available seat \"1\"",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:251"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 34,
+            "name": "seat \"1\" should be in taken state",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:338"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 35,
+            "name": "I should be removed from the observers list",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:317"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 36,
+            "name": "I should see \"TestPlayer\" in the players list at seat \"1\"",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:327"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 37,
+            "name": "I should not see \"TestPlayer\" in the observers list",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:322"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 38,
+            "name": "\"TestPlayer\" should appear exactly once in the players list",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:363"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 39,
+            "name": "\"TestPlayer\" should appear exactly zero times in the observers list",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:359"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 41,
+            "name": "I take another available seat \"3\"",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:258"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 42,
+            "name": "seat \"1\" should return to available state",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:343"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 43,
+            "name": "seat \"3\" should be in taken state",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:338"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 44,
+            "name": "I should see \"TestPlayer\" in the players list at seat \"3\"",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:327"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 45,
+            "name": "I should not see \"TestPlayer\" at seat \"1\"",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:332"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 46,
+            "name": "\"TestPlayer\" should appear exactly once in the players list",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:363"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 47,
+            "name": "\"TestPlayer\" should appear exactly zero times in the observers list",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:359"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 48,
+            "name": "the players list should reflect this seat change",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:349"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 50,
+            "name": "I take another available seat \"1\"",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:258"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 51,
+            "name": "seat \"3\" should return to available state",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:343"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 52,
+            "name": "seat \"1\" should be in taken state",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:338"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 53,
+            "name": "I should see \"TestPlayer\" in the players list at seat \"1\"",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:327"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 54,
+            "name": "I should not see \"TestPlayer\" at seat \"3\"",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:332"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 55,
+            "name": "\"TestPlayer\" should appear exactly once in the players list",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:363"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 56,
+            "name": "\"TestPlayer\" should appear exactly zero times in the observers list",
+            "match": {
+              "location": "selenium/step_definitions/all-steps.js:359"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 301165
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2526483916
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 275167
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      }
+    ],
+    "id": "login,-join-table,-and-take-seats",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Login, Join Table, and Take Seats",
+    "tags": [],
+    "uri": "selenium/features/login-join-take-seats.feature"
+  }
+]

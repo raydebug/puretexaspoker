@@ -259,7 +259,7 @@ export const Game: React.FC = () => {
           <div style={{ fontSize: '0.8rem', marginTop: '5px' }}>
             Phase: {gameState.phase}<br/>
             Players: {gameState.players.length}<br/>
-            Turn: {gameState.currentPlayerId ? gameState.players.find(p => p && p.id === gameState.currentPlayerId)?.name : 'None'}
+            Turn: {gameState.currentPlayerId ? (gameState.players || []).find(p => p && p.id === gameState.currentPlayerId)?.name : 'None'}
           </div>
         </AdminControls>
       )}

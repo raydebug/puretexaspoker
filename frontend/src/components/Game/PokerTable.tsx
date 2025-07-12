@@ -585,7 +585,7 @@ export const PokerTable: React.FC<PokerTableProps> = ({
   // Get the current user's player data from game state
   const getCurrentUserPlayer = () => {
     if (!currentPlayer) return null;
-    return gameState.players.find(p => p.id === currentPlayer.id);
+    return (gameState.players || []).find(p => p.id === currentPlayer.id);
   };
 
   const currentUserPlayer = getCurrentUserPlayer();
@@ -597,7 +597,7 @@ export const PokerTable: React.FC<PokerTableProps> = ({
     
     // Method 2: Try to find user by checking localStorage nickname against player names
     const nickname = localStorage.getItem('nickname');
-    const userPlayerByName = nickname ? gameState.players.find(p => p.name === nickname && p.cards && p.cards.length === 2) : null;
+    const userPlayerByName = nickname ? (gameState.players || []).find(p => p.name === nickname && p.cards && p.cards.length === 2) : null;
     
     // Method 3: Check if any player has cards that belong to current user (fallback)
     const hasSeatedPlayerWithCards = gameState.players?.some(p => p.cards && p.cards.length === 2) || false;
@@ -925,7 +925,7 @@ export const PokerTable: React.FC<PokerTableProps> = ({
             data-testid="current-player-indicator"
             className="current-player-indicator"
           >
-            Current Player: {gameState.players.find(p => p.id === gameState.currentPlayerId)?.name || 'Unknown'}
+            Current Player: {(gameState.players || []).find(p => p.id === gameState.currentPlayerId)?.name || 'Unknown'}
           </div>
         )}
 

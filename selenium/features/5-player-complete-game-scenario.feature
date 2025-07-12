@@ -26,6 +26,13 @@ Feature: 5-Player Complete Game Scenario (UI-Only)
       | Player4 | 4    |
       | Player5 | 5    |
     
+    # PAGE LOADING VERIFICATION
+    When the page should be fully loaded for "Player1"
+    And the page should be fully loaded for "Player2"
+    And the page should be fully loaded for "Player3"
+    And the page should be fully loaded for "Player4"
+    And the page should be fully loaded for "Player5"
+    
     # MANUAL GAME START WITH COUNTDOWN
     When I manually start the game for table 1
     Then the game starts with blinds structure:
@@ -89,6 +96,14 @@ Feature: 5-Player Complete Game Scenario (UI-Only)
       | Player3 | 3    |
       | Player4 | 4    |
       | Player5 | 5    |
+    
+    # PAGE LOADING VERIFICATION
+    When the page should be fully loaded for "Player1"
+    And the page should be fully loaded for "Player2"
+    And the page should be fully loaded for "Player3"
+    And the page should be fully loaded for "Player4"
+    And the page should be fully loaded for "Player5"
+    
     When I manually start the game for table 1
     Then the game starts with blinds structure:
       | Position    | Player  | Amount |

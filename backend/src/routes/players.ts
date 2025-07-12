@@ -30,6 +30,7 @@ router.post('/', async (req, res) => {
     // Create new player
     const player = await prisma.player.create({
       data: {
+        id: nickname.trim(), // Use nickname as ID
         nickname: nickname.trim(),
         chips: chips || 1000
       }
@@ -59,6 +60,7 @@ router.post('/register', async (req, res) => {
     // Create new player
     const player = await prisma.player.create({
       data: {
+        id: nickname, // Use nickname as ID
         nickname,
         chips
       }

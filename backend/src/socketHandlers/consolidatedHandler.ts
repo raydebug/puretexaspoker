@@ -133,21 +133,29 @@ export function registerConsolidatedHandlers(io: Server) {
           return;
         }
 
-        // Create a new player record in database (since nickname is not unique)
-        const player = await prisma.player.create({
-          data: { 
-            nickname: nickname.trim(),
-            chips: 1000, // Default chips for new players
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }
+        // Create a new player record in database or find existing one
+        const trimmedNickname = nickname.trim();
+        let player = await prisma.player.findUnique({
+          where: { id: trimmedNickname }
         });
+        
+        if (!player) {
+          player = await prisma.player.create({
+            data: { 
+              id: trimmedNickname,     // Use nickname as primary key
+              nickname: trimmedNickname,
+              chips: 1000, // Default chips for new players
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }
+          });
+        }
 
         // Store authenticated user with player ID and heartbeat
         authenticatedUsers.set(socket.id, {
-          nickname: nickname.trim(),
+          nickname: trimmedNickname,
           socketId: socket.id,
-          playerId: player.id, // Store the actual player ID
+          playerId: player.id, // Store the nickname as player ID
           location: 'lobby',
           lastHeartbeat: Date.now()
         });
@@ -162,11 +170,27 @@ export function registerConsolidatedHandlers(io: Server) {
     });
 
     // === JOIN TABLE ===
-    socket.on('joinTable', async ({ tableId, buyIn = 200 }) => {
+    socket.on('joinTable', async ({ tableId, buyIn = 200, playerName, isTestMode = false }) => {
       try {
-        const user = authenticatedUsers.get(socket.id);
-        if (!user) {
+        let user = authenticatedUsers.get(socket.id);
+        
+        // For test mode, create a mock user if not authenticated
+        if (!user && isTestMode && playerName) {
+          console.log(`[SOCKET] Test mode joinTable for ${playerName} without authentication`);
+          user = {
+            playerId: `test-${Date.now()}-${Math.random()}`,
+            nickname: playerName,
+            location: 'lobby',
+            socketId: socket.id,
+            lastHeartbeat: Date.now()
+          };
+        } else if (!user) {
           throw new Error('Must authenticate first');
+        }
+
+        // Ensure user is defined at this point
+        if (!user) {
+          throw new Error('User not available');
         }
 
         // Check if user is already at this table
@@ -218,7 +242,7 @@ export function registerConsolidatedHandlers(io: Server) {
         // Check if player is already seated at this table
         const existingSeat = await prisma.playerTable.findFirst({
           where: {
-            playerId: String(user.playerId),
+            playerId: user.playerId, // Already a string (nickname)
             tableId: user.location === 'lobby' ? 0 : (user.location as number) as any
           }
         });
@@ -257,7 +281,7 @@ export function registerConsolidatedHandlers(io: Server) {
         // Update database
         await prisma.playerTable.create({
           data: {
-            playerId: String(user.playerId),
+            playerId: user.playerId, // Already a string (nickname)
             tableId: (user.location as number) as any,
             seatNumber,
             buyIn
@@ -277,11 +301,27 @@ export function registerConsolidatedHandlers(io: Server) {
     });
 
     // === AUTO SEAT === (Combines join and seat in one operation)
-    socket.on('autoSeat', async ({ tableId, seatNumber, buyIn = 200 }) => {
+    socket.on('autoSeat', async ({ tableId, seatNumber, buyIn = 200, playerName, isTestMode = false }) => {
       try {
-        const user = authenticatedUsers.get(socket.id);
-        if (!user) {
+        let user = authenticatedUsers.get(socket.id);
+        
+        // For test mode, create a mock user if not authenticated
+        if (!user && isTestMode && playerName) {
+          console.log(`[SOCKET] Test mode auto-seat for ${playerName} without authentication`);
+          user = {
+            playerId: `test-${Date.now()}-${Math.random()}`,
+            nickname: playerName,
+            location: 'lobby',
+            socketId: socket.id,
+            lastHeartbeat: Date.now()
+          };
+        } else if (!user) {
           throw new Error('Must authenticate first');
+        }
+
+        // Ensure user is defined at this point
+        if (!user) {
+          throw new Error('User not available');
         }
 
         console.log(`[SOCKET] Auto-seat request from ${user.nickname}: table ${tableId}, seat ${seatNumber}, buyIn ${buyIn}`);
@@ -298,7 +338,7 @@ export function registerConsolidatedHandlers(io: Server) {
         // Check if player is already seated at this table
         const playerSeat = await prisma.playerTable.findFirst({
           where: {
-            playerId: String(user.playerId),
+            playerId: user.playerId, // Already a string (nickname)
             tableId: tableId as any
           }
         });
@@ -360,7 +400,7 @@ export function registerConsolidatedHandlers(io: Server) {
         // Create database record
         await prisma.playerTable.create({
           data: {
-            playerId: String(user.playerId),
+            playerId: user.playerId, // Already a string (nickname)
             tableId: tableId as any,
             seatNumber: seatNumber,
             buyIn: buyIn

@@ -71,13 +71,10 @@ class UIAIPlayer {
       // Step 2: Login with AI player name
       await this.login();
       
-      // Step 3: Navigate to table
+      // Step 3: Navigate to table (auto-seat handles both join and seat)
       await this.navigateToTable(tableId);
       
-      // Step 4: Take a seat
-      await this.takeSeat();
-      
-      // Step 5: Start playing
+      // Step 4: Start playing (auto-seat already handled seating)
       await this.startGameLoop();
       
     } catch (error) {
@@ -214,10 +211,6 @@ class UIAIPlayer {
       
       // Additional wait for WebSocket connection and initial data
       await this.delay(3000);
-      
-      // **CRITICAL**: Ensure we're properly authenticated and joined via WebSocket
-      // This is essential for session data to be set correctly
-      await this.ensureProperWebSocketAuth(tableId);
       
       console.log(`✅ AI ${this.config.name} reached poker table and is connected`);
       
@@ -594,24 +587,18 @@ class UIAIPlayer {
           if (existingSocket && existingSocket.connected) {
             console.log("🔌 AI: Using existing authenticated socketService connection");
             
-                          // **CRITICAL FIX**: Ensure session data by calling joinTable first
+                          // **CRITICAL FIX**: Use autoSeat for test mode (combines join and seat)
               const nickname = localStorage.getItem('nickname');
               if (nickname) {
-                console.log("🔌 AI: Establishing session data via joinTable for " + nickname);
-                existingSocket.emit('joinTable', {
+                console.log("🔌 AI: Using autoSeat for test mode - " + nickname);
+                existingSocket.emit('autoSeat', {
                   tableId: 1,
-                  nickname: nickname,
-                  buyIn: arguments[1]
+                  seatNumber: arguments[0],
+                  buyIn: arguments[1],
+                  playerName: nickname,
+                  isTestMode: true
                 });
-                
-                // Wait a moment for session data to be set, then call takeSeat
-                setTimeout(() => {
-                  console.log("🔌 AI: Now calling takeSeat with established session");
-                  existingSocket.emit('takeSeat', { 
-                    seatNumber: arguments[0], 
-                    buyIn: arguments[1] 
-                  });
-                  console.log("🔌 AI: takeSeat event emitted via socketService for seat " + arguments[0]);
+                console.log("🔌 AI: autoSeat event emitted via socketService for seat " + arguments[0]);
                   
                   // **CRITICAL**: Set up proper player identity for future actions
                   setTimeout(() => {
@@ -1450,10 +1437,16 @@ class UIAIPlayer {
             }
           });
           
-          // Wait for login confirmation then join table
+          // Wait for login confirmation then auto-seat
           socket.on('onlineUsers:update', (data) => {
-            console.log("🔌 AI: Received onlineUsers:update, joining table...");
-            socket.emit('joinTable', { tableId: ${tableId}, nickname: nickname });
+            console.log("🔌 AI: Received onlineUsers:update, auto-seating...");
+            socket.emit('autoSeat', { 
+              tableId: ${tableId}, 
+              seatNumber: 1, // Default seat for fallback
+              buyIn: 100, // Default buy-in for fallback
+              playerName: nickname,
+              isTestMode: true 
+            });
           });
           
           // Wait for table join confirmation

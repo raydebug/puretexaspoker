@@ -585,6 +585,9 @@ class TableManager {
         await this.advanceToNextPhase(tableId, gameState);
       }
 
+      // Update game state in memory
+      this.tableGameStates.set(tableId, gameState);
+
       // Update memory cache
       memoryCache.updateTable(tableId, {
         status: gameState.status,
@@ -602,6 +605,20 @@ class TableManager {
         currentPlayer: gameState.currentPlayerId || undefined,
         communityCards: gameState.board.map(c => `${c.rank}${c.suit}`)
       });
+
+      // CRITICAL FIX: Emit updated game state after player action
+      const io = (global as any).socketIO;
+      if (io) {
+        console.log(`📡 TableManager: Player action processed - emitting updated game state for table ${tableId}`);
+        
+        // Emit to table-based rooms (table-only architecture)
+        io.to(`table:${tableId}`).emit('gameState', gameState);
+        
+        // Also emit to all clients for debugging/fallback
+        io.emit('gameState', gameState);
+        
+        console.log(`📡 TableManager: WebSocket game state update emitted after player action`);
+      }
 
       return { success: true, gameState };
 
@@ -643,7 +660,7 @@ class TableManager {
     gameState.currentBet = 0;
     gameState.minBet = 0;
 
-    // Reset player bets
+    // Reset player bets for new betting round
     gameState.players.forEach(p => {
       p.currentBet = 0;
     });
@@ -661,7 +678,57 @@ class TableManager {
       gameState.currentPlayerId = activePlayers[0].id;
     }
 
-    // Update memory cache (database operations removed for now)
+    // Update game state in memory
+    this.tableGameStates.set(tableId, gameState);
+
+    // Update memory cache
+    memoryCache.updateTable(tableId, {
+      status: gameState.status,
+      phase: gameState.phase,
+      pot: gameState.pot,
+      players: gameState.players.map(p => ({
+        id: p.id,
+        nickname: p.name,
+        seatNumber: p.seatNumber,
+        chips: p.chips,
+        holeCards: p.cards.map(c => `${c.rank}${c.suit}`),
+        isActive: p.isActive,
+        isAllIn: p.chips === 0
+      })),
+      currentPlayer: gameState.currentPlayerId || undefined,
+      communityCards: gameState.board.map(c => `${c.rank}${c.suit}`)
+    });
+
+    // CRITICAL FIX: Emit updated game state to all clients after phase transition
+    const io = (global as any).socketIO;
+    if (io) {
+      console.log(`📡 TableManager: Phase transition to ${nextPhase} - emitting updated game state for table ${tableId}`);
+      
+      // Emit to table-based rooms (table-only architecture)
+      io.to(`table:${tableId}`).emit('gameState', gameState);
+      
+      // Also emit to all clients for debugging/fallback
+      io.emit('gameState', gameState);
+      
+      // Emit specific phase transition event
+      const phaseTransitionData = {
+        tableId,
+        fromPhase: phaseOrder[currentIndex],
+        toPhase: nextPhase,
+        gameState: gameState,
+        message: `Phase transitioned from ${phaseOrder[currentIndex]} to ${nextPhase}`,
+        communityCards: gameState.board,
+        isAutomatic: true,
+        timestamp: Date.now()
+      };
+      
+      io.to(`table:${tableId}`).emit('phaseTransition', phaseTransitionData);
+      io.to(`table:${tableId}`).emit(`automatic${nextPhase.charAt(0).toUpperCase() + nextPhase.slice(1)}`, phaseTransitionData);
+      
+      console.log(`📡 TableManager: WebSocket events emitted for phase transition to ${nextPhase}`);
+    } else {
+      console.log(`⚠️ TableManager: Socket.IO instance not available for phase transition to ${nextPhase}`);
+    }
   }
 
   private async determineWinner(tableId: number, gameState: TableGameState): Promise<void> {

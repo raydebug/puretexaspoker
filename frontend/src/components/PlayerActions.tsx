@@ -130,6 +130,22 @@ const PlayerActions: React.FC<PlayerActionsProps> = ({
           >
             Check
           </ActionButton>
+          <ActionButton 
+            isActive={true} 
+            onClick={() => onAction('bet', 20)}
+            data-testid="bet-button"
+            style={{ backgroundColor: '#00ff00', color: 'black', fontWeight: 'bold' }}
+          >
+            Bet $20
+          </ActionButton>
+          <ActionButton 
+            isActive={true} 
+            onClick={() => onAction('allin')}
+            data-testid="allin-button"
+            style={{ backgroundColor: '#ff6600', color: 'white', fontWeight: 'bold' }}
+          >
+            All In
+          </ActionButton>
         </div>
         <div style={{ marginTop: '10px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
           <input
@@ -142,7 +158,7 @@ const PlayerActions: React.FC<PlayerActionsProps> = ({
           <ActionButton 
             isActive={true} 
             onClick={() => onAction('bet', betAmount)}
-            data-testid="bet-button"
+            data-testid="custom-bet-button"
             style={{ backgroundColor: '#00ff00', color: 'black', fontWeight: 'bold' }}
           >
             Bet ${betAmount}
@@ -162,15 +178,31 @@ const PlayerActions: React.FC<PlayerActionsProps> = ({
   
   const currentBet = gameState?.currentBet || 0;
   const minBet = gameState?.minBet || 0;
-  const playerChips = gameState?.players?.find((p: any) => p.id === currentPlayerId)?.chips || 0;
+  const playerChips = (gameState?.players || []).find((p: any) => p.id === currentPlayerId)?.chips || 0;
+  const currentPlayerData = (gameState?.players || []).find((p: any) => p.id === currentPlayerId);
+  const playerCurrentBet = currentPlayerData?.currentBet || 0;
+  
+  // Check if player needs to call (has not matched current bet)
+  const needsToCall = currentBet > playerCurrentBet;
+  const callAmount = currentBet - playerCurrentBet;
+
+  console.log('🎯 PLAYER_ACTIONS: Action state debug:', {
+    currentBet,
+    playerCurrentBet,
+    needsToCall,
+    callAmount,
+    minBet,
+    playerChips,
+    gamePhase: gameState?.phase
+  });
 
   return (
     <PlayerActionsContainer data-testid="player-actions">
       <h3>Your Turn - Choose Action</h3>
       
-      {/* Check/Fold options */}
-      {currentBet === 0 && (
-        <>
+      {/* Check/Call/Fold options */}
+      <div style={{ marginBottom: '10px' }}>
+        {!needsToCall ? (
           <ActionButton 
             isActive={true} 
             onClick={() => onAction('check')}
@@ -178,54 +210,56 @@ const PlayerActions: React.FC<PlayerActionsProps> = ({
           >
             Check
           </ActionButton>
+        ) : (
           <ActionButton 
-            isActive={true} 
-            onClick={() => onAction('fold')}
-            data-testid="fold-button"
-          >
-            Fold
-          </ActionButton>
-        </>
-      )}
-      
-      {/* Call/Raise options */}
-      {currentBet > 0 && (
-        <>
-          <ActionButton 
-            isActive={true} 
-            onClick={() => onAction('call', currentBet)}
+            isActive={playerChips >= callAmount} 
+            onClick={() => onAction('call', callAmount)}
             data-testid="call-button"
           >
-            Call ${currentBet}
+            Call ${callAmount}
           </ActionButton>
-          <ActionButton 
-            isActive={true} 
-            onClick={() => onAction('fold')}
-            data-testid="fold-button"
-          >
-            Fold
-          </ActionButton>
-        </>
-      )}
+        )}
+        
+        <ActionButton 
+          isActive={true} 
+          onClick={() => onAction('fold')}
+          data-testid="fold-button"
+        >
+          Fold
+        </ActionButton>
+      </div>
       
-      {/* Betting options */}
+      {/* Betting/Raising options */}
       <div style={{ marginTop: '10px' }}>
         <input
           type="number"
           value={betAmount}
           onChange={(e) => setBetAmount(Number(e.target.value))}
-          placeholder={`Min bet: $${minBet}`}
-          min={minBet}
+          placeholder={needsToCall ? `Min raise: $${currentBet + minBet}` : `Min bet: $${minBet}`}
+          min={needsToCall ? currentBet + minBet : minBet}
           max={playerChips}
           style={{ marginRight: '10px', padding: '5px' }}
+          data-testid="bet-amount-input"
         />
-        <ActionButton 
-          isActive={betAmount >= minBet && betAmount <= playerChips} 
-          onClick={() => onAction('bet', betAmount)}
-          data-testid="bet-button"
-        >
-          Bet ${betAmount}
-        </ActionButton>
+        
+        {!needsToCall ? (
+          <ActionButton 
+            isActive={betAmount >= minBet && betAmount <= playerChips} 
+            onClick={() => onAction('bet', betAmount)}
+            data-testid="bet-button"
+          >
+            Bet ${betAmount}
+          </ActionButton>
+        ) : (
+          <ActionButton 
+            isActive={betAmount >= (currentBet + minBet) && betAmount <= playerChips} 
+            onClick={() => onAction('raise', betAmount)}
+            data-testid="raise-button"
+          >
+            Raise to ${betAmount}
+          </ActionButton>
+        )}
+        
         <ActionButton 
           isActive={true} 
           onClick={() => onAction('allIn')}

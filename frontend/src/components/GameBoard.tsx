@@ -600,7 +600,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       </div>
       
       {chipAnimations.map((animation, index) => {
-        const player = gameState.players.find(p => p && p.id === animation.playerId);
+        const player = (gameState.players || []).find(p => p && p.id === animation.playerId);
         if (!player || !tableRef.current) return null;
         
         const playerElement = tableRef.current.querySelector(`div[data-player-id="${player.id}"]`);

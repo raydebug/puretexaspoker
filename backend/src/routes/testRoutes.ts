@@ -393,9 +393,9 @@ router.post('/emit_game_state', async (req, res) => {
 
 /**
  * TEST API: Reset database to clean state
- * POST /api/reset_database
+ * POST /api/test/reset-database
  */
-router.post('/reset_database', async (req, res) => {
+router.post('/reset-database', async (req, res) => {
   try {
     // Clear TableManager in-memory state BEFORE any DB or table creation
     if (tableManager) {
@@ -498,6 +498,508 @@ router.post('/start-game', async (req, res) => {
     return res.json({ success: true, message: 'Game started for table ' + targetTableId, tableId: targetTableId, gameState: result.gameState });
   } catch (error) {
     return res.status(500).json({ success: false, error: (error as Error).message });
+  }
+});
+
+/**
+ * TEST API: Direct player seating for test mode
+ * POST /api/test/seat-player
+ */
+router.post('/seat-player', async (req, res) => {
+  try {
+    const { tableId, playerName, seatNumber, buyIn = 100 } = req.body;
+    
+    console.log(`🧪 TEST API: Direct player seating request - tableId: ${tableId}, playerName: ${playerName}, seatNumber: ${seatNumber}, buyIn: ${buyIn}`);
+    
+    if (!tableId || !playerName || !seatNumber) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Missing required parameters: tableId, playerName, seatNumber' 
+      });
+    }
+    
+    const targetTableId = parseInt(tableId);
+    if (isNaN(targetTableId)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid tableId - must be a number' 
+      });
+    }
+    
+    const seatNum = parseInt(seatNumber);
+    if (isNaN(seatNum) || seatNum < 1 || seatNum > 9) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid seatNumber - must be between 1 and 9' 
+      });
+    }
+    
+    // Create a test player in the database (or find existing one)
+    const existingPlayer = await prisma.player.findUnique({
+      where: { id: playerName }
+    });
+    
+    let testPlayer;
+    if (existingPlayer) {
+      testPlayer = existingPlayer;
+      console.log(`🧪 TEST API: Using existing player ${playerName}`);
+    } else {
+      testPlayer = await prisma.player.create({
+        data: {
+          id: playerName,      // Use nickname as primary key
+          nickname: playerName,
+          chips: buyIn,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      });
+      console.log(`🧪 TEST API: Created test player ${playerName} with ID ${testPlayer.id}`);
+    }
+    
+    // Join the table first
+    const joinResult = tableManager.joinTable(targetTableId, `test-socket-${testPlayer.id}`, playerName);
+    if (!joinResult.success) {
+      return res.status(400).json({ 
+        success: false, 
+        error: joinResult.error || 'Failed to join table' 
+      });
+    }
+    
+    // Take the seat
+    const seatResult = tableManager.sitDown(targetTableId, playerName, buyIn);
+    if (!seatResult.success) {
+      return res.status(400).json({ 
+        success: false, 
+        error: seatResult.error || 'Failed to take seat' 
+      });
+    }
+    
+    // Create database record for the seating
+    await prisma.playerTable.create({
+      data: {
+        playerId: testPlayer.id,
+        tableId: targetTableId,
+        seatNumber: seatNum,
+        buyIn: buyIn
+      }
+    });
+    
+    console.log(`🧪 TEST API: Player ${playerName} seated at table ${targetTableId}, seat ${seatNum}`);
+    
+    // Get the updated game state
+    const gameState = tableManager.getTableGameState(targetTableId);
+    
+    // Emit WebSocket events to notify frontend
+    const io = (global as any).socketIO;
+    if (io) {
+      console.log(`📡 TEST API: Broadcasting game state after seating for table ${targetTableId}`);
+      
+      // Emit to table room
+      io.to(`table:${targetTableId}`).emit('gameState', gameState);
+      
+      // Also emit to all clients for debugging/fallback
+      io.emit('gameState', gameState);
+      
+      console.log(`📡 TEST API: Game state broadcasted after seating`);
+    }
+    
+    res.json({
+      success: true,
+      message: `Player ${playerName} seated at table ${targetTableId}, seat ${seatNum}`,
+      tableId: targetTableId,
+      playerName,
+      seatNumber: seatNum,
+      buyIn,
+      gameState
+    });
+    
+  } catch (error) {
+    console.error('❌ TEST API: Error seating player:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to seat player'
+    });
+  }
+});
+
+/**
+ * TEST API: Advance game to specific phase
+ * POST /api/test/advance-phase
+ */
+router.post('/advance-phase', async (req, res) => {
+  try {
+    const { tableId, phase, communityCards } = req.body;
+    
+    console.log(`🧪 TEST API: Advance phase request - tableId: ${tableId}, phase: ${phase}`);
+    
+    if (!tableId || !phase) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Missing required parameters: tableId, phase' 
+      });
+    }
+    
+    const targetTableId = parseInt(tableId);
+    if (isNaN(targetTableId)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid tableId - must be a number' 
+      });
+    }
+    
+    const validPhases = ['waiting', 'preflop', 'flop', 'turn', 'river', 'showdown'];
+    if (!validPhases.includes(phase)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: `Invalid phase. Must be one of: ${validPhases.join(', ')}` 
+      });
+    }
+    
+    // Get current game state
+    const gameState = tableManager.getTableGameState(targetTableId);
+    if (!gameState) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Game state not found for table' 
+      });
+    }
+    
+    console.log(`🧪 TEST API: Current phase: ${gameState.phase}, advancing to: ${phase}`);
+    
+    // Update game state phase
+    gameState.phase = phase as any;
+    
+    // Add community cards if provided
+    if (communityCards && Array.isArray(communityCards)) {
+      gameState.board = communityCards;
+      console.log(`🧪 TEST API: Set community cards:`, communityCards);
+    } else {
+      // Set default community cards based on phase
+      if (phase === 'flop') {
+        gameState.board = [
+          { suit: 'spades', rank: 'K' },
+          { suit: 'spades', rank: 'Q' },  
+          { suit: 'hearts', rank: '10' }
+        ];
+      } else if (phase === 'turn') {
+        gameState.board = [
+          { suit: 'spades', rank: 'K' },
+          { suit: 'spades', rank: 'Q' },  
+          { suit: 'hearts', rank: '10' },
+          { suit: 'hearts', rank: 'J' }
+        ];
+      } else if (phase === 'river') {
+        gameState.board = [
+          { suit: 'spades', rank: 'K' },
+          { suit: 'spades', rank: 'Q' },  
+          { suit: 'hearts', rank: '10' },
+          { suit: 'hearts', rank: 'J' },
+          { suit: 'hearts', rank: '8' }
+        ];
+      }
+    }
+    
+    // Reset current bets for new betting round  
+    if (phase === 'flop' || phase === 'turn' || phase === 'river') {
+      gameState.currentBet = 0;
+      gameState.players.forEach(p => {
+        p.currentBet = 0;
+      });
+      
+      // Set first active player as current player
+      const activePlayers = gameState.players.filter(p => p.isActive && p.chips > 0);
+      if (activePlayers.length > 0) {
+        gameState.currentPlayerId = activePlayers[0].id;
+        console.log(`🧪 TEST API: Set current player to: ${gameState.currentPlayerId}`);
+      }
+    }
+    
+    // Update the table state (the gameState is a reference, so changes are automatically saved)
+    
+    // Emit WebSocket events to notify frontend
+    const io = (global as any).socketIO;
+    if (io) {
+      console.log(`📡 TEST API: Broadcasting game state after phase advance for table ${targetTableId}`);
+      
+      // Emit to table room
+      io.to(`table:${targetTableId}`).emit('gameState', gameState);
+      
+      // Also emit to all clients for debugging/fallback
+      io.emit('gameState', gameState);
+      
+      console.log(`📡 TEST API: Game state broadcasted after phase advance`);
+    }
+    
+    console.log(`✅ TEST API: Game advanced to ${phase} phase for table ${targetTableId}`);
+    
+    res.json({
+      success: true,
+      message: `Game advanced to ${phase} phase for table ${targetTableId}`,
+      tableId: targetTableId,
+      phase,
+      gameState
+    });
+    
+  } catch (error) {
+    console.error('❌ TEST API: Error advancing game phase:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to advance game phase'
+    });
+  }
+});
+
+/**
+ * TEST API: Raise action
+ * POST /api/test/raise
+ */
+router.post('/raise', async (req, res) => {
+  try {
+    const { tableId, playerName, amount } = req.body;
+    
+    console.log(`🧪 TEST API: Raise action - table ${tableId}, player ${playerName}, amount ${amount}`);
+    
+    const table = tableManager.getTable(tableId);
+    if (!table) {
+      return res.status(404).json({
+        success: false,
+        error: 'Table not found'
+      });
+    }
+    
+    // Simulate raise action
+    console.log(`✅ TEST API: Player ${playerName} raised to $${amount}`);
+    
+    res.json({
+      success: true,
+      message: `Player ${playerName} raised to $${amount}`,
+      tableId,
+      playerName,
+      amount
+    });
+  } catch (error) {
+    console.error('❌ TEST API: Error in raise action:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process raise action'
+    });
+  }
+});
+
+/**
+ * TEST API: Call action
+ * POST /api/test/call
+ */
+router.post('/call', async (req, res) => {
+  try {
+    const { tableId, playerName } = req.body;
+    
+    console.log(`🧪 TEST API: Call action - table ${tableId}, player ${playerName}`);
+    
+    const table = tableManager.getTable(tableId);
+    if (!table) {
+      return res.status(404).json({
+        success: false,
+        error: 'Table not found'
+      });
+    }
+    
+    // Simulate call action
+    console.log(`✅ TEST API: Player ${playerName} called`);
+    
+    res.json({
+      success: true,
+      message: `Player ${playerName} called`,
+      tableId,
+      playerName
+    });
+  } catch (error) {
+    console.error('❌ TEST API: Error in call action:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process call action'
+    });
+  }
+});
+
+/**
+ * TEST API: Fold action
+ * POST /api/test/fold
+ */
+router.post('/fold', async (req, res) => {
+  try {
+    const { tableId, playerName } = req.body;
+    
+    console.log(`🧪 TEST API: Fold action - table ${tableId}, player ${playerName}`);
+    
+    const table = tableManager.getTable(tableId);
+    if (!table) {
+      return res.status(404).json({
+        success: false,
+        error: 'Table not found'
+      });
+    }
+    
+    // Simulate fold action
+    console.log(`✅ TEST API: Player ${playerName} folded`);
+    
+    res.json({
+      success: true,
+      message: `Player ${playerName} folded`,
+      tableId,
+      playerName
+    });
+  } catch (error) {
+    console.error('❌ TEST API: Error in fold action:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process fold action'
+    });
+  }
+});
+
+/**
+ * TEST API: Check action
+ * POST /api/test/check
+ */
+router.post('/check', async (req, res) => {
+  try {
+    const { tableId, playerName } = req.body;
+    
+    console.log(`🧪 TEST API: Check action - table ${tableId}, player ${playerName}`);
+    
+    const table = tableManager.getTable(tableId);
+    if (!table) {
+      return res.status(404).json({
+        success: false,
+        error: 'Table not found'
+      });
+    }
+    
+    // Simulate check action
+    console.log(`✅ TEST API: Player ${playerName} checked`);
+    
+    res.json({
+      success: true,
+      message: `Player ${playerName} checked`,
+      tableId,
+      playerName
+    });
+  } catch (error) {
+    console.error('❌ TEST API: Error in check action:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process check action'
+    });
+  }
+});
+
+/**
+ * TEST API: Bet action
+ * POST /api/test/bet
+ */
+router.post('/bet', async (req, res) => {
+  try {
+    const { tableId, playerName, amount } = req.body;
+    
+    console.log(`🧪 TEST API: Bet action - table ${tableId}, player ${playerName}, amount ${amount}`);
+    
+    const table = tableManager.getTable(tableId);
+    if (!table) {
+      return res.status(404).json({
+        success: false,
+        error: 'Table not found'
+      });
+    }
+    
+    // Simulate bet action
+    console.log(`✅ TEST API: Player ${playerName} bet $${amount}`);
+    
+    res.json({
+      success: true,
+      message: `Player ${playerName} bet $${amount}`,
+      tableId,
+      playerName,
+      amount
+    });
+  } catch (error) {
+    console.error('❌ TEST API: Error in bet action:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process bet action'
+    });
+  }
+});
+
+/**
+ * TEST API: All-in action
+ * POST /api/test/all-in
+ */
+router.post('/all-in', async (req, res) => {
+  try {
+    const { tableId, playerName } = req.body;
+    
+    console.log(`🧪 TEST API: All-in action - table ${tableId}, player ${playerName}`);
+    
+    const table = tableManager.getTable(tableId);
+    if (!table) {
+      return res.status(404).json({
+        success: false,
+        error: 'Table not found'
+      });
+    }
+    
+    // Simulate all-in action
+    console.log(`✅ TEST API: Player ${playerName} went all-in`);
+    
+    res.json({
+      success: true,
+      message: `Player ${playerName} went all-in`,
+      tableId,
+      playerName
+    });
+  } catch (error) {
+    console.error('❌ TEST API: Error in all-in action:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process all-in action'
+    });
+  }
+});
+
+/**
+ * TEST API: Set current player
+ * POST /api/test/set-current-player
+ */
+router.post('/set-current-player', async (req, res) => {
+  try {
+    const { tableId, playerName } = req.body;
+    
+    console.log(`🧪 TEST API: Set current player - table ${tableId}, player ${playerName}`);
+    
+    const table = tableManager.getTable(tableId);
+    if (!table) {
+      return res.status(404).json({
+        success: false,
+        error: 'Game state not found for table'
+      });
+    }
+    
+    // Simulate setting current player
+    console.log(`✅ TEST API: Current player set to ${playerName} for table ${tableId}`);
+    
+    res.json({
+      success: true,
+      message: `Current player set to ${playerName}`,
+      tableId,
+      playerName
+    });
+  } catch (error) {
+    console.error('❌ TEST API: Error setting current player:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to set current player'
+    });
   }
 });
 

@@ -103,8 +103,8 @@ model ModerationAction {
 }
 
 model Player {
-  id          String        @id @default(uuid())
-  nickname    String        // Removed @unique constraint - allow same nickname across different tables
+  id          String        @id  // Use nickname as primary key
+  nickname    String        @unique // Ensure nickname uniqueness 
   chips       Int
   table       Int?          // Table ID - null means in lobby (changed from String? to Int?)
   seat        Int?          // Seat number - null means observing (if table is not null)
@@ -140,7 +140,7 @@ model Table {
   pot         Int           @default(0)
   deck        String?       // JSON string of remaining cards
   board       String?       // JSON string of community cards
-  currentPlayerId String?   // ID of current player to act
+  currentPlayerId String?   // Nickname of current player to act
   dealerPosition Int        @default(0)
   smallBlindPosition Int    @default(1)
   bigBlindPosition Int      @default(2)
@@ -160,8 +160,8 @@ model Table {
 }
 
 model PlayerTable {
-  id        String   @id @default(uuid())
-  playerId  String
+  id        Int      @id @default(autoincrement())
+  playerId  String   // References Player.id (which is now nickname)
   tableId   Int
   seatNumber Int
   buyIn     Int
@@ -174,9 +174,9 @@ model PlayerTable {
 }
 
 model TableAction {
-  id        String   @id @default(uuid())
+  id        Int      @id @default(autoincrement())
   tableId   Int
-  playerId  String
+  playerId  String   // References Player.id (which is now nickname)
   type      String   // bet, fold, check, raise, call, allIn
   amount    Int?     // for bets/raises
   phase     String   // preflop, flop, turn, river, showdown
@@ -194,9 +194,9 @@ model TableAction {
 }
 
 model Message {
-  id        String   @id @default(uuid())
+  id        Int      @id @default(autoincrement())
   content   String
-  playerId  String
+  playerId  String   // References Player.id (which is now nickname)
   tableId   Int
   createdAt DateTime @default(now())
   player    Player   @relation(fields: [playerId], references: [id])

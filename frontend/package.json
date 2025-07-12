@@ -66,6 +66,8 @@
     "chai-jquery": "^2.1.0",
     "concurrently": "^8.2.2",
     "esbuild": "^0.19.8",
+    "jest": "^30.0.4",
+    "jest-environment-jsdom": "^30.0.4",
     "typescript": "^5.8.3",
     "vite": "^5.1.6",
     "wait-on": "^7.2.0"

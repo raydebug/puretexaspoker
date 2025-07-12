@@ -9,6 +9,8 @@
 - Use actual tableId from the API, not hardcoded values.
 - Dummy player name format "Player<X>"
 - Screenshots should be in selenium/screenshots
+- Reuse Chrome instances instead of restarting
+- Testing report tracking for comparing and show difference with prev report after each full test complete
 description:
 globs:
 alwaysApply: false

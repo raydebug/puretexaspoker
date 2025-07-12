@@ -1571,14 +1571,14 @@ export class SocketService {
   /**
    * Join a table as observer or player
    */
-  joinTable(tableId: number, buyIn?: number) {
+  joinTable(tableId: number, buyIn?: number, playerName?: string, isTestMode: boolean = false) {
     if (!this.socket?.connected) {
       console.error('Socket not connected');
       return;
     }
 
-    console.log(`🔧 FRONTEND: Joining table ${tableId} with buyIn ${buyIn || 200}`);
-    this.socket.emit('joinTable', { tableId, buyIn: buyIn || 200 });
+    console.log(`🔧 FRONTEND: Joining table ${tableId} with buyIn ${buyIn || 200}, testMode: ${isTestMode}`);
+    this.socket.emit('joinTable', { tableId, buyIn: buyIn || 200, playerName, isTestMode });
     this.currentTableId = tableId;
     
     // Also join the WebSocket room to receive game state updates
@@ -1612,13 +1612,13 @@ export class SocketService {
   /**
    * Auto-seat: combines join table and take seat in one operation
    */
-  autoSeat(tableId: number, seatNumber: number, buyIn: number): void {
+  autoSeat(tableId: number, seatNumber: number, buyIn: number, playerName?: string, isTestMode: boolean = false): void {
     if (!this.socket) {
       console.error('Socket not connected');
       return;
     }
-    console.log(`🎯 SOCKET: Auto-seating at table ${tableId}, seat ${seatNumber}, buyIn ${buyIn}`);
-    this.socket.emit('autoSeat', { tableId, seatNumber, buyIn });
+    console.log(`🎯 SOCKET: Auto-seating at table ${tableId}, seat ${seatNumber}, buyIn ${buyIn}, testMode: ${isTestMode}`);
+    this.socket.emit('autoSeat', { tableId, seatNumber, buyIn, playerName, isTestMode });
   }
 
   /**
