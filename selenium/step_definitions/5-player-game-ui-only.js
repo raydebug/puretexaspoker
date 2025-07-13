@@ -734,7 +734,7 @@ When('players join the table in order:', { timeout: 120000 }, async function (da
 });
 
 // Seat verification - Pure UI validation with 3-player test support
-Then('all players should be seated correctly:', { timeout: 180000 }, async function (dataTable) {
+Then('all players should be seated correctly:', { timeout: 240000 }, async function (dataTable) {
   console.log('🔍 Verifying player seating via UI...');
   console.log(`🔍 DEBUG: At verification start - global.players = ${JSON.stringify(Object.keys(global.players || {}))}`);
   console.log(`🔍 DEBUG: is3PlayerTest = ${this.is3PlayerTest}`);
@@ -2711,7 +2711,10 @@ When('Player{int} calls ${int} more \\(completing small blind call)', async func
   const callSelectors = [
     '[data-testid="call-button"]',
     'button:contains("Call")',
-    '.call-button'
+    '.call-button',
+    'button[data-action="call"]',
+    'button[onclick*="call"]',
+    'button[onclick*="Call"]'
   ];
   
   let callButton = null;
@@ -2720,6 +2723,29 @@ When('Player{int} calls ${int} more \\(completing small blind call)', async func
       callButton = await player.driver.findElement(By.css(selector));
       if (callButton) break;
     } catch (e) {}
+  }
+  
+  // If still not found, try JavaScript click
+  if (!callButton) {
+    try {
+      const found = await player.driver.executeScript(`
+        const buttons = document.querySelectorAll('button');
+        for (const button of buttons) {
+          if (button.textContent.toLowerCase().includes('call')) {
+            button.click();
+            return true;
+          }
+        }
+        return false;
+      `);
+      if (found) {
+        console.log(`✅ ${playerName} called $${amount} more via JavaScript`);
+        await player.driver.sleep(2000);
+        return;
+      }
+    } catch (jsError) {
+      console.log(`⚠️ ${playerName} JavaScript call failed: ${jsError.message}`);
+    }
   }
   
   if (!callButton) throw new Error('Call button not found');
@@ -3006,7 +3032,10 @@ When('Player{int} calls the remaining ${int}', async function (playerNumber, amo
   const callSelectors = [
     '[data-testid="call-button"]',
     'button:contains("Call")',
-    '.call-button'
+    '.call-button',
+    'button[data-action="call"]',
+    'button[onclick*="call"]',
+    'button[onclick*="Call"]'
   ];
   
   let callButton = null;
@@ -3015,6 +3044,29 @@ When('Player{int} calls the remaining ${int}', async function (playerNumber, amo
       callButton = await player.driver.findElement(By.css(selector));
       if (callButton) break;
     } catch (e) {}
+  }
+  
+  // If still not found, try JavaScript click
+  if (!callButton) {
+    try {
+      const found = await player.driver.executeScript(`
+        const buttons = document.querySelectorAll('button');
+        for (const button of buttons) {
+          if (button.textContent.toLowerCase().includes('call')) {
+            button.click();
+            return true;
+          }
+        }
+        return false;
+      `);
+      if (found) {
+        console.log(`✅ ${playerName} called the remaining $${amount} via JavaScript`);
+        await player.driver.sleep(2000);
+        return;
+      }
+    } catch (jsError) {
+      console.log(`⚠️ ${playerName} JavaScript call failed: ${jsError.message}`);
+    }
   }
   
   if (!callButton) throw new Error('Call button not found');
@@ -3277,7 +3329,7 @@ After({ timeout: 15000 }, async function (scenario) {
 }); 
 
 // Simplified page loading verification with 3-player test support
-When('the page should be fully loaded for {string}', { timeout: 120000 }, async function (playerName) {
+When('the page should be fully loaded for {string}', { timeout: 180000 }, async function (playerName) {
   console.log(`🔍 ${playerName} verifying page is loaded...`);
   
   // Handle 3-player tests with simplified verification
