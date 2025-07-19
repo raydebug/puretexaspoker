@@ -187,8 +187,8 @@ router.post('/:tableId/spectate', async (req, res) => {
   }
 });
 
-// Get action history for a table
-router.get('/:tableId/actions/history', async (req, res) => {
+// Get game history for a table
+router.get('/:tableId/game/history', async (req, res) => {
   try {
     const { tableId } = req.params;
     const { handNumber } = req.query;
@@ -199,21 +199,21 @@ router.get('/:tableId/actions/history', async (req, res) => {
       return res.status(400).json({ error: 'Only tables 1, 2, and 3 are available' });
     }
 
-    // For now, return empty action history to avoid Prisma client issues
-    // TODO: Fix Prisma client and implement proper action history
-    console.log(`📊 Table ${tableNumber} action history: returning empty list for now`);
+    // For now, return empty game history to avoid Prisma client issues
+    // TODO: Fix Prisma client and implement proper game history
+    console.log(`📊 Table ${tableNumber} game history: returning empty list for now`);
 
     res.status(200).json({
       success: true,
-      actionHistory: [],
+      gameHistory: [],
       tableId: tableNumber,
       handNumber: handNumber ? parseInt(handNumber as string) : null
     });
   } catch (error) {
-    console.error('Error getting table action history:', error);
+    console.error('Error getting table game history:', error);
     res.status(500).json({ 
       success: false,
-      error: 'Failed to get table action history',
+      error: 'Failed to get table game history',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
   }

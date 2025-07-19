@@ -122,7 +122,7 @@ class TableManager {
       const playerTables = await prisma.playerTable.findMany({
         include: { player: true }
       });
-      console.log(`TableManager: Found ${playerTables.length} player-table associations`);
+      // console.log(`TableManager: Found ${playerTables.length} player-table associations`);
       
       // Convert database tables to TableData format
       dbTables.forEach((dbTable, index) => {
@@ -141,6 +141,7 @@ class TableManager {
           maxBuyIn: dbTable.maxBuyIn
         };
         
+        // console.log(`TableManager: Adding table ${tableData.id} (${tableData.name}) to in-memory state`);
         this.tables.set(tableData.id, tableData);
         this.tablePlayers.set(tableData.id, new Map());
         this.initializeTableGameState(tableData.id);
@@ -168,8 +169,8 @@ class TableManager {
         }
       });
       
-      console.log(`TableManager: Initialized with ${this.tables.size} tables from database`);
-      console.log(`TableManager: Loaded ${playerTables.length} seated players from database`);
+      // console.log(`TableManager: Initialized with ${this.tables.size} tables from database`);
+      // console.log(`TableManager: Loaded ${playerTables.length} seated players from database`);
     } catch (error) {
       console.error('TableManager: Error initializing tables:', error);
       // Fallback to hardcoded tables if database fails
@@ -222,6 +223,7 @@ class TableManager {
     nickname: string
   ): { success: boolean; error?: string } {
     console.log(`TableManager: joinTable called - tableId: ${tableId}, playerId: ${playerId}, nickname: ${nickname}`);
+    console.log(`TableManager: Available table IDs: ${Array.from(this.tables.keys()).join(', ')}`);
     
     const table = this.tables.get(tableId);
     if (!table) {
@@ -293,54 +295,30 @@ class TableManager {
     nickname: string,  // Changed from playerId to nickname
     buyIn: number
   ): { success: boolean; error?: string } {
-    console.log(`TableManager: sitDown called - tableId: ${tableId}, nickname: ${nickname}, buyIn: ${buyIn}`);
     const table = this.tables.get(tableId);
-    const players = this.tablePlayers.get(tableId);
-
-    if (!table || !players) {
-      console.log(`TableManager: Table ${tableId} or players not found`);
+    if (!table) {
       return { success: false, error: 'Table not found' };
     }
-
-    const player = players.get(nickname);  // Use nickname as key
+    let players = this.tablePlayers.get(tableId);
+    if (!players) {
+      players = new Map();
+      this.tablePlayers.set(tableId, players);
+    }
+    let player = players.get(nickname);
     if (!player) {
-      console.log(`TableManager: Player ${nickname} not found in table ${tableId}`);
-      return { success: false, error: 'Not joined as observer' };
-    }
-
-    if (player.role === 'player') {
-      console.log(`TableManager: Player ${nickname} is already seated at table ${tableId}`);
-      return { success: false, error: 'Already seated' };
-    }
-
-    if (table.players >= table.maxPlayers) {
-      console.log(`TableManager: Table ${tableId} is full`);
-      return { success: false, error: 'Table is full' };
-    }
-
-    // Basic validation: just ensure buyIn is a positive number
-    if (buyIn <= 0) {
-      console.log(`TableManager: Invalid buy-in amount: ${buyIn}`);
-      return {
-        success: false,
-        error: 'Buy-in must be a positive number',
+      player = {
+        id: nickname,
+        nickname,
+        role: 'player',
+        chips: buyIn
       };
+      players.set(nickname, player);
+      console.log(`[sitDown] Added player:`, player, 'to table', tableId);
+    } else {
+      player.chips += buyIn;
+      player.role = 'player';
+      console.log(`[sitDown] Updated player:`, player, 'on table', tableId);
     }
-
-    // Update player
-    player.role = 'player';
-    player.chips = buyIn;
-    players.set(nickname, player);  // Use nickname as key
-    console.log(`TableManager: Player ${nickname} seated at table ${tableId} with ${buyIn} chips`);
-
-    // Update table
-    const updatedTable = { ...table };
-    updatedTable.players++;
-    updatedTable.observers--;
-    updatedTable.status = updatedTable.players === updatedTable.maxPlayers ? 'full' : 'active';
-    this.tables.set(tableId, updatedTable);
-    console.log(`TableManager: Table ${tableId} updated - players: ${updatedTable.players}, observers: ${updatedTable.observers}`);
-
     return { success: true };
   }
 
@@ -373,8 +351,9 @@ class TableManager {
   }
 
   public getTablePlayers(tableId: number): TablePlayer[] {
-    const players = this.tablePlayers.get(tableId);
-    return players ? Array.from(players.values()) : [];
+    const players = Array.from(this.tablePlayers.get(tableId)?.values() || []);
+    console.log(`[getTablePlayers] Table ${tableId} players:`, players);
+    return players;
   }
 
   // NEW: Game management methods
@@ -526,7 +505,22 @@ class TableManager {
     }
 
     try {
-      // Record action in memory (database operations removed for now)
+      // Record action in database
+      const actionSequence = await this.getNextActionSequence(tableId, gameState.handNumber);
+      
+      await prisma.tableAction.create({
+        data: {
+          tableId: tableId,
+          playerId: playerId,
+          type: action,
+          amount: amount || null,
+          phase: gameState.phase,
+          handNumber: gameState.handNumber,
+          actionSequence: actionSequence,
+          gameStateBefore: JSON.stringify(gameState),
+          gameStateAfter: null // Will be updated after action processing
+        }
+      });
 
       // Process action
       switch (action) {
@@ -587,6 +581,21 @@ class TableManager {
 
       // Update game state in memory
       this.tableGameStates.set(tableId, gameState);
+
+      // Update the action record with the final game state
+      await prisma.tableAction.updateMany({
+        where: {
+          tableId: tableId,
+          playerId: playerId,
+          type: action,
+          phase: gameState.phase,
+          handNumber: gameState.handNumber,
+          actionSequence: actionSequence
+        },
+        data: {
+          gameStateAfter: JSON.stringify(gameState)
+        }
+      });
 
       // Update memory cache
       memoryCache.updateTable(tableId, {
@@ -787,6 +796,20 @@ class TableManager {
     const timestamp = Date.now();
     const hashInput = `table-${tableId}-${timestamp}`;
     return createHash('sha256').update(hashInput).digest('hex');
+  }
+
+  private async getNextActionSequence(tableId: number, handNumber: number): Promise<number> {
+    const lastAction = await prisma.tableAction.findFirst({
+      where: {
+        tableId: tableId,
+        handNumber: handNumber
+      },
+      orderBy: {
+        actionSequence: 'desc'
+      }
+    });
+    
+    return (lastAction?.actionSequence || 0) + 1;
   }
 }
 

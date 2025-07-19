@@ -26,6 +26,12 @@ export const clearDatabase = async () => {
     await prisma.role.deleteMany();
     console.log('🗑️ Deleting permissions...');
     await prisma.permission.deleteMany();
+    
+    // RESET AUTO-INCREMENT: Reset all SQLite auto-increment counters to start from 1
+    console.log('🔄 Resetting auto-increment sequences...');
+    await prisma.$executeRaw`DELETE FROM sqlite_sequence WHERE name IN ('Table', 'PlayerTable', 'TableAction', 'User', 'Role', 'Permission', 'RolePermission', 'ModerationAction')`;
+    console.log('🔄 All auto-increment sequences reset to start from 1');
+    
     console.log('✅ Database cleanup completed successfully!');
   } catch (err) {
     console.error('❌ Error during database cleanup:', err);

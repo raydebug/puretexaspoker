@@ -452,6 +452,11 @@ class MemoryCache extends EventEmitter {
     console.log('🛑 Memory cache periodic sync stopped');
   }
   
+  clearAllTimers(): void {
+    this.stopSync();
+    console.log('🧹 Memory cache all timers cleared');
+  }
+  
   // Graceful shutdown
   async shutdown(): Promise<void> {
     console.log('🔄 Performing final sync before shutdown...');

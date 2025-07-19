@@ -15,6 +15,16 @@ const authenticatedUsers = new Map<string, { nickname: string; socketId: string;
 // Game state synchronization tracking
 const gameStateSync = new Map<string, { lastUpdate: number; players: string[]; tableId: number }>();
 
+// Global array to track intervals
+const heartbeatIntervals: NodeJS.Timeout[] = [];
+
+// Function to clear all heartbeat intervals
+export const clearHeartbeatIntervals = () => {
+  heartbeatIntervals.forEach(interval => clearInterval(interval));
+  heartbeatIntervals.length = 0;
+  console.log('🧹 Cleared all heartbeat intervals');
+};
+
 export function registerConsolidatedHandlers(io: Server) {
   // Global error handler
   const handleError = (socket: Socket, error: Error, context: string) => {
@@ -64,7 +74,7 @@ export function registerConsolidatedHandlers(io: Server) {
 
   // Heartbeat monitoring
   const startHeartbeatMonitoring = () => {
-    setInterval(() => {
+    const interval = setInterval(() => {
       const now = Date.now();
       const heartbeatTimeout = 60000; // 60 seconds
       
@@ -88,6 +98,9 @@ export function registerConsolidatedHandlers(io: Server) {
         }
       }
     }, 30000); // Check every 30 seconds
+
+    // Add interval to global array
+    heartbeatIntervals.push(interval);
   };
 
   // Broadcast tables update to all clients

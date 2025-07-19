@@ -71,7 +71,7 @@ export class CardOrderService {
   private getTestCardOrder(gameId: string): Card[] | null {
     try {
       // Dynamic import to avoid circular dependency
-      const testModule = require('../routes/test');
+      const testModule = require('../routes/testRoutes');
       if (testModule && typeof testModule.getTestCardOrder === 'function') {
         // First try the actual game ID
         let testCards = testModule.getTestCardOrder(gameId);

@@ -6,8 +6,8 @@ import dotenv from 'dotenv';
 import { registerConsolidatedHandlers } from './socketHandlers/consolidatedHandler';
 import { errorHandler } from './middleware/errorHandler';
 import errorRoutes from './routes/errorRoutes';
-import cardOrderRoutes from './routes/cardOrders';
 import testRoutes from './routes/testRoutes';
+import { tableManager } from './services/TableManager';
 
 // Load environment variables
 dotenv.config();
@@ -28,6 +28,12 @@ const io = new Server(httpServer, {
   maxHttpBufferSize: 1e8,
 });
 
+// Make Socket.IO instance available globally for test APIs
+(global as any).socketIO = io;
+
+// Make TableManager available to routes
+app.set('tableManager', tableManager);
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -38,8 +44,7 @@ app.use(express.static('public'));
 
 // Routes
 app.use('/api/errors', errorRoutes);
-app.use('/api/card-orders', cardOrderRoutes);
-app.use('/api', testRoutes);
+app.use('/api/test', testRoutes);
 
 // Basic route
 app.get('/', (req, res) => {
