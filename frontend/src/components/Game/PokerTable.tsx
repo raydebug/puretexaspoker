@@ -1,8 +1,63 @@
 import React from 'react';
-import styled from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
 import { GameState, Player } from '../../types/shared';
 import DecisionTimer from '../DecisionTimer';
 import { GameStartCountdown } from '../GameStartCountdown';
+
+// Define keyframes for animations
+const pulseGlow = keyframes`
+  0%, 100% { 
+    opacity: 1;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  }
+  50% { 
+    opacity: 0.8;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5), 0 0 8px rgba(255,255,255,0.3);
+  }
+`;
+
+const currentPlayerPulse = keyframes`
+  0%, 100% { 
+    transform: scale(1);
+  }
+  50% { 
+    transform: scale(1.05);
+  }
+`;
+
+// Position-specific breathe animations
+const breatheDefault = keyframes`
+  0%, 100% { 
+    transform: scale(1);
+    box-shadow: 0 4px 20px rgba(76, 175, 80, 0.4), 0 0 10px rgba(102, 187, 106, 0.3);
+  }
+  50% { 
+    transform: scale(1.02);
+    box-shadow: 0 6px 25px rgba(76, 175, 80, 0.6), 0 0 15px rgba(102, 187, 106, 0.5);
+  }
+`;
+
+const breatheVertical = keyframes`
+  0%, 100% { 
+    transform: translateY(-50%) scale(1);
+    box-shadow: 0 4px 20px rgba(76, 175, 80, 0.4), 0 0 10px rgba(102, 187, 106, 0.3);
+  }
+  50% { 
+    transform: translateY(-50%) scale(1.02);
+    box-shadow: 0 6px 25px rgba(76, 175, 80, 0.6), 0 0 15px rgba(102, 187, 106, 0.5);
+  }
+`;
+
+const breatheHorizontal = keyframes`
+  0%, 100% { 
+    transform: translateX(-50%) scale(1);
+    box-shadow: 0 4px 20px rgba(76, 175, 80, 0.4), 0 0 10px rgba(102, 187, 106, 0.3);
+  }
+  50% { 
+    transform: translateX(-50%) scale(1.02);
+    box-shadow: 0 6px 25px rgba(76, 175, 80, 0.6), 0 0 15px rgba(102, 187, 106, 0.5);
+  }
+`;
 
 interface PokerTableProps {
   gameState: GameState;
@@ -112,21 +167,9 @@ const PlayerSeat = styled.div.withConfig({
      return '0 4px 20px rgba(255, 215, 0, 0.3), 0 0 8px rgba(255, 183, 77, 0.2)';
    }};
    
-   ${props => props.isEmpty && props.isAvailable && `
-     animation: breathe-${props.position} 3s ease-in-out infinite;
-     
-     @keyframes breathe-${props.position} {
-       0%, 100% { 
-         transform: ${props.position === 2 || props.position === 8 ? 'translateY(-50%) scale(1)' : 
-           props.position === 5 ? 'translateX(-50%) scale(1)' : 'scale(1)'};
-         box-shadow: 0 4px 20px rgba(76, 175, 80, 0.4), 0 0 10px rgba(102, 187, 106, 0.3);
-       }
-       50% { 
-         transform: ${props.position === 2 || props.position === 8 ? 'translateY(-50%) scale(1.02)' : 
-           props.position === 5 ? 'translateX(-50%) scale(1.02)' : 'scale(1.02)'};
-         box-shadow: 0 6px 25px rgba(76, 175, 80, 0.6), 0 0 15px rgba(102, 187, 106, 0.5);
-       }
-     }
+   ${props => props.isEmpty && props.isAvailable && css`
+     animation: ${props.position === 2 || props.position === 8 ? breatheVertical : 
+       props.position === 5 ? breatheHorizontal : breatheDefault} 3s ease-in-out infinite;
    `}
 
   // Position 9 player seats around the oval table
@@ -250,19 +293,8 @@ const EmptySeatText = styled.div.withConfig({
   letter-spacing: ${props => props.isAvailable ? '0.5px' : 'normal'};
   line-height: 1.2;
   
-  ${props => props.isAvailable && `
-    animation: pulseGlow 2s ease-in-out infinite;
-    
-    @keyframes pulseGlow {
-      0%, 100% { 
-        opacity: 1;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-      }
-      50% { 
-        opacity: 0.8;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.5), 0 0 8px rgba(255,255,255,0.3);
-      }
-    }
+  ${props => props.isAvailable && css`
+    animation: ${pulseGlow} 2s ease-in-out infinite;
   `}
 `;
 
@@ -423,22 +455,13 @@ const PlayerSeatExtended = styled(PlayerSeat).withConfig({
   isCurrentPlayer?: boolean;
   isFolded?: boolean;
 }>`
-  ${props => props.isCurrentPlayer && `
+  ${props => props.isCurrentPlayer && css`
     box-shadow: 0 0 20px rgba(0, 255, 0, 0.8), 0 0 40px rgba(0, 255, 0, 0.4);
     border: 3px solid #00ff00;
-    animation: currentPlayerPulse 2s ease-in-out infinite;
-    
-    @keyframes currentPlayerPulse {
-      0%, 100% { 
-        transform: scale(1);
-      }
-      50% { 
-        transform: scale(1.05);
-      }
-    }
+    animation: ${currentPlayerPulse} 2s ease-in-out infinite;
   `}
   
-  ${props => props.isFolded && `
+  ${props => props.isFolded && css`
     opacity: 0.5;
     filter: grayscale(100%);
     border: 3px solid #666;
@@ -637,8 +660,8 @@ export const PokerTable: React.FC<PokerTableProps> = ({
       status: gameState.status,
       currentBet: gameState.currentBet,
       pot: gameState.pot,
-      communityCards: gameState.communityCards.length,
-      activePlayers: gameState.players.filter(p => p.isActive).length,
+      communityCards: (gameState.communityCards || []).length,
+      activePlayers: (gameState.players || []).filter(p => p.isActive).length,
       winner: gameState.winner,
       currentPlayer: currentPlayer?.name,
       currentUserPlayer: currentUserPlayer?.name,
@@ -842,7 +865,7 @@ export const PokerTable: React.FC<PokerTableProps> = ({
         {/* Community Cards - Always show 5 positions */}
         <CommunityCardsArea data-testid="community-cards">
           {Array.from({ length: 5 }, (_, index) => {
-            const card = gameState.communityCards[index];
+            const card = (gameState.communityCards || [])[index];
             const isEmpty = !card;
             
             return (

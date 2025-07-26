@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 
 interface WelcomePopupProps {
   tableName: string;
@@ -68,22 +68,22 @@ const LoadingDots = styled.div`
   margin-top: 1rem;
 `;
 
+const bounce = keyframes`
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+`;
+
 const Dot = styled.div<{ $delay: number }>`
   width: 8px;
   height: 8px;
   background-color: #ffd700;
   border-radius: 50%;
-  animation: bounce 1.4s infinite ease-in-out both;
+  animation: ${bounce} 1.4s infinite ease-in-out both;
   animation-delay: ${props => props.$delay}s;
-
-  @keyframes bounce {
-    0%, 80%, 100% {
-      transform: scale(0);
-    }
-    40% {
-      transform: scale(1);
-    }
-  }
 `;
 
 export const WelcomePopup: React.FC<WelcomePopupProps> = ({ 

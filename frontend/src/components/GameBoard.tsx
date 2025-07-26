@@ -455,7 +455,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </PhaseIndicator>
         
         <CommunityCards data-testid="community-cards">
-          {gameState.communityCards.map((card, index) => (
+          {(gameState.communityCards || []).map((card, index) => (
             <AnimatedCard key={index} card={card} delay={index * 0.2} />
           ))}
         </CommunityCards>
@@ -554,7 +554,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </ShowdownResults>
       )}
       
-      {gameState.players.map((player, index) => {
+      {(gameState.players || []).map((player, index) => {
         const isCurrentPlayer = player.id === currentPlayer?.id;
         
         return (

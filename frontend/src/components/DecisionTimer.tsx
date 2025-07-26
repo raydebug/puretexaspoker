@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
 
 interface DecisionTimerProps {
   timeLimit?: number; // in seconds, default 10
@@ -60,7 +60,7 @@ const CircleTimer = styled.div.withConfig({
     rgba(255, 255, 255, 0.2) ${props => props.percentage}%
   );
   border: 2px solid rgba(255, 255, 255, 0.3);
-  animation: ${props => props.colorState === 'critical' ? pulseAnimation : 'none'} 0.5s ease-in-out infinite;
+  animation: ${props => props.colorState === 'critical' ? css`${pulseAnimation} 0.5s ease-in-out infinite` : 'none'};
   
   &::before {
     content: '';

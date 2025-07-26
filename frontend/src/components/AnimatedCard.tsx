@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
 import { Card as CardType } from '../types/game';
 import { soundService } from '../services/soundService';
 
@@ -19,7 +19,7 @@ const CardContainer = styled.div<{ delay: number; isDealt: boolean }>`
   height: 90px;
   position: relative;
   perspective: 1000px;
-  animation: ${props => props.isDealt ? dealAnimation : 'none'} 0.5s ease-out forwards;
+  animation: ${props => props.isDealt ? css`${dealAnimation} 0.5s ease-out forwards` : 'none'};
   animation-delay: ${props => props.delay}s;
   opacity: 0;
 `;

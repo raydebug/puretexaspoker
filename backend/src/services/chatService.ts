@@ -1,170 +1,149 @@
-import { Server } from 'socket.io';
-import { errorTrackingService } from './errorTrackingService';
+import { prisma } from '../db';
 
-interface ChatMessage {
-  id: string;
+interface ChatMessageInput {
+  content: string;
+  playerId: string;
+  tableId: number;
+  timestamp?: string;
+}
+
+interface ChatMessageOutput {
+  id: number;
+  content: string;
   sender: string;
-  text: string;
-  timestamp: number;
-  isSystem?: boolean;
-  isPrivate?: boolean;
-  recipient?: string;
+  timestamp: string;
+  relativeTime: string;
+  tableId: number;
 }
 
 class ChatService {
-  private io: Server;
-  private messageHistory: Map<string, ChatMessage[]> = new Map();
-  private maxHistoryLength = 50; // Limit history per game
-
-  constructor(io: Server) {
-    this.io = io;
-  }
-
   /**
-   * Send a chat message in a game
+   * Create a new chat message with timestamp validation
    */
-  public sendMessage(gameId: string, message: ChatMessage): void {
+  async createMessage(messageData: ChatMessageInput): Promise<ChatMessageOutput> {
     try {
-      // Store in history
-      this.addToHistory(gameId, message);
-
-      // Regular messages broadcast to everyone in the game
-      if (!message.isPrivate) {
-        this.io.to(gameId).emit('chat:message', message);
-        return;
+      // Validate timestamp if provided
+      if (messageData.timestamp && isNaN(Date.parse(messageData.timestamp))) {
+        throw new Error('Invalid timestamp format');
       }
 
-      // For private messages, we need to find the recipient's socket
-      this.io.in(gameId).fetchSockets().then(sockets => {
-        for (const socket of sockets) {
-          const socketData = socket.data;
-          
-          // Send to sender
-          if (socketData.player && socketData.player.name === message.sender) {
-            socket.emit('chat:message', message);
-          }
-          
-          // Send to recipient
-          if (socketData.player && socketData.player.name === message.recipient) {
-            socket.emit('chat:message', message);
-          }
+      // Sanitize content to prevent XSS
+      const sanitizedContent = this.sanitizeContent(messageData.content);
+
+      // Create message with current timestamp
+      const createdAt = new Date();
+      const message = await prisma.message.create({
+        data: {
+          content: sanitizedContent,
+          playerId: messageData.playerId,
+          tableId: messageData.tableId,
+          createdAt
         }
-      }).catch(error => {
-        errorTrackingService.trackError(error, 'chatService:sendPrivateMessage', { 
-          sender: message.sender, 
-          recipient: message.recipient 
-        });
       });
-    } catch (error) {
-      errorTrackingService.trackError(error, 'chatService:sendMessage', { 
-        gameId, 
-        sender: message.sender 
-      });
-    }
-  }
 
-  /**
-   * Send a system message to all players in a game
-   */
-  public sendSystemMessage(gameId: string, text: string): void {
-    try {
-      const message: ChatMessage = {
-        id: `system-${Date.now()}`,
-        sender: 'System',
-        text,
-        timestamp: Date.now(),
-        isSystem: true
+      // Validate that message has timestamp
+      if (!message.createdAt) {
+        throw new Error('Message must include timestamp');
+      }
+
+      // Get player nickname
+      const player = await prisma.player.findUnique({
+        where: { id: messageData.playerId }
+      });
+
+      if (!player) {
+        throw new Error('Player not found');
+      }
+
+      return {
+        id: message.id,
+        content: message.content,
+        sender: player.nickname,
+        timestamp: message.createdAt.toISOString(),
+        relativeTime: this.formatRelativeTime(message.createdAt),
+        tableId: message.tableId
       };
-
-      // Store in history
-      this.addToHistory(gameId, message);
-
-      // Broadcast to everyone in the game
-      this.io.to(gameId).emit('chat:message', message);
     } catch (error) {
-      errorTrackingService.trackError(error, 'chatService:sendSystemMessage', { gameId });
+      if (error instanceof Error) {
+        throw new Error(`Failed to create message: ${error.message}`);
+      }
+      throw new Error('Failed to create message: Unknown error');
     }
   }
 
   /**
-   * Get chat history for a game
+   * Get table messages with formatted timestamps
    */
-  public getHistory(gameId: string): ChatMessage[] {
-    return this.messageHistory.get(gameId) || [];
-  }
+  async getTableMessages(tableId: number): Promise<ChatMessageOutput[]> {
+    try {
+      const messages = await prisma.message.findMany({
+        where: { tableId },
+        include: {
+          player: {
+            select: { nickname: true }
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 100 // Limit to 100 recent messages
+      });
 
-  /**
-   * Add a message to the history for a game
-   */
-  private addToHistory(gameId: string, message: ChatMessage): void {
-    const history = this.messageHistory.get(gameId) || [];
-    
-    // Add new message
-    history.push(message);
-    
-    // Limit history size
-    if (history.length > this.maxHistoryLength) {
-      history.shift(); // Remove oldest message
+      return messages.map(message => ({
+        id: message.id,
+        content: message.content,
+        sender: message.player.nickname,
+        timestamp: message.createdAt.toISOString(),
+        relativeTime: this.formatRelativeTime(message.createdAt),
+        tableId: message.tableId
+      }));
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`Failed to retrieve messages: ${error.message}`);
+      }
+      throw new Error('Failed to retrieve messages: Unknown error');
     }
-    
-    this.messageHistory.set(gameId, history);
   }
 
   /**
-   * Clear history for a game
+   * Format relative time from a date
    */
-  public clearHistory(gameId: string): void {
-    this.messageHistory.delete(gameId);
-  }
+  formatRelativeTime(date: Date): string {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-  /**
-   * Handle game events by sending system messages
-   */
-  public notifyGameEvent(gameId: string, event: string, playerName?: string): void {
-    let message = '';
-    
-    switch (event) {
-      case 'playerJoined':
-        message = `${playerName} joined the table.`;
-        break;
-      case 'playerLeft':
-        message = `${playerName} left the table.`;
-        break;
-      case 'playerWentAway':
-        message = `${playerName} is away from the table.`;
-        break;
-      case 'playerCameBack':
-        message = `${playerName} is back at the table.`;
-        break;
-      case 'gameStarted':
-        message = 'The game has started!';
-        break;
-      case 'handCompleted':
-        message = 'The hand is complete.';
-        break;
-      case 'playerFolded':
-        message = `${playerName} folded.`;
-        break;
-      case 'playerChecked':
-        message = `${playerName} checked.`;
-        break;
-      case 'playerCalled':
-        message = `${playerName} called.`;
-        break;
-      case 'playerRaised':
-        message = `${playerName} raised.`;
-        break;
-      case 'newDealer':
-        message = `${playerName} is the new dealer.`;
-        break;
-      default:
-        return; // Don't send message for unknown events
+    // Handle future dates or very recent (within 1 minute)
+    if (diffInSeconds < 60) {
+      return 'just now';
     }
-    
-    this.sendSystemMessage(gameId, message);
+
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    if (diffInMinutes < 60) {
+      return diffInMinutes === 1 ? '1 minute ago' : `${diffInMinutes} minutes ago`;
+    }
+
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) {
+      return diffInHours === 1 ? '1 hour ago' : `${diffInHours} hours ago`;
+    }
+
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 365) {
+      return diffInDays === 1 ? '1 day ago' : `${diffInDays} days ago`;
+    }
+
+    const diffInYears = Math.floor(diffInDays / 365);
+    return diffInYears === 1 ? '1 year ago' : `${diffInYears} years ago`;
+  }
+
+  /**
+   * Sanitize message content to prevent XSS attacks
+   */
+  private sanitizeContent(content: string): string {
+    return content
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/<[^>]*>/g, '')
+      .trim();
   }
 }
 
-export const createChatService = (io: Server): ChatService => {
-  return new ChatService(io);
-}; 
+// Export singleton instance
+export const chatService = new ChatService();

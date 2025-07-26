@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { authService, User } from '../services/authService';
 import { LoginForm } from '../components/Auth/LoginForm';
 import { UserProfile } from '../components/Auth/UserProfile';
@@ -48,6 +48,11 @@ const StatusBanner = styled.div<{ isAuthenticated: boolean }>`
   `}
 `;
 
+const spin = keyframes`
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+`;
+
 const LoadingSpinner = styled.div`
   display: flex;
   justify-content: center;
@@ -61,12 +66,7 @@ const LoadingSpinner = styled.div`
     border: 4px solid #667eea;
     border-top: 4px solid transparent;
     border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-  
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    animation: ${spin} 1s linear infinite;
   }
 `;
 

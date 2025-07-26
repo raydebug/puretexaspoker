@@ -179,7 +179,25 @@ export class SocketService {
       // Start heartbeat monitoring
       this.startHeartbeatMonitoring();
       
-      console.log('🔌 FRONTEND: Socket connection established');
+      // CRITICAL FIX: Wait for actual connection before resolving
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Socket connection timeout'));
+        }, 10000);
+        
+        this.socket!.on('connect', () => {
+          clearTimeout(timeout);
+          console.log('🔌 FRONTEND: Socket connection established successfully');
+          resolve();
+        });
+        
+        this.socket!.on('connect_error', (error) => {
+          clearTimeout(timeout);
+          console.error('❌ FRONTEND: Socket connection error:', error);
+          reject(error);
+        });
+      });
+      
     } catch (error) {
       console.error('❌ FRONTEND: Socket connection failed:', error);
       throw error;
@@ -405,7 +423,7 @@ export class SocketService {
       if (this.gameState && this.gameState.players) {
         const nickname = localStorage.getItem('nickname');
         console.log('🎯 FRONTEND: Looking for player with nickname:', nickname);
-        console.log('🎯 FRONTEND: Available players in game state:', this.gameState.players.map(p => ({ name: p.name, id: p.id })));
+        console.log('🎯 FRONTEND: Available players in game state:', (this.gameState.players || []).map(p => ({ name: p.name, id: p.id })));
         
         const currentPlayer = this.gameState.players.find(p => p.name === nickname);
         

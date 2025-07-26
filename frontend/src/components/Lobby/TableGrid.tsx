@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { WelcomePopup } from '../common/WelcomePopup';
 import { socketService } from '../../services/socketService';
 import { TableData } from '../../types/table';
@@ -144,19 +144,19 @@ const LoadingState = styled.div`
   border: 1px solid #8b0000;
 `;
 
+const spin = keyframes`
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+`;
+
 const Spinner = styled.div`
   border: 3px solid rgba(255, 215, 0, 0.2);
   border-top: 3px solid #ffd700;
   border-radius: 50%;
   width: 40px;
   height: 40px;
-  animation: spin 1s linear infinite;
+  animation: ${spin} 1s linear infinite;
   margin: 0 auto 1rem;
-
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
 `;
 
 const ErrorState = styled.div`

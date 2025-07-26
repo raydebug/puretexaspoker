@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
 
 interface GameStartCountdownProps {
   isActive: boolean;
@@ -43,11 +43,11 @@ const CountdownContainer = styled.div<{ $isVisible: boolean; $isFadingOut: boole
   align-items: center;
   justify-content: center;
   
-  ${props => props.$isFadingOut && `
+  ${props => props.$isFadingOut && css`
     animation: ${fadeOutAnimation} 0.5s ease-out forwards;
   `}
   
-  ${props => !props.$isFadingOut && props.$isVisible && `
+  ${props => !props.$isFadingOut && props.$isVisible && css`
     animation: ${pulseAnimation} 1s ease-in-out infinite;
   `}
 `;

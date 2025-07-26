@@ -237,12 +237,18 @@ class TableManager {
       return { success: false, error: 'Table not initialized' };
     }
 
-    // Check if player is already at another table
+    // ENHANCED FIX: Remove player from all other tables before joining this one
     for (const [tid, tablePlayers] of this.tablePlayers) {
-      if (tablePlayers.has(nickname)) {  // Use nickname instead of playerId
-        console.log(`TableManager: Player ${nickname} already at table ${tid}`);
-        return { success: false, error: 'Already joined another table' };
+      if (tablePlayers.has(nickname) && tid !== tableId) {
+        console.log(`TableManager: Player ${nickname} found at table ${tid}, removing before joining table ${tableId}`);
+        this.leaveTable(tid, nickname);
       }
+    }
+    
+    // If player is already at this table, just return success (idempotent)
+    if (players.has(nickname)) {
+      console.log(`TableManager: Player ${nickname} already at table ${tableId}, returning success`);
+      return { success: true };
     }
 
     // Add player as observer

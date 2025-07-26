@@ -54,14 +54,29 @@ export function registerConsolidatedHandlers(io: Server) {
       playersCount: gameState.players?.length || 0,
       currentPlayer: gameState.currentPlayerId,
       phase: gameState.phase,
-      pot: gameState.pot
+      pot: gameState.pot,
+      communityCards: (gameState.board || []).length,
+      boardCards: gameState.board?.map((c: any) => `${c.rank}${c.suit}`) || []
+    });
+
+    // CRITICAL FIX: Convert backend 'board' field to frontend 'communityCards' field
+    const frontendGameState = {
+      ...gameState,
+      communityCards: gameState.board || [],  // Map board to communityCards for frontend
+      board: undefined  // Remove backend-specific field
+    };
+
+    console.log(`🔄 [FIELD CONVERSION] Frontend game state:`, {
+      originalBoard: gameState.board?.map((c: any) => `${c.rank}${c.suit}`) || 'none',
+      convertedCommunityCards: frontendGameState.communityCards?.map((c: any) => `${c.rank}${c.suit}`) || 'none',
+      communityCardsLength: frontendGameState.communityCards?.length || 0
     });
 
     // Emit to table room
-    io.to(roomId).emit('gameState', gameState);
+    io.to(roomId).emit('gameState', frontendGameState);
     
     // Also emit to all clients for debugging/fallback
-    io.emit('gameState', gameState);
+    io.emit('gameState', frontendGameState);
     
     // Emit sync confirmation
     io.to(roomId).emit('gameStateSync', {

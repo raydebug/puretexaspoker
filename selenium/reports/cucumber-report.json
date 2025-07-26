@@ -1,0 +1,1311 @@
+[
+  {
+    "description": "  As a poker game system\n  I want to execute a complete 2-player Texas Hold'em game using only UI interactions\n  So that I can validate heads-up poker mechanics with minimal browser overhead",
+    "elements": [
+      {
+        "description": "",
+        "id": "2-player-complete-game-scenario-(ui-only);quick-2-player-setup-test",
+        "keyword": "Scenario",
+        "line": 30,
+        "name": "Quick 2-Player Setup Test",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2342813625
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 245207
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 8,
+            "name": "the database is reset to a clean state",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "the User table is seeded with test players",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 10,
+            "name": "I have exactly 2 players ready to join a poker game",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:11"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 11,
+            "name": "all players have starting stacks of $100",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Seat"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "1"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "2"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "When ",
+            "line": 12,
+            "name": "exactly 2 players join the table in order:",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:96"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Seat"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "1"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "2"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 16,
+            "name": "all players should be seated correctly:",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 20,
+            "name": "the page should be fully loaded for \"Player1\"",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 21,
+            "name": "the page should be fully loaded for \"Player2\"",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 22,
+            "name": "I manually start the game for table 1",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Position",
+                      "Player",
+                      "Amount"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Small Blind",
+                      "Player1",
+                      "$1"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Big Blind",
+                      "Player2",
+                      "$2"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 23,
+            "name": "the game starts with blinds structure:",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 27,
+            "name": "the pot should be $3",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 32,
+            "name": "game setup should be complete for 2 players",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:466"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 114792
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 125415
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2270365166
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 1011166
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@quick-2-player",
+            "line": 29
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "2-player-complete-game-scenario-(ui-only);complete-2-player-texas-hold'em-game-with-specific-cards-and-actions",
+        "keyword": "Scenario",
+        "line": 35,
+        "name": "Complete 2-Player Texas Hold'em Game with Specific Cards and Actions",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2274745291
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 341374
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 8,
+            "name": "the database is reset to a clean state",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "the User table is seeded with test players",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 10,
+            "name": "I have exactly 2 players ready to join a poker game",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:11"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 11,
+            "name": "all players have starting stacks of $100",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Seat"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "1"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "2"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "When ",
+            "line": 12,
+            "name": "exactly 2 players join the table in order:",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:96"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Seat"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "1"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "2"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 16,
+            "name": "all players should be seated correctly:",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 20,
+            "name": "the page should be fully loaded for \"Player1\"",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 21,
+            "name": "the page should be fully loaded for \"Player2\"",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 22,
+            "name": "I manually start the game for table 1",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Position",
+                      "Player",
+                      "Amount"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Small Blind",
+                      "Player1",
+                      "$1"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Big Blind",
+                      "Player2",
+                      "$2"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 23,
+            "name": "the game starts with blinds structure:",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 27,
+            "name": "the pot should be $3",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Card1",
+                      "Card2"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "A♠",
+                      "K♠"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "Q♥",
+                      "J♥"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "When ",
+            "line": 37,
+            "name": "hole cards are dealt according to the test scenario:",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 41,
+            "name": "each player should see their own hole cards",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 42,
+            "name": "each player should see 2 face-down cards for other players",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 43,
+            "name": "the pre-flop betting round begins",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 44,
+            "name": "force all players to join game rooms",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 45,
+            "name": "manually trigger game state update from backend",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 46,
+            "name": "verify current player information in all browsers",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 47,
+            "name": "Player1 raises to $6",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:170"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 48,
+            "name": "Player2 calls $4 more",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 49,
+            "name": "the pot should be $12",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 50,
+            "name": "2 players should remain in the hand: Player1, Player2",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:196"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 51,
+            "name": "the flop is dealt: A♣, Q♠, 9♥",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:226"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 52,
+            "name": "Player1 bets $8",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 53,
+            "name": "Player2 calls $8",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 54,
+            "name": "the pot should be $28",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 55,
+            "name": "both players should see the 3 flop cards",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 56,
+            "name": "Player1 should have top pair with A♠",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:206"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 57,
+            "name": "Player2 should have top pair with Q♥",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 58,
+            "name": "the turn is dealt: K♣",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:285"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 59,
+            "name": "Player1 bets $15",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 60,
+            "name": "Player2 calls $15",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 61,
+            "name": "the pot should be $58",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 62,
+            "name": "both players should see the turn card K♣",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:338"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 63,
+            "name": "Player1 should have two pair with A♠K♠",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:213"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 64,
+            "name": "Player2 should have straight draw potential",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:218"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 65,
+            "name": "the river is dealt: 10♥",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:425"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 66,
+            "name": "Player1 bets $20",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 67,
+            "name": "Player2 goes all-in with remaining chips",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:385"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 68,
+            "name": "Player1 calls the all-in",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:404"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 69,
+            "name": "the pot should contain all remaining chips",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:323"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 70,
+            "name": "the showdown should reveal both players' cards",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:328"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 71,
+            "name": "Player2 should win with \"straight\"",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 72,
+            "name": "the game should end with proper chip distribution",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:333"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 130542
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 73749
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2400493792
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 386792
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@comprehensive-2-player",
+            "line": 34
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "2-player-complete-game-scenario-(ui-only);heads-up-pre-flop-all-in",
+        "keyword": "Scenario",
+        "line": 75,
+        "name": "Heads-Up Pre-Flop All-In",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2289750541
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 169458
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 8,
+            "name": "the database is reset to a clean state",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "the User table is seeded with test players",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 10,
+            "name": "I have exactly 2 players ready to join a poker game",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:11"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 11,
+            "name": "all players have starting stacks of $100",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Seat"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "1"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "2"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "When ",
+            "line": 12,
+            "name": "exactly 2 players join the table in order:",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:96"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Seat"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "1"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "2"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 16,
+            "name": "all players should be seated correctly:",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 20,
+            "name": "the page should be fully loaded for \"Player1\"",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 21,
+            "name": "the page should be fully loaded for \"Player2\"",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 22,
+            "name": "I manually start the game for table 1",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Position",
+                      "Player",
+                      "Amount"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Small Blind",
+                      "Player1",
+                      "$1"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Big Blind",
+                      "Player2",
+                      "$2"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 23,
+            "name": "the game starts with blinds structure:",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 27,
+            "name": "the pot should be $3",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Card1",
+                      "Card2"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "A♠",
+                      "A♥"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "K♣",
+                      "K♦"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "When ",
+            "line": 77,
+            "name": "hole cards are dealt according to the test scenario:",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 81,
+            "name": "each player should see their own hole cards",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 82,
+            "name": "the pre-flop betting round begins",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 83,
+            "name": "Player1 goes all-in with remaining chips",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:344"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 84,
+            "name": "Player2 calls the all-in",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:363"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 85,
+            "name": "the pot should contain all remaining chips",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:323"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 86,
+            "name": "the showdown should reveal both players' cards",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:328"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 87,
+            "name": "Player1 should win with \"pair of aces\"",
+            "result": {
+              "status": "ambiguous",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 88,
+            "name": "the game should end with proper chip distribution",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:333"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 122167
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 29458
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2273247666
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 231124
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@heads-up-poker",
+            "line": 74
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "2-player-complete-game-scenario-(ui-only)",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "2-Player Complete Game Scenario (UI-Only)",
+    "tags": [],
+    "uri": "selenium/features/2-player-complete-game-scenario.feature"
+  }
+]

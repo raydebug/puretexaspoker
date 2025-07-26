@@ -6,7 +6,6 @@ interface PlayerActionsProps {
   currentPlayerId: string | null;
   gameState: any;
   onAction: (action: string, amount?: number) => void;
-  isTestMode?: boolean;
 }
 
 const ActionButton = styled.button<{ isActive?: boolean }>`
@@ -27,154 +26,36 @@ const ActionButton = styled.button<{ isActive?: boolean }>`
 `;
 
 const PlayerActionsContainer = styled.div`
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 16px;
-  background-color: #f5f5f5;
-  border-radius: 8px;
-  margin: 16px 0;
+  padding: 20px;
+  background-color: rgba(245, 245, 245, 0.95);
+  border-radius: 12px;
   border: 2px solid #ddd;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 400px;
+  z-index: 1000;
 `;
 
-const DebugInfo = styled.div`
-  background-color: #fff3cd;
-  border: 1px solid #ffeaa7;
-  border-radius: 4px;
-  padding: 8px;
-  margin: 8px 0;
-  font-size: 12px;
-  color: #856404;
-`;
 
 const PlayerActions: React.FC<PlayerActionsProps> = ({ 
   currentPlayer, 
   currentPlayerId, 
   gameState, 
-  onAction, 
-  isTestMode = false 
+  onAction
 }) => {
   const [betAmount, setBetAmount] = useState<number>(0);
   
-  // Enhanced debugging for test mode
   const isCurrentPlayer = currentPlayer && currentPlayerId && currentPlayer === currentPlayerId;
-  const shouldShowActions = isCurrentPlayer || isTestMode;
   
-  console.log('🎯 PLAYER_ACTIONS DEBUG:', {
-    currentPlayer,
-    currentPlayerId,
-    isCurrentPlayer,
-    isTestMode,
-    shouldShowActions,
-    gameStatePhase: gameState?.phase,
-    gameStateCurrentPlayerId: gameState?.currentPlayerId,
-    playersCount: gameState?.players?.length
-  });
-  
-  // CRITICAL FIX: Always show actions in test mode, regardless of current player
-  if (isTestMode) {
-    console.log('🧪 TEST MODE: Forcing action buttons to show for debugging');
-    return (
-      <div style={{
-        position: 'fixed',
-        bottom: '20px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 9999,
-        backgroundColor: '#ff0000',
-        border: '5px solid #00ff00',
-        padding: '20px',
-        borderRadius: '10px',
-        minWidth: '400px',
-        textAlign: 'center'
-      }}>
-        <h3 style={{ color: 'white', margin: '0 0 10px 0' }}>🧪 TEST MODE - Action Buttons (Debug)</h3>
-        <div style={{ marginBottom: '10px', padding: '10px', backgroundColor: '#ffff00', borderRadius: '4px', color: 'black' }}>
-          <strong>Debug Info:</strong><br/>
-          Current Player: {currentPlayer}<br/>
-          Current Player ID: {currentPlayerId}<br/>
-          Game Phase: {gameState?.phase}<br/>
-          Is Current Player: {isCurrentPlayer ? 'YES' : 'NO'}<br/>
-          Players Count: {gameState?.players?.length}
-        </div>
-        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <ActionButton 
-            isActive={true} 
-            onClick={() => onAction('raise', 6)}
-            data-testid="raise-button"
-            style={{ backgroundColor: '#00ff00', color: 'black', fontWeight: 'bold' }}
-          >
-            Raise to $6
-          </ActionButton>
-          <ActionButton 
-            isActive={true} 
-            onClick={() => onAction('call', 6)}
-            data-testid="call-button"
-            style={{ backgroundColor: '#00ff00', color: 'black', fontWeight: 'bold' }}
-          >
-            Call $6
-          </ActionButton>
-          <ActionButton 
-            isActive={true} 
-            onClick={() => onAction('fold')}
-            data-testid="fold-button"
-            style={{ backgroundColor: '#00ff00', color: 'black', fontWeight: 'bold' }}
-          >
-            Fold
-          </ActionButton>
-          <ActionButton 
-            isActive={true} 
-            onClick={() => onAction('check')}
-            data-testid="check-button"
-            style={{ backgroundColor: '#00ff00', color: 'black', fontWeight: 'bold' }}
-          >
-            Check
-          </ActionButton>
-          <ActionButton 
-            isActive={true} 
-            onClick={() => onAction('bet', 20)}
-            data-testid="bet-button"
-            style={{ backgroundColor: '#00ff00', color: 'black', fontWeight: 'bold' }}
-          >
-            Bet $20
-          </ActionButton>
-          <ActionButton 
-            isActive={true} 
-            onClick={() => onAction('allin')}
-            data-testid="allin-button"
-            style={{ backgroundColor: '#ff6600', color: 'white', fontWeight: 'bold' }}
-          >
-            All In
-          </ActionButton>
-        </div>
-        <div style={{ marginTop: '10px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
-          <input
-            type="number"
-            value={betAmount}
-            onChange={(e) => setBetAmount(Number(e.target.value))}
-            placeholder="Bet amount"
-            style={{ marginRight: '10px', padding: '5px', width: '100px' }}
-          />
-          <ActionButton 
-            isActive={true} 
-            onClick={() => onAction('bet', betAmount)}
-            data-testid="custom-bet-button"
-            style={{ backgroundColor: '#00ff00', color: 'black', fontWeight: 'bold' }}
-          >
-            Bet ${betAmount}
-          </ActionButton>
-        </div>
-      </div>
-    );
-  }
-
-  // Normal mode - only show for current player
-  if (!shouldShowActions) {
-    console.log('❌ PLAYER_ACTIONS: Not current player, hiding actions');
+  if (!isCurrentPlayer) {
     return null;
   }
-
-  console.log('✅ PLAYER_ACTIONS: Showing action buttons for current player');
   
   const currentBet = gameState?.currentBet || 0;
   const minBet = gameState?.minBet || 0;
@@ -186,22 +67,11 @@ const PlayerActions: React.FC<PlayerActionsProps> = ({
   const needsToCall = currentBet > playerCurrentBet;
   const callAmount = currentBet - playerCurrentBet;
 
-  console.log('🎯 PLAYER_ACTIONS: Action state debug:', {
-    currentBet,
-    playerCurrentBet,
-    needsToCall,
-    callAmount,
-    minBet,
-    playerChips,
-    gamePhase: gameState?.phase
-  });
-
   return (
     <PlayerActionsContainer data-testid="player-actions">
-      <h3>Your Turn - Choose Action</h3>
+      <h3 style={{ margin: '0 0 15px 0', color: '#333' }}>Your Turn</h3>
       
-      {/* Check/Call/Fold options */}
-      <div style={{ marginBottom: '10px' }}>
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
         {!needsToCall ? (
           <ActionButton 
             isActive={true} 
@@ -229,8 +99,7 @@ const PlayerActions: React.FC<PlayerActionsProps> = ({
         </ActionButton>
       </div>
       
-      {/* Betting/Raising options */}
-      <div style={{ marginTop: '10px' }}>
+      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
         <input
           type="number"
           value={betAmount}
@@ -238,7 +107,7 @@ const PlayerActions: React.FC<PlayerActionsProps> = ({
           placeholder={needsToCall ? `Min raise: $${currentBet + minBet}` : `Min bet: $${minBet}`}
           min={needsToCall ? currentBet + minBet : minBet}
           max={playerChips}
-          style={{ marginRight: '10px', padding: '5px' }}
+          style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', width: '120px' }}
           data-testid="bet-amount-input"
         />
         

@@ -2,26 +2,25 @@ import React, { useEffect, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { soundService } from '../services/soundService';
 
-// Animation that moves chips from a player position to the pot
-const moveToCenter = keyframes`
+// Create keyframes functions that accept target positions
+const createMoveToCenterKeyframes = (targetX: number, targetY: number) => keyframes`
   0% {
     transform: translate(0, 0) scale(1);
     opacity: 1;
   }
   100% {
-    transform: translate(var(--targetX), var(--targetY)) scale(0.8);
+    transform: translate(${targetX}px, ${targetY}px) scale(0.8);
     opacity: 0.8;
   }
 `;
 
-// Animation for when a player wins and chips move from pot to player
-const moveFromCenter = keyframes`
+const createMoveFromCenterKeyframes = (targetX: number, targetY: number) => keyframes`
   0% {
     transform: translate(0, 0) scale(0.8);
     opacity: 0.8;
   }
   100% {
-    transform: translate(var(--targetX), var(--targetY)) scale(1);
+    transform: translate(${targetX}px, ${targetY}px) scale(1);
     opacity: 1;
   }
 `;
@@ -35,13 +34,13 @@ const ChipContainer = styled.div<{
   position: absolute;
   left: ${props => props.startPosition.x}px;
   top: ${props => props.startPosition.y}px;
-  --targetX: ${props => props.animationType === 'bet' 
-    ? props.endPosition.x - props.startPosition.x 
-    : props.endPosition.x - props.startPosition.x}px;
-  --targetY: ${props => props.animationType === 'bet' 
-    ? props.endPosition.y - props.startPosition.y 
-    : props.endPosition.y - props.startPosition.y}px;
-  animation: ${props => props.animationType === 'bet' ? moveToCenter : moveFromCenter} 0.8s forwards;
+  animation: ${props => {
+    const targetX = props.endPosition.x - props.startPosition.x;
+    const targetY = props.endPosition.y - props.startPosition.y;
+    return props.animationType === 'bet' 
+      ? createMoveToCenterKeyframes(targetX, targetY)
+      : createMoveFromCenterKeyframes(targetX, targetY);
+  }} 0.8s forwards;
   animation-delay: ${props => props.delay}s;
   z-index: 50;
 `;

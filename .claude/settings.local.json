@@ -39,7 +39,25 @@
       "Bash(HEADLESS=true npx cucumber-js selenium/features/5-player-complete-game-scenario.feature --require selenium/step_definitions/**/*.js --format @cucumber/pretty-formatter --format json:selenium/reports/test-results.json --tags '@comprehensive-50-percent')",
       "Bash(npx prisma generate:*)",
       "Bash(npx prisma:*)",
-      "Bash(HEADLESS=false npm run test:2player)"
+      "Bash(HEADLESS=false npm run test:2player)",
+      "Bash(chmod:*)",
+      "Bash(npm test:*)",
+      "Bash(mkdir:*)",
+      "Bash(HEADLESS=false SCREENSHOT_MODE=true npx cucumber-js selenium/features/2-player-complete-game-scenario.feature --require selenium/step_definitions/2-player-game-steps.js --require selenium/support/hooks.js --format @cucumber/pretty-formatter --tags \"@comprehensive-2-player\")",
+      "Bash(HEADLESS=false npx cucumber-js selenium/features/2-player-screenshot-test.feature --require selenium/step_definitions/2-player-screenshot-steps.js --require selenium/step_definitions/2-player-game-steps.js --require selenium/support/hooks.js --format @cucumber/pretty-formatter)",
+      "Bash(HEADLESS=false npx cucumber-js selenium/features/2-player-game.feature --require selenium/step_definitions/2-player-game-steps.js --format @cucumber/pretty-formatter)",
+      "Bash(HEADLESS=false npx cucumber-js selenium/features/2-player-complete-game-scenario.feature --require selenium/step_definitions/2-player-game-steps.js --format @cucumber/pretty-formatter)",
+      "Bash(HEADLESS=false npx cucumber-js selenium/features/2-player-complete-game-scenario.feature --require selenium/step_definitions/2-player-game-steps.js --format @cucumber/pretty-formatter --tags \"@comprehensive-2-player\")",
+      "Bash(HEADLESS=true npx cucumber-js selenium/features/2-player-complete-game-scenario.feature --require selenium/step_definitions/2-player-game-steps.js --format @cucumber/pretty-formatter)",
+      "Bash(HEADLESS=true npx cucumber-js selenium/features/2-player-complete-game-scenario.feature:30 --require selenium/step_definitions/2-player-game-steps.js --format @cucumber/pretty-formatter)",
+      "Bash(HEADLESS=true npx cucumber-js selenium/features/2-player-complete-game-scenario.feature:35 --require selenium/step_definitions/2-player-game-steps.js --format @cucumber/pretty-formatter)",
+      "Bash(npm start)",
+      "Bash(brew list:*)",
+      "Bash(export NVM_DIR=\"$HOME/.nvm\")",
+      "Bash([ -s \"$NVM_DIR/nvm.sh\" ])",
+      "Bash(. \"$NVM_DIR/nvm.sh\")",
+      "Bash(nvm:*)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }

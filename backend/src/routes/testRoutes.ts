@@ -794,18 +794,31 @@ router.post('/advance-phase', async (req, res) => {
     
     // Update the table state (the gameState is a reference, so changes are automatically saved)
     
-    // Emit WebSocket events to notify frontend
+    // Emit WebSocket events with field conversion for frontend compatibility
     const io = (global as any).socketIO;
     if (io) {
       console.log(`📡 TEST API: Broadcasting game state after phase advance for table ${targetTableId}`);
       
+      // Apply field conversion for frontend compatibility (same as consolidatedHandler)
+      const frontendGameState = {
+        ...gameState,
+        communityCards: gameState.board || [],  // Map board to communityCards for frontend
+        board: undefined  // Remove backend-specific field
+      };
+      
+      console.log(`🔄 TEST API: Phase advance field conversion:`, {
+        phase: gameState.phase,
+        originalBoard: gameState.board?.map((c: any) => `${c.rank}${c.suit}`) || 'none',
+        convertedCommunityCards: frontendGameState.communityCards?.map((c: any) => `${c.rank}${c.suit}`) || 'none'
+      });
+      
       // Emit to table room
-      io.to(`table:${targetTableId}`).emit('gameState', gameState);
+      io.to(`table:${targetTableId}`).emit('gameState', frontendGameState);
       
       // Also emit to all clients for debugging/fallback
-      io.emit('gameState', gameState);
+      io.emit('gameState', frontendGameState);
       
-      console.log(`📡 TEST API: Game state broadcasted after phase advance`);
+      console.log(`📡 TEST API: Game state broadcasted after phase advance with field conversion`);
     }
     
     console.log(`✅ TEST API: Game advanced to ${phase} phase for table ${targetTableId}`);
@@ -1452,6 +1465,125 @@ router.post('/seat-player', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to seat player'
+    });
+  }
+});
+
+// POST /api/test/set-player-cards - Set hole cards for players (testing only)
+router.post('/set-player-cards', async (req, res) => {
+  try {
+    const { tableId, playerCards } = req.body;
+    
+    console.log(`🃏 TEST API: Setting player cards for table ${tableId}:`, playerCards);
+    
+    // Get the current table game state (which contains the players array)
+    const tableGameState = tableManager.getTableGameState(tableId);
+    if (!tableGameState) {
+      return res.status(404).json({
+        success: false,
+        error: `Table ${tableId} not found or no active game`
+      });
+    }
+    
+    // Update player cards in the table game state
+    for (const [playerId, cards] of Object.entries(playerCards as Record<string, any>)) {
+      const player = tableGameState.players.find((p: any) => p.id === playerId || p.name.toLowerCase().includes(playerId.replace('test-', '')));
+      if (player) {
+        player.cards = cards;
+        console.log(`✅ Set cards for ${player.name} (${player.id}):`, cards);
+      } else {
+        console.log(`⚠️ Player ${playerId} not found in table ${tableId}`);
+      }
+    }
+    
+    // Emit updated game state with field conversion for frontend compatibility
+    const io = (global as any).socketIO;
+    if (io) {
+      console.log(`📡 TEST API: Emitting updated game state with player cards for table ${tableId}`);
+      
+      // Apply field conversion for frontend compatibility (same as consolidatedHandler)
+      const frontendGameState = {
+        ...tableGameState,
+        communityCards: tableGameState.board || [],  // Map board to communityCards for frontend
+        board: undefined  // Remove backend-specific field
+      };
+      
+      console.log(`🔄 TEST API: Frontend game state conversion:`, {
+        originalBoard: tableGameState.board?.map((c: any) => `${c.rank}${c.suit}`) || 'none',
+        convertedCommunityCards: frontendGameState.communityCards?.map((c: any) => `${c.rank}${c.suit}`) || 'none',
+        playersWithCards: frontendGameState.players?.filter((p: any) => p.cards?.length > 0).length || 0
+      });
+      
+      // Emit to table-based rooms (table-only architecture)
+      io.to(`table:${tableId}`).emit('gameState', frontendGameState);
+      
+      // Also emit to all clients for debugging/fallback
+      io.emit('gameState', frontendGameState);
+      
+      console.log(`📡 TEST API: WebSocket events emitted for table ${tableId} with player cards`);
+    } else {
+      console.log(`⚠️ TEST API: Socket.IO instance not available for table ${tableId}`);
+    }
+    
+    res.json({
+      success: true,
+      message: 'Player cards set successfully',
+      tableId: tableId,
+      playersUpdated: Object.keys(playerCards)
+    });
+    
+  } catch (error) {
+    console.error('❌ TEST API: Error setting player cards:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to set player cards'
+    });
+  }
+});
+
+// API endpoint to manually trigger showdown and winner determination
+router.post('/trigger-showdown', async (req, res) => {
+  try {
+    const { tableId } = req.body;
+    
+    console.log(`🏆 TEST API: Triggering showdown for table ${tableId}`);
+    
+    // Get the current table game state
+    const tableGameState = tableManager.getTableGameState(tableId);
+    if (!tableGameState) {
+      return res.status(404).json({
+        success: false,
+        error: `Table ${tableId} not found or no active game`
+      });
+    }
+    
+    // Force phase to showdown and trigger winner determination
+    tableGameState.phase = 'showdown';
+    console.log(`🎯 Set phase to showdown for table ${tableId}`);
+    
+    // Manually call the private determineWinner method via reflection
+    // Since it's private, we'll trigger phase advancement which calls it
+    await (tableManager as any).determineWinner(tableId, tableGameState);
+    
+    // Emit updated game state
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`table:${tableId}`).emit('gameState', tableGameState);
+      console.log(`📡 Emitted showdown game state to table:${tableId}`);
+    }
+    
+    res.json({
+      success: true,
+      message: 'Showdown triggered successfully',
+      tableId: tableId,
+      phase: tableGameState.phase
+    });
+    
+  } catch (error) {
+    console.error('❌ TEST API: Error triggering showdown:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to trigger showdown'
     });
   }
 });
