@@ -161,6 +161,17 @@ When('I set hole cards for the test scenario:', { timeout: 10000 }, async functi
   
   const cardAssignments = dataTable.hashes();
   
+  // Convert card notation (A♠ -> Aspades)  
+  const convertCard = (card) => {
+    const rank = card.slice(0, -1);
+    const suit = card.slice(-1);
+    const suitMap = { '♠': 'spades', '♥': 'hearts', '♦': 'diamonds', '♣': 'clubs' };
+    return rank + suitMap[suit];
+  };
+  
+  // Collect all player cards in the correct API format
+  const playerCards = {};
+  
   for (const assignment of cardAssignments) {
     const playerName = assignment.Player;
     const card1 = assignment.Card1;
@@ -168,39 +179,36 @@ When('I set hole cards for the test scenario:', { timeout: 10000 }, async functi
     
     console.log(`🎯 Setting ${playerName} hole cards: ${card1}, ${card2}`);
     
-    // Convert card notation (A♠ -> Aspades)
-    const convertCard = (card) => {
-      const rank = card.slice(0, -1);
-      const suit = card.slice(-1);
-      const suitMap = { '♠': 'spades', '♥': 'hearts', '♦': 'diamonds', '♣': 'clubs' };
-      return rank + suitMap[suit];
-    };
-    
     const cards = [convertCard(card1), convertCard(card2)];
+    playerCards[playerName] = cards;
     
-    try {
-      const response = await fetch('http://localhost:3001/api/test/set-player-cards', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tableId: this.latestTableId || 1,
-          playerId: playerName,
-          cards: cards
-        })
-      });
-      
-      if (response.ok) {
-        console.log(`✅ ${playerName} cards set successfully`);
-        // Store cards for verification
-        if (global.players[playerName]) {
-          global.players[playerName].holeCards = [card1, card2];
-        }
-      } else {
-        console.warn(`⚠️ Failed to set ${playerName} cards, continuing test...`);
-      }
-    } catch (error) {
-      console.warn(`⚠️ Error setting ${playerName} cards:`, error.message);
+    // Store cards for verification
+    if (global.players[playerName]) {
+      global.players[playerName].holeCards = [card1, card2];
     }
+  }
+  
+  // Send all cards in one API request using correct format
+  try {
+    console.log('🃏 Sending cards to API:', playerCards);
+    
+    const response = await fetch('http://localhost:3001/api/test/set-player-cards', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tableId: this.latestTableId || 1,
+        playerCards: playerCards
+      })
+    });
+    
+    if (response.ok) {
+      console.log('✅ All player cards set successfully');
+    } else {
+      const errorText = await response.text();
+      console.warn(`⚠️ Failed to set player cards: ${response.status} - ${errorText}`);
+    }
+  } catch (error) {
+    console.warn('⚠️ Error setting player cards:', error.message);
   }
   
   console.log('✅ Hole card setup complete');
