@@ -228,31 +228,47 @@ Then('each player should see their own hole cards on the UI', { timeout: 15000 }
     console.log(`🎯 Checking hole cards visibility for ${playerName}...`);
     
     try {
-      // Look for hole cards element
-      const holeCardsElements = await player.driver.findElements(By.css('[data-testid="player-hole-cards"], [data-testid="hole-cards"], .hole-cards, .player-cards'));
+      // Wait a moment for game state to update after card setting
+      await player.driver.sleep(2000);
+      
+      // Look for the correct hole cards element using the exact data-testid from PokerTable.tsx
+      const holeCardsElements = await player.driver.findElements(By.css('[data-testid="player-hole-cards"]'));
       
       if (holeCardsElements.length > 0) {
         console.log(`✅ ${playerName} has hole cards element visible`);
         
-        // Take screenshot for verification
-        await takeScreenshot(player.driver, `${playerName}_hole_cards_visible`);
-        
-        // Try to get card details if available
-        for (const element of holeCardsElements) {
-          const isDisplayed = await element.isDisplayed();
-          if (isDisplayed) {
-            const text = await element.getText();
-            console.log(`🃏 ${playerName} hole cards element text: "${text}"`);
-          }
+        // Check if element is actually displayed
+        const isDisplayed = await holeCardsElements[0].isDisplayed();
+        if (isDisplayed) {
+          const text = await holeCardsElements[0].getText();
+          console.log(`🃏 ${playerName} hole cards text: "${text}"`);
+          
+          // Check for individual hole card elements
+          const individualCards = await player.driver.findElements(By.css('[data-testid^="hole-card-"]'));
+          console.log(`🃏 ${playerName} individual hole cards found: ${individualCards.length}`);
+          
+          await takeScreenshot(player.driver, `${playerName}_hole_cards_visible`);
+        } else {
+          console.warn(`⚠️ ${playerName} hole cards element exists but not displayed`);
+          await takeScreenshot(player.driver, `${playerName}_hole_cards_not_displayed`);
         }
       } else {
-        console.warn(`⚠️ ${playerName} hole cards element not found, taking screenshot for debugging...`);
+        console.warn(`⚠️ ${playerName} hole cards element not found`);
+        
+        // Debug: Log all available elements to understand page state
+        const bodyText = await player.driver.findElement(By.css('body')).getText();
+        console.log(`📄 ${playerName} page content (first 200 chars): "${bodyText.substring(0, 200)}..."`);
+        
+        // Check if player is in observer mode
+        const observerElements = await player.driver.findElements(By.css('[data-testid="observer-view"]'));
+        console.log(`👀 ${playerName} observer elements found: ${observerElements.length}`);
+        
         await takeScreenshot(player.driver, `${playerName}_hole_cards_missing`);
       }
       
-      // Additional check for any card-related elements
-      const allCardElements = await player.driver.findElements(By.css('[class*="card"], [data-testid*="card"]'));
-      console.log(`🃏 ${playerName} total card elements found: ${allCardElements.length}`);
+      // Debug: Check all data-testid elements on page
+      const allTestIds = await player.driver.findElements(By.css('[data-testid]'));
+      console.log(`🧪 ${playerName} total data-testid elements: ${allTestIds.length}`);
       
     } catch (error) {
       console.error(`❌ Error checking hole cards for ${playerName}:`, error.message);
@@ -340,18 +356,29 @@ Then('both players should see the {int} community cards on UI', { timeout: 15000
     console.log(`🎯 Checking community cards for ${playerName}...`);
     
     try {
-      // Look for community cards elements
-      const communityCardElements = await player.driver.findElements(By.css('[data-testid="community-cards"], [data-testid="board-cards"], [class*="community"], [class*="board"]'));
+      // Look for the correct community cards element using exact data-testid
+      const communityCardElements = await player.driver.findElements(By.css('[data-testid="community-cards"]'));
       
       if (communityCardElements.length > 0) {
-        console.log(`✅ ${playerName} has community cards element visible`);
+        console.log(`✅ ${playerName} has community cards area visible`);
         
-        // Take screenshot for verification
+        // Check individual community card elements
+        const individualCards = await player.driver.findElements(By.css('[data-testid^="community-card-"]'));
+        console.log(`🃏 ${playerName} total community card slots: ${individualCards.length}`);
+        
+        // Count cards with actual content (not empty)
+        let cardsWithContent = 0;
+        for (const card of individualCards) {
+          const text = await card.getText();
+          if (text && text.trim() !== '') {
+            cardsWithContent++;
+            console.log(`🃏 ${playerName} community card ${cardsWithContent}: "${text}"`);
+          }
+        }
+        
+        console.log(`🃏 ${playerName} community cards with content: ${cardsWithContent}/${expectedCount} expected`);
+        
         await takeScreenshot(player.driver, `${playerName}_community_cards_${expectedCount}`);
-        
-        // Try to count individual cards
-        const individualCards = await player.driver.findElements(By.css('[data-testid="community-cards"] .card, [data-testid="board-cards"] .card, [class*="community"] .card'));
-        console.log(`🃏 ${playerName} sees ${individualCards.length} individual community cards`);
         
       } else {
         console.warn(`⚠️ ${playerName} community cards element not found`);
@@ -381,22 +408,25 @@ Then('I should see game history updated with each action on UI', { timeout: 1000
     console.log(`🎯 Checking game history for ${playerName}...`);
     
     try {
-      // Look for game history/action history elements
-      const historyElements = await player.driver.findElements(By.css('[data-testid="action-history"], [data-testid="game-history"], [class*="history"], [class*="actions"]'));
+      // Look for the correct game history element using exact data-testid from ActionHistory.tsx
+      const historyElements = await player.driver.findElements(By.css('[data-testid="game-history"]'));
       
       if (historyElements.length > 0) {
         console.log(`✅ ${playerName} has game history element visible`);
         
-        // Take screenshot for verification
-        await takeScreenshot(player.driver, `${playerName}_game_history`);
-        
-        // Try to get history content
-        for (const element of historyElements) {
-          const isDisplayed = await element.isDisplayed();
-          if (isDisplayed) {
-            const text = await element.getText();
-            console.log(`📋 ${playerName} game history content: "${text.substring(0, 200)}..."`);
-          }
+        const isDisplayed = await historyElements[0].isDisplayed();
+        if (isDisplayed) {
+          const text = await historyElements[0].getText();
+          console.log(`📋 ${playerName} game history content: "${text.substring(0, 300)}..."`);
+          
+          // Check for game history title
+          const titleElements = await player.driver.findElements(By.css('[data-testid="game-history-title"]'));
+          console.log(`📋 ${playerName} game history title elements: ${titleElements.length}`);
+          
+          await takeScreenshot(player.driver, `${playerName}_game_history_visible`);
+        } else {
+          console.warn(`⚠️ ${playerName} game history element exists but not displayed`);
+          await takeScreenshot(player.driver, `${playerName}_game_history_not_displayed`);
         }
         
       } else {

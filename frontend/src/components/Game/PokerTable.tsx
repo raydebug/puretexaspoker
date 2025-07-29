@@ -590,6 +590,7 @@ export const PokerTable: React.FC<PokerTableProps> = ({
 
   // Helper function to get suit symbol
   const getSuitSymbol = (suit: string) => {
+    if (!suit) return '?'; // Handle undefined/null suit
     switch (suit.toLowerCase()) {
       case 'hearts': return '♥';
       case 'diamonds': return '♦';
@@ -599,8 +600,9 @@ export const PokerTable: React.FC<PokerTableProps> = ({
     }
   };
 
-  // Helper function to get card color
+  // Helper function to get card color  
   const getCardColor = (suit: string) => {
+    if (!suit) return '#000'; // Handle undefined/null suit
     const suitLower = suit.toLowerCase();
     return suitLower === 'hearts' || suitLower === 'diamonds' || suit === '♥' || suit === '♦' ? '#d40000' : '#000';
   };
