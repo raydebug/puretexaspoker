@@ -14,15 +14,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2342813625
-            }
-          },
-          {
-            "keyword": "Before",
-            "hidden": true,
-            "result": {
-              "status": "passed",
-              "duration": 245207
+              "duration": 2220139707
             }
           },
           {
@@ -30,9 +22,12 @@
             "keyword": "Given ",
             "line": 8,
             "name": "the database is reset to a clean state",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:943"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 80629291
             }
           },
           {
@@ -40,9 +35,12 @@
             "keyword": "And ",
             "line": 9,
             "name": "the User table is seeded with test players",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:967"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 72666
             }
           },
           {
@@ -54,8 +52,8 @@
               "location": "selenium/step_definitions/2-player-game-steps.js:11"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 5271114709
             }
           },
           {
@@ -63,9 +61,12 @@
             "keyword": "And ",
             "line": 11,
             "name": "all players have starting stacks of $100",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:972"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 1214916
             }
           },
           {
@@ -100,8 +101,8 @@
               "location": "selenium/step_definitions/2-player-game-steps.js:96"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 7621327334
             }
           },
           {
@@ -132,9 +133,12 @@
             "keyword": "Then ",
             "line": 16,
             "name": "all players should be seated correctly:",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:978"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 182667
             }
           },
           {
@@ -142,9 +146,12 @@
             "keyword": "And ",
             "line": 20,
             "name": "the page should be fully loaded for \"Player1\"",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:989"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 7728208
             }
           },
           {
@@ -152,9 +159,12 @@
             "keyword": "And ",
             "line": 21,
             "name": "the page should be fully loaded for \"Player2\"",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:989"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 8393374
             }
           },
           {
@@ -162,9 +172,12 @@
             "keyword": "When ",
             "line": 22,
             "name": "I manually start the game for table 1",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1005"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 15339940874
             }
           },
           {
@@ -198,9 +211,12 @@
             "keyword": "Then ",
             "line": 23,
             "name": "the game starts with blinds structure:",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1031"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 1042705958
             }
           },
           {
@@ -208,9 +224,12 @@
             "keyword": "And ",
             "line": 27,
             "name": "the pot should be $3",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1092"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 1016426917
             }
           },
           {
@@ -219,11 +238,11 @@
             "line": 32,
             "name": "game setup should be complete for 2 players",
             "match": {
-              "location": "selenium/step_definitions/2-player-game-steps.js:466"
+              "location": "selenium/step_definitions/2-player-game-steps.js:884"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 91500
             }
           },
           {
@@ -231,31 +250,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 114792
-            }
-          },
-          {
-            "keyword": "After",
-            "hidden": true,
-            "result": {
-              "status": "passed",
-              "duration": 125415
-            }
-          },
-          {
-            "keyword": "After",
-            "hidden": true,
-            "result": {
-              "status": "passed",
-              "duration": 2270365166
-            }
-          },
-          {
-            "keyword": "After",
-            "hidden": true,
-            "result": {
-              "status": "passed",
-              "duration": 1011166
+              "duration": 2339596458
             }
           }
         ],
@@ -279,15 +274,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2274745291
-            }
-          },
-          {
-            "keyword": "Before",
-            "hidden": true,
-            "result": {
-              "status": "passed",
-              "duration": 341374
+              "duration": 2227142209
             }
           },
           {
@@ -295,9 +282,12 @@
             "keyword": "Given ",
             "line": 8,
             "name": "the database is reset to a clean state",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:943"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 61548333
             }
           },
           {
@@ -305,9 +295,12 @@
             "keyword": "And ",
             "line": 9,
             "name": "the User table is seeded with test players",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:967"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 48416
             }
           },
           {
@@ -319,8 +312,8 @@
               "location": "selenium/step_definitions/2-player-game-steps.js:11"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 2422027583
             }
           },
           {
@@ -328,9 +321,12 @@
             "keyword": "And ",
             "line": 11,
             "name": "all players have starting stacks of $100",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:972"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 132333
             }
           },
           {
@@ -365,8 +361,8 @@
               "location": "selenium/step_definitions/2-player-game-steps.js:96"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 7613789083
             }
           },
           {
@@ -397,9 +393,12 @@
             "keyword": "Then ",
             "line": 16,
             "name": "all players should be seated correctly:",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:978"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 98292
             }
           },
           {
@@ -407,9 +406,12 @@
             "keyword": "And ",
             "line": 20,
             "name": "the page should be fully loaded for \"Player1\"",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:989"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 17663457
             }
           },
           {
@@ -417,9 +419,12 @@
             "keyword": "And ",
             "line": 21,
             "name": "the page should be fully loaded for \"Player2\"",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:989"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 8803957
             }
           },
           {
@@ -427,9 +432,12 @@
             "keyword": "When ",
             "line": 22,
             "name": "I manually start the game for table 1",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1005"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 15534647624
             }
           },
           {
@@ -463,9 +471,12 @@
             "keyword": "Then ",
             "line": 23,
             "name": "the game starts with blinds structure:",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1031"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 1049855666
             }
           },
           {
@@ -473,9 +484,12 @@
             "keyword": "And ",
             "line": 27,
             "name": "the pot should be $3",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1092"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 1014077583
             }
           },
           {
@@ -509,9 +523,12 @@
             "keyword": "When ",
             "line": 37,
             "name": "hole cards are dealt according to the test scenario:",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1132"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 4100580625
             }
           },
           {
@@ -519,9 +536,12 @@
             "keyword": "Then ",
             "line": 41,
             "name": "each player should see their own hole cards",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1201"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 5638311125
             }
           },
           {
@@ -529,9 +549,12 @@
             "keyword": "And ",
             "line": 42,
             "name": "each player should see 2 face-down cards for other players",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1455"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 12020083
             }
           },
           {
@@ -539,9 +562,12 @@
             "keyword": "When ",
             "line": 43,
             "name": "the pre-flop betting round begins",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1476"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 11354875
             }
           },
           {
@@ -549,9 +575,12 @@
             "keyword": "Then ",
             "line": 44,
             "name": "force all players to join game rooms",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1497"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 30226541
             }
           },
           {
@@ -559,9 +588,12 @@
             "keyword": "And ",
             "line": 45,
             "name": "manually trigger game state update from backend",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1530"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 7286417
             }
           },
           {
@@ -569,311 +601,376 @@
             "keyword": "And ",
             "line": 46,
             "name": "verify current player information in all browsers",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1557"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 35378792
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
             "line": 47,
-            "name": "Player1 raises to $6",
+            "name": "the current player should see a decision timer",
             "match": {
-              "location": "selenium/step_definitions/2-player-game-steps.js:170"
+              "location": "selenium/step_definitions/2-player-game-steps.js:1595"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 543747540
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
             "line": 48,
-            "name": "Player2 calls $4 more",
+            "name": "Player1 raises to $6",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:170"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 7032859542
             }
           },
           {
             "arguments": [],
-            "keyword": "Then ",
+            "keyword": "And ",
             "line": 49,
-            "name": "the pot should be $12",
+            "name": "the current player should see a decision timer",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1595"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 535374166
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
             "line": 50,
-            "name": "2 players should remain in the hand: Player1, Player2",
+            "name": "Player2 calls $4 more",
             "match": {
-              "location": "selenium/step_definitions/2-player-game-steps.js:196"
+              "location": "selenium/step_definitions/2-player-game-steps.js:1679"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 1600483416
             }
           },
           {
             "arguments": [],
-            "keyword": "When ",
+            "keyword": "Then ",
             "line": 51,
-            "name": "the flop is dealt: A♣, Q♠, 9♥",
+            "name": "the pot should be $12",
             "match": {
-              "location": "selenium/step_definitions/2-player-game-steps.js:226"
+              "location": "selenium/step_definitions/2-player-game-steps.js:1092"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 1016431250
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
             "line": 52,
-            "name": "Player1 bets $8",
+            "name": "2 players should remain in the hand: Player1, Player2",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:230"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 140375
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 53,
+            "name": "the flop is dealt: A♣, Q♠, 9♥",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:348"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8498335582
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 53,
-            "name": "Player2 calls $8",
-            "result": {
-              "status": "ambiguous",
-              "duration": 0
-            }
-          },
-          {
-            "arguments": [],
-            "keyword": "Then ",
             "line": 54,
-            "name": "the pot should be $28",
+            "name": "Player1 bets $8",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1738"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 28431165
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
             "line": 55,
-            "name": "both players should see the 3 flop cards",
+            "name": "Player2 calls $8",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1777"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 20637208
             }
           },
           {
             "arguments": [],
-            "keyword": "And ",
+            "keyword": "Then ",
             "line": 56,
-            "name": "Player1 should have top pair with A♠",
+            "name": "the pot should be $28",
             "match": {
-              "location": "selenium/step_definitions/2-player-game-steps.js:206"
+              "location": "selenium/step_definitions/2-player-game-steps.js:1092"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 1019965999
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
             "line": 57,
-            "name": "Player2 should have top pair with Q♥",
+            "name": "both players should see the 3 flop cards",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1816"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 24167291
             }
           },
           {
             "arguments": [],
-            "keyword": "When ",
+            "keyword": "And ",
             "line": 58,
-            "name": "the turn is dealt: K♣",
+            "name": "Player1 should have top pair with A♠",
             "match": {
-              "location": "selenium/step_definitions/2-player-game-steps.js:285"
+              "location": "selenium/step_definitions/2-player-game-steps.js:240"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 25847958
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
             "line": 59,
-            "name": "Player1 bets $15",
+            "name": "Player2 should have top pair with Q♥",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1848"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 27151291
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 60,
+            "name": "the turn is dealt: K♣",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:407"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8470976290
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 60,
-            "name": "Player2 calls $15",
-            "result": {
-              "status": "ambiguous",
-              "duration": 0
-            }
-          },
-          {
-            "arguments": [],
-            "keyword": "Then ",
             "line": 61,
-            "name": "the pot should be $58",
+            "name": "Player1 bets $15",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1738"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 31166041
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
             "line": 62,
-            "name": "both players should see the turn card K♣",
+            "name": "Player2 calls $15",
             "match": {
-              "location": "selenium/step_definitions/2-player-game-steps.js:338"
+              "location": "selenium/step_definitions/2-player-game-steps.js:1777"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 19215208
             }
           },
           {
             "arguments": [],
-            "keyword": "And ",
+            "keyword": "Then ",
             "line": 63,
-            "name": "Player1 should have two pair with A♠K♠",
+            "name": "the pot should be $58",
             "match": {
-              "location": "selenium/step_definitions/2-player-game-steps.js:213"
+              "location": "selenium/step_definitions/2-player-game-steps.js:1092"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 1014478333
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
             "line": 64,
-            "name": "Player2 should have straight draw potential",
+            "name": "both players should see the turn card K♣",
             "match": {
-              "location": "selenium/step_definitions/2-player-game-steps.js:218"
+              "location": "selenium/step_definitions/2-player-game-steps.js:567"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 65952625
             }
           },
           {
             "arguments": [],
-            "keyword": "When ",
+            "keyword": "And ",
             "line": 65,
-            "name": "the river is dealt: 10♥",
+            "name": "Player1 should have two pair with A♠K♠",
             "match": {
-              "location": "selenium/step_definitions/2-player-game-steps.js:425"
+              "location": "selenium/step_definitions/2-player-game-steps.js:269"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 19208499
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
             "line": 66,
-            "name": "Player1 bets $20",
+            "name": "Player2 should have straight draw potential",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:303"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 66448292
             }
           },
           {
             "arguments": [],
-            "keyword": "And ",
+            "keyword": "When ",
             "line": 67,
-            "name": "Player2 goes all-in with remaining chips",
+            "name": "the river is dealt: 10♥",
             "match": {
-              "location": "selenium/step_definitions/2-player-game-steps.js:385"
+              "location": "selenium/step_definitions/2-player-game-steps.js:843"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 8496059584
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
             "line": 68,
-            "name": "Player1 calls the all-in",
+            "name": "Player1 bets $20",
             "match": {
-              "location": "selenium/step_definitions/2-player-game-steps.js:404"
+              "location": "selenium/step_definitions/2-player-game-steps.js:1738"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 30605875
             }
           },
           {
             "arguments": [],
-            "keyword": "Then ",
+            "keyword": "And ",
             "line": 69,
-            "name": "the pot should contain all remaining chips",
+            "name": "Player2 goes all-in with remaining chips",
             "match": {
-              "location": "selenium/step_definitions/2-player-game-steps.js:323"
+              "location": "selenium/step_definitions/2-player-game-steps.js:731"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 1121489332
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
             "line": 70,
-            "name": "the showdown should reveal both players' cards",
+            "name": "Player1 calls the all-in",
             "match": {
-              "location": "selenium/step_definitions/2-player-game-steps.js:328"
+              "location": "selenium/step_definitions/2-player-game-steps.js:786"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 1061814624
             }
           },
           {
             "arguments": [],
-            "keyword": "And ",
+            "keyword": "Then ",
             "line": 71,
-            "name": "Player2 should win with \"straight\"",
+            "name": "the pot should contain all remaining chips",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:445"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 15963040
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
             "line": 72,
-            "name": "the game should end with proper chip distribution",
+            "name": "the showdown should reveal both players' cards",
             "match": {
-              "location": "selenium/step_definitions/2-player-game-steps.js:333"
+              "location": "selenium/step_definitions/2-player-game-steps.js:475"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 16599457
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 73,
+            "name": "Player2 should win with \"straight\"",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1881"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7450301791
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 74,
+            "name": "the game should end with proper chip distribution",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:528"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 67007624
             }
           },
           {
@@ -881,31 +978,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 130542
-            }
-          },
-          {
-            "keyword": "After",
-            "hidden": true,
-            "result": {
-              "status": "passed",
-              "duration": 73749
-            }
-          },
-          {
-            "keyword": "After",
-            "hidden": true,
-            "result": {
-              "status": "passed",
-              "duration": 2400493792
-            }
-          },
-          {
-            "keyword": "After",
-            "hidden": true,
-            "result": {
-              "status": "passed",
-              "duration": 386792
+              "duration": 2422955916
             }
           }
         ],
@@ -921,7 +994,7 @@
         "description": "",
         "id": "2-player-complete-game-scenario-(ui-only);heads-up-pre-flop-all-in",
         "keyword": "Scenario",
-        "line": 75,
+        "line": 77,
         "name": "Heads-Up Pre-Flop All-In",
         "steps": [
           {
@@ -929,15 +1002,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2289750541
-            }
-          },
-          {
-            "keyword": "Before",
-            "hidden": true,
-            "result": {
-              "status": "passed",
-              "duration": 169458
+              "duration": 2238251457
             }
           },
           {
@@ -945,9 +1010,12 @@
             "keyword": "Given ",
             "line": 8,
             "name": "the database is reset to a clean state",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:943"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 63895500
             }
           },
           {
@@ -955,9 +1023,12 @@
             "keyword": "And ",
             "line": 9,
             "name": "the User table is seeded with test players",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:967"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 96874
             }
           },
           {
@@ -969,8 +1040,8 @@
               "location": "selenium/step_definitions/2-player-game-steps.js:11"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 3109828374
             }
           },
           {
@@ -978,9 +1049,12 @@
             "keyword": "And ",
             "line": 11,
             "name": "all players have starting stacks of $100",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:972"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 332499
             }
           },
           {
@@ -1015,8 +1089,8 @@
               "location": "selenium/step_definitions/2-player-game-steps.js:96"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 7739760584
             }
           },
           {
@@ -1047,9 +1121,12 @@
             "keyword": "Then ",
             "line": 16,
             "name": "all players should be seated correctly:",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:978"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 112708
             }
           },
           {
@@ -1057,9 +1134,12 @@
             "keyword": "And ",
             "line": 20,
             "name": "the page should be fully loaded for \"Player1\"",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:989"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 15690375
             }
           },
           {
@@ -1067,9 +1147,12 @@
             "keyword": "And ",
             "line": 21,
             "name": "the page should be fully loaded for \"Player2\"",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:989"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 4427666
             }
           },
           {
@@ -1077,9 +1160,12 @@
             "keyword": "When ",
             "line": 22,
             "name": "I manually start the game for table 1",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1005"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 15508859375
             }
           },
           {
@@ -1113,9 +1199,12 @@
             "keyword": "Then ",
             "line": 23,
             "name": "the game starts with blinds structure:",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1031"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 1038237125
             }
           },
           {
@@ -1123,9 +1212,12 @@
             "keyword": "And ",
             "line": 27,
             "name": "the pot should be $3",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1092"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 1016695124
             }
           },
           {
@@ -1157,102 +1249,115 @@
               }
             ],
             "keyword": "When ",
-            "line": 77,
+            "line": 79,
             "name": "hole cards are dealt according to the test scenario:",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1132"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 4111518875
             }
           },
           {
             "arguments": [],
             "keyword": "Then ",
-            "line": 81,
+            "line": 83,
             "name": "each player should see their own hole cards",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1201"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 5554222500
             }
           },
           {
             "arguments": [],
             "keyword": "When ",
-            "line": 82,
+            "line": 84,
             "name": "the pre-flop betting round begins",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1476"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 11679666
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 83,
+            "line": 85,
             "name": "Player1 goes all-in with remaining chips",
             "match": {
-              "location": "selenium/step_definitions/2-player-game-steps.js:344"
+              "location": "selenium/step_definitions/2-player-game-steps.js:618"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
-            }
-          },
-          {
-            "arguments": [],
-            "keyword": "And ",
-            "line": 84,
-            "name": "Player2 calls the all-in",
-            "match": {
-              "location": "selenium/step_definitions/2-player-game-steps.js:363"
-            },
-            "result": {
-              "status": "skipped",
-              "duration": 0
-            }
-          },
-          {
-            "arguments": [],
-            "keyword": "Then ",
-            "line": 85,
-            "name": "the pot should contain all remaining chips",
-            "match": {
-              "location": "selenium/step_definitions/2-player-game-steps.js:323"
-            },
-            "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 1072770957
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
             "line": 86,
-            "name": "the showdown should reveal both players' cards",
+            "name": "Player2 calls the all-in",
             "match": {
-              "location": "selenium/step_definitions/2-player-game-steps.js:328"
+              "location": "selenium/step_definitions/2-player-game-steps.js:673"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 1064951916
             }
           },
           {
             "arguments": [],
-            "keyword": "And ",
+            "keyword": "Then ",
             "line": 87,
-            "name": "Player1 should win with \"pair of aces\"",
+            "name": "the pot should contain all remaining chips",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:445"
+            },
             "result": {
-              "status": "ambiguous",
-              "duration": 0
+              "status": "passed",
+              "duration": 19801542
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
             "line": 88,
+            "name": "the showdown should reveal both players' cards",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:475"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 23997957
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 89,
+            "name": "Player1 should win with \"pair of aces\"",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1932"
+            },
+            "result": {
+              "status": "failed",
+              "duration": 5002537500,
+              "error_message": "Error: function timed out, ensure the promise resolves within 5000 milliseconds\n    at Timeout.<anonymous> (/Users/leiyao/work/puretexaspoker/node_modules/@cucumber/cucumber/lib/time.js:54:20)\n    at listOnTimeout (node:internal/timers:614:17)\n    at process.processTimers (node:internal/timers:549:7)"
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 90,
             "name": "the game should end with proper chip distribution",
             "match": {
-              "location": "selenium/step_definitions/2-player-game-steps.js:333"
+              "location": "selenium/step_definitions/2-player-game-steps.js:528"
             },
             "result": {
               "status": "skipped",
@@ -1264,38 +1369,14 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 122167
-            }
-          },
-          {
-            "keyword": "After",
-            "hidden": true,
-            "result": {
-              "status": "passed",
-              "duration": 29458
-            }
-          },
-          {
-            "keyword": "After",
-            "hidden": true,
-            "result": {
-              "status": "passed",
-              "duration": 2273247666
-            }
-          },
-          {
-            "keyword": "After",
-            "hidden": true,
-            "result": {
-              "status": "passed",
-              "duration": 231124
+              "duration": 3791080832
             }
           }
         ],
         "tags": [
           {
             "name": "@heads-up-poker",
-            "line": 74
+            "line": 76
           }
         ],
         "type": "scenario"

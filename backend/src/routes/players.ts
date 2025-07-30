@@ -32,7 +32,7 @@ router.post('/', async (req, res) => {
       data: {
         id: nickname.trim(), // Use nickname as ID
         nickname: nickname.trim(),
-        chips: chips || 1000
+        chips: chips !== undefined ? chips : 1000
       }
     });
 
@@ -62,7 +62,7 @@ router.post('/register', async (req, res) => {
       data: {
         id: nickname, // Use nickname as ID
         nickname,
-        chips
+        chips: chips !== undefined ? chips : null
       }
     });
 

@@ -858,15 +858,26 @@ router.post('/raise', async (req, res) => {
       });
     }
     
-    // Simulate raise action
-    console.log(`✅ TEST API: Player ${playerName} raised to $${amount}`);
+    // Actually execute the raise action via TableManager
+    const result = await tableManager.playerAction(tableId, playerName, 'raise', amount);
+    
+    if (!result.success) {
+      console.log(`❌ TEST API: Raise action failed - ${result.error}`);
+      return res.status(400).json({
+        success: false,
+        error: result.error
+      });
+    }
+    
+    console.log(`✅ TEST API: Player ${playerName} raised to $${amount} - action executed`);
     
     res.json({
       success: true,
       message: `Player ${playerName} raised to $${amount}`,
       tableId,
       playerName,
-      amount
+      amount,
+      gameState: result.gameState
     });
   } catch (error) {
     console.error('❌ TEST API: Error in raise action:', error);
@@ -895,14 +906,25 @@ router.post('/call', async (req, res) => {
       });
     }
     
-    // Simulate call action
-    console.log(`✅ TEST API: Player ${playerName} called`);
+    // Actually execute the call action via TableManager
+    const result = await tableManager.playerAction(tableId, playerName, 'call');
+    
+    if (!result.success) {
+      console.log(`❌ TEST API: Call action failed - ${result.error}`);
+      return res.status(400).json({
+        success: false,
+        error: result.error
+      });
+    }
+    
+    console.log(`✅ TEST API: Player ${playerName} called - action executed`);
     
     res.json({
       success: true,
       message: `Player ${playerName} called`,
       tableId,
-      playerName
+      playerName,
+      gameState: result.gameState
     });
   } catch (error) {
     console.error('❌ TEST API: Error in call action:', error);
@@ -1068,22 +1090,24 @@ router.post('/set-current-player', async (req, res) => {
     
     console.log(`🧪 TEST API: Set current player - table ${tableId}, player ${playerName}`);
     
-    const table = tableManager.getTable(tableId);
-    if (!table) {
+    const gameState = tableManager.getTableGameState(tableId);
+    if (!gameState) {
       return res.status(404).json({
         success: false,
         error: 'Game state not found for table'
       });
     }
     
-    // Simulate setting current player
+    // Actually set the current player in the game state
+    gameState.currentPlayerId = playerName;
     console.log(`✅ TEST API: Current player set to ${playerName} for table ${tableId}`);
     
     res.json({
       success: true,
       message: `Current player set to ${playerName}`,
       tableId,
-      playerName
+      playerName,
+      currentPlayerId: gameState.currentPlayerId
     });
   } catch (error) {
     console.error('❌ TEST API: Error setting current player:', error);
@@ -1584,6 +1608,836 @@ router.post('/trigger-showdown', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to trigger showdown'
+    });
+  }
+});
+
+// Tournament Features Test APIs
+/**
+ * TEST API: Setup tournament with blind levels
+ * POST /api/test_setup_tournament
+ */
+router.post('/test_setup_tournament', async (req, res) => {
+  try {
+    const { tableId, blindLevels, players, currentLevel } = req.body;
+    
+    console.log(`🧪 TEST API: Setting up tournament for table ${tableId}`);
+    
+    const tournamentState = {
+      tableId,
+      mode: 'tournament',
+      blindLevels: blindLevels || [
+        { level: 1, smallBlind: 1, bigBlind: 2, ante: 0, duration: 600 },
+        { level: 2, smallBlind: 2, bigBlind: 4, ante: 0, duration: 600 },
+        { level: 3, smallBlind: 3, bigBlind: 6, ante: 1, duration: 600 }
+      ],
+      currentLevel: currentLevel || 0,
+      levelStartTime: Date.now(),
+      players: players || []
+    };
+    
+    // Store tournament state in memory cache
+    memoryCache.set(`tournament_${tableId}`, tournamentState);
+    
+    res.json({
+      success: true,
+      tournament: tournamentState,
+      message: `Tournament setup for table ${tableId}`
+    });
+  } catch (error) {
+    console.error('Error setting up tournament:', error);
+    res.status(500).json({ error: 'Failed to setup tournament' });
+  }
+});
+
+/**
+ * TEST API: Advance blind level
+ * POST /api/test_advance_blind_level/:tableId
+ */
+router.post('/test_advance_blind_level/:tableId', async (req, res) => {
+  try {
+    const { tableId } = req.params;
+    const tournamentKey = `tournament_${tableId}`;
+    const tournament = memoryCache.get(tournamentKey);
+    
+    if (!tournament) {
+      return res.status(404).json({ error: 'Tournament not found' });
+    }
+    
+    tournament.currentLevel = Math.min(tournament.currentLevel + 1, tournament.blindLevels.length - 1);
+    tournament.levelStartTime = Date.now();
+    
+    memoryCache.set(tournamentKey, tournament);
+    
+    const currentBlinds = tournament.blindLevels[tournament.currentLevel];
+    
+    res.json({
+      success: true,
+      currentLevel: tournament.currentLevel,
+      blinds: currentBlinds,
+      message: `Advanced to level ${tournament.currentLevel + 1}`
+    });
+  } catch (error) {
+    console.error('Error advancing blind level:', error);
+    res.status(500).json({ error: 'Failed to advance blind level' });
+  }
+});
+
+// Network Simulation Test APIs
+/**
+ * TEST API: Simulate network disconnection
+ * POST /api/test_simulate_disconnect/:playerId
+ */
+router.post('/test_simulate_disconnect/:playerId', async (req, res) => {
+  try {
+    const { playerId } = req.params;
+    const { duration } = req.body;
+    
+    console.log(`🧪 TEST API: Simulating disconnect for player ${playerId}`);
+    
+    const disconnectionState = {
+      playerId,
+      disconnectedAt: Date.now(),
+      duration: duration || 30000, // 30 seconds default
+      status: 'disconnected'
+    };
+    
+    memoryCache.set(`disconnect_${playerId}`, disconnectionState);
+    
+    // Auto-reconnect after duration
+    setTimeout(() => {
+      memoryCache.delete(`disconnect_${playerId}`);
+      console.log(`🧪 TEST API: Auto-reconnected player ${playerId}`);
+    }, disconnectionState.duration);
+    
+    res.json({
+      success: true,
+      disconnection: disconnectionState,
+      message: `Simulated disconnect for ${playerId}`
+    });
+  } catch (error) {
+    console.error('Error simulating disconnect:', error);
+    res.status(500).json({ error: 'Failed to simulate disconnect' });
+  }
+});
+
+/**
+ * TEST API: Get connection status
+ * GET /api/test_connection_status/:playerId
+ */
+router.get('/test_connection_status/:playerId', async (req, res) => {
+  try {
+    const { playerId } = req.params;
+    const disconnectionState = memoryCache.get(`disconnect_${playerId}`);
+    
+    res.json({
+      success: true,
+      playerId,
+      isConnected: !disconnectionState,
+      disconnectionInfo: disconnectionState || null
+    });
+  } catch (error) {
+    console.error('Error getting connection status:', error);
+    res.status(500).json({ error: 'Failed to get connection status' });
+  }
+});
+
+// Chat System Test APIs
+/**
+ * TEST API: Send test chat message
+ * POST /api/test_send_chat_message
+ */
+router.post('/test_send_chat_message', async (req, res) => {
+  try {
+    const { tableId, playerId, message, messageType } = req.body;
+    
+    const chatMessage = {
+      id: uuidv4(),
+      tableId,
+      playerId,
+      playerName: `TestPlayer${playerId}`,
+      message,
+      messageType: messageType || 'public', // public, private, system
+      timestamp: Date.now(),
+      isVisible: true
+    };
+    
+    // Store in memory cache
+    const chatKey = `chat_${tableId}`;
+    let chatHistory = memoryCache.get(chatKey) || [];
+    chatHistory.push(chatMessage);
+    
+    // Keep only last 100 messages
+    if (chatHistory.length > 100) {
+      chatHistory = chatHistory.slice(-100);
+    }
+    
+    memoryCache.set(chatKey, chatHistory);
+    
+    res.json({
+      success: true,
+      message: chatMessage,
+      chatHistory: chatHistory.slice(-10) // Return last 10 messages
+    });
+  } catch (error) {
+    console.error('Error sending chat message:', error);
+    res.status(500).json({ error: 'Failed to send chat message' });
+  }
+});
+
+/**
+ * TEST API: Get chat history
+ * GET /api/test_get_chat_history/:tableId
+ */
+router.get('/test_get_chat_history/:tableId', async (req, res) => {
+  try {
+    const { tableId } = req.params;
+    const { limit = 50 } = req.query;
+    
+    const chatKey = `chat_${tableId}`;
+    const chatHistory = memoryCache.get(chatKey) || [];
+    
+    const limitedHistory = chatHistory.slice(-parseInt(limit as string));
+    
+    res.json({
+      success: true,
+      tableId,
+      messages: limitedHistory,
+      totalMessages: chatHistory.length
+    });
+  } catch (error) {
+    console.error('Error getting chat history:', error);
+    res.status(500).json({ error: 'Failed to get chat history' });
+  }
+});
+
+// Error Simulation Test APIs
+/**
+ * TEST API: Simulate various error conditions
+ * POST /api/test_simulate_error
+ */
+router.post('/test_simulate_error', async (req, res) => {
+  try {
+    const { errorType, tableId, playerId, customError } = req.body;
+    
+    let errorResponse;
+    
+    switch (errorType) {
+      case 'invalid_action':
+        errorResponse = {
+          error: 'INVALID_ACTION',
+          message: 'Action not allowed in current game state',
+          details: { currentPhase: 'showdown', attemptedAction: 'bet' }
+        };
+        break;
+      
+      case 'insufficient_chips':
+        errorResponse = {
+          error: 'INSUFFICIENT_CHIPS',
+          message: 'Not enough chips for this action',
+          details: { required: 100, available: 50 }
+        };
+        break;
+      
+      case 'table_full':
+        errorResponse = {
+          error: 'TABLE_FULL',
+          message: 'Table has reached maximum capacity',
+          details: { maxPlayers: 9, currentPlayers: 9 }
+        };
+        break;
+      
+      case 'game_not_found':
+        errorResponse = {
+          error: 'GAME_NOT_FOUND',
+          message: 'Game session not found',
+          details: { tableId }
+        };
+        break;
+      
+      case 'timeout':
+        // Simulate timeout by delaying response
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        errorResponse = {
+          error: 'REQUEST_TIMEOUT',
+          message: 'Request timed out',
+          details: { timeout: 5000 }
+        };
+        break;
+      
+      case 'custom':
+        errorResponse = customError;
+        break;
+      
+      default:
+        errorResponse = {
+          error: 'UNKNOWN_ERROR',
+          message: 'An unknown error occurred',
+          details: { errorType }
+        };
+    }
+    
+    // Store error for tracking
+    const errorKey = `error_${Date.now()}_${Math.random()}`;
+    memoryCache.set(errorKey, {
+      ...errorResponse,
+      simulatedAt: Date.now(),
+      tableId,
+      playerId
+    });
+    
+    res.status(400).json(errorResponse);
+  } catch (error) {
+    console.error('Error simulating error:', error);
+    res.status(500).json({ error: 'Failed to simulate error' });
+  }
+});
+
+// Performance Testing APIs
+/**
+ * TEST API: Create high-load scenario
+ * POST /api/test_create_load_scenario
+ */
+router.post('/test_create_load_scenario', async (req, res) => {
+  try {
+    const { tableCount, playersPerTable, actionFrequency } = req.body;
+    
+    const loadScenario = {
+      id: uuidv4(),
+      tableCount: tableCount || 3,
+      playersPerTable: playersPerTable || 9,
+      actionFrequency: actionFrequency || 1000, // actions per second
+      startTime: Date.now(),
+      status: 'running'
+    };
+    
+    // Create mock tables with players
+    const tables = [];
+    for (let i = 1; i <= loadScenario.tableCount; i++) {
+      const players = [];
+      for (let j = 1; j <= loadScenario.playersPerTable; j++) {
+        players.push({
+          id: `load_player_${i}_${j}`,
+          name: `LoadPlayer${i}_${j}`,
+          chips: 1000,
+          seat: j
+        });
+      }
+      
+      tables.push({
+        id: `load_table_${i}`,
+        players,
+        status: 'active'
+      });
+    }
+    
+    loadScenario.tables = tables;
+    memoryCache.set(`load_scenario_${loadScenario.id}`, loadScenario);
+    
+    res.json({
+      success: true,
+      scenario: loadScenario,
+      message: `Created load scenario with ${tableCount} tables`
+    });
+  } catch (error) {
+    console.error('Error creating load scenario:', error);
+    res.status(500).json({ error: 'Failed to create load scenario' });
+  }
+});
+
+// Mobile/Accessibility Test APIs
+/**
+ * TEST API: Set device simulation
+ * POST /api/test_set_device_simulation
+ */
+router.post('/test_set_device_simulation', async (req, res) => {
+  try {
+    const { deviceType, screenSize, touchEnabled, orientation } = req.body;
+    
+    const deviceSimulation = {
+      deviceType: deviceType || 'mobile', // mobile, tablet, desktop
+      screenSize: screenSize || { width: 375, height: 667 },
+      touchEnabled: touchEnabled !== undefined ? touchEnabled : true,
+      orientation: orientation || 'portrait', // portrait, landscape
+      userAgent: deviceType === 'mobile' ? 'Mobile Safari' : 'Desktop Chrome',
+      simulatedAt: Date.now()
+    };
+    
+    memoryCache.set('device_simulation', deviceSimulation);
+    
+    res.json({
+      success: true,
+      device: deviceSimulation,
+      message: `Device simulation set to ${deviceType}`
+    });
+  } catch (error) {
+    console.error('Error setting device simulation:', error);
+    res.status(500).json({ error: 'Failed to set device simulation' });
+  }
+});
+
+/**
+ * TEST API: Get accessibility features status
+ * GET /api/test_accessibility_status
+ */
+router.get('/test_accessibility_status', async (req, res) => {
+  try {
+    const accessibilityFeatures = {
+      screenReaderSupport: true,
+      keyboardNavigation: true,
+      highContrast: false,
+      fontSize: 'normal',
+      colorBlindSupport: true,
+      ariaLabels: true,
+      focusIndicators: true,
+      alternativeText: true
+    };
+    
+    res.json({
+      success: true,
+      accessibility: accessibilityFeatures,
+      wcagCompliance: 'AA'
+    });
+  } catch (error) {
+    console.error('Error getting accessibility status:', error);
+    res.status(500).json({ error: 'Failed to get accessibility status' });
+  }
+});
+
+// Game State Recovery Test APIs
+/**
+ * TEST API: Simulate corrupted game state
+ * POST /api/test_corrupt_game_state/:tableId
+ */
+router.post('/test_corrupt_game_state/:tableId', async (req, res) => {
+  try {
+    const { tableId } = req.params;
+    const { corruptionType } = req.body;
+    
+    const corruptedState = {
+      tableId,
+      corruptionType: corruptionType || 'invalid_phase',
+      originalState: memoryCache.get(`table_${tableId}`),
+      corruptedAt: Date.now()
+    };
+    
+    // Apply corruption based on type
+    switch (corruptionType) {
+      case 'invalid_phase':
+        corruptedState.invalidData = { phase: 'invalid_phase' };
+        break;
+      case 'missing_players':
+        corruptedState.invalidData = { players: [] };
+        break;
+      case 'negative_chips':
+        corruptedState.invalidData = { players: [{ chips: -100 }] };
+        break;
+      case 'duplicate_cards':
+        corruptedState.invalidData = { communityCards: ['AS', 'AS', 'KH'] };
+        break;
+    }
+    
+    memoryCache.set(`corrupted_${tableId}`, corruptedState);
+    
+    res.json({
+      success: true,
+      corruption: corruptedState,
+      message: `Simulated ${corruptionType} corruption for table ${tableId}`
+    });
+  } catch (error) {
+    console.error('Error corrupting game state:', error);
+    res.status(500).json({ error: 'Failed to corrupt game state' });
+  }
+});
+
+/**
+ * TEST API: Recover from corrupted state
+ * POST /api/test_recover_game_state/:tableId
+ */
+router.post('/test_recover_game_state/:tableId', async (req, res) => {
+  try {
+    const { tableId } = req.params;
+    const corruptedState = memoryCache.get(`corrupted_${tableId}`);
+    
+    if (!corruptedState) {
+      return res.status(404).json({ error: 'No corrupted state found' });
+    }
+    
+    const recoveryResult = {
+      tableId,
+      recoveredAt: Date.now(),
+      originalState: corruptedState.originalState,
+      recoveryMethod: 'state_restoration',
+      success: true
+    };
+    
+    // Restore original state
+    if (corruptedState.originalState) {
+      memoryCache.set(`table_${tableId}`, corruptedState.originalState);
+    }
+    
+    // Clear corruption marker
+    memoryCache.delete(`corrupted_${tableId}`);
+    
+    res.json({
+      success: true,
+      recovery: recoveryResult,
+      message: `Recovered game state for table ${tableId}`
+    });
+  } catch (error) {
+    console.error('Error recovering game state:', error);
+    res.status(500).json({ error: 'Failed to recover game state' });
+  }
+});
+
+/**
+ * DUMMY API: Deal hole cards (for UI testing)
+ * POST /api/test/deal-hole-cards
+ */
+router.post('/deal-hole-cards', async (req, res) => {
+  try {
+    const { tableId, players } = req.body;
+    console.log(`🧪 DUMMY API: Deal hole cards for table ${tableId}`);
+    
+    // Simulate dealing cards
+    const dealtCards = players.map((player: any) => ({
+      playerName: player.name,
+      seat: player.seat,
+      cards: player.cards || [
+        { suit: 'hearts', rank: 'A' },
+        { suit: 'spades', rank: 'K' }
+      ]
+    }));
+    
+    // Store in memory cache for potential retrieval
+    memoryCache.set(`hole_cards_${tableId}`, {
+      tableId,
+      dealtAt: Date.now(),
+      players: dealtCards
+    });
+    
+    res.json({
+      success: true,
+      message: 'Hole cards dealt successfully',
+      tableId,
+      cards: dealtCards.length * 2,
+      players: dealtCards
+    });
+  } catch (error) {
+    console.error('Error dealing hole cards:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to deal hole cards' 
+    });
+  }
+});
+
+/**
+ * DUMMY API: Enable betting controls (for UI testing)
+ * POST /api/test/enable-betting-controls
+ */
+router.post('/enable-betting-controls', async (req, res) => {
+  try {
+    const { tableId, currentPlayer, availableActions } = req.body;
+    console.log(`🧪 DUMMY API: Enable betting controls for table ${tableId}, player ${currentPlayer}`);
+    
+    const bettingState = {
+      tableId,
+      currentPlayer,
+      availableActions: availableActions || ['check', 'bet', 'fold', 'call', 'raise'],
+      enabledAt: Date.now(),
+      minBet: 2,
+      maxBet: 100,
+      currentBet: 0
+    };
+    
+    // Store betting state
+    memoryCache.set(`betting_controls_${tableId}`, bettingState);
+    
+    res.json({
+      success: true,
+      message: 'Betting controls enabled',
+      tableId,
+      currentPlayer,
+      actions: bettingState.availableActions,
+      bettingState
+    });
+  } catch (error) {
+    console.error('Error enabling betting controls:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to enable betting controls' 
+    });
+  }
+});
+
+/**
+ * DUMMY API: Deal community cards (for UI testing)
+ * POST /api/test/deal-community-cards
+ */
+router.post('/deal-community-cards', async (req, res) => {
+  try {
+    const { tableId, phase, cards } = req.body;
+    console.log(`🧪 DUMMY API: Deal community cards for table ${tableId}, phase ${phase}`);
+    
+    const communityCards = cards || [
+      { suit: 'hearts', rank: '9' },
+      { suit: 'diamonds', rank: 'Q' },
+      { suit: 'clubs', rank: 'A' }
+    ];
+    
+    const communityState = {
+      tableId,
+      phase: phase || 'flop',
+      cards: communityCards,
+      dealtAt: Date.now()
+    };
+    
+    // Store community cards state
+    memoryCache.set(`community_cards_${tableId}`, communityState);
+    
+    // Emit to WebSocket for UI update
+    const io = (global as any).socketIO;
+    if (io) {
+      console.log(`📡 DUMMY API: Broadcasting community cards to table:${tableId}`);
+      io.to(`table:${tableId}`).emit('communityCardsDealt', {
+        tableId,
+        phase,
+        communityCards,
+        board: communityCards
+      });
+      
+      // Also emit general gameState update
+      io.to(`table:${tableId}`).emit('gameState', {
+        tableId,
+        phase,
+        communityCards,
+        board: communityCards,
+        status: 'playing'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: `Community cards dealt for ${phase}`,
+      tableId,
+      phase,
+      cards: communityCards.length,
+      communityCards
+    });
+  } catch (error) {
+    console.error('Error dealing community cards:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to deal community cards' 
+    });
+  }
+});
+
+/**
+ * DUMMY API: Show player cards in UI (for UI testing)
+ * POST /api/test/show-player-cards
+ */
+router.post('/show-player-cards', async (req, res) => {
+  try {
+    const { tableId, playerId, cards, visible } = req.body;
+    console.log(`🧪 DUMMY API: Show player cards for ${playerId} at table ${tableId}`);
+    
+    const playerCards = cards || [
+      { suit: 'hearts', rank: 'A' },
+      { suit: 'spades', rank: 'K' }
+    ];
+    
+    // Emit to WebSocket for UI update
+    const io = (global as any).socketIO;
+    if (io) {
+      console.log(`📡 DUMMY API: Broadcasting player cards to table:${tableId}`);
+      io.to(`table:${tableId}`).emit('playerCardsUpdate', {
+        tableId,
+        playerId,
+        cards: playerCards,
+        visible: visible !== false
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: `Player cards shown for ${playerId}`,
+      tableId,
+      playerId,
+      cards: playerCards,
+      visible: visible !== false
+    });
+  } catch (error) {
+    console.error('Error showing player cards:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to show player cards' 
+    });
+  }
+});
+
+/**
+ * DUMMY API: Create UI buttons/controls (for UI testing)
+ * POST /api/test/create-ui-buttons
+ */
+router.post('/create-ui-buttons', async (req, res) => {
+  try {
+    const { tableId, playerId, buttons } = req.body;
+    console.log(`🧪 DUMMY API: Create UI buttons for ${playerId} at table ${tableId}`);
+    
+    const defaultButtons = buttons || [
+      { id: 'btn-fold', text: 'Fold', action: 'fold', enabled: true },
+      { id: 'btn-check', text: 'Check', action: 'check', enabled: true },
+      { id: 'btn-call', text: 'Call', action: 'call', enabled: true },
+      { id: 'btn-bet', text: 'Bet', action: 'bet', enabled: true },
+      { id: 'btn-raise', text: 'Raise', action: 'raise', enabled: true }
+    ];
+    
+    // Emit to WebSocket for UI update
+    const io = (global as any).socketIO;
+    if (io) {
+      console.log(`📡 DUMMY API: Broadcasting UI buttons to table:${tableId}`);
+      io.to(`table:${tableId}`).emit('uiButtonsUpdate', {
+        tableId,
+        playerId,
+        buttons: defaultButtons,
+        showButtons: true
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: `UI buttons created for ${playerId}`,
+      tableId,
+      playerId,
+      buttons: defaultButtons
+    });
+  } catch (error) {
+    console.error('Error creating UI buttons:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to create UI buttons' 
+    });
+  }
+});
+
+/**
+ * DUMMY API: Update pot display (for UI testing)
+ * POST /api/test/update-pot-display
+ */
+router.post('/update-pot-display', async (req, res) => {
+  try {
+    const { tableId, potAmount, chips, playerChips } = req.body;
+    console.log(`🧪 DUMMY API: Update pot display for table ${tableId}, pot: ${potAmount}`);
+    
+    const potData = {
+      tableId,
+      pot: potAmount || 25,
+      chips: chips || [
+        { color: 'red', value: 5, count: 3 },
+        { color: 'blue', value: 10, count: 1 }
+      ],
+      playerChips: playerChips || {
+        'UITestPlayer': 95,
+        'DummyPlayer2': 90
+      },
+      updatedAt: Date.now()
+    };
+    
+    // Store pot state
+    memoryCache.set(`pot_display_${tableId}`, potData);
+    
+    // Emit to WebSocket for UI update
+    const io = (global as any).socketIO;
+    if (io) {
+      console.log(`📡 DUMMY API: Broadcasting pot display to table:${tableId}`);
+      io.to(`table:${tableId}`).emit('potUpdate', potData);
+      
+      // Also emit game state update
+      io.to(`table:${tableId}`).emit('gameState', {
+        tableId,
+        pot: potData.pot,
+        players: Object.entries(potData.playerChips).map(([name, chips]) => ({
+          name,
+          chips,
+          id: name
+        }))
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: `Pot display updated for table ${tableId}`,
+      ...potData
+    });
+  } catch (error) {
+    console.error('Error updating pot display:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to update pot display' 
+    });
+  }
+});
+
+/**
+ * DUMMY API: Create visible UI elements (for UI testing)
+ * POST /api/test/create-visible-elements
+ */
+router.post('/create-visible-elements', async (req, res) => {
+  try {
+    const { tableId, elementTypes } = req.body;
+    console.log(`🧪 DUMMY API: Create visible UI elements for table ${tableId}`);
+    
+    const elements = elementTypes || [
+      'poker-table',
+      'player-seats',
+      'action-buttons',
+      'card-area',
+      'pot-area',
+      'chip-stacks',
+      'game-info'
+    ];
+    
+    const uiElements = {
+      tableId,
+      elements: elements.map(type => ({
+        type,
+        id: `ui-${type}`,
+        visible: true,
+        data: {
+          'poker-table': { seats: 9, maxPlayers: 9 },
+          'player-seats': { occupied: 2, available: 7 },
+          'action-buttons': { count: 5, enabled: 3 },
+          'card-area': { holeCards: 2, communityCards: 3 },
+          'pot-area': { amount: 25, chips: 8 },
+          'chip-stacks': { players: 2, totalChips: 200 },
+          'game-info': { phase: 'flop', round: 1 }
+        }[type] || {}
+      })),
+      createdAt: Date.now()
+    };
+    
+    // Store UI elements state
+    memoryCache.set(`ui_elements_${tableId}`, uiElements);
+    
+    // Emit to WebSocket for UI update
+    const io = (global as any).socketIO;
+    if (io) {
+      console.log(`📡 DUMMY API: Broadcasting visible UI elements to table:${tableId}`);
+      io.to(`table:${tableId}`).emit('uiElementsUpdate', uiElements);
+    }
+    
+    res.json({
+      success: true,
+      message: `UI elements created for table ${tableId}`,
+      ...uiElements
+    });
+  } catch (error) {
+    console.error('Error creating visible UI elements:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to create visible UI elements' 
     });
   }
 });

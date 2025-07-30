@@ -716,6 +716,11 @@ export const PokerTable: React.FC<PokerTableProps> = ({
     const isCurrentPlayer = !isEmpty && gameState.currentPlayerId === player?.id;
     const isFolded = !isEmpty && !player?.isActive;
     
+    // Debug logging for decision timer issue
+    if (!isEmpty && player) {
+      console.log(`🔍 Seat ${seatNumber}: player.id="${player.id}", gameState.currentPlayerId="${gameState.currentPlayerId}", isCurrentPlayer=${isCurrentPlayer}`);
+    }
+    
     return (
       <PlayerSeatExtended
         key={seatNumber}

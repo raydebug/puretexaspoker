@@ -397,6 +397,13 @@ export class LocationManager {
 
     throw new Error(`Invalid location format: ${location}`);
   }
+
+  /**
+   * Clear all users from memory cache (for testing)
+   */
+  clearAllUsers(): void {
+    this.userLocations.clear();
+  }
 }
 
 // Export singleton instance

@@ -6,6 +6,7 @@
   "scripts": {
     "test": "npm run test:clean && concurrently --kill-others-on-fail \"cd backend && npm test\" \"cd frontend && npm test\"",
     "test:clean": "rimraf selenium/screenshots selenium/reports",
+    "test:clean:screenshots": "rimraf selenium/screenshots/*.png selenium/screenshots/fresh-test/*.png selenium/screenshots/failure_*.png && mkdir -p selenium/screenshots/fresh-test",
     "test:selenium": "npm run test:selenium:cucumber",
     "test:selenium:cucumber": "npx cucumber-js selenium/features/**/*.feature --require selenium/step_definitions/**/*.js --format @cucumber/pretty-formatter --format json:selenium/reports/cucumber-report.json",
     "test:selenium:chrome": "BROWSER=chrome npm run test:selenium:cucumber",

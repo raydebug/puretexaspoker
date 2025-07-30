@@ -44,7 +44,9 @@ Feature: 2-Player Complete Game Scenario (UI-Only)
     Then force all players to join game rooms
     And manually trigger game state update from backend
     And verify current player information in all browsers
+    And the current player should see a decision timer
     And Player1 raises to $6
+    And the current player should see a decision timer
     And Player2 calls $4 more
     Then the pot should be $12
     And 2 players should remain in the hand: Player1, Player2

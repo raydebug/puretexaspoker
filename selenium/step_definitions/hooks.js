@@ -1,6 +1,4 @@
 const { Before, After, BeforeAll, AfterAll, Status } = require('@cucumber/cucumber')
-const { seleniumManager } = require('../config/selenium.config.js')
-const { WebDriverHelpers } = require('../utils/webdriverHelpers.js')
 const axios = require('axios')
 const { exec } = require('child_process')
 const { promisify } = require('util')
@@ -9,7 +7,40 @@ const fs = require('fs')
 
 const execAsync = promisify(exec)
 
-let helpers
+// Helper function to clean up old screenshots
+async function cleanupScreenshots() {
+  try {
+    console.log('🧹 Cleaning up old screenshots...')
+    
+    const screenshotDir = path.join(__dirname, '..', 'screenshots')
+    
+    // Remove all files in screenshots directory but keep the directory structure
+    const cleanupCommands = [
+      `find "${screenshotDir}" -name "*.png" -type f -delete 2>/dev/null || true`,
+      `rm -rf "${screenshotDir}/fresh-test/"*.png 2>/dev/null || true`,
+      `rm -rf "${screenshotDir}/failure_"*.png 2>/dev/null || true`
+    ]
+    
+    for (const command of cleanupCommands) {
+      try {
+        await execAsync(command)
+      } catch (error) {
+        // Ignore cleanup errors - directory might not exist yet
+      }
+    }
+    
+    // Ensure fresh-test directory exists
+    const freshTestDir = path.join(screenshotDir, 'fresh-test')
+    if (!fs.existsSync(freshTestDir)) {
+      fs.mkdirSync(freshTestDir, { recursive: true })
+    }
+    
+    console.log('✅ Screenshot cleanup completed')
+    
+  } catch (error) {
+    console.log(`⚠️ Screenshot cleanup failed (continuing anyway): ${error.message}`)
+  }
+}
 
 // Enhanced helper function to kill all Chrome instances with multiple approaches
 async function killAllChromeInstances() {
@@ -138,7 +169,10 @@ BeforeAll({timeout: 120000}, async function() {
   console.log('🚀 Setting up enhanced Selenium test environment...')
   
   try {
-    // Step 1: Comprehensive cleanup
+    // Step 1: Clean up old screenshots
+    await cleanupScreenshots()
+    
+    // Step 2: Comprehensive browser cleanup
     await killAllChromeInstances()
     await prepareTestEnvironment()
     
@@ -152,11 +186,9 @@ BeforeAll({timeout: 120000}, async function() {
        console.log(`⚠️ Server health check failed, but continuing for test robustness: ${error.message}`)
      }
     
-    // Step 4: Initialize helpers for single-browser tests
+    // Step 4: Test environment ready
     if (process.env.MULTI_BROWSER_TEST !== 'true') {
-      helpers = new WebDriverHelpers()
-      await helpers.setup()
-      console.log('✅ Single-browser helpers initialized')
+      console.log('✅ Single-browser mode ready')
     } else {
       console.log('🔥 Multi-browser test mode enabled - skipping single-browser setup')
     }
@@ -178,13 +210,7 @@ Before({timeout: 90000}, async function() {
   
   // Skip single-browser setup for multi-browser tests
   if (process.env.MULTI_BROWSER_TEST !== 'true') {
-    try {
-      await helpers.beforeScenario()
-      console.log('✅ Single-browser scenario setup completed')
-    } catch (error) {
-      console.log(`⚠️ Single-browser setup failed: ${error.message}`)
-      throw error
-    }
+    console.log('✅ Single-browser scenario setup - no additional setup needed')
   } else {
     console.log('🔥 Multi-browser test - using dedicated browser management')
   }
@@ -246,19 +272,8 @@ After({timeout: 60000}, async function(scenario) {
         }
       }
       
-      // Also capture screenshot from single browser if available
-      if (helpers && helpers.driver) {
-        try {
-          const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-          const screenshotPath = path.join(screenshotsDir, `failure_${scenario.pickle.name}_single_${timestamp}.png`)
-          await helpers.driver.takeScreenshot().then(data => {
-            fs.writeFileSync(screenshotPath, data, 'base64')
-            console.log(`📸 Screenshot saved for single browser: ${screenshotPath}`)
-          })
-        } catch (screenshotError) {
-          console.log(`⚠️ Failed to capture single browser screenshot: ${screenshotError.message}`)
-        }
-      }
+      // Single browser screenshots not available in this setup
+      console.log('ℹ️ Single browser screenshot capture not configured')
       
     } catch (error) {
       console.log(`⚠️ Screenshot capture failed: ${error.message}`)
@@ -267,14 +282,7 @@ After({timeout: 60000}, async function(scenario) {
   
   // Skip single-browser cleanup for multi-browser tests
   if (process.env.MULTI_BROWSER_TEST !== 'true') {
-    try {
-      if (helpers) {
-        await helpers.afterScenario(scenario)
-        console.log('✅ Single-browser cleanup completed')
-      }
-    } catch (error) {
-      console.log(`⚠️ Single-browser cleanup error: ${error.message}`)
-    }
+    console.log('✅ Single-browser cleanup - no additional cleanup needed')
   } else {
     console.log('🔥 Multi-browser test - performing comprehensive browser cleanup')
     
@@ -307,12 +315,6 @@ AfterAll({timeout: 60000}, async function() {
   console.log('🏁 Starting final enhanced cleanup...')
   
   try {
-    // Cleanup single-browser helpers if they exist
-    if (helpers) {
-      await helpers.cleanup()
-      console.log('✅ Single-browser helpers cleaned up')
-    }
-    
     // Comprehensive final cleanup
     await killAllChromeInstances()
     
