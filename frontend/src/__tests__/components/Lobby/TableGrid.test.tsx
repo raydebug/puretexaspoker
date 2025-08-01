@@ -27,7 +27,7 @@ const mockTables = [
     id: 2,
     name: 'Table 2',
     players: 0,
-    maxPlayers: 9,
+    maxPlayers: 6,
     observers: 0,
     status: 'waiting',
     stakes: '$0.02/$0.05',

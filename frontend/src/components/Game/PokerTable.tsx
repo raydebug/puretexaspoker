@@ -168,22 +168,18 @@ const PlayerSeat = styled.div.withConfig({
    }};
    
    ${props => props.isEmpty && props.isAvailable && css`
-     animation: ${props.position === 2 || props.position === 8 ? breatheVertical : 
-       props.position === 5 ? breatheHorizontal : breatheDefault} 3s ease-in-out infinite;
+     animation: ${props.position === 2 || props.position === 5 ? breatheVertical : breatheDefault} 3s ease-in-out infinite;
    `}
 
-  // Position 9 player seats around the oval table
+  // Position 6 player seats around the oval table
   ${props => {
     const positions = [
-      { top: '30px', right: '120px', transform: 'none' },           // 1. Small Blind (SB) - Top right
-      { top: '50%', right: '20px', transform: 'translateY(-50%)' }, // 2. Big Blind (BB) - Right
-      { bottom: '80px', right: '80px', transform: 'none' },         // 3. Under the Gun (UTG) - Bottom right
-      { bottom: '30px', right: '200px', transform: 'none' },        // 4. UTG+1 - Bottom middle right
-      { bottom: '20px', left: '50%', transform: 'translateX(-50%)' }, // 5. Middle Position (MP) - Bottom middle
-      { bottom: '30px', left: '200px', transform: 'none' },         // 6. Lojack (LJ) - Bottom middle left
-      { bottom: '80px', left: '80px', transform: 'none' },          // 7. Hijack (HJ) - Bottom left
-      { top: '50%', left: '20px', transform: 'translateY(-50%)' },  // 8. Cutoff (CO) - Left
-      { top: '30px', left: '120px', transform: 'none' },            // 9. Button (BU) - Top left
+      { bottom: '80px', left: '80px', transform: 'none' },          // 1. Button/Dealer (BU) - Bottom left
+      { top: '50%', left: '20px', transform: 'translateY(-50%)' },  // 2. Small Blind (SB) - Left
+      { top: '30px', left: '120px', transform: 'none' },            // 3. Big Blind (BB) - Top left
+      { top: '30px', right: '120px', transform: 'none' },           // 4. Under the Gun (UTG) - Top right
+      { top: '50%', right: '20px', transform: 'translateY(-50%)' }, // 5. Under the Gun + 1 (UTG+1) - Right
+      { bottom: '80px', right: '80px', transform: 'none' },         // 6. Cutoff (CO) - Bottom right
     ];
     
     const pos = positions[props.position - 1];
@@ -203,19 +199,13 @@ const PlayerSeat = styled.div.withConfig({
           background: linear-gradient(145deg, #66BB6A, #43A047);
           border-color: #81C784;
           box-shadow: 0 6px 25px rgba(76, 175, 80, 0.6), 0 0 15px rgba(102, 187, 106, 0.5);
-          transform: ${props.position <= 4 ? props.position === 1 || props.position === 4 ? 'scale(1.1)' : 
-            props.position === 2 ? 'translateY(-50%) scale(1.1)' : 'scale(1.1)' :
-            props.position === 5 ? 'translateX(-50%) scale(1.1)' : 
-            props.position === 8 ? 'translateY(-50%) scale(1.1)' : 'scale(1.1)'};
+          transform: ${props.position === 2 || props.position === 5 ? 'translateY(-50%) scale(1.1)' : 'scale(1.1)'};
         `;
       }
       if (!props.isEmpty) {
         return `
           box-shadow: 0 6px 25px rgba(255, 215, 0, 0.5), 0 0 12px rgba(255, 183, 77, 0.4);
-      transform: ${props.position <= 4 ? props.position === 1 || props.position === 4 ? 'scale(1.05)' : 
-        props.position === 2 ? 'translateY(-50%) scale(1.05)' : 'scale(1.05)' :
-        props.position === 5 ? 'translateX(-50%) scale(1.05)' : 
-        props.position === 8 ? 'translateY(-50%) scale(1.05)' : 'scale(1.05)'};
+          transform: ${props.position === 2 || props.position === 5 ? 'translateY(-50%) scale(1.05)' : 'scale(1.05)'};
         `;
       }
       return '';
@@ -468,17 +458,14 @@ const PlayerSeatExtended = styled(PlayerSeat).withConfig({
   `}
 `;
 
-// Texas Hold'em position names for 9 player seats (excluding dealer)
+// Texas Hold'em position names for 6 player seats
 const POSITION_NAMES = [
-  'SB',    // 1. Small Blind - Top right
-  'BB',    // 2. Big Blind - Right
-  'UTG',   // 3. Under the Gun - Bottom right  
-  'UTG+1', // 4. Under the Gun + 1 - Bottom middle right
-  'MP',    // 5. Middle Position - Bottom middle
-  'LJ',    // 6. Lojack - Bottom middle left
-  'HJ',    // 7. Hijack - Bottom left
-  'CO',    // 8. Cutoff - Left
-  'BU',    // 9. Button - Top left
+  'BU',    // 1. Button/Dealer - Bottom left
+  'SB',    // 2. Small Blind - Left
+  'BB',    // 3. Big Blind - Top left
+  'UTG',   // 4. Under the Gun - Top right
+  'UTG+1', // 5. Under the Gun + 1 - Right
+  'CO',    // 6. Cutoff - Bottom right
 ];
 
 // Add player hole cards display positioned near player's seat
@@ -491,24 +478,18 @@ const PlayerHoleCards = styled.div<{ seatPosition?: number }>`
   ${props => {
     // Position hole cards between the seat and center of table (not overlapping seat)
     switch (props.seatPosition) {
-      case 1: // Small Blind - Top right → position towards center
-        return `top: 120px; right: 180px;`;
-      case 2: // Big Blind - Right → position towards center
-        return `top: 50%; right: 120px; transform: translateY(-50%);`;
-      case 3: // UTG - Bottom right → position towards center
-        return `bottom: 120px; right: 180px;`;
-      case 4: // UTG+1 - Bottom middle right → position towards center
-        return `bottom: 80px; right: 300px;`;
-      case 5: // MP - Bottom middle → position towards center
-        return `bottom: 80px; left: 50%; transform: translateX(-50%);`;
-      case 6: // LJ - Bottom middle left → position towards center
-        return `bottom: 80px; left: 300px;`;
-      case 7: // HJ - Bottom left → position towards center
+      case 1: // Button/Dealer (BU) - Bottom left → position towards center
         return `bottom: 120px; left: 180px;`;
-      case 8: // CO - Left → position towards center
+      case 2: // Small Blind (SB) - Left → position towards center
         return `top: 50%; left: 120px; transform: translateY(-50%);`;
-      case 9: // BU - Top left → position towards center
+      case 3: // Big Blind (BB) - Top left → position towards center
         return `top: 120px; left: 180px;`;
+      case 4: // Under the Gun (UTG) - Top right → position towards center
+        return `top: 120px; right: 180px;`;
+      case 5: // Under the Gun + 1 (UTG+1) - Right → position towards center
+        return `top: 50%; right: 120px; transform: translateY(-50%);`;
+      case 6: // Cutoff (CO) - Bottom right → position towards center
+        return `bottom: 120px; right: 180px;`;
       default: // Fallback to bottom center
         return `bottom: 80px; left: 50%; transform: translateX(-50%);`;
     }
@@ -543,24 +524,18 @@ const HoleCardsLabel = styled.div<{ seatPosition?: number }>`
   ${props => {
     // Position label above the hole cards (between seat and center)
     switch (props.seatPosition) {
-      case 1: // Small Blind - Top right → label above cards
-        return `top: 90px; right: 180px;`;
-      case 2: // Big Blind - Right → label above cards
-        return `top: 50%; right: 170px; transform: translateY(-50%);`;
-      case 3: // UTG - Bottom right → label above cards
-        return `bottom: 180px; right: 180px;`;
-      case 4: // UTG+1 - Bottom middle right → label above cards
-        return `bottom: 140px; right: 300px;`;
-      case 5: // MP - Bottom middle → label above cards
-        return `bottom: 140px; left: 50%; transform: translateX(-50%);`;
-      case 6: // LJ - Bottom middle left → label above cards
-        return `bottom: 140px; left: 300px;`;
-      case 7: // HJ - Bottom left → label above cards
+      case 1: // Button/Dealer (BU) - Bottom left → label above cards
         return `bottom: 180px; left: 180px;`;
-      case 8: // CO - Left → label above cards
+      case 2: // Small Blind (SB) - Left → label above cards
         return `top: 50%; left: 170px; transform: translateY(-50%);`;
-      case 9: // BU - Top left → label above cards
+      case 3: // Big Blind (BB) - Top left → label above cards
         return `top: 90px; left: 180px;`;
+      case 4: // Under the Gun (UTG) - Top right → label above cards
+        return `top: 90px; right: 180px;`;
+      case 5: // Under the Gun + 1 (UTG+1) - Right → label above cards
+        return `top: 50%; right: 170px; transform: translateY(-50%);`;
+      case 6: // Cutoff (CO) - Bottom right → label above cards
+        return `bottom: 180px; right: 180px;`;
       default: // Fallback to above center cards
         return `bottom: 140px; left: 50%; transform: translateX(-50%);`;
     }
@@ -855,8 +830,8 @@ export const PokerTable: React.FC<PokerTableProps> = ({
           <div style={{ fontSize: '10px', color: '#ccc' }}>Automated</div>
         </DealerPosition>
 
-        {/* Render all 9 player seats */}
-        {Array.from({ length: 9 }, (_, i) => renderSeat(i + 1))}
+        {/* Render all 6 player seats */}
+        {Array.from({ length: 6 }, (_, i) => renderSeat(i + 1))}
 
         {/* Pot Display - Only show during active gameplay with connected players */}
         {gameState.phase !== 'waiting' && 

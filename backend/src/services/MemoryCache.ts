@@ -81,6 +81,7 @@ class MemoryCache extends EventEmitter {
   private gameResults: Map<string, GameResult> = new Map();
   private userProfiles: Map<string, UserProfile> = new Map();
   private gameActions: Map<string, GameAction[]> = new Map(); // gameId -> actions[]
+  private genericCache: Map<string, any> = new Map(); // Generic cache for test data
   
   // Sync intervals (in milliseconds)
   private readonly USER_SYNC_INTERVAL = 30000; // 30 seconds
@@ -419,6 +420,29 @@ class MemoryCache extends EventEmitter {
     }
   }
   
+  // ===== GENERIC CACHE METHODS =====
+  
+  set(key: string, value: any): void {
+    this.genericCache.set(key, value);
+    this.emit('cacheSet', { key, value });
+  }
+  
+  get(key: string): any {
+    return this.genericCache.get(key);
+  }
+  
+  delete(key: string): boolean {
+    const result = this.genericCache.delete(key);
+    if (result) {
+      this.emit('cacheDeleted', key);
+    }
+    return result;
+  }
+  
+  has(key: string): boolean {
+    return this.genericCache.has(key);
+  }
+
   // ===== UTILITY METHODS =====
   
   getStats(): {
@@ -427,13 +451,15 @@ class MemoryCache extends EventEmitter {
     pendingResults: number;
     updatedProfiles: number;
     actionHistory: { totalGames: number; totalActions: number };
+    genericCacheSize: number;
   } {
     return {
       onlineUsers: this.getOnlineUsers().length,
       activeGames: this.getActiveGames().length,
       pendingResults: this.getPendingResults().length,
       updatedProfiles: this.getUpdatedProfiles().length,
-      actionHistory: this.getActionHistoryStats()
+      actionHistory: this.getActionHistoryStats(),
+      genericCacheSize: this.genericCache.size
     };
   }
   
@@ -443,6 +469,7 @@ class MemoryCache extends EventEmitter {
     this.gameResults.clear();
     this.userProfiles.clear();
     this.gameActions.clear();
+    this.genericCache.clear();
     this.emit('cacheCleared');
   }
   

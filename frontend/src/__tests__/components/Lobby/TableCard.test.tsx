@@ -112,13 +112,13 @@ describe('TableCard', () => {
       <MemoryRouter>
         <ThemeProvider theme={theme}>
           <TableCard
-            table={{ ...mockTable, maxPlayers: 9 }}
+            table={{ ...mockTable, maxPlayers: 6 }}
             onClick={mockOnClick}
           />
         </ThemeProvider>
       </MemoryRouter>
     );
-    expect(screen.getByText('No Limit Hold\'em (9-max)')).toBeInTheDocument();
+    expect(screen.getByText('No Limit Hold\'em (6-max)')).toBeInTheDocument();
   });
 
   it('displays different game types correctly', () => {

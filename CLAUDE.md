@@ -1,89 +1,144 @@
-## CLAUDE.md – Continuous Improvement Workflow
+CLAUDE.md – Continuous Improvement Workflow
 
-Claude must follow this structured, iterative process in all interactions to ensure code quality, maintainability, and responsible automation.
+Claude must follow this structured, iterative workflow in all interactions to ensure clarity, reusability, traceability, and code quality.
 
----
+This process supports test safety, screenshot-based verification, test tracking, and controlled improvement over time.
 
-### 🌀 CLAUDE Iteration Workflow
+⸻
 
-1. **Summarize the Target of This Interaction**
-   At the start of each iteration, Claude must clearly state the goal of the current interaction.
-   *Example*: “Refactor login timeout logic” or “Add retry to failed API calls”.
+🌀 Iteration Workflow
 
-2. **Scan for Reuse Before Code/Test Changes**
-   Before modifying or adding any code or test:
+1. Summarize the Target of This Interaction
 
-   * Review the project structure to avoid duplication.
-   * Reuse existing **functions**, **constants**, **tests**, and **utilities** whenever possible.
-   * Refer to or maintain a `PROJECT_OVERVIEW.md` that documents:
+At the beginning of each task or session, Claude must state the purpose clearly.
+Examples:
+   •  “Fix session timeout on login”
+   •  “Add visual confirmation for payment success”
+   •  “Refactor API retry mechanism”
 
-     * Code file purposes
-     * Key methods/functions
-     * Defined constants
-     * Existing tests and what they verify
-     * Shared utilities
+⸻
 
-3. **Identify the Issue or Plan the Next Design**
-   Define the bug to fix or feature to implement.
+2. Scan for Reuse Before Code/Test Changes
 
-4. **Implement or Fix Code**
-   Proceed with logic changes only after ensuring reuse.
+Before writing or editing code or tests:
+   •  Review the entire project to avoid duplication.
+   •  Reuse existing functions, constants, helpers, and tests.
+   •  Refer to or maintain a PROJECT_OVERVIEW.md with:
+   •  Purpose of each file
+   •  Key functions and what they do
+   •  Constant definitions
+   •  Test coverage
+   •  Shared utilities
 
----
+⸻
 
-### ❗ Test Modification Policy
+3. Identify Issue or Plan Next Design
 
-Claude must strictly follow this rule:
+Clearly define the problem or enhancement to work on.
 
-* **Do not change, remove, or bypass any existing tests without explicit permission.**
-* All new logic must be covered with **new tests** or **explicit extensions**—never by weakening current tests.
-* If a test appears obsolete or incorrect, **flag it for review** but **do not change it** yourself without permission.
+⸻
 
----
+4. Implement or Fix Code
 
-5. **Update Tests as Needed (With Permission)**
+Modify or write new code only after confirming reuse is not possible.
 
-   * For **backend/API** changes, update or add relevant **backend tests**.
-   * For **UI/frontend** changes, update or add relevant **Selenium UI tests**.
-   * Add new tests only when needed and approved.
+⸻
 
-6. **Run UI Tests with Screenshot Verification**
+❗ Test Modification Policy
 
-   * **Delete all previous screenshots** before the test run.
-   * Take **new screenshots during the test run** as **visual evidence**.
-   * Use screenshots to determine test success or failure.
-   * Optionally archive screenshots for audit or documentation.
+Claude must strictly follow:
+   •  Do not modify, remove, or bypass existing tests without explicit permission.
+   •  Add new tests only for newly introduced or updated logic.
+   •  If a test seems incorrect or outdated, flag it for review.
 
-7. **Track Test Coverage and Result Changes**
-   Compare test results before and after:
+⸻
 
-   ```
-   | Test Suite     | Prev Count | Curr Count | ΔCases | Prev Pass % | Curr Pass % | ΔPass % |
-   |----------------|------------|------------|--------|-------------|-------------|---------|
-   | Backend Tests  | 120        | 125        | +5     | 98%         | 99%         | +1%     |
-   | UI Tests       | 60         | 60         | 0      | 95%         | 93%         | -2%     |
-   ```
+5. Update Tests as Needed (With Permission)
+   •  For backend/API changes, update or add backend test cases.
+   •  For UI/frontend changes, update or add Selenium UI test cases.
+   •  All changes must align with the permission policy.
 
-8. **Verify All Tests Pass**
-   Run all test suites.
+⸻
 
-   * ✅ If everything passes, proceed.
-   * ❌ If anything fails, return to step 4 and fix it.
+6. Run UI Tests with Screenshot Verification
 
-9. **Commit Changes**
-   Once the test suite passes and screenshots are validated, commit with a clear, meaningful message.
+✅ Screenshot Naming Convention and Enforcement:
+   •  For each .feature file (e.g., login_flow.feature), there must be exactly one corresponding screenshot log file:
 
-10. **Repeat**
-    Return to step 1 for the next improvement. This is a continuous loop.
+login_flow_screenshots.md
 
----
 
-### 📘 Project Overview
+   •  No alternative filenames are allowed.
 
-Claude may refer to or maintain a `PROJECT_OVERVIEW.md` that documents:
+📸 Screenshot Log Requirements:
 
-* **Source Files** – Purpose of each code and test file
-* **Functions/Methods** – What each major block does
-* **Test Cases** – Mapping between logic and coverage
-* **Constants/Configs** – Centralized values and uses
-* **Shared Utilities** – Reusable helpers and components
+Before running the UI test:
+   •  Delete all previous screenshots from the UI test directory.
+   •  During the test, take step-by-step screenshots as visual evidence.
+
+After running the test:
+   •  Update the *_screenshots.md file to reflect the current test.
+
+Each screenshot file must include:
+
+# Screenshot Verification Log for `login_flow.feature`
+**Test Run Time:** 2025-07-28 14:53:21
+
+| Index | Screenshot File        | Verifying Items                            | Result   |
+|-------|------------------------|---------------------------------------------|----------|
+| 1     | login_step1.png        | Login form loaded                          | ✅ Pass  |
+| 2     | login_step2.png        | Email entered, password hidden             | ✅ Pass  |
+| 3     | login_step3.png        | Success message shown, redirect triggered  | ❌ Fail  |
+
+🔒 File Maintenance Rules:
+   •  Never remove previously passed entries from the screenshot log.
+   •  Always update the Result column (✅ Pass or ❌ Fail) on each test run.
+   •  Append the new test run time at the top for historical tracking.
+
+⸻
+
+7. Track Test Coverage and Result Changes
+
+Compare current and previous test metrics:
+
+| Test Suite     | Prev Count | Curr Count | ΔCases | Prev Pass % | Curr Pass % | ΔPass % |
+|----------------|------------|------------|--------|-------------|-------------|---------|
+| Backend Tests  | 120        | 125        | +5     | 98%         | 99%         | +1%     |
+| UI Tests       | 60         | 60         | 0      | 95%         | 93%         | -2%     |
+
+Summarize added or removed tests, and highlight any failure trends.
+
+⸻
+
+8. Verify All Tests Pass
+
+Run all relevant test suites.
+   •  ✅ If all tests and screenshots pass, continue.
+   •  ❌ If any fail, go back to Step 4 and revise.
+
+⸻
+
+9. Commit Changes
+
+Once all verification steps are complete:
+   •  Commit changes with a clear and meaningful message.
+   •  Include updated screenshot logs and test result summaries.
+
+⸻
+
+10. Repeat
+
+Return to Step 1 and continue iterating. Claude should treat this as a never-ending improvement loop.
+
+⸻
+
+📘 PROJECT_OVERVIEW.md (Recommended)
+
+Claude may refer to or maintain a PROJECT_OVERVIEW.md with:
+
+Section  Content
+Files Purpose of each source and test file
+Functions   Descriptions of key methods
+Constants   Global config or constant definitions
+Tests Mapping of logic to test coverage
+Utilities   Shared helpers, formatters, validators, etc.

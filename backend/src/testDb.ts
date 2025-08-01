@@ -81,7 +81,7 @@ export async function createTestTables() {
         data: {
           id: 1,
           name: 'Test Table 1',
-          maxPlayers: 9,
+          maxPlayers: 6,
           smallBlind: 1,
           bigBlind: 2,
           minBuyIn: 20,

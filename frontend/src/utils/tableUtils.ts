@@ -35,7 +35,7 @@ export function generateInitialTables(): TableData[] {
           id: id++,
           name: `${gameType} ${stakes.name} Table ${i}`,
           players: 0,
-          maxPlayers: 9,
+          maxPlayers: 6,
           observers: 0,
           status: 'waiting',
           stakes: `$${stakes.smallBlind/100}/$${stakes.bigBlind/100}`,

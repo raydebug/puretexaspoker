@@ -1218,7 +1218,15 @@ export class SocketService {
       // User is observing a table (table=X, seat=null)
       console.log(`🎯 FRONTEND: User ${nickname} is observing table ${table}`);
       console.log(`🎯 FRONTEND: Current observers before adding:`, this.observers);
-      if (!this.observers.includes(nickname)) {
+      
+      // CRITICAL BUG FIX: Check if this user is already a seated player before adding to observers
+      const currentUserNickname = localStorage.getItem('nickname');
+      const isCurrentUserAlreadySeated = this.gameState?.players?.some(p => p.name === nickname);
+      
+      if (isCurrentUserAlreadySeated) {
+        console.log(`🚨 FRONTEND: PREVENTING BUG - ${nickname} is already a seated player, NOT adding to observers`);
+        console.log(`🚨 FRONTEND: Current players:`, this.gameState?.players?.map(p => p.name));
+      } else if (!this.observers.includes(nickname)) {
         this.observers.push(nickname);
         console.log(`✅ FRONTEND: Added ${nickname} to observers list`);
       } else {
@@ -1230,7 +1238,10 @@ export class SocketService {
     } else {
       // User took a seat (table=X, seat=Y)
       // Remove from observers if they were observing
+      console.log(`🎯 FRONTEND: User ${nickname} took seat ${seat}, removing from observers`);
+      console.log(`🎯 FRONTEND: Observers before removal:`, this.observers);
       this.observers = this.observers.filter(observer => observer !== nickname);
+      console.log(`🎯 FRONTEND: Observers after removal:`, this.observers);
       this.emitOnlineUsersUpdate();
     }
     

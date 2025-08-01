@@ -57,7 +57,12 @@
       "Bash([ -s \"$NVM_DIR/nvm.sh\" ])",
       "Bash(. \"$NVM_DIR/nvm.sh\")",
       "Bash(nvm:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(HEADLESS=false npx cucumber-js selenium/features/2-player-complete-game-scenario.feature --require selenium/step_definitions/**/*.js --format @cucumber/pretty-formatter --tags @comprehensive-2-player --timeout 300000)",
+      "Bash(HEADLESS=false npx cucumber-js selenium/features/2-player-complete-game-scenario.feature --require selenium/step_definitions/**/*.js --format @cucumber/pretty-formatter --tags @quick-2-player)",
+      "Bash(HEADLESS=false npm run test:selenium:cucumber -- --tags @comprehensive-2-player)",
+      "Bash(HEADLESS=false npm run test:selenium:cucumber -- --tags @quick-2-player)",
+      "Bash(cat:*)"
     ],
     "deny": []
   }

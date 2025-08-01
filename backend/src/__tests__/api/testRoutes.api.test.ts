@@ -292,7 +292,7 @@ describe('Test Routes API Integration Tests', () => {
       it('should reset database successfully', async () => {
         const mockTables = [
           { id: 1, name: 'Table 1', maxPlayers: 6 },
-          { id: 2, name: 'Table 2', maxPlayers: 9 }
+          { id: 2, name: 'Table 2', maxPlayers: 6 }
         ];
 
         // Mock testPrisma operations

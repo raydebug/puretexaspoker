@@ -88,7 +88,7 @@ class TableManager {
         const defaultTables = [
           {
             name: 'No Limit $0.01/$0.02 Micro Table 1',
-            maxPlayers: 9,
+            maxPlayers: 6,
             smallBlind: 1,
             bigBlind: 2,
             minBuyIn: 40,
@@ -96,7 +96,7 @@ class TableManager {
           },
           {
             name: 'Pot Limit $0.25/$0.50 Low Table 1',
-            maxPlayers: 9,
+            maxPlayers: 6,
             smallBlind: 25,
             bigBlind: 50,
             minBuyIn: 1000,
@@ -104,7 +104,7 @@ class TableManager {
           },
           {
             name: 'Fixed Limit $1/$2 Medium Table 1',
-            maxPlayers: 9,
+            maxPlayers: 6,
             smallBlind: 100,
             bigBlind: 200,
             minBuyIn: 4000,

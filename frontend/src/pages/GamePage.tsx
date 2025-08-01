@@ -731,6 +731,103 @@ const GamePage: React.FC = () => {
             onConfirm={handleSeatConfirm}
           />
         )}
+
+        {/* 🎯 ACTION BUTTONS - Bottom of page (non-floating) */}
+        <div style={{
+          width: '100%',
+          backgroundColor: 'rgba(40, 44, 52, 0.95)',
+          color: 'white',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '16px',
+          borderRadius: '12px',
+          border: '2px solid #495057',
+          padding: '20px',
+          marginTop: '20px'
+        }}>
+          <div style={{marginBottom: '15px', fontSize: '18px', fontWeight: 'bold'}}>
+            🎯 POKER ACTION BUTTONS
+          </div>
+          
+          <div style={{display: 'flex', gap: '12px', marginBottom: '12px'}}>
+            <button 
+              onClick={() => handleAction('check')}
+              style={{
+                padding: '12px 20px',
+                fontSize: '16px',
+                backgroundColor: '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer'
+              }}
+            >
+              CHECK
+            </button>
+            
+            <button 
+              onClick={() => handleAction('fold')}
+              style={{
+                padding: '12px 20px',
+                fontSize: '16px',
+                backgroundColor: '#dc3545',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer'
+              }}
+            >
+              FOLD
+            </button>
+            
+            <button 
+              onClick={() => handleAction('allIn')}
+              style={{
+                padding: '12px 20px',
+                fontSize: '16px',
+                backgroundColor: '#fd7e14',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer'
+              }}
+            >
+              ALL IN
+            </button>
+          </div>
+          
+          <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
+            <input 
+              type="number" 
+              placeholder="Bet amount" 
+              style={{
+                padding: '8px 12px',
+                fontSize: '16px',
+                borderRadius: '6px',
+                border: '1px solid #495057',
+                backgroundColor: '#343a40',
+                color: 'white',
+                width: '120px'
+              }} 
+            />
+            <button 
+              onClick={() => handleAction('bet', 10)}
+              style={{
+                padding: '12px 20px',
+                fontSize: '16px',
+                backgroundColor: '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer'
+              }}
+            >
+              BET
+            </button>
+          </div>
+        </div>
       </GameContainer>
     );
   }
@@ -770,28 +867,104 @@ const GamePage: React.FC = () => {
         />
       </TableContainer>
 
-      {/* 🎯 POKER ACTION BUTTONS - Bottom Center Positioning */}
-      {(() => {
-        const gameIsActive = gameState.status === 'playing' || 
-                            gameState.phase === 'preflop' || 
-                            gameState.phase === 'flop' || 
-                            gameState.phase === 'turn' || 
-                            gameState.phase === 'river';
+      {/* 🎯 ACTION BUTTONS - Bottom of page (non-floating) */}
+      <div style={{
+        width: '100%',
+        backgroundColor: 'rgba(40, 44, 52, 0.95)',
+        color: 'white',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '16px',
+        borderRadius: '12px',
+        border: '2px solid #495057',
+        padding: '20px',
+        marginTop: '20px'
+      }}>
+        <div style={{marginBottom: '15px', fontSize: '18px', fontWeight: 'bold'}}>
+          🎯 POKER ACTION BUTTONS
+        </div>
         
-        const shouldShow = gameIsActive && currentPlayer && 
-                          (gameState.currentPlayerId === currentPlayer.id || gameState.currentPlayerId === currentPlayer.name);
+        <div style={{display: 'flex', gap: '12px', marginBottom: '12px'}}>
+          <button 
+            onClick={() => handleAction('check')}
+            style={{
+              padding: '12px 20px',
+              fontSize: '16px',
+              backgroundColor: '#28a745',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer'
+            }}
+          >
+            CHECK
+          </button>
+          
+          <button 
+            onClick={() => handleAction('fold')}
+            style={{
+              padding: '12px 20px',
+              fontSize: '16px',
+              backgroundColor: '#dc3545',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer'
+            }}
+          >
+            FOLD
+          </button>
+          
+          <button 
+            onClick={() => handleAction('allIn')}
+            style={{
+              padding: '12px 20px',
+              fontSize: '16px',
+              backgroundColor: '#fd7e14',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer'
+            }}
+          >
+            ALL IN
+          </button>
+        </div>
         
-        const effectiveCurrentPlayer = currentPlayer || (gameState.players || []).find(p => p.id === gameState.currentPlayerId || p.name === gameState.currentPlayerId);
-        
-        return shouldShow ? (
-          <PlayerActions
-            currentPlayer={effectiveCurrentPlayer?.name || null}
-            currentPlayerId={gameState.currentPlayerId}
-            gameState={gameState}
-            onAction={handleAction}
+        <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
+          <input
+            type="number"
+            placeholder="Bet amount"
+            style={{
+              padding: '10px 12px',
+              fontSize: '14px',
+              width: '150px',
+              backgroundColor: 'rgba(255,255,255,0.9)',
+              color: '#333',
+              border: '2px solid #495057',
+              borderRadius: '6px',
+              textAlign: 'center'
+            }}
           />
-        ) : null;
-      })()}
+          
+          <button 
+            onClick={() => handleAction('bet', 10)}
+            style={{
+              padding: '10px 16px',
+              fontSize: '14px',
+              backgroundColor: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            BET
+          </button>
+        </div>
+      </div>
 
 
 

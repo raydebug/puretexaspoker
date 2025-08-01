@@ -588,7 +588,7 @@ router.post('/reset-database', async (req, res) => {
     const defaultTables = [
       {
         name: 'No Limit $0.01/$0.02 Micro Table 1',
-        maxPlayers: 9,
+        maxPlayers: 6,
         smallBlind: 1,
         bigBlind: 2,
         minBuyIn: 40,
@@ -596,7 +596,7 @@ router.post('/reset-database', async (req, res) => {
       },
       {
         name: 'Pot Limit $0.25/$0.50 Low Table 1',
-        maxPlayers: 9,
+        maxPlayers: 6,
         smallBlind: 25,
         bigBlind: 50,
         minBuyIn: 1000,
@@ -604,7 +604,7 @@ router.post('/reset-database', async (req, res) => {
       },
       {
         name: 'Fixed Limit $1/$2 Medium Table 1',
-        maxPlayers: 9,
+        maxPlayers: 6,
         smallBlind: 100,
         bigBlind: 200,
         minBuyIn: 4000,
@@ -1473,6 +1473,16 @@ router.post('/seat-player', async (req, res) => {
       }
     });
     
+    // CRITICAL FIX: Update LocationManager to reflect the player now has a seat
+    // This prevents seated players from appearing in the observers list
+    const { locationManager } = require('../services/LocationManager');
+    locationManager.updateUserLocation(
+      player.id,        // playerId 
+      player.nickname,  // nickname
+      targetTableId,    // tableId
+      targetSeatNumber  // seatNumber
+    );
+    
     console.log(`✅ TEST API: Successfully seated ${playerId} at table ${targetTableId}, seat ${targetSeatNumber}`);
     
     res.json({
@@ -1843,7 +1853,7 @@ router.post('/test_simulate_error', async (req, res) => {
         errorResponse = {
           error: 'TABLE_FULL',
           message: 'Table has reached maximum capacity',
-          details: { maxPlayers: 9, currentPlayers: 9 }
+          details: { maxPlayers: 6, currentPlayers: 6 }
         };
         break;
       
@@ -1902,13 +1912,14 @@ router.post('/test_create_load_scenario', async (req, res) => {
   try {
     const { tableCount, playersPerTable, actionFrequency } = req.body;
     
-    const loadScenario = {
+    const loadScenario: any = {
       id: uuidv4(),
       tableCount: tableCount || 3,
       playersPerTable: playersPerTable || 9,
       actionFrequency: actionFrequency || 1000, // actions per second
       startTime: Date.now(),
-      status: 'running'
+      status: 'running',
+      tables: []
     };
     
     // Create mock tables with players
@@ -2014,11 +2025,12 @@ router.post('/test_corrupt_game_state/:tableId', async (req, res) => {
     const { tableId } = req.params;
     const { corruptionType } = req.body;
     
-    const corruptedState = {
+    const corruptedState: any = {
       tableId,
       corruptionType: corruptionType || 'invalid_phase',
       originalState: memoryCache.get(`table_${tableId}`),
-      corruptedAt: Date.now()
+      corruptedAt: Date.now(),
+      invalidData: null
     };
     
     // Apply corruption based on type
@@ -2399,21 +2411,23 @@ router.post('/create-visible-elements', async (req, res) => {
       'game-info'
     ];
     
+    const uiElementsData: Record<string, any> = {
+      'poker-table': { seats: 6, maxPlayers: 6 },
+      'player-seats': { occupied: 2, available: 4 },
+      'action-buttons': { count: 5, enabled: 3 },
+      'card-area': { holeCards: 2, communityCards: 3 },
+      'pot-area': { amount: 25, chips: 8 },
+      'chip-stacks': { players: 2, totalChips: 200 },
+      'game-info': { phase: 'flop', round: 1 }
+    };
+
     const uiElements = {
       tableId,
-      elements: elements.map(type => ({
+      elements: elements.map((type: string) => ({
         type,
         id: `ui-${type}`,
         visible: true,
-        data: {
-          'poker-table': { seats: 9, maxPlayers: 9 },
-          'player-seats': { occupied: 2, available: 7 },
-          'action-buttons': { count: 5, enabled: 3 },
-          'card-area': { holeCards: 2, communityCards: 3 },
-          'pot-area': { amount: 25, chips: 8 },
-          'chip-stacks': { players: 2, totalChips: 200 },
-          'game-info': { phase: 'flop', round: 1 }
-        }[type] || {}
+        data: uiElementsData[type] || {}
       })),
       createdAt: Date.now()
     };

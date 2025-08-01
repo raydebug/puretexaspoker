@@ -316,6 +316,15 @@ export function registerConsolidatedHandlers(io: Server) {
           }
         });
 
+        // CRITICAL FIX: Update LocationManager to reflect the user now has a seat
+        // This prevents seated players from appearing in the observers list
+        locationManager.updateUserLocation(
+          user.playerId, 
+          user.nickname, 
+          user.location as number, 
+          seatNumber
+        );
+
         // Emit success
         socket.emit('seatTaken', { tableId: user.location, seatNumber, buyIn });
         
@@ -434,6 +443,15 @@ export function registerConsolidatedHandlers(io: Server) {
             buyIn: buyIn
           }
         });
+
+        // CRITICAL FIX: Update LocationManager to reflect the user now has a seat
+        // This prevents seated players from appearing in the observers list
+        locationManager.updateUserLocation(
+          user.playerId, 
+          user.nickname, 
+          tableId, 
+          seatNumber
+        );
 
         // Join table room
         socket.join(`table:${tableId}`);
