@@ -1,0 +1,495 @@
+[
+  {
+    "description": "  As a poker game system\n  I want to execute a complete 2-player Texas Hold'em game using only UI interactions\n  So that I can validate heads-up poker mechanics with minimal browser overhead",
+    "elements": [
+      {
+        "description": "",
+        "id": "2-player-complete-game-scenario-(ui-only);heads-up-pre-flop-all-in",
+        "keyword": "Scenario",
+        "line": 149,
+        "name": "Heads-Up Pre-Flop All-In",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2270463083
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 8,
+            "name": "the database is reset to a clean state",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:989"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 303495500
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "the User table is seeded with test players",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1013"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 663499
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 10,
+            "name": "I have exactly 2 players ready to join a poker game",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:20"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 5965875541
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 11,
+            "name": "all players have starting stacks of $100",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1018"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9840832
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Seat"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "1"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "2"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "When ",
+            "line": 12,
+            "name": "exactly 2 players join the table in order:",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:105"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8016167792
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Seat"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "1"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "2"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 16,
+            "name": "all players should be seated correctly:",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1024"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7141541
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 20,
+            "name": "the page should be fully loaded for \"Player1\"",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1035"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 19865333
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 21,
+            "name": "the page should be fully loaded for \"Player2\"",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1035"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12374875
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 22,
+            "name": "the action buttons should be visible at bottom center in this screenshot",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1875"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 26456667
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 23,
+            "name": "I manually start the game for table 1",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1051"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 15279777458
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Position",
+                      "Player",
+                      "Amount"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Small Blind",
+                      "Player1",
+                      "$1"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Big Blind",
+                      "Player2",
+                      "$2"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 24,
+            "name": "the game starts with blinds structure:",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1077"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1067582416
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 28,
+            "name": "the pot should be $3",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1138"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1021288124
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 29,
+            "name": "the action buttons should be visible at bottom center in this screenshot",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1875"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12376540
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Card1",
+                      "Card2"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "A♠",
+                      "A♥"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "K♣",
+                      "K♦"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "When ",
+            "line": 151,
+            "name": "hole cards are dealt according to the test scenario:",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1178"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4124797166
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 155,
+            "name": "each player should see their own hole cards",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1247"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 5223829084
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 156,
+            "name": "the action buttons should be visible at bottom center in this screenshot",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1875"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 11695542
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 157,
+            "name": "the pre-flop betting round begins",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1379"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7301583
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 158,
+            "name": "the action buttons should be visible at bottom center in this screenshot",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1875"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10564458
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 159,
+            "name": "the action buttons should show proper active/inactive visual states",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:2745"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 16306583
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 160,
+            "name": "Player1 goes all-in with remaining chips",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:627"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 3088747292
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 161,
+            "name": "the action buttons should be visible at bottom center in this screenshot",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1875"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9585040
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 162,
+            "name": "Player2 calls the all-in",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:704"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 3068303707
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 163,
+            "name": "the action buttons should be visible at bottom center in this screenshot",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1875"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10295582
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 164,
+            "name": "the pot should contain all remaining chips",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:454"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12597166
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 165,
+            "name": "the showdown should reveal both players' cards",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:484"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12962458
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 166,
+            "name": "Player1 should win with \"pair of aces\"",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:1835"
+            },
+            "result": {
+              "status": "failed",
+              "duration": 5002875249,
+              "error_message": "Error: function timed out, ensure the promise resolves within 5000 milliseconds\n    at Timeout.<anonymous> (/Users/leiyao/work/puretexaspoker/node_modules/@cucumber/cucumber/lib/time.js:54:20)\n    at listOnTimeout (node:internal/timers:614:17)\n    at process.processTimers (node:internal/timers:549:7)"
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 167,
+            "name": "the game should end with proper chip distribution",
+            "match": {
+              "location": "selenium/step_definitions/2-player-game-steps.js:537"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 3803489999
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@heads-up-poker",
+            "line": 148
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "2-player-complete-game-scenario-(ui-only)",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "2-Player Complete Game Scenario (UI-Only)",
+    "tags": [],
+    "uri": "selenium/features/2-player-complete-game-scenario.feature"
+  }
+]

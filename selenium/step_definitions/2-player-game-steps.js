@@ -625,52 +625,74 @@ Then('both players should see the turn card K♣', async function () {
 
 // Add the missing step definition for Player1 goes all-in
 When('Player1 goes all-in with remaining chips', async function () {
-  console.log(`🎯 Player1 going all-in with remaining chips - verifying UI...`);
+  console.log(`🎯 Player1 going all-in with remaining chips - executing action...`);
   
-  // Set this player as current player first
   const actualTableId = this.latestTableId || 1;
+  
+  // STEP 1: Execute all-in action via API (raise to maximum)
   try {
     const { execSync } = require('child_process');
+    
+    // First set Player1 as current player
     const setPlayerResult = execSync(`curl -s -X POST http://localhost:3001/api/test/set-current-player -H "Content-Type: application/json" -d '{"tableId": ${actualTableId}, "playerId": "Player1"}'`, { encoding: 'utf8' });
     console.log(`🎯 Set current player result: ${setPlayerResult}`);
     
     await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Execute all-in by raising to remaining chips (Player1 has $99 remaining after small blind)
+    const allInAmount = 99; // Player1 starts with $100, has $1 small blind, so $99 remaining
+    const raiseResult = execSync(`curl -s -X POST http://localhost:3001/api/test/raise -H "Content-Type: application/json" -d '{"tableId": ${actualTableId}, "playerName": "Player1", "amount": ${allInAmount}}'`, { encoding: 'utf8' });
+    console.log(`🎯 Player1 all-in (raise to $${allInAmount}) result: ${raiseResult}`);
+    
+    await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for UI updates
+    
   } catch (error) {
-    console.log(`⚠️ Failed to set current player: ${error.message}`);
+    console.log(`❌ Failed to execute Player1 all-in: ${error.message}`);
+    throw error;
   }
   
-  // REAL UI VERIFICATION: Check that all-in action is reflected in UI
+  // STEP 2: UI VERIFICATION: Check that all-in action is reflected in UI
   const player1Browser = this.browsers?.Player1;
   if (player1Browser) {
     try {
-      // Look for all-in indicator or significantly increased pot
-      const allInElements = await player1Browser.findElements(By.css('[data-testid="all-in"], .all-in, [class*="all-in"]'));
-      const potElements = await player1Browser.findElements(By.css('[data-testid="pot-amount"], [data-testid="pot-display"], .pot-amount, [class*="pot"]'));
+      // Look for increased pot and betting state changes
+      const potElements = await player1Browser.findElements(By.css('[data-testid="pot-amount"], [data-testid="pot-display"], .pot, .pot-amount'));
+      const currentBetElements = await player1Browser.findElements(By.css('[data-testid="current-bet"], .current-bet, [class*="bet"]'));
       
       let allInVerified = false;
+      let potAmount = 0;
       
-      // Check for explicit all-in indicator
-      for (const element of allInElements) {
-        const allInText = await element.getText();
-        if (allInText && allInText.toLowerCase().includes('all')) {
-          console.log(`✅ Player1 all-in indicator visible: "${allInText}"`);
+      // Check pot size increase as primary verification
+      for (const element of potElements) {
+        const potText = await element.getText();
+        console.log(`📊 Player1 browser - pot display: "${potText}"`);
+        const potMatch = potText.match(/\$?(\d+)/);
+        if (potMatch) {
+          potAmount = parseInt(potMatch[1]);
+          if (potAmount >= 95) { // All-in should create a large pot (~$99 + blinds)
+            console.log(`✅ Player1 all-in verified - pot increased to $${potAmount}`);
+            allInVerified = true;
+            break;
+          }
+        }
+      }
+      
+      // Check for current bet indicators
+      for (const element of currentBetElements) {
+        const betText = await element.getText();
+        console.log(`📊 Player1 browser - current bet: "${betText}"`);
+        const betMatch = betText.match(/\$?(\d+)/);
+        if (betMatch && parseInt(betMatch[1]) >= 95) {
+          console.log(`✅ Player1 all-in verified - current bet shows $${betMatch[1]}`);
           allInVerified = true;
           break;
         }
       }
       
-      // Check pot size increase as secondary verification
-      if (!allInVerified && potElements.length > 0) {
-        const potText = await potElements[0].getText();
-        const potMatch = potText.match(/\$?(\d+)/);
-        if (potMatch && parseInt(potMatch[1]) > 80) {
-          console.log(`✅ Player1 all-in likely verified - pot increased to: "${potText}"`);
-          allInVerified = true;
-        }
-      }
-      
-      if (!allInVerified) {
-        console.log(`⚠️ Could not verify all-in action in UI, but action was processed`);
+      if (allInVerified) {
+        console.log(`✅ Player1 all-in action successfully executed and verified in UI`);
+      } else {
+        console.log(`⚠️ Player1 all-in action executed but UI verification incomplete (pot: $${potAmount})`);
       }
       
     } catch (error) {
@@ -680,18 +702,29 @@ When('Player1 goes all-in with remaining chips', async function () {
 });
 
 When('Player2 calls the all-in', async function () {
-  console.log(`🎯 Player2 calling the all-in - verifying UI...`);
+  console.log(`🎯 Player2 calling the all-in - executing action...`);
   
-  // Set this player as current player first
   const actualTableId = this.latestTableId || 1;
+  
+  // STEP 1: Execute call action via API
   try {
     const { execSync } = require('child_process');
+    
+    // First set Player2 as current player
     const setPlayerResult = execSync(`curl -s -X POST http://localhost:3001/api/test/set-current-player -H "Content-Type: application/json" -d '{"tableId": ${actualTableId}, "playerId": "Player2"}'`, { encoding: 'utf8' });
     console.log(`🎯 Set current player result: ${setPlayerResult}`);
     
     await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Execute call action (Player2 calls Player1's all-in)
+    const callResult = execSync(`curl -s -X POST http://localhost:3001/api/test/call -H "Content-Type: application/json" -d '{"tableId": ${actualTableId}, "playerName": "Player2"}'`, { encoding: 'utf8' });
+    console.log(`🎯 Player2 call all-in result: ${callResult}`);
+    
+    await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for UI updates
+    
   } catch (error) {
-    console.log(`⚠️ Failed to set current player: ${error.message}`);
+    console.log(`❌ Failed to execute Player2 call: ${error.message}`);
+    throw error;
   }
   
   // REAL UI VERIFICATION: Check that call all-in action is reflected in UI
@@ -1799,8 +1832,11 @@ Then('Player2 should win with {string}', { timeout: 15000 }, async function (han
   await screenshotHelper.captureAllPlayers('final_result');
 });
 
-Then('Player1 should win with {string}', async function (handType) {
+Then('Player1 should win with {string}', { timeout: 15000 }, async function (handType) {
   console.log(`🏆 Player1 wins with ${handType} - verifying UI...`);
+  
+  // Wait for showdown results to be processed and displayed
+  await new Promise(resolve => setTimeout(resolve, 3000));
   
   // REAL UI VERIFICATION: Check that Player1 is shown as winner in UI
   const player1Browser = this.browsers?.Player1;

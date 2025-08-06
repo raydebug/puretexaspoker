@@ -80,7 +80,8 @@
       "Bash(HEADLESS=false npx cucumber-js selenium/features/comprehensive-game-history.feature --require selenium/step_definitions/2-player-game-steps.js --require selenium/step_definitions/hooks.js --require selenium/step_definitions/screenshot-helper.js --require selenium/support/world.js --format @cucumber/pretty-formatter --format json:selenium/reports/cucumber-report.json)",
       "Bash(HEADLESS=false npx cucumber-js --config cucumber.config.js features/comprehensive-game-history.feature)",
       "Bash(HEADLESS=false npx cucumber-js selenium/features/action-countdown-test.feature --require selenium/step_definitions/2-player-game-steps.js --require selenium/step_definitions/hooks.js --require selenium/step_definitions/screenshot-helper.js --format @cucumber/pretty-formatter --format json:selenium/reports/cucumber-report.json)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(HEADLESS=false npx cucumber-js selenium/features/2-player-complete-game-scenario.feature --tags=\"@heads-up-poker\" --require selenium/step_definitions/2-player-game-steps.js --require selenium/step_definitions/hooks.js --require selenium/step_definitions/screenshot-helper.js --format @cucumber/pretty-formatter)"
     ],
     "deny": []
   }
