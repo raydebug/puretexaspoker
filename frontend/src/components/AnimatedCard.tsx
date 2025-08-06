@@ -100,7 +100,8 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({ card, delay, isVisib
   }
 
   const getSuitSymbol = (suit: string) => {
-    switch (suit.toLowerCase()) {
+    const suitLower = suit?.toLowerCase() || '';
+    switch (suitLower) {
       case 'hearts': return '♥';
       case 'diamonds': return '♦';
       case 'clubs': return '♣';
@@ -110,7 +111,7 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({ card, delay, isVisib
   };
 
   const getCardColor = (suit: string) => {
-    const suitLower = suit.toLowerCase();
+    const suitLower = suit?.toLowerCase() || '';
     return suitLower === 'hearts' || suitLower === 'diamonds' || suit === '♥' || suit === '♦' ? 'red' : 'black';
   };
 

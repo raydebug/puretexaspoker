@@ -68,7 +68,8 @@ const PlayerName = styled.span`
 
 const ActionType = styled.span<{ action: string }>`
   color: ${props => {
-    switch (props.action.toLowerCase()) {
+    const actionLower = props.action?.toLowerCase() || '';
+    switch (actionLower) {
       case 'bet':
       case 'raise':
         return '#ff6b6b';
@@ -197,7 +198,7 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ gameId, tableId, h
   };
 
   const formatAction = (action: string, amount: number | null) => {
-    const actionText = action.toLowerCase();
+    const actionText = action?.toLowerCase() || '';
     const amountText = formatAmount(amount);
     
     if (amountText && (actionText === 'bet' || actionText === 'raise' || actionText === 'call')) {

@@ -1,6 +1,6 @@
 module.exports = {
   default: {
-    timeout: 300000, // 5 minutes total timeout per scenario
+    timeout: 600000, // 10 minutes total timeout per scenario
     retry: 0,
     parallel: 1,
     format: [

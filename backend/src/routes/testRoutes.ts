@@ -673,17 +673,16 @@ router.post('/start-game', async (req, res) => {
     
     console.log('🧪 TEST API: Starting game for table:', targetTableId);
     
-    // Reinitialize TableManager from DB to sync in-memory state
-    console.log('🔄 TEST API: Reinitializing TableManager...');
-    await req.app.get('tableManager').init();
+    // Skip reinitializing TableManager to preserve in-memory auto-seat data
+    console.log('🔄 TEST API: Using current TableManager state (skipping init to preserve auto-seat data)...');
     
     // Debug log to verify TableManager state
     console.log(`🧪 TEST API: Verifying TableManager state before starting game for tableId: ${targetTableId}`);
     const tablePlayers = tableManager.getTablePlayers(targetTableId);
     console.log(`🧪 TEST API: Players at table ${targetTableId}:`, tablePlayers);
 
-    // Start the game using TableManager
-    const result = await req.app.get('tableManager').startTableGame(targetTableId);
+    // Use the same global tableManager instance that auto-seat uses
+    const result = await tableManager.startTableGame(targetTableId);
     
     console.log('🎮 TEST API: startTableGame result:', result);
     
@@ -1025,15 +1024,26 @@ router.post('/bet', async (req, res) => {
       });
     }
     
-    // Simulate bet action
-    console.log(`✅ TEST API: Player ${playerName} bet $${amount}`);
+    // Actually execute the bet action via TableManager
+    const result = await tableManager.playerAction(tableId, playerName, 'bet', amount);
+    
+    if (!result.success) {
+      console.log(`❌ TEST API: Bet action failed - ${result.error}`);
+      return res.status(400).json({
+        success: false,
+        error: result.error
+      });
+    }
+    
+    console.log(`✅ TEST API: Player ${playerName} bet $${amount} - action executed`);
     
     res.json({
       success: true,
       message: `Player ${playerName} bet $${amount}`,
       tableId,
       playerName,
-      amount
+      amount,
+      gameState: result.gameState
     });
   } catch (error) {
     console.error('❌ TEST API: Error in bet action:', error);
@@ -1358,26 +1368,124 @@ router.post('/start-game', async (req, res) => {
 // Use the auto-seat testing API instead
 router.post('/auto-seat', async (req, res) => {
   try {
-    const { tableId, seatNumber, buyIn = 200, playerName, isTestMode = true } = req.body;
+    const { tableId, seatNumber, buyIn = 100, playerName, isTestMode = true } = req.body;
     
-    console.log(`🧪 TEST API: Auto-seat request received for tableId: ${tableId}, seatNumber: ${seatNumber}, playerName: ${playerName}`);
+    console.log(`🧪 TEST API DIRECT: Auto-seat request for tableId: ${tableId}, seatNumber: ${seatNumber}, playerName: ${playerName}`);
     
     // Validate input
     if (!tableId || !seatNumber || !playerName) {
       return res.status(400).json({ success: false, error: 'Missing required parameters: tableId, seatNumber, playerName' });
     }
 
-    // Emit autoSeat event to socket
-    const io = (global as any).socketIO;
-    if (io) {
-      io.emit('autoSeat', { tableId, seatNumber, buyIn, playerName, isTestMode });
-      console.log(`📡 TEST API: Emitted autoSeat event for tableId: ${tableId}, seatNumber: ${seatNumber}, playerName: ${playerName}`);
+    // SIMPLIFIED APPROACH: Add player directly to TableManager for testing
+    const targetTableId = parseInt(tableId);
+    
+    // Get the table's game state
+    let gameState = tableManager.getTableGameState(targetTableId);
+    
+    if (!gameState) {
+      // Initialize empty game state for this table
+      gameState = {
+        id: targetTableId.toString(),
+        players: [],
+        communityCards: [],
+        pot: 0,
+        currentPlayerId: null,
+        currentPlayerPosition: 0,
+        dealerPosition: 0,
+        smallBlindPosition: 1,
+        bigBlindPosition: 2,
+        status: 'waiting',
+        phase: 'preflop',
+        minBet: 2,
+        currentBet: 0,
+        smallBlind: 1,
+        bigBlind: 2
+      };
     }
 
-    res.json({ success: true, message: `Auto-seat request processed for tableId: ${tableId}, seatNumber: ${seatNumber}, playerName: ${playerName}` });
+    // Check if player already exists
+    const existingPlayer = gameState.players.find(p => p.name === playerName);
+    if (existingPlayer) {
+      console.log(`⚠️ TEST API: Player ${playerName} already exists in game state`);
+      return res.status(400).json({ success: false, error: `Player ${playerName} already seated` });
+    }
+
+    // Add player to game state
+    const newPlayer = {
+      id: playerName,
+      name: playerName,
+      seatNumber: parseInt(seatNumber),
+      position: parseInt(seatNumber),
+      chips: buyIn,
+      currentBet: 0,
+      isDealer: false,
+      isAway: false,
+      isActive: true,
+      avatar: {
+        type: 'default',
+        color: '#007bff'
+      },
+      cards: []
+    };
+
+    gameState.players.push(newPlayer);
+    gameState.players.sort((a, b) => a.seatNumber - b.seatNumber);
+
+    // CRITICAL: Also register player in TableManager's tablePlayers Map
+    const sitDownResult = tableManager.sitDown(targetTableId, playerName, buyIn);
+    if (!sitDownResult.success) {
+      console.log(`⚠️ TEST API: sitDown failed: ${sitDownResult.error}`);
+    } else {
+      console.log(`✅ TEST API: Player ${playerName} registered in TableManager`);
+    }
+
+    console.log(`✅ TEST API DIRECT: Player ${playerName} added to game state at table ${tableId}, seat ${seatNumber}`);
+    console.log(`📊 TEST API: Game state now has ${gameState.players.length} players`);
+    console.log(`📊 TEST API: TableManager now sees ${tableManager.getTablePlayers(targetTableId).length} players`);
+
+    // Emit socket event for real-time updates
+    const io = (global as any).socketIO;
+    if (io) {
+      io.to(`table:${tableId}`).emit('gameState', gameState);
+      io.to(`table:${tableId}`).emit('playerJoined', {
+        tableId: targetTableId,
+        player: newPlayer
+      });
+      console.log(`📡 TEST API: Emitted gameState and playerJoined events for ${playerName}`);
+    }
+
+    res.json({ 
+      success: true, 
+      message: `Player ${playerName} seated at table ${tableId}, seat ${seatNumber}`,
+      player: newPlayer,
+      gameState: {
+        players: gameState.players.length,
+        status: gameState.status
+      }
+    });
   } catch (error) {
     console.error('❌ TEST API: Error in auto-seat endpoint:', error);
-    res.status(500).json({ success: false, error: 'Failed to process auto-seat request' });
+    res.status(500).json({ success: false, error: `Auto-seat failed: ${(error as Error).message}` });
+  }
+});
+
+// DEBUG API: Check TableManager player state
+router.get('/debug-table/:tableId', async (req, res) => {
+  try {
+    const tableId = parseInt(req.params.tableId);
+    const players = tableManager.getTablePlayers(tableId);
+    const gameState = tableManager.getTableGameState(tableId);
+    
+    res.json({
+      tableId,
+      tablePlayers: players,
+      gameStatePlayers: gameState?.players || [],
+      playerCount: players.length,
+      gameStatePlayerCount: gameState?.players?.length || 0
+    });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
   }
 });
 

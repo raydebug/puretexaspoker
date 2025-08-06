@@ -464,11 +464,21 @@ const GamePage: React.FC = () => {
             setGameState(minimalGameState);
             setAvailableSeats([1, 2, 3, 4, 5, 6, 7, 8, 9]); // All seats available
             
-            // If user is an observer, add them to the observers list
+            // CRITICAL FIX: Only add user to observers list if they are truly not seated at any table
             const nickname = localStorage.getItem('nickname');
             if (nickname && isObserver) {
-              console.log('DEBUG: Adding current user to observers list:', nickname);
-              setObservers([nickname]);
+              // Double-check: make sure the user is not actually seated at this table
+              const socketCurrentPlayer = socketService.getCurrentPlayer();
+              const isSeatedPlayer = gameState?.players?.some(p => p.id === socketCurrentPlayer?.id || p.nickname === nickname);
+              
+              if (!isSeatedPlayer) {
+                console.log('DEBUG: Adding current user to observers list (confirmed not seated):', nickname);
+                setObservers([nickname]);
+              } else {
+                console.log('DEBUG: User is actually seated - not adding to observers list:', nickname);
+                setIsObserver(false); // Fix the state
+                setObservers([]); // Clear observers list
+              }
             }
           }
           
@@ -501,9 +511,30 @@ const GamePage: React.FC = () => {
       console.log('🎯 GamePage: Received game state update:', gameState);
       setGameState(gameState);
       
+      // CRITICAL FIX: Always update observer state based on actual game state
+      const nickname = localStorage.getItem('nickname');
+      if (nickname && gameState.players) {
+        // Check if current user is actually seated at this table
+        const isUserSeated = gameState.players.some(p => 
+          p.name === nickname || 
+          p.nickname === nickname ||
+          p.id === nickname
+        );
+        
+        console.log('🎯 GamePage: Observer state check - user seated:', isUserSeated);
+        
+        if (isUserSeated) {
+          console.log('🎯 GamePage: User is seated - setting isObserver to false');
+          setIsObserver(false);
+          setObservers([]); // Clear observers list since user is playing
+        } else {
+          console.log('🎯 GamePage: User is not seated - remaining as observer');
+          setIsObserver(true);
+        }
+      }
+      
       // Always try to set the current player from the game state
       if (gameState.players && gameState.currentPlayerId) {
-        const nickname = localStorage.getItem('nickname');
         console.log('🎯 GamePage: Looking for current player');
         console.log('🎯 GamePage: Nickname from localStorage:', nickname);
         console.log('🎯 GamePage: Current player ID from game state:', gameState.currentPlayerId);
@@ -719,6 +750,15 @@ const GamePage: React.FC = () => {
               availableSeats={availableSeats}
               onSeatSelect={handleSeatSelection}
             />
+            
+            {/* PlayerActions component positioned at bottom under the table (Observer View) */}
+            <PlayerActions
+              currentPlayer={null} // Not used - component uses localStorage directly
+              currentPlayerId={gameState?.currentPlayerId || null}
+              gameState={gameState}
+              onAction={handleAction}
+              isTestMode={false}
+            />
           </TableContainer>
         </GameLayout>
 
@@ -732,102 +772,6 @@ const GamePage: React.FC = () => {
           />
         )}
 
-        {/* 🎯 ACTION BUTTONS - Bottom of page (non-floating) */}
-        <div style={{
-          width: '100%',
-          backgroundColor: 'rgba(40, 44, 52, 0.95)',
-          color: 'white',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '16px',
-          borderRadius: '12px',
-          border: '2px solid #495057',
-          padding: '20px',
-          marginTop: '20px'
-        }}>
-          <div style={{marginBottom: '15px', fontSize: '18px', fontWeight: 'bold'}}>
-            🎯 POKER ACTION BUTTONS
-          </div>
-          
-          <div style={{display: 'flex', gap: '12px', marginBottom: '12px'}}>
-            <button 
-              onClick={() => handleAction('check')}
-              style={{
-                padding: '12px 20px',
-                fontSize: '16px',
-                backgroundColor: '#28a745',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer'
-              }}
-            >
-              CHECK
-            </button>
-            
-            <button 
-              onClick={() => handleAction('fold')}
-              style={{
-                padding: '12px 20px',
-                fontSize: '16px',
-                backgroundColor: '#dc3545',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer'
-              }}
-            >
-              FOLD
-            </button>
-            
-            <button 
-              onClick={() => handleAction('allIn')}
-              style={{
-                padding: '12px 20px',
-                fontSize: '16px',
-                backgroundColor: '#fd7e14',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer'
-              }}
-            >
-              ALL IN
-            </button>
-          </div>
-          
-          <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
-            <input 
-              type="number" 
-              placeholder="Bet amount" 
-              style={{
-                padding: '8px 12px',
-                fontSize: '16px',
-                borderRadius: '6px',
-                border: '1px solid #495057',
-                backgroundColor: '#343a40',
-                color: 'white',
-                width: '120px'
-              }} 
-            />
-            <button 
-              onClick={() => handleAction('bet', 10)}
-              style={{
-                padding: '12px 20px',
-                fontSize: '16px',
-                backgroundColor: '#007bff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer'
-              }}
-            >
-              BET
-            </button>
-          </div>
-        </div>
       </GameContainer>
     );
   }
@@ -865,106 +809,16 @@ const GamePage: React.FC = () => {
           availableSeats={availableSeats}
           onSeatSelect={handleSeatSelection}
         />
+        
+        {/* PlayerActions component positioned at bottom under the table */}
+        <PlayerActions
+          currentPlayer={currentPlayer?.name || ''} // Not used - component uses localStorage directly
+          currentPlayerId={gameState?.currentPlayerId || null}
+          gameState={gameState}
+          onAction={handleAction}
+          isTestMode={false}
+        />
       </TableContainer>
-
-      {/* 🎯 ACTION BUTTONS - Bottom of page (non-floating) */}
-      <div style={{
-        width: '100%',
-        backgroundColor: 'rgba(40, 44, 52, 0.95)',
-        color: 'white',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: '16px',
-        borderRadius: '12px',
-        border: '2px solid #495057',
-        padding: '20px',
-        marginTop: '20px'
-      }}>
-        <div style={{marginBottom: '15px', fontSize: '18px', fontWeight: 'bold'}}>
-          🎯 POKER ACTION BUTTONS
-        </div>
-        
-        <div style={{display: 'flex', gap: '12px', marginBottom: '12px'}}>
-          <button 
-            onClick={() => handleAction('check')}
-            style={{
-              padding: '12px 20px',
-              fontSize: '16px',
-              backgroundColor: '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer'
-            }}
-          >
-            CHECK
-          </button>
-          
-          <button 
-            onClick={() => handleAction('fold')}
-            style={{
-              padding: '12px 20px',
-              fontSize: '16px',
-              backgroundColor: '#dc3545',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer'
-            }}
-          >
-            FOLD
-          </button>
-          
-          <button 
-            onClick={() => handleAction('allIn')}
-            style={{
-              padding: '12px 20px',
-              fontSize: '16px',
-              backgroundColor: '#fd7e14',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer'
-            }}
-          >
-            ALL IN
-          </button>
-        </div>
-        
-        <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
-          <input
-            type="number"
-            placeholder="Bet amount"
-            style={{
-              padding: '10px 12px',
-              fontSize: '14px',
-              width: '150px',
-              backgroundColor: 'rgba(255,255,255,0.9)',
-              color: '#333',
-              border: '2px solid #495057',
-              borderRadius: '6px',
-              textAlign: 'center'
-            }}
-          />
-          
-          <button 
-            onClick={() => handleAction('bet', 10)}
-            style={{
-              padding: '10px 16px',
-              fontSize: '14px',
-              backgroundColor: '#007bff',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer'
-            }}
-          >
-            BET
-          </button>
-        </div>
-      </div>
 
 
 

@@ -62,7 +62,25 @@
       "Bash(HEADLESS=false npx cucumber-js selenium/features/2-player-complete-game-scenario.feature --require selenium/step_definitions/**/*.js --format @cucumber/pretty-formatter --tags @quick-2-player)",
       "Bash(HEADLESS=false npm run test:selenium:cucumber -- --tags @comprehensive-2-player)",
       "Bash(HEADLESS=false npm run test:selenium:cucumber -- --tags @quick-2-player)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(npx tsc:*)",
+      "Bash(CUCUMBER_TIMEOUT=300000 npx cucumber-js features/2-player-complete-game-scenario.feature --require step_definitions --name \"Complete 2-Player Texas\")",
+      "Bash(# Start fresh and run just up to the Player1 raise step to test the fix\nrm -f screenshots/failure_* && echo \"\"Testing Player1 raise step timeout fix...\"\")",
+      "Bash(sqlite3:*)",
+      "Bash(/Users/leiyao/work/puretexaspoker/test_bet_fix.sh)",
+      "Bash(echo)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(HEADLESS=false npx cucumber-js selenium/features/2-player-complete-game-scenario.feature --tags @comprehensive-2-player --require selenium/step_definitions --require selenium/support --format @cucumber/pretty-formatter --format json:selenium/reports/cucumber-report.json)",
+      "Bash(HEADLESS=false npx cucumber-js selenium/features/2-player-complete-game-scenario.feature --tags=\"@comprehensive-2-player\" --require selenium/step_definitions/2-player-game-steps.js --format @cucumber/pretty-formatter)",
+      "Bash(cp:*)",
+      "Bash(HEADLESS=false npx cucumber-js selenium/features/2-player-complete-game-scenario.feature --tags=\"@quick-2-player\" --require selenium/step_definitions/2-player-game-steps.js --format @cucumber/pretty-formatter)",
+      "Bash(kill:*)",
+      "Bash(npx:*)",
+      "Bash(HEADLESS=false npx cucumber-js selenium/features/comprehensive-game-history.feature --require selenium/step_definitions/2-player-game-steps.js --require selenium/step_definitions/hooks.js --require selenium/step_definitions/screenshot-helper.js --format @cucumber/pretty-formatter --format json:selenium/reports/cucumber-report.json)",
+      "Bash(HEADLESS=false npx cucumber-js selenium/features/comprehensive-game-history.feature --require selenium/step_definitions/2-player-game-steps.js --require selenium/step_definitions/hooks.js --require selenium/step_definitions/screenshot-helper.js --require selenium/support/world.js --format @cucumber/pretty-formatter --format json:selenium/reports/cucumber-report.json)",
+      "Bash(HEADLESS=false npx cucumber-js --config cucumber.config.js features/comprehensive-game-history.feature)",
+      "Bash(HEADLESS=false npx cucumber-js selenium/features/action-countdown-test.feature --require selenium/step_definitions/2-player-game-steps.js --require selenium/step_definitions/hooks.js --require selenium/step_definitions/screenshot-helper.js --format @cucumber/pretty-formatter --format json:selenium/reports/cucumber-report.json)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }

@@ -565,20 +565,19 @@ export const PokerTable: React.FC<PokerTableProps> = ({
 
   // Helper function to get suit symbol
   const getSuitSymbol = (suit: string) => {
-    if (!suit) return '?'; // Handle undefined/null suit
-    switch (suit.toLowerCase()) {
+    const suitLower = suit?.toLowerCase() || '';
+    switch (suitLower) {
       case 'hearts': return '♥';
       case 'diamonds': return '♦';
       case 'clubs': return '♣';
       case 'spades': return '♠';
-      default: return suit; // fallback to original
+      default: return suit || '?'; // fallback to original or '?' if undefined
     }
   };
 
   // Helper function to get card color  
   const getCardColor = (suit: string) => {
-    if (!suit) return '#000'; // Handle undefined/null suit
-    const suitLower = suit.toLowerCase();
+    const suitLower = suit?.toLowerCase() || '';
     return suitLower === 'hearts' || suitLower === 'diamonds' || suit === '♥' || suit === '♦' ? '#d40000' : '#000';
   };
 

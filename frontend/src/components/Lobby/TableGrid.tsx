@@ -336,7 +336,7 @@ export const TableGrid: React.FC<TableGridProps> = ({ filters, isAuthenticated =
       // Search filter
       if (
         filters.search &&
-        !table.name.toLowerCase().includes(filters.search.toLowerCase())
+        !table.name?.toLowerCase().includes(filters.search.toLowerCase())
       ) {
         return false;
       }

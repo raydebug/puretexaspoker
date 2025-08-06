@@ -1,8 +1,8 @@
 CLAUDE.md – Continuous Improvement Workflow
 
-Claude must follow this structured, iterative workflow in all interactions to ensure clarity, reusability, traceability, and code quality.
+Claude must follow this structured, iterative workflow to ensure clarity, reusability, traceability, and continuous quality improvement across all development and testing activities.
 
-This process supports test safety, screenshot-based verification, test tracking, and controlled improvement over time.
+This workflow mandates controlled test updates, screenshot-based verification, result tracking, and audit-friendly documentation.
 
 ⸻
 
@@ -10,135 +10,161 @@ This process supports test safety, screenshot-based verification, test tracking,
 
 1. Summarize the Target of This Interaction
 
-At the beginning of each task or session, Claude must state the purpose clearly.
+At the beginning of each task or session, Claude must clearly state the objective.
 Examples:
-   •  “Fix session timeout on login”
-   •  “Add visual confirmation for payment success”
-   •  “Refactor API retry mechanism”
+   •  “Fix login timeout logic”
+   •  “Add input validation for registration form”
+   •  “Refactor invoice rendering flow”
 
 ⸻
 
 2. Scan for Reuse Before Code/Test Changes
 
-Before writing or editing code or tests:
-   •  Review the entire project to avoid duplication.
-   •  Reuse existing functions, constants, helpers, and tests.
-   •  Refer to or maintain a PROJECT_OVERVIEW.md with:
-   •  Purpose of each file
-   •  Key functions and what they do
+Before writing or editing any code or test:
+   •  Review the entire project to avoid redundancy.
+   •  Reuse existing:
+   •  Functions / utilities
+   •  Constants / configs
+   •  Tests / mocks / assertions
+   •  Refer to or maintain PROJECT_OVERVIEW.md, which describes:
+   •  Purpose of each source/test file
+   •  Key methods and their behavior
    •  Constant definitions
-   •  Test coverage
-   •  Shared utilities
+   •  Test coverage per feature
+   •  Shared components/utilities
 
 ⸻
 
-3. Identify Issue or Plan Next Design
+3. Identify Issue or Plan the Next Design
 
-Clearly define the problem or enhancement to work on.
+Clearly define the bug, task, or feature to address in this iteration.
 
 ⸻
 
 4. Implement or Fix Code
 
-Modify or write new code only after confirming reuse is not possible.
+Apply changes only after confirming reuse opportunities have been exhausted.
 
 ⸻
 
 ❗ Test Modification Policy
 
-Claude must strictly follow:
-   •  Do not modify, remove, or bypass existing tests without explicit permission.
-   •  Add new tests only for newly introduced or updated logic.
-   •  If a test seems incorrect or outdated, flag it for review.
+Claude must strictly follow these rules:
+   •  Do not change, remove, or bypass existing tests without explicit permission.
+   •  Add or extend tests only when functional logic changes.
+   •  If a test appears outdated or invalid, flag it for review — but do not modify it directly.
 
 ⸻
 
 5. Update Tests as Needed (With Permission)
-   •  For backend/API changes, update or add backend test cases.
+   •  For backend/API changes, update or add backend unit/integration tests.
    •  For UI/frontend changes, update or add Selenium UI test cases.
-   •  All changes must align with the permission policy.
+   •  Test changes must follow the permission rule above.
 
 ⸻
 
 6. Run UI Tests with Screenshot Verification
 
-✅ Screenshot Naming Convention and Enforcement:
-   •  For each .feature file (e.g., login_flow.feature), there must be exactly one corresponding screenshot log file:
+✅ Screenshot Log File Naming
+   •  For every .feature file (e.g., checkout_flow.feature), create a single corresponding screenshot log file:
 
-login_flow_screenshots.md
+checkout_flow_screenshots.md
 
 
-   •  No alternative filenames are allowed.
+   •  This naming pattern is mandatory.
 
-📸 Screenshot Log Requirements:
+📸 Screenshot Log File Format
+   •  Before each test run, delete all previous screenshots.
+   •  During testing, capture screenshots of each UI step.
 
-Before running the UI test:
-   •  Delete all previous screenshots from the UI test directory.
-   •  During the test, take step-by-step screenshots as visual evidence.
+Each run must update the associated screenshot log file, including:
 
-After running the test:
-   •  Update the *_screenshots.md file to reflect the current test.
-
-Each screenshot file must include:
-
-# Screenshot Verification Log for `login_flow.feature`
+# Screenshot Verification Log for `checkout_flow.feature`
 **Test Run Time:** 2025-07-28 14:53:21
 
-| Index | Screenshot File        | Verifying Items                            | Result   |
-|-------|------------------------|---------------------------------------------|----------|
-| 1     | login_step1.png        | Login form loaded                          | ✅ Pass  |
-| 2     | login_step2.png        | Email entered, password hidden             | ✅ Pass  |
-| 3     | login_step3.png        | Success message shown, redirect triggered  | ❌ Fail  |
+| Index | Screenshot File       | Verifying Items                           | Result   |
+|-------|------------------------|-------------------------------------------|----------|
+| 1     | checkout_step1.png     | Product page loaded                       | ✅ Pass  |
+| 2     | checkout_step2.png     | Address form filled correctly             | ✅ Pass  |
+| 3     | checkout_step3.png     | Payment confirmation visible              | ❌ Fail  |
 
-🔒 File Maintenance Rules:
-   •  Never remove previously passed entries from the screenshot log.
-   •  Always update the Result column (✅ Pass or ❌ Fail) on each test run.
-   •  Append the new test run time at the top for historical tracking.
+🔒 Maintenance Rules
+   •  Never delete previously passed steps from the log.
+   •  Always update the Result column for each test run.
+   •  Always record the current timestamp (Test Run Time) for each test run.
 
 ⸻
 
-7. Track Test Coverage and Result Changes
+7. Track Test Coverage and Result Changes (Per Run)
 
-Compare current and previous test metrics:
+After each test run, compare current vs. previous test metrics:
 
 | Test Suite     | Prev Count | Curr Count | ΔCases | Prev Pass % | Curr Pass % | ΔPass % |
 |----------------|------------|------------|--------|-------------|-------------|---------|
 | Backend Tests  | 120        | 125        | +5     | 98%         | 99%         | +1%     |
 | UI Tests       | 60         | 60         | 0      | 95%         | 93%         | -2%     |
 
-Summarize added or removed tests, and highlight any failure trends.
 
 ⸻
 
-8. Verify All Tests Pass
+8. 📊 Maintain Test Results History File
 
-Run all relevant test suites.
-   •  ✅ If all tests and screenshots pass, continue.
-   •  ❌ If any fail, go back to Step 4 and revise.
+Maintain a centralized test history log file named:
+
+test_results_history.md
+
+For each iteration, append a new record with:
+   •  Timestamp
+   •  Summary of test suites executed
+   •  Total cases, passes, fails, and pass rate
+   •  Key notes if any failures or regressions occurred
+
+Example:
+
+## Test Run – 2025-07-28 14:53:21
+
+| Suite         | Total | Passed | Failed | Pass % |
+|---------------|-------|--------|--------|--------|
+| Backend       | 125   | 124    | 1      | 99.2%  |
+| UI            | 60    | 56     | 4      | 93.3%  |
+
+- ✅ API refactor tests passed
+- ❌ UI issue on checkout button (regression from v1.4.3)
+
+This file must be kept up-to-date after every test run and serves as the basis for tracking long-term quality trends.
 
 ⸻
 
-9. Commit Changes
+9. Verify All Tests Pass
 
-Once all verification steps are complete:
-   •  Commit changes with a clear and meaningful message.
-   •  Include updated screenshot logs and test result summaries.
+Run all relevant tests:
+   •  ✅ If all backend and UI tests pass (including screenshot verification), continue.
+   •  ❌ If anything fails, return to Step 4 to revise.
 
 ⸻
 
-10. Repeat
+10. Commit Changes
 
-Return to Step 1 and continue iterating. Claude should treat this as a never-ending improvement loop.
+Once verified:
+   •  Commit all code, updated tests, screenshot logs, and the test history record.
+   •  Use a clear and descriptive commit message.
+
+⸻
+
+11. Repeat
+
+Return to Step 1 and continue improving.
+Claude must treat this process as a continuous improvement cycle.
 
 ⸻
 
 📘 PROJECT_OVERVIEW.md (Recommended)
 
-Claude may refer to or maintain a PROJECT_OVERVIEW.md with:
+Claude may refer to or maintain a PROJECT_OVERVIEW.md that includes:
 
 Section  Content
-Files Purpose of each source and test file
-Functions   Descriptions of key methods
-Constants   Global config or constant definitions
-Tests Mapping of logic to test coverage
-Utilities   Shared helpers, formatters, validators, etc.
+Files Purpose of each code and test file
+Functions   Responsibilities of key methods
+Constants   Global values and where they are used
+Tests Coverage mapping from features to test cases
+Utilities   Reusable helpers, validators, etc.

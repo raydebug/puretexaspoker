@@ -272,9 +272,9 @@ const TableMonitorPage: React.FC = () => {
   }, [autoRefresh]);
 
   const filteredTables = data?.tables.filter(table => 
-    table.name.toLowerCase().includes(filter.toLowerCase()) ||
-    table.observers.some(o => o.nickname.toLowerCase().includes(filter.toLowerCase())) ||
-    table.players.some(p => p.nickname.toLowerCase().includes(filter.toLowerCase()))
+    table.name?.toLowerCase().includes(filter.toLowerCase()) ||
+    table.observers?.some(o => o.nickname?.toLowerCase().includes(filter.toLowerCase())) ||
+    table.players?.some(p => p.nickname?.toLowerCase().includes(filter.toLowerCase()))
   ) || [];
 
   const renderIssues = (table: TableDetails) => {
