@@ -94,26 +94,37 @@ async function createBrowserInstanceShared() {
 }
 
 /**
- * Navigate browser to game URL
+ * Navigate browser to game URL with retries
  * @param {WebDriver} driver - Browser driver
  * @param {number} tableId - Table ID
  * @returns {Promise<boolean>} Success status
  */
 async function navigateToGameShared(driver, tableId) {
-  try {
-    const gameUrl = `http://localhost:3000/game?table=${tableId}`;
-    console.log(`🌐 Navigating to: ${gameUrl}`);
-    
-    await driver.get(gameUrl);
-    await driver.wait(until.elementLocated(By.css('body')), 8000);
-    await driver.sleep(1000);
-    
-    console.log(`✅ Navigation complete to ${gameUrl}`);
-    return true;
-  } catch (navError) {
-    console.log(`⚠️ Navigation failed: ${navError.message}`);
-    return false;
+  const gameUrl = `http://localhost:3000/game?table=${tableId}`;
+  const maxRetries = 3;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`🌐 Navigating to: ${gameUrl} (attempt ${attempt}/${maxRetries})`);
+      
+      await driver.get(gameUrl);
+      await driver.wait(until.elementLocated(By.css('body')), 10000);
+      await driver.sleep(2000); // Give more time for page load
+      
+      console.log(`✅ Navigation complete to ${gameUrl}`);
+      return true;
+    } catch (navError) {
+      console.log(`⚠️ Navigation attempt ${attempt} failed: ${navError.message}`);
+      
+      if (attempt < maxRetries) {
+        console.log(`🔄 Retrying navigation in 2 seconds...`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
   }
+  
+  console.log(`❌ Navigation failed after ${maxRetries} attempts`);
+  return false;
 }
 
 /**
@@ -176,7 +187,7 @@ async function setup5PlayersShared(tableId) {
     global.players = {};
   }
   
-  // Create browser instances for 5 players
+  // Create browser instances for 5 players with delay to prevent resource exhaustion
   for (let i = 1; i <= 5; i++) {
     const playerName = `Player${i}`;
     
@@ -194,6 +205,11 @@ async function setup5PlayersShared(tableId) {
       };
       
       console.log(`✅ Browser instance created for ${playerName}`);
+      
+      // Add small delay between browser creations to prevent resource conflicts
+      if (i < 5) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
     } catch (error) {
       console.error(`❌ Failed to create browser for ${playerName}: ${error.message}`);
       throw error;

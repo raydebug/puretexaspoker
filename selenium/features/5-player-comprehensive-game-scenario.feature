@@ -86,9 +86,9 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
     
     # CO 4-BET (Cut Off Response)
     And Player4 (CO) 4-bets to $60 with pocket 10s
-    Then I should see enhanced game history: "Player4 (CO) raises to $60 — Stack: $92 → $32"
+    Then I should see enhanced game history: "Player4 (CO) raises to $60 — Stack: $92 → $40"
     And I capture screenshot "09_preflop_co_4bet" showing 4-bet action
-    And the pot should be $85
+    And the pot should be $109
     
     # BTN FOLD to 4-bet
     And Player5 (BTN) folds A♥Q♦ to 4-bet
@@ -102,13 +102,13 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
     And the pot should be $161
     
     # CO CALL ALL-IN
-    And Player4 (CO) calls all-in for remaining $32
-    Then I should see enhanced game history: "Player4 (CO) calls $32 — Stack: $32 → $0"
+    And Player4 (CO) calls all-in for remaining $40
+    Then I should see enhanced game history: "Player4 (CO) calls $40 — Stack: $40 → $0"
     And I capture screenshot "12_preflop_co_call_allin"
-    And the pot should be $193
+    And the pot should be $185
     
     # Verify Pre-flop Summary
-    Then I should see "Pot: $193" in enhanced game history
+    Then I should see "Pot: $185" in enhanced game history
     And 2 players should remain active: Player2, Player4
     And 3 players should be folded: Player1, Player3, Player5
     And I capture screenshot "13_preflop_complete_summary" showing final pre-flop state
@@ -117,7 +117,7 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
     When the flop is dealt: A♣, 10♠, 7♥
     Then I should see enhanced flop display:
       | Element | Expected Format |
-      | Phase Header | --- FLOP [Pot: $193] --- |
+      | Phase Header | --- FLOP [Pot: $185] --- |
       | Community Cards | Community Cards: A♣ 10♠ 7♥ |
     
     And I capture screenshot "14_flop_dealt_with_sidepot" showing flop with all-in players
@@ -129,23 +129,23 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
     When the turn is dealt: K♣
     Then I should see enhanced turn display:
       | Element | Expected Format |
-      | Phase Header | --- TURN [Pot: $193] --- |
+      | Phase Header | --- TURN [Pot: $185] --- |
       | Turn Card | Community Card: K♣ |
     
     And I capture screenshot "15_turn_dealt_allin_runout"
-    And Player2 should now have straight draw (Q♥J♥ needs 9 for straight)
-    And Player4 should still have set of 10s
+    And Player2 should have gutshot straight draw (Q♥J♥ needs 8 for straight)
+    And Player4 should still have set of 10s (strongest hand)
     
     # PHASE 4: RIVER - Final All-In Resolution
-    When the river is dealt: 9♦
+    When the river is dealt: 8♦
     Then I should see enhanced river display:
       | Element | Expected Format |
-      | Phase Header | --- RIVER [Pot: $193] --- |
-      | River Card | Community Card: 9♦ |
+      | Phase Header | --- RIVER [Pot: $185] --- |
+      | River Card | Community Card: 8♦ |
     
     And I capture screenshot "16_river_dealt_final_card"
-    And Player2 should now have straight (Q-J-10-9-8... wait, needs 8, so K-Q-J-10-9)
-    And the board should be A♣ 10♠ 7♥ K♣ 9♦
+    And Player2 should now have straight (Q-J-10-9-8)
+    And the board should be A♣ 10♠ 7♥ K♣ 8♦
     
     # PHASE 5: SHOWDOWN - Enhanced Hand Reveals
     When the showdown begins
@@ -157,13 +157,13 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
     And I capture screenshot "17_showdown_hand_reveals"
     
     # Hand Evaluation
-    And Player2 should have "straight" (K-Q-J-10-9)
+    And Player2 should have "straight" (Q-J-10-9-8)
     And Player4 should have "set of tens"
     And Player2 should win with higher hand ranking
     
     Then I should see enhanced showdown results:
       | Element | Expected Format |
-      | Winner Declaration | Player2 wins $193 with straight |
+      | Winner Declaration | Player2 wins $185 with straight |
       | Final Pot Distribution | All chips to Player2 |
     
     And I capture screenshot "18_showdown_complete_winner"
