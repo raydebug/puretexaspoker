@@ -64,7 +64,7 @@
     "@types/sinon-chai": "^4.0.0",
     "chai": "^4.4.1",
     "chai-jquery": "^2.1.0",
-    "chromedriver": "^137.0.4",
+    "chromedriver": "^139.0.0",
     "concurrently": "^8.2.2",
     "geckodriver": "^4.3.3",
     "jquery": "^3.7.1",
