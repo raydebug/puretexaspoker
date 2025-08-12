@@ -199,13 +199,17 @@ router.get('/:tableId/game/history', async (req, res) => {
       return res.status(400).json({ error: 'Only tables 1, 2, and 3 are available' });
     }
 
-    // For now, return empty game history to avoid Prisma client issues
-    // TODO: Fix Prisma client and implement proper game history
-    console.log(`📊 Table ${tableNumber} game history: returning empty list for now`);
+    console.log(`📊 Getting real game history for table ${tableNumber}${handNumber ? ` hand ${handNumber}` : ''}`);
+
+    // Get actual game history from TableManager
+    const gameHistory = await tableManager.getGameHistory(
+      tableNumber, 
+      handNumber ? parseInt(handNumber as string) : undefined
+    );
 
     res.status(200).json({
       success: true,
-      gameHistory: [],
+      gameHistory,
       tableId: tableNumber,
       handNumber: handNumber ? parseInt(handNumber as string) : null
     });

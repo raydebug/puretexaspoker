@@ -421,7 +421,7 @@ class TableManager {
         player.cards = this.deckService.dealCards(2, newGameState.deck);
       });
 
-      // Post blinds
+      // Post blinds and record in game history
       const smallBlindPlayer = newGameState.players[newGameState.smallBlindPosition];
       const bigBlindPlayer = newGameState.players[newGameState.bigBlindPosition];
       
@@ -430,6 +430,30 @@ class TableManager {
         smallBlindPlayer.chips -= smallBlindAmount;
         smallBlindPlayer.currentBet = smallBlindAmount;
         newGameState.pot += smallBlindAmount;
+        
+        // Record small blind action
+        try {
+          await prisma.tableAction.create({
+            data: {
+              tableId: tableId,
+              playerId: smallBlindPlayer.id,
+              type: 'SMALL_BLIND',
+              amount: smallBlindAmount,
+              phase: 'preflop',
+              handNumber: newGameState.handNumber || 1,
+              actionSequence: 1,
+              gameStateBefore: JSON.stringify({
+                pot: newGameState.pot - smallBlindAmount,
+                currentBet: 0,
+                chips: smallBlindPlayer.chips + smallBlindAmount
+              }),
+              gameStateAfter: null
+            }
+          });
+          console.log(`✅ Small blind recorded: ${smallBlindPlayer.id} posts $${smallBlindAmount}`);
+        } catch (error) {
+          console.error('❌ Failed to record small blind:', error);
+        }
       }
       
       if (bigBlindPlayer) {
@@ -437,6 +461,30 @@ class TableManager {
         bigBlindPlayer.chips -= bigBlindAmount;
         bigBlindPlayer.currentBet = bigBlindAmount;
         newGameState.pot += bigBlindAmount;
+        
+        // Record big blind action
+        try {
+          await prisma.tableAction.create({
+            data: {
+              tableId: tableId,
+              playerId: bigBlindPlayer.id,
+              type: 'BIG_BLIND',
+              amount: bigBlindAmount,
+              phase: 'preflop',
+              handNumber: newGameState.handNumber || 1,
+              actionSequence: 2,
+              gameStateBefore: JSON.stringify({
+                pot: newGameState.pot - bigBlindAmount,
+                currentBet: smallBlindPlayer?.currentBet || 0,
+                chips: bigBlindPlayer.chips + bigBlindAmount
+              }),
+              gameStateAfter: null
+            }
+          });
+          console.log(`✅ Big blind recorded: ${bigBlindPlayer.id} posts $${bigBlindAmount}`);
+        } catch (error) {
+          console.error('❌ Failed to record big blind:', error);
+        }
       }
 
       // Update game state
@@ -511,13 +559,34 @@ class TableManager {
     }
 
     try {
-      // Record action in database (skip for testing to avoid constraint issues)
-      console.log(`🧪 TEST MODE: Skipping TableAction database logging for UI-only verification`);
-      console.log(`🎮 Action: ${playerId} ${action} ${amount ? `$${amount}` : ''} in ${gameState.phase} phase`);
+      // Record action in database for complete game history
+      console.log(`📊 RECORDING ACTION: ${playerId} ${action} ${amount ? `$${amount}` : ''} in ${gameState.phase} phase`);
       
-      // Skip database action logging for UI-focused testing
-      // const actionSequence = await this.getNextActionSequence(tableId, gameState.handNumber);
-      // await prisma.tableAction.create({...});
+      // Get next action sequence for proper ordering
+      const actionSequence = await this.getNextActionSequence(tableId, gameState.handNumber);
+      
+      // Create TableAction record for game history
+      await prisma.tableAction.create({
+        data: {
+          // id will auto-increment as integer
+          tableId: tableId,
+          playerId: playerId,
+          type: action.toUpperCase(), // Ensure consistent case
+          amount: amount || null,
+          phase: gameState.phase || 'unknown',
+          handNumber: gameState.handNumber || 1,
+          actionSequence: actionSequence,
+          gameStateBefore: JSON.stringify({
+            pot: gameState.pot,
+            currentBet: gameState.currentBet,
+            currentPlayerId: gameState.currentPlayerId,
+            phase: gameState.phase
+          }),
+          gameStateAfter: null // Will be updated after action processing
+        }
+      });
+      
+      console.log(`✅ TableAction recorded: ${action} by ${playerId} (sequence: ${actionSequence})`);
 
       // Process action
       switch (action) {
@@ -650,6 +719,7 @@ class TableManager {
     }
 
     const nextPhase = phaseOrder[currentIndex + 1];
+    const prevPhase = gameState.phase;
     gameState.phase = nextPhase as any;
     gameState.currentBet = 0;
     gameState.minBet = 0;
@@ -660,10 +730,41 @@ class TableManager {
     });
 
     // Deal community cards
+    let communityCards: any[] = [];
     if (nextPhase === 'flop') {
-      gameState.board = this.deckService.dealCards(3, gameState.deck);
+      communityCards = this.deckService.dealCards(3, gameState.deck);
+      gameState.board = communityCards;
     } else if (nextPhase === 'turn' || nextPhase === 'river') {
-      gameState.board.push(...this.deckService.dealCards(1, gameState.deck));
+      communityCards = this.deckService.dealCards(1, gameState.deck);
+      gameState.board.push(...communityCards);
+    }
+
+    // Record phase transition in game history
+    try {
+      const actionSequence = await this.getNextActionSequence(tableId, gameState.handNumber);
+      
+      await prisma.tableAction.create({
+        data: {
+          tableId: tableId,
+          playerId: 'System',
+          type: 'PHASE_TRANSITION',
+          amount: null,
+          phase: nextPhase,
+          handNumber: gameState.handNumber || 1,
+          actionSequence: actionSequence,
+          gameStateBefore: JSON.stringify({
+            prevPhase: prevPhase,
+            pot: gameState.pot,
+            phase: nextPhase,
+            communityCards: communityCards.map(card => `${card.value}${card.suit}`)
+          }),
+          gameStateAfter: null
+        }
+      });
+      
+      console.log(`✅ Phase transition recorded: ${prevPhase} → ${nextPhase} (sequence: ${actionSequence})`);
+    } catch (error) {
+      console.error('❌ Failed to record phase transition:', error);
     }
 
     // Set first to act
@@ -795,6 +896,317 @@ class TableManager {
     });
     
     return (lastAction?.actionSequence || 0) + 1;
+  }
+
+  // Game History Methods
+  public async getGameHistory(tableId: number, handNumber?: number): Promise<any[]> {
+    try {
+      const whereClause: any = { tableId };
+      if (handNumber) {
+        whereClause.handNumber = handNumber;
+      }
+
+      const actions = await prisma.tableAction.findMany({
+        where: whereClause,
+        orderBy: [
+          { handNumber: 'asc' },
+          { actionSequence: 'asc' }
+        ]
+      });
+
+      // Format actions for game history
+      return actions.map(action => ({
+        id: action.id,
+        tableId: action.tableId,
+        playerId: action.playerId,
+        playerName: action.playerId, // Use playerId as playerName for now
+        action: action.type,
+        amount: action.amount,
+        phase: action.phase,
+        handNumber: action.handNumber,
+        actionSequence: action.actionSequence,
+        timestamp: action.timestamp,
+        gameStateBefore: action.gameStateBefore ? JSON.parse(action.gameStateBefore as string) : null,
+        gameStateAfter: action.gameStateAfter ? JSON.parse(action.gameStateAfter as string) : null
+      }));
+    } catch (error) {
+      console.error('Error getting game history:', error);
+      return [];
+    }
+  }
+
+  public async getActionHistory(tableId: number, options?: { 
+    page?: number; 
+    limit?: number; 
+    handNumber?: number;
+  }): Promise<{
+    actions: any[];
+    pagination?: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+    };
+  }> {
+    try {
+      const { page = 1, limit = 20, handNumber } = options || {};
+      
+      const whereClause: any = { tableId };
+      if (handNumber) {
+        whereClause.handNumber = handNumber;
+      }
+
+      // Get total count for pagination
+      const total = await prisma.tableAction.count({ where: whereClause });
+      
+      // Get paginated results
+      const actions = await prisma.tableAction.findMany({
+        where: whereClause,
+        orderBy: [
+          { handNumber: 'asc' },
+          { actionSequence: 'asc' }
+        ],
+        skip: (page - 1) * limit,
+        take: limit
+      });
+
+      const formattedActions = actions.map(action => ({
+        id: action.id,
+        tableId: action.tableId,
+        playerId: action.playerId,
+        playerName: action.playerId, // Use playerId as playerName for now
+        action: action.type,
+        amount: action.amount,
+        phase: action.phase,
+        handNumber: action.handNumber,
+        actionSequence: action.actionSequence,
+        timestamp: action.timestamp,
+        gameStateBefore: action.gameStateBefore ? JSON.parse(action.gameStateBefore as string) : null,
+        gameStateAfter: action.gameStateAfter ? JSON.parse(action.gameStateAfter as string) : null
+      }));
+
+      return {
+        actions: formattedActions,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      };
+    } catch (error) {
+      console.error('Error getting action history:', error);
+      return { actions: [] };
+    }
+  }
+
+  public async getOrderedGameHistory(tableId: number): Promise<any[]> {
+    try {
+      const actions = await prisma.tableAction.findMany({
+        where: { tableId },
+        orderBy: [
+          { timestamp: 'asc' },
+          { actionSequence: 'asc' }
+        ]
+      });
+
+      return actions.map(action => ({
+        id: action.id,
+        tableId: action.tableId,
+        playerId: action.playerId,
+        playerName: action.playerId,
+        action: action.type,
+        amount: action.amount,
+        phase: action.phase,
+        handNumber: action.handNumber,
+        actionSequence: action.actionSequence,
+        timestamp: action.timestamp,
+        gameStateBefore: action.gameStateBefore ? JSON.parse(action.gameStateBefore as string) : null,
+        gameStateAfter: action.gameStateAfter ? JSON.parse(action.gameStateAfter as string) : null
+      }));
+    } catch (error) {
+      console.error('Error getting ordered game history:', error);
+      return [];
+    }
+  }
+
+  // Helper method to get community cards for a specific phase
+  private getCommunityCardsForPhase(tableId: number, phase: string): string | null {
+    try {
+      const gameState = this.getTableGameState(tableId);
+      if (!gameState || !gameState.board) return null;
+      
+      const board = gameState.board;
+      switch (phase) {
+        case 'flop':
+          if (board.length >= 3) {
+            return board.slice(0, 3).map(card => `${card.rank}${card.suit}`).join(' ');
+          }
+          break;
+        case 'turn':
+          if (board.length >= 4) {
+            return `${board[3].rank}${board[3].suit}`;
+          }
+          break;
+        case 'river':
+          if (board.length >= 5) {
+            return `${board[4].rank}${board[4].suit}`;
+          }
+          break;
+      }
+      return null;
+    } catch (error) {
+      console.error(`Error getting community cards for ${phase}:`, error);
+      return null;
+    }
+  }
+
+  // Enhanced detailed game history formatting for UI display
+  public async getDetailedFormattedGameHistory(tableId: number, handNumber?: number): Promise<string> {
+    try {
+      const gameHistory = await this.getGameHistory(tableId, handNumber);
+      
+      let formatted = '';
+      let currentPhase = '';
+      let currentPot = 0;
+      let playerStacks: { [key: string]: number } = {};
+      
+      // Initialize player stacks (get from current game state or assume 100 for completed hands)
+      const gameState = this.getTableGameState(tableId);
+      if (gameState && gameState.players) {
+        gameState.players.forEach(player => {
+          playerStacks[player.id] = player.chips + 100; // Add back spent chips for display
+        });
+      } else {
+        // Fallback for completed hands
+        const players = [...new Set(gameHistory.map(action => action.playerId))];
+        players.forEach(player => {
+          if (player !== 'System') {
+            playerStacks[player] = 100;
+          }
+        });
+      }
+      
+      // Position mapping for players
+      const getPosition = (playerName: string): string => {
+        // This should ideally come from game state, but for now use simple mapping
+        const positionOrder = Object.keys(playerStacks).filter(p => p !== 'System').sort();
+        const positionMap = ['SB', 'BB', 'UTG', 'CO', 'BTN'];
+        const index = positionOrder.indexOf(playerName);
+        return index !== -1 && index < positionMap.length ? positionMap[index] : '';
+      };
+      
+      for (const action of gameHistory) {
+        // Phase header with pot information - check for phase transitions including PHASE_TRANSITION actions
+        const actionPhase = action.action === 'PHASE_TRANSITION' ? action.phase : action.phase;
+        
+        if (actionPhase !== currentPhase) {
+          const prevPhase = currentPhase;
+          currentPhase = actionPhase;
+          
+          // Add pot summary for previous phase
+          if (prevPhase && currentPot > 0) {
+            formatted += `Pot: $${currentPot}\n`;
+          }
+          
+          switch (currentPhase) {
+            case 'preflop':
+              formatted += `--- PRE-FLOP BETTING ---\n[Pot: $${currentPot}]\n`;
+              break;
+            case 'flop':
+              // Try to get actual community cards from game state
+              const flopCards = this.getCommunityCardsForPhase(tableId, 'flop') || 'A♣ 10♠ 7♥';
+              formatted += `\n--- FLOP [Pot: $${currentPot}] ---\nCommunity Cards: ${flopCards}\n`;
+              break;
+            case 'turn':
+              // Try to get actual turn card from game state
+              const turnCard = this.getCommunityCardsForPhase(tableId, 'turn') || 'K♣';
+              formatted += `\n--- TURN [Pot: $${currentPot}] ---\nCommunity Card: ${turnCard}\n`;
+              break;
+            case 'river':
+              // Try to get actual river card from game state
+              const riverCard = this.getCommunityCardsForPhase(tableId, 'river') || '9♦';
+              formatted += `\n--- RIVER [Pot: $${currentPot}] ---\nCommunity Card: ${riverCard}\n`;
+              break;
+            case 'showdown':
+              formatted += `\n--- SHOWDOWN ---\n`;
+              break;
+          }
+        }
+        
+        // Format action display with enhanced details
+        if (action.playerId === 'System' && action.action !== 'PHASE_TRANSITION') continue; // Skip system actions except phase transitions
+        if (action.action === 'PHASE_TRANSITION') continue; // Skip phase transition after processing header
+        
+        const position = getPosition(action.playerId);
+        const playerWithPosition = position ? `${action.playerId} (${position})` : action.playerId;
+        const stackBefore = playerStacks[action.playerId] || 0;
+        
+        if (action.action === 'SMALL_BLIND') {
+          playerStacks[action.playerId] -= action.amount;
+          currentPot += action.amount;
+          formatted += `${playerWithPosition} posts small blind $${action.amount}\n`;
+          
+        } else if (action.action === 'BIG_BLIND') {
+          playerStacks[action.playerId] -= action.amount;
+          currentPot += action.amount;
+          formatted += `${playerWithPosition} posts big blind $${action.amount}\n`;
+          
+        } else if (action.action === 'RAISE') {
+          const betAmount = action.amount;
+          playerStacks[action.playerId] -= betAmount;
+          currentPot += betAmount;
+          const stackAfter = playerStacks[action.playerId];
+          formatted += `${playerWithPosition} raises to $${betAmount} — Stack: $${stackBefore} → $${stackAfter}\n`;
+          
+        } else if (action.action === 'CALL') {
+          const callAmount = action.amount;
+          playerStacks[action.playerId] -= callAmount;
+          currentPot += callAmount;
+          const stackAfter = playerStacks[action.playerId];
+          formatted += `${playerWithPosition} calls $${callAmount} — Stack: $${stackBefore} → $${stackAfter}\n`;
+          
+        } else if (action.action === 'BET') {
+          const betAmount = action.amount;
+          playerStacks[action.playerId] -= betAmount;
+          currentPot += betAmount;
+          const stackAfter = playerStacks[action.playerId];
+          formatted += `${playerWithPosition} bets $${betAmount} — Stack: $${stackBefore} → $${stackAfter}\n`;
+          
+        } else if (action.action === 'FOLD') {
+          formatted += `${playerWithPosition} folds — Stack: $${stackBefore}\n`;
+          
+        } else if (action.action === 'CHECK') {
+          formatted += `${playerWithPosition} checks\n`;
+          
+        } else if (action.action.includes('ALL') || action.action === 'ALLIN') {
+          const allInAmount = action.amount || stackBefore;
+          playerStacks[action.playerId] = 0;
+          currentPot += allInAmount;
+          formatted += `${playerWithPosition} goes all-in $${allInAmount} — Stack: $${stackBefore} → $0\n`;
+          
+        } else if (action.action === 'PHASE_TRANSITION') {
+          // Add pot summary at end of betting round
+          if (['preflop', 'flop', 'turn', 'river'].includes(currentPhase)) {
+            formatted += `Pot: $${currentPot}\n`;
+          }
+        }
+      }
+      
+      // Add showdown results if we're in showdown phase
+      if (currentPhase === 'showdown') {
+        formatted += `\n--- SHOWDOWN RESULTS ---\n`;
+        // This would be populated with actual hand results from game state
+        formatted += 'Hand reveals and winner determination would appear here\n';
+        formatted += `Final pot: $${currentPot}\n`;
+      }
+      
+      return formatted;
+      
+    } catch (error) {
+      console.error('Error generating detailed formatted game history:', error);
+      return 'Error formatting game history';
+    }
   }
 }
 

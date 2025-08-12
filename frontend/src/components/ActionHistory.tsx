@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import styled from 'styled-components';
 
 interface ActionHistoryItem {
@@ -31,6 +31,25 @@ const Container = styled.div`
   max-height: 300px;
   overflow-y: auto;
   flex: 1;
+  
+  /* Custom scrollbar styling */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 215, 0, 0.6);
+    border-radius: 4px;
+    
+    &:hover {
+      background: rgba(255, 215, 0, 0.8);
+    }
+  }
 `;
 
 const Title = styled.h3`
@@ -46,12 +65,24 @@ const ActionList = styled.div`
   gap: 0.5rem;
 `;
 
-const ActionItem = styled.div`
-  background: rgba(255, 255, 255, 0.05);
+const ActionItem = styled.div<{ isLatest?: boolean }>`
+  background: ${props => props.isLatest ? 'rgba(255, 215, 0, 0.15)' : 'rgba(255, 255, 255, 0.05)'};
   border-radius: 4px;
   padding: 0.5rem;
   font-size: 0.85rem;
-  border-left: 3px solid #ffd700;
+  border-left: 3px solid ${props => props.isLatest ? '#ffd700' : '#ffd700'};
+  border: ${props => props.isLatest ? '1px solid rgba(255, 215, 0, 0.4)' : 'none'};
+  transition: all 0.3s ease;
+  
+  ${props => props.isLatest && `
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+    animation: highlightPulse 2s ease-in-out;
+  `}
+  
+  @keyframes highlightPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+  }
 `;
 
 const ActionHeader = styled.div`
@@ -134,6 +165,42 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ gameId, tableId, h
   const [actions, setActions] = useState<ActionHistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const actionListRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to the bottom when new actions are added
+  const scrollToBottom = useCallback(() => {
+    if (containerRef.current) {
+      // Smooth scroll to bottom
+      containerRef.current.scrollTo({
+        top: containerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+  }, []);
+
+  // Effect to scroll to bottom when actions change
+  useEffect(() => {
+    if (actions.length > 0) {
+      // Small delay to ensure DOM is updated, then scroll to show latest action
+      const timer = setTimeout(() => {
+        scrollToBottom();
+      }, 150);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [actions.length, scrollToBottom]);
+
+  // Also scroll when the actions array content changes (not just length)
+  useEffect(() => {
+    if (actions.length > 0) {
+      const timer = setTimeout(() => {
+        scrollToBottom();
+      }, 200);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [actions, scrollToBottom]);
 
   const fetchActionHistory = useCallback(async () => {
     try {
@@ -212,7 +279,7 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ gameId, tableId, h
   const isCurrentPlayerTurn = currentPlayerId === gameState?.currentPlayerId;
   
   return (
-    <Container data-testid="game-history">
+    <Container ref={containerRef} data-testid="game-history">
       <Title data-testid="game-history-title">
         Game History
         {handNumber && ` (Hand ${handNumber})`}
@@ -256,9 +323,9 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ gameId, tableId, h
       )}
       
       {!loading && !error && actions.length > 0 && (
-        <ActionList>
-          {actions.map((action) => (
-            <ActionItem key={action.id}>
+        <ActionList ref={actionListRef}>
+          {actions.map((action, index) => (
+            <ActionItem key={action.id} isLatest={index === actions.length - 1}>
               <ActionHeader>
                 <div>
                   <PlayerName>{action.playerName}</PlayerName>

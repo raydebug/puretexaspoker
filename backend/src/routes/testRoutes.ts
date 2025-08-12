@@ -237,13 +237,17 @@ router.get('/test_game_history/:tableId', async (req, res) => {
     // Allow any table ID for testing purposes
     console.log(`🧪 TEST API: Game history request for table ${tableNumber}`);
 
-    // For now, return empty game history to avoid Prisma client issues
-    // TODO: Implement proper game history retrieval for testing
-    console.log(`📊 TEST API: Table ${tableNumber} game history: returning empty list for now`);
+    // Get actual game history from TableManager
+    const gameHistory = await tableManager.getGameHistory(
+      tableNumber, 
+      handNumber ? parseInt(handNumber as string) : undefined
+    );
+
+    console.log(`📊 TEST API: Retrieved ${gameHistory.length} history items for table ${tableNumber}`);
 
     res.status(200).json({
       success: true,
-      gameHistory: [],
+      gameHistory,
       tableId: tableNumber,
       handNumber: handNumber ? parseInt(handNumber as string) : null
     });
@@ -269,16 +273,16 @@ router.get('/test_game_history_paginated/:tableId', async (req, res) => {
 
     console.log(`🧪 TEST API: Paginated game history request for table ${tableNumber}, page ${page}, limit ${limit}`);
 
-    // For now, return empty paginated game history
+    // Get paginated game history from TableManager
+    const result = await tableManager.getActionHistory(tableNumber, {
+      page: parseInt(page as string),
+      limit: parseInt(limit as string)
+    });
+
     res.status(200).json({
       success: true,
-      history: [],
-      pagination: {
-        page: parseInt(page as string),
-        limit: parseInt(limit as string),
-        total: 0,
-        pages: 0
-      },
+      history: result.actions,
+      pagination: result.pagination,
       tableId: tableNumber
     });
   } catch (error) {
@@ -332,10 +336,12 @@ router.get('/test_game_history_ordered/:tableId', async (req, res) => {
 
     console.log(`🧪 TEST API: Chronologically ordered game history request for table ${tableNumber}`);
 
-    // Return empty ordered game history for testing
+    // Get chronologically ordered game history from TableManager
+    const history = await tableManager.getOrderedGameHistory(tableNumber);
+
     res.status(200).json({
       success: true,
-      history: [],
+      history,
       tableId: tableNumber,
       isOrdered: true
     });
