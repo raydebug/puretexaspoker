@@ -1018,9 +1018,6 @@ When('the showdown begins', async function() {
   console.log('🏆 Showdown begins');
   console.log('✅ Showdown initiated');
 });
-  // Screenshot capture for framework test mode
-  console.log(`✅ Screenshot captured: ${screenshotName}`);
-});
 
 Then('each player should see their own hole cards with position labels', async function() {
   console.log('🔍 Verifying each player sees hole cards with position labels');
@@ -1205,38 +1202,9 @@ Then('Player{int} should now have straight \\(Q-J-{int}-{int}-{int}... wait, nee
   console.log(`✅ Player${playerNum} straight verified: K-Q-J-${final1}-${final2}`);
 });
 
-Then('the board should be A♣ {int}♠ {int}♥ K♣ {int}♦', async function(c2, c3, c5) {
-  console.log(`🔍 Verifying final board: A♣ ${c2}♠ ${c3}♥ K♣ ${c5}♦`);
-  console.log(`✅ Final board verified: A♣ ${c2}♠ ${c3}♥ K♣ ${c5}♦`);
-});
 
-When('the showdown begins', async function() {
-  console.log('🎯 Showdown begins - revealing all-in players hands');
-  
-  // Framework mode - simulate showdown
-  if (this.driver) {
-    await this.driver.sleep(2000);
-  } else {
-    console.log('⏳ Framework mode: Simulating showdown...');
-    await new Promise(resolve => setTimeout(resolve, 500));
-  }
-  console.log('✅ Showdown initiated');
-});
 
-Then('Player{int} should have {string} \\(K-Q-J-{int}-{int}\\)', async function(playerNum, handType, c4, c5) {
-  console.log(`🔍 Verifying Player${playerNum} has ${handType} (K-Q-J-${c4}-${c5})`);
-  console.log(`✅ Player${playerNum} ${handType} verified`);
-});
 
-Then('Player{int} should have {string}', async function(playerNum, handType) {
-  console.log(`🔍 Verifying Player${playerNum} has ${handType}`);
-  console.log(`✅ Player${playerNum} ${handType} verified`);
-});
-
-Then('Player{int} should win with higher hand ranking', async function(playerNum) {
-  console.log(`🔍 Verifying Player${playerNum} wins with higher hand ranking`);
-  console.log(`✅ Player${playerNum} wins with superior hand`);
-});
 
 Then('I capture screenshot {string} showing full game history', async function(screenshotName) {
   console.log(`📸 Capturing ${screenshotName} showing complete enhanced game history`);

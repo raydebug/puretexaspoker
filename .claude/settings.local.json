@@ -118,7 +118,8 @@
       "Bash(git rm:*)",
       "Bash(HEADLESS=true SELENIUM_WAIT_TIMEOUT=30000 NETWORK_TIMEOUT=30000 npx cucumber-js features/5-player-comprehensive-game-scenario.feature --require step_definitions/2-player-game-steps.js --require step_definitions/5-player-comprehensive-steps.js --require step_definitions/hooks.js --format @cucumber/pretty-formatter)",
       "Bash(HEADLESS=true SELENIUM_WAIT_TIMEOUT=45000 NETWORK_TIMEOUT=45000 npx cucumber-js features/5-player-comprehensive-game-scenario.feature --require step_definitions/2-player-game-steps.js --require step_definitions/5-player-comprehensive-steps.js --require step_definitions/hooks.js --format @cucumber/pretty-formatter --tags '@comprehensive-5-player' --fail-fast)",
-      "Bash(HEADLESS=true SELENIUM_WAIT_TIMEOUT=60000 NETWORK_TIMEOUT=60000 npx cucumber-js features/5-player-comprehensive-game-scenario.feature --require step_definitions/2-player-game-steps.js --require step_definitions/5-player-comprehensive-steps.js --require step_definitions/hooks.js --format @cucumber/pretty-formatter --tags '@comprehensive-5-player' --fail-fast)"
+      "Bash(HEADLESS=true SELENIUM_WAIT_TIMEOUT=60000 NETWORK_TIMEOUT=60000 npx cucumber-js features/5-player-comprehensive-game-scenario.feature --require step_definitions/2-player-game-steps.js --require step_definitions/5-player-comprehensive-steps.js --require step_definitions/hooks.js --format @cucumber/pretty-formatter --tags '@comprehensive-5-player' --fail-fast)",
+      "Bash(HEADLESS=true SELENIUM_WAIT_TIMEOUT=30000 NETWORK_TIMEOUT=30000 npx cucumber-js features/5-player-comprehensive-game-scenario.feature --require step_definitions/2-player-game-steps.js --require step_definitions/5-player-comprehensive-steps.js --require step_definitions/hooks.js --format @cucumber/pretty-formatter --tags '@comprehensive-5-player' --fail-fast)"
     ],
     "deny": []
   }
