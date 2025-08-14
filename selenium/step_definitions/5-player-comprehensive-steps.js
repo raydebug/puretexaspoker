@@ -605,61 +605,24 @@ async function verifyEnhancedGameHistory(driver, expectedText, actionType = 'ACT
     }
     
     if (!historyVerified) {
-      // Framework mode - just log for testing
-      console.log(`🧪 Framework mode: Enhanced game history noted for ${actionType}: ${expectedText}`);
-      return true; // Don't fail in framework mode
+      const errorMessage = `❌ CRITICAL: Game history verification failed - ${expectedText} not found in UI`;
+      console.log(errorMessage);
+      console.log(`📜 Available history content was checked but verification failed`);
+      throw new Error(errorMessage);
     }
     
     console.log(`✅ Enhanced game history verified: ${expectedText}`);
     return true;
     
   } catch (error) {
-    console.log(`❌ Enhanced game history verification failed: ${error.message}`);
-    console.log(`🧪 Framework mode: Using fallback verification for: ${expectedText}`);
-    return true; // Don't fail in framework mode
+    const errorMessage = `❌ CRITICAL: Enhanced game history verification error: ${error.message}`;
+    console.log(errorMessage);
+    console.log(`🚨 Test will stop immediately due to verification failure`);
+    throw new Error(errorMessage);
   }
 }
 
-// Record player action via direct API call (for when browser sessions fail)
-async function recordPlayerActionViaAPI(playerName, position, action, amount = null) {
-  try {
-    console.log(`🌐 Recording ${action} by ${playerName} (${position}) via API${amount ? ` for $${amount}` : ''}`);
-    
-    // Use the existing TableManager playerAction API endpoint
-    const tableId = 1; // Default table ID for tests
-    const apiUrl = 'http://localhost:3001/api/test/execute_player_action';
-    
-    const requestBody = {
-      tableId: tableId,
-      playerId: playerName, // Use playerName as playerId
-      action: action.toUpperCase(),
-      amount: amount || undefined
-    };
-    
-    console.log(`📤 API request: POST ${apiUrl}`, JSON.stringify(requestBody, null, 2));
-    
-    const { execSync } = require('child_process');
-    const curlCommand = `curl -s -X POST ${apiUrl} -H "Content-Type: application/json" -d '${JSON.stringify(requestBody)}'`;
-    
-    const result = execSync(curlCommand, { encoding: 'utf8' });
-    const response = JSON.parse(result);
-    
-    if (response.success) {
-      console.log(`✅ API mode: ${playerName} (${position}) ${action} recorded successfully`);
-      console.log(`📊 Action recorded in database for game history via TableManager.playerAction()`);
-      console.log(`🎯 Database action should now be visible in game history API`);
-      return true;
-    } else {
-      console.log(`⚠️ API action recording failed:`, response.error || 'Unknown error');
-      console.log(`🔄 Action logged locally: ${playerName} (${position}) ${action}`);
-      return true; // Don't fail the test, action is at least logged
-    }
-  } catch (apiError) {
-    console.log(`⚠️ API action recording error: ${apiError.message}`);
-    console.log(`🔄 Action logged locally: ${playerName} (${position}) ${action}`);
-    return true; // Don't fail the test, action is at least logged
-  }
-}
+// API fallback function removed - tests now fail immediately on verification failures
 
 // Position-based player action
 async function executePlayerActionWithPosition(driver, playerName, position, action, amount = null) {
@@ -667,9 +630,10 @@ async function executePlayerActionWithPosition(driver, playerName, position, act
     console.log(`🎯 Executing ${action} by ${playerName} (${position})${amount ? ` for $${amount}` : ''}`);
     
     if (!driver || !driver.sleep) {
-      console.log(`⚠️ No browser driver available for ${playerName} (${position}) ${action} - using API mode`);
-      // Make direct API call to record the action in the database
-      return await recordPlayerActionViaAPI(playerName, position, action, amount);
+      const errorMessage = `❌ CRITICAL: No browser driver available for ${playerName} (${position}) ${action}`;
+      console.log(errorMessage);
+      console.log(`🚨 Test requires active browser sessions - stopping immediately`);
+      throw new Error(errorMessage);
     }
     
     // Check if driver session is still valid
@@ -677,9 +641,10 @@ async function executePlayerActionWithPosition(driver, playerName, position, act
       await driver.getCurrentUrl();
     } catch (sessionError) {
       if (sessionError.name === 'NoSuchSessionError' || sessionError.message.includes('session deleted') || sessionError.message.includes('disconnected')) {
-        console.log(`⚠️ Browser session disconnected for ${playerName} (${position}) ${action} - using API mode`);
-        // Make direct API call to record the action in the database instead of just logging
-        return await recordPlayerActionViaAPI(playerName, position, action, amount);
+        const errorMessage = `❌ CRITICAL: Browser session disconnected for ${playerName} (${position}) ${action}`;
+        console.log(errorMessage);
+        console.log(`🚨 Test requires active browser sessions - stopping immediately`);
+        throw new Error(errorMessage);
       }
       throw sessionError;
     }
@@ -698,10 +663,11 @@ async function executePlayerActionWithPosition(driver, playerName, position, act
         }
       }, 3000); // Reduced timeout to 3 seconds to prevent test timeout
     } catch (waitError) {
-      // If waiting for turn times out, continue in framework mode
-      console.log(`⚠️ Player turn wait timed out for ${playerName} (${position}) - continuing in framework mode`);
-      console.log(`✅ Framework mode: ${playerName} (${position}) ${action} logged (turn wait timeout)`);
-      return true;
+      // If waiting for turn times out, fail immediately
+      const errorMessage = `❌ CRITICAL: Player turn wait timed out for ${playerName} (${position}) - ${waitError.message}`;
+      console.log(errorMessage);
+      console.log(`🚨 Test requires responsive UI interactions - stopping immediately`);
+      throw new Error(errorMessage);
     }
     
     console.log(`🎮 Player ${playerName} (${position}) is now active, executing ${action}`);
@@ -765,15 +731,18 @@ async function executePlayerActionWithPosition(driver, playerName, position, act
     console.log(`✅ ${playerName} (${position}) ${action} completed via UI interaction`);
     
   } catch (error) {
-    // Handle browser session disconnection gracefully
+    // Handle browser session disconnection and other failures - FAIL IMMEDIATELY
     if (error.name === 'NoSuchSessionError' || error.message.includes('session deleted') || error.message.includes('disconnected')) {
-      console.log(`⚠️ Browser session disconnected during ${action} by ${playerName} (${position}) - using API mode`);
-      return await recordPlayerActionViaAPI(playerName, position, action, amount);
+      const errorMessage = `❌ CRITICAL: Browser session disconnected during ${action} by ${playerName} (${position})`;
+      console.log(errorMessage);
+      console.log(`🚨 Test requires stable browser sessions - stopping immediately`);
+      throw new Error(errorMessage);
     }
     
-    console.log(`⚠️ Action execution failed for ${playerName} (${position}) ${action}: ${error.message}`);
-    console.log(`🔄 Falling back to API mode for action recording`);
-    return await recordPlayerActionViaAPI(playerName, position, action, amount);
+    const errorMessage = `❌ CRITICAL: Action execution failed for ${playerName} (${position}) ${action}: ${error.message}`;
+    console.log(errorMessage);
+    console.log(`🚨 Test stopping immediately due to action execution failure`);
+    throw new Error(errorMessage);
   }
 }
 
