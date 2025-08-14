@@ -17,6 +17,7 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
       | Player4 | 4    | CO       |
       | Player5 | 5    | BTN      |
     Then all players should be seated correctly with position labels
+    And I verify exactly 5 players are present at the current table
     And the page should be fully loaded for all players
     And I manually start the game for table 1
     Then the game starts with enhanced blinds structure:
@@ -47,6 +48,7 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
       | BB Action | Player2 (BB) posts big blind $2 |
     
     And I capture screenshot "02_enhanced_game_history_initial" showing enhanced formatting
+    And I verify exactly 5 players are present at the current table
     
     # Pre-flop Action Sequence - Covering All Action Types
     When the pre-flop betting round begins with UTG action
@@ -109,6 +111,7 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
     
     # Verify Pre-flop Summary
     Then I should see "Pot: $185" in enhanced game history
+    And I verify exactly 5 players are present at the current table
     And 2 players should remain active: Player2, Player4
     And 3 players should be folded: Player1, Player3, Player5
     And I capture screenshot "13_preflop_complete_summary" showing final pre-flop state
@@ -121,6 +124,7 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
       | Community Cards | Community Cards: A♣ 10♠ 7♥ |
     
     And I capture screenshot "14_flop_dealt_with_sidepot" showing flop with all-in players
+    And I verify exactly 5 players are present at the current table
     And both all-in players should have cards revealed
     And Player4 should have set of 10s (strong hand)
     And Player2 should have top pair using Q♥J♥
@@ -133,6 +137,7 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
       | Turn Card | Community Card: K♣ |
     
     And I capture screenshot "15_turn_dealt_allin_runout"
+    And I verify exactly 5 players are present at the current table
     And Player2 should have gutshot straight draw (Q♥J♥ needs 8 for straight)
     And Player4 should still have set of 10s (strongest hand)
     
@@ -144,6 +149,7 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
       | River Card | Community Card: 8♦ |
     
     And I capture screenshot "16_river_dealt_final_card"
+    And I verify exactly 5 players are present at the current table
     And Player2 should now have straight (Q-J-10-9-8)
     And the board should be A♣ 10♠ 7♥ K♣ 8♦
     
@@ -155,6 +161,7 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
       | Hand Reveals | Player2 shows Q♥ J♥, Player4 shows 10♦ 10♣ |
     
     And I capture screenshot "17_showdown_hand_reveals"
+    And I verify exactly 5 players are present at the current table
     
     # Hand Evaluation
     And Player2 should have "straight" (Q-J-10-9-8)
@@ -219,6 +226,7 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
     Then I should see "Player2 (BB) checks"
     And I capture screenshot "22_preflop_all_limpers" showing 5-way pot
     And the pot should be $10 with all 5 players active
+    And I verify exactly 5 players are present at the current table
     
     # Flop: Multi-Way Action with Check-Raise
     When the flop is dealt: 8♦, 9♣, 2♥
@@ -264,6 +272,7 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
     Then I should see "Player4 (CO) calls $30 — Stack: $78 → $48"
     And I capture screenshot "26_flop_heads_up_after_checkraise"
     And the pot should be $126 with 2 players remaining
+    And I verify exactly 5 players are present at the current table
     
     # Turn: Heads-Up Battle
     When the turn is dealt: A♠
@@ -287,6 +296,7 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
     And Player4 (CO) calls all-in
     Then I should see "Player4 (CO) calls $23 — Stack: $23 → $0"
     And the pot should be $222
+    And I verify exactly 5 players are present at the current table
     
     # Showdown
     When the showdown begins
@@ -321,6 +331,7 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
     And Player3 (UTG) calls $14
     And Player4 (CO) folds
     And I capture screenshot "31_preflop_actions_variety"
+    And I verify exactly 5 players are present at the current table
     
     # Flop: Cover CHECK, BET, CALL actions
     When the flop is dealt: K♠, Q♦, 10♣
@@ -328,6 +339,7 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
     And Player3 (UTG) bets $15 with top set
     And Player2 (BB) calls $15 (slowplay)
     And I capture screenshot "32_flop_check_bet_call"
+    And I verify exactly 5 players are present at the current table
     
     # Turn: Cover CHECK, CHECK pattern
     When the turn is dealt: 5♥
@@ -342,6 +354,7 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
     And Player2 (BB) goes all-in with remaining chips
     And Player3 (UTG) calls all-in
     And I capture screenshot "34_river_bet_raise_allin_call"
+    And I verify exactly 5 players are present at the current table
     
     # Verify all action types were covered
     Then the enhanced game history should show all action types:

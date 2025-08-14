@@ -85,7 +85,7 @@ async function verifyGameHistoryAfterAction(action, playerName, amount, browsers
 
 // Specific 2-player step definitions to avoid ambiguity
 Given('I have exactly 2 players ready to join a poker game', { timeout: 30000 }, async function () {
-  console.log('🎮 Setting up exactly 2 players for poker game...');
+  console.log('🎮 2-player setup...');
   this.playerCount = 2;
   
   // Reset screenshot helper for new scenario
@@ -170,7 +170,7 @@ Given('I have exactly 2 players ready to join a poker game', { timeout: 30000 },
 
 // Streamlined 2-player seating step - API-only approach for performance
 When('exactly 2 players join the table in order:', { timeout: 30000 }, async function (dataTable) {
-  console.log('🪑 Seating exactly 2 players at the table via auto-seat API...');
+  console.log('🪑 Seating players...');
   
   const players = dataTable.hashes();
   
@@ -267,7 +267,7 @@ Then('Player1 raises to ${int}', { timeout: 30000 }, async function (amount) {
       });
       serverProcess.unref();
       
-      console.log('🚀 Started development servers, waiting for them to be ready...');
+      console.log('🚀 Servers starting...');
       
       // Wait for servers to start up (max 30 seconds)
       let serverReady = false;
@@ -1055,7 +1055,7 @@ Then('game setup should be complete for 2 players', function () {
 const cleanupBrowsers = async function() {
   // Only cleanup if we're not reusing browsers across scenarios
   if (process.env.REUSE_BROWSERS !== 'true') {
-    console.log('🧹 Cleaning up browser instances...');
+    console.log('🧹 Browser cleanup...');
     if (global.players) {
       for (const playerName in global.players) {
         if (global.players[playerName] && global.players[playerName].driver) {
@@ -1106,7 +1106,7 @@ AfterAll(async function () {
 
 // Missing step definitions for 2-player game test
 Given('the database is reset to a clean state', async function () {
-  console.log('🧹 Resetting database to clean state...');
+  console.log('🧹 DB reset...');
   
   try {
     const { execSync } = require('child_process');
@@ -1130,8 +1130,8 @@ Given('the database is reset to a clean state', async function () {
 });
 
 Given('the User table is seeded with test players', function () {
-  console.log('👥 User table seeded with test players (2-player mode)...');
-  console.log('✅ Test players seeded successfully');
+  console.log('👥 Players seeded...');
+  console.log('✅ Players seeded');
 });
 
 Given('all players have starting stacks of ${int}', function (amount) {
@@ -1141,7 +1141,7 @@ Given('all players have starting stacks of ${int}', function (amount) {
 });
 
 Then('all players should be seated correctly:', function (dataTable) {
-  console.log('🪑 Verifying all players are seated correctly...');
+  console.log('🪑 Seat check...');
   const expectedSeats = dataTable.hashes();
   
   for (const player of expectedSeats) {
@@ -1194,7 +1194,7 @@ When('I manually start the game for table {int}', { timeout: 25000 }, async func
 });
 
 Then('the game starts with blinds structure:', async function (dataTable) {
-  console.log('🎯 Verifying blinds structure - checking UI...');
+  console.log('🎯 Blinds check...');
   const blinds = dataTable.hashes();
   
   const player1Browser = this.browsers?.Player1;
@@ -1339,7 +1339,7 @@ Then('the pot should be ${int} \\(all remaining chips\\)', async function (amoun
 });
 
 When('hole cards are dealt according to the test scenario:', async function (dataTable) {
-  console.log('🃏 Dealing hole cards according to test scenario (2-player mode)...');
+  console.log('🃏 Cards dealt...');
   const cards = dataTable.hashes();
   const { execSync } = require('child_process');
   const actualTableId = this.latestTableId || 1;
@@ -1408,7 +1408,7 @@ When('hole cards are dealt according to the test scenario:', async function (dat
 });
 
 Then('each player should see their own hole cards', { timeout: 10000 }, async function () {
-  console.log('👀 Verifying each player sees their own hole cards (2-player mode)...');
+  console.log('👀 Card visibility check...');
   
   try {
     // Capture screenshots to verify hole cards are visible
@@ -1540,7 +1540,7 @@ Then('each player should see {int} face-down cards for other players', async fun
 
 
 When('the pre-flop betting round begins', async function () {
-  console.log('🎯 Pre-flop betting round begins - verifying UI...'); 
+  console.log('🎯 Pre-flop begins...'); 
   
   const player1Browser = this.browsers?.Player1;
   if (player1Browser) {

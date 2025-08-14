@@ -85,8 +85,8 @@ describe('HandEvaluatorService', () => {
       ];
       const communityCards: Card[] = [
         { suit: 'hearts', rank: '9' },
-        { suit: 'hearts', rank: '7' },
-        { suit: 'hearts', rank: '5' },
+        { suit: 'hearts', rank: '8' },
+        { suit: 'hearts', rank: '6' },
         { suit: 'diamonds', rank: '2' },
         { suit: 'clubs', rank: '3' }
       ];
@@ -124,7 +124,7 @@ describe('HandEvaluatorService', () => {
         { suit: 'spades', rank: 'K' },
         { suit: 'hearts', rank: 'Q' },
         { suit: 'diamonds', rank: 'J' },
-        { suit: 'clubs', rank: '9' }
+        { suit: 'clubs', rank: '7' }
       ];
 
       const hand = handEvaluator.evaluateHand(holeCards, communityCards);
@@ -175,7 +175,7 @@ describe('HandEvaluatorService', () => {
       const communityCards: Card[] = [
         { suit: 'clubs', rank: '9' },
         { suit: 'spades', rank: '7' },
-        { suit: 'hearts', rank: '5' },
+        { suit: 'hearts', rank: '6' },
         { suit: 'diamonds', rank: '3' },
         { suit: 'clubs', rank: '2' }
       ];
@@ -213,8 +213,8 @@ describe('HandEvaluatorService', () => {
       ];
       const communityCards: Card[] = [
         { suit: 'hearts', rank: '9' },
-        { suit: 'hearts', rank: '7' },
-        { suit: 'hearts', rank: '5' },
+        { suit: 'hearts', rank: '8' },
+        { suit: 'hearts', rank: '6' },
         { suit: 'diamonds', rank: '2' },
         { suit: 'clubs', rank: '3' }
       ];

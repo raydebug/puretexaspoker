@@ -141,19 +141,31 @@ export class HandEvaluatorService {
   }
 
   private findFullHouse(byValue: { [key: string]: Card[] }): [Card[], Card[]] | null {
+    let threeOfAKindCards: Card[] | null = null;
+    let pairCards: Card[] | null = null;
+
+    // Find three of a kind
     for (const value in byValue) {
       const groupCards = byValue[value];
       if (groupCards.length === 3) {
-        // Find a pair from remaining cards
-        const kickers = Object.values(byValue)
-          .flat()
-          .filter(card => card.rank !== value)
-          .slice(0, 2);
-        
-        if (kickers.length >= 2) {
-          return [groupCards, kickers as Card[]];
-        }
+        threeOfAKindCards = groupCards;
+        break;
       }
+    }
+
+    if (!threeOfAKindCards) return null;
+
+    // Find a pair from remaining cards
+    for (const value in byValue) {
+      const groupCards = byValue[value];
+      if (groupCards.length >= 2 && value !== threeOfAKindCards[0].rank) {
+        pairCards = groupCards.slice(0, 2);
+        break;
+      }
+    }
+
+    if (pairCards) {
+      return [threeOfAKindCards, pairCards];
     }
     
     return null;
@@ -175,8 +187,11 @@ export class HandEvaluatorService {
 
     // Check for regular straight
     for (let i = 0; i <= sortedValues.length - 5; i++) {
-      const straight = sortedValues.slice(i, i + 5);
-      return cards.filter(card => straight.includes(card.rank)).slice(0, 5);
+      const isConsecutive = this.isConsecutive(sortedValues.slice(i, i + 5));
+      if (isConsecutive) {
+        const straight = sortedValues.slice(i, i + 5);
+        return cards.filter(card => straight.includes(card.rank)).slice(0, 5);
+      }
     }
 
     // Check for wheel (A-2-3-4-5)
@@ -186,6 +201,18 @@ export class HandEvaluatorService {
     }
 
     return null;
+  }
+
+  private isConsecutive(values: string[]): boolean {
+    if (values.length !== 5) return false;
+    
+    const numericValues = values.map(v => this.valueOrder[v]);
+    for (let i = 1; i < numericValues.length; i++) {
+      if (numericValues[i-1] - numericValues[i] !== 1) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private findThreeOfAKind(byValue: { [key: string]: Card[] }): [string, Card[]] | null {

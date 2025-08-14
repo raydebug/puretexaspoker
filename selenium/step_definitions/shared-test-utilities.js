@@ -15,7 +15,7 @@ const chrome = require('selenium-webdriver/chrome');
  * @returns {Promise<number>} Table ID
  */
 async function resetDatabaseShared() {
-  console.log('🧹 Resetting database to clean state...');
+  console.log('🧹 DB reset...');
   
   try {
     const resetResult = execSync('curl -s -X POST http://localhost:3001/api/test/reset-database', { encoding: 'utf8' });
@@ -24,7 +24,7 @@ async function resetDatabaseShared() {
     if (resetResponse.success) {
       if (resetResponse.tables && resetResponse.tables.length > 0) {
         const tableId = resetResponse.tables[0].id;
-        console.log(`✅ Database reset successful, table ID: ${tableId}`);
+        console.log(`✅ DB reset ✓ table: ${tableId}`);
         return tableId;
       } else {
         console.log(`⚠️ No tables found in reset response`);
@@ -82,7 +82,14 @@ async function createBrowserInstanceShared() {
     '--no-sandbox',
     '--disable-dev-shm-usage',
     '--disable-blink-features=AutomationControlled',
-    '--window-size=1200,800'
+    '--window-size=1200,800',
+    '--memory-pressure-off',
+    '--max_old_space_size=4096',
+    '--disable-background-timer-throttling',
+    '--disable-backgrounding-occluded-windows',
+    '--disable-renderer-backgrounding',
+    '--disable-features=TranslateUI',
+    '--disable-ipc-flooding-protection'
   );
   
   const driver = await new Builder()
@@ -94,12 +101,13 @@ async function createBrowserInstanceShared() {
 }
 
 /**
- * Navigate browser to game URL with retries
+ * Navigate browser to game URL with retries and set proper player nickname
  * @param {WebDriver} driver - Browser driver
  * @param {number} tableId - Table ID
+ * @param {string} playerName - Player name to set in localStorage
  * @returns {Promise<boolean>} Success status
  */
-async function navigateToGameShared(driver, tableId) {
+async function navigateToGameShared(driver, tableId, playerName = null) {
   const gameUrl = `http://localhost:3000/game?table=${tableId}`;
   const maxRetries = 3;
   
@@ -109,9 +117,21 @@ async function navigateToGameShared(driver, tableId) {
       
       await driver.get(gameUrl);
       await driver.wait(until.elementLocated(By.css('body')), 10000);
-      await driver.sleep(2000); // Give more time for page load
       
-      console.log(`✅ Navigation complete to ${gameUrl}`);
+      // CRITICAL FIX: Set the correct player nickname in localStorage to prevent random nickname generation
+      if (playerName) {
+        console.log(`🔐 Setting nickname in localStorage: ${playerName}`);
+        await driver.executeScript(`localStorage.setItem('nickname', '${playerName}');`);
+        
+        // ADDITIONAL FIX: Refresh the page to ensure all connections use the correct nickname
+        console.log(`🔄 Refreshing page to ensure localStorage takes effect for all connections`);
+        await driver.navigate().refresh();
+        await driver.wait(until.elementLocated(By.css('body')), 10000);
+      }
+      
+      await driver.sleep(3000); // Give more time for page load and connection establishment
+      
+      console.log(`✅ Navigation complete to ${gameUrl}${playerName ? ` with nickname ${playerName}` : ''}`);
       return true;
     } catch (navError) {
       console.log(`⚠️ Navigation attempt ${attempt} failed: ${navError.message}`);
@@ -157,7 +177,7 @@ async function startGameShared(tableId) {
  * @returns {Promise<void>}
  */
 async function cleanupBrowsersShared() {
-  console.log('🧹 Cleaning up browser instances...');
+  console.log('🧹 Browser cleanup...');
   
   if (global.players) {
     for (const playerName of Object.keys(global.players)) {
@@ -180,7 +200,7 @@ async function cleanupBrowsersShared() {
  * @returns {Promise<boolean>} Success status
  */
 async function setup5PlayersShared(tableId) {
-  console.log('🎮 Setting up 5 players for comprehensive poker game...');
+  console.log('🎮 5-player setup...');
   
   // Initialize global.players if not exists
   if (!global.players) {
@@ -237,10 +257,10 @@ async function setup5PlayersShared(tableId) {
       return false;
     }
     
-    // Navigate browser to the game page
+    // Navigate browser to the game page with correct player nickname
     const playerInstance = global.players[playerName];
     if (playerInstance && playerInstance.driver) {
-      const navigated = await navigateToGameShared(playerInstance.driver, tableId);
+      const navigated = await navigateToGameShared(playerInstance.driver, tableId, playerName);
       
       if (navigated) {
         // Update player info

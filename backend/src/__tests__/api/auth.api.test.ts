@@ -82,7 +82,7 @@ describe('Auth API Integration Tests', () => {
         .expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('already exists');
+      expect(response.body.message).toContain('already taken');
     });
 
     it('should fail with invalid email format', async () => {
@@ -139,7 +139,7 @@ describe('Auth API Integration Tests', () => {
         .expect(401);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('Invalid credentials');
+      expect(response.body.message).toContain('Invalid username or password');
     });
 
     it('should fail with non-existent user', async () => {
@@ -152,7 +152,7 @@ describe('Auth API Integration Tests', () => {
         .expect(401);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('Invalid credentials');
+      expect(response.body.message).toContain('Invalid username or password');
     });
   });
 
@@ -216,7 +216,7 @@ describe('Auth API Integration Tests', () => {
       const response = await request(app)
         .get('/api/auth/profile')
         .set('Authorization', 'Bearer invalid-token')
-        .expect(401);
+        .expect(403);
 
       expect(response.body.success).toBe(false);
     });

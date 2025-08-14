@@ -76,14 +76,14 @@ class TableManager {
       this.tables.clear();
       this.tablePlayers.clear();
       this.tableGameStates.clear();
-      console.log('TableManager: Cleared existing in-memory state');
+      // Debug: Cleared existing in-memory state
       
       // Load actual tables from database
       let dbTables = await prisma.table.findMany();
-      console.log(`TableManager: Found ${dbTables.length} tables in database`);
+      // Debug: Found ${dbTables.length} tables in database
       
       if (dbTables.length === 0) {
-        console.log('TableManager: No tables found in database, creating default tables...');
+        // Debug: No tables found in database, creating default tables...
         // Create default tables if none exist
         const defaultTables = [
           {
@@ -175,7 +175,7 @@ class TableManager {
       console.error('TableManager: Error initializing tables:', error);
       // Fallback to hardcoded tables if database fails
       const initialTables = generateInitialTables();
-      console.log(`TableManager: Fallback to ${initialTables.length} hardcoded tables`);
+      // Debug: Fallback to ${initialTables.length} hardcoded tables
       initialTables.forEach((table) => {
         this.tables.set(table.id, table);
         this.tablePlayers.set(table.id, new Map());
@@ -205,7 +205,7 @@ class TableManager {
 
   public getAllTables(): TableData[] {
     const tables = Array.from(this.tables.values());
-    console.log(`TableManager: getAllTables() returning ${tables.length} tables`);
+    // Debug: getAllTables() returning ${tables.length} tables
     return tables;
   }
 
@@ -222,45 +222,35 @@ class TableManager {
     playerId: string,
     nickname: string
   ): { success: boolean; error?: string } {
-    console.log(`TableManager: joinTable called - tableId: ${tableId}, playerId: ${playerId}, nickname: ${nickname}`);
-    console.log(`TableManager: Available table IDs: ${Array.from(this.tables.keys()).join(', ')}`);
-    
     const table = this.tables.get(tableId);
     if (!table) {
-      console.log(`TableManager: Table ${tableId} not found`);
       return { success: false, error: 'Table not found' };
     }
 
     const players = this.tablePlayers.get(tableId);
     if (!players) {
-      console.log(`TableManager: Table ${tableId} not initialized`);
       return { success: false, error: 'Table not initialized' };
     }
 
-    // ENHANCED FIX: Remove player from all other tables before joining this one
+    // Check if player is already at another table
     for (const [tid, tablePlayers] of this.tablePlayers) {
-      if (tablePlayers.has(nickname) && tid !== tableId) {
-        console.log(`TableManager: Player ${nickname} found at table ${tid}, removing before joining table ${tableId}`);
-        this.leaveTable(tid, nickname);
+      if (tablePlayers.has(playerId) && tid !== tableId) {
+        return { success: false, error: 'Already joined another table' };
       }
     }
     
     // If player is already at this table, just return success (idempotent)
-    if (players.has(nickname)) {
-      console.log(`TableManager: Player ${nickname} already at table ${tableId}, returning success`);
+    if (players.has(playerId)) {
       return { success: true };
     }
 
     // Add player as observer
-    players.set(nickname, { // Use nickname as key instead of UUID
-      id: nickname, // Use nickname as ID for simple matching
+    players.set(playerId, {
+      id: playerId,
       nickname,
       role: 'observer',
       chips: 0,
     });
-    
-    console.log(`TableManager: Added player ${nickname} as observer to table ${tableId}`);
-    console.log(`TableManager: Table ${tableId} now has ${players.size} players:`, Array.from(players.keys()));
 
     // Update table data
     const updatedTable = { ...table, observers: table.observers + 1 };
@@ -298,37 +288,58 @@ class TableManager {
 
   public sitDown(
     tableId: number,
-    nickname: string,  // Changed from playerId to nickname
+    playerId: string,
     buyIn: number
   ): { success: boolean; error?: string } {
     const table = this.tables.get(tableId);
     if (!table) {
       return { success: false, error: 'Table not found' };
     }
-    let players = this.tablePlayers.get(tableId);
-    if (!players) {
-      players = new Map();
-      this.tablePlayers.set(tableId, players);
-    }
-    let player = players.get(nickname);
-    if (!player) {
-      player = {
-        id: nickname,
-        nickname,
-        role: 'player',
-        chips: buyIn
+
+    // Validate buy-in amount
+    if (buyIn < table.minBuyIn || buyIn > table.maxBuyIn) {
+      return { 
+        success: false, 
+        error: `Buy-in must be between ${table.minBuyIn} and ${table.maxBuyIn}` 
       };
-      players.set(nickname, player);
-      console.log(`[sitDown] Added player:`, player, 'to table', tableId);
-    } else {
-      player.chips += buyIn;
-      player.role = 'player';
-      console.log(`[sitDown] Updated player:`, player, 'on table', tableId);
     }
+
+    // Check if table is full
+    if (table.players >= table.maxPlayers) {
+      return { success: false, error: 'Table is full' };
+    }
+
+    const players = this.tablePlayers.get(tableId);
+    if (!players) {
+      return { success: false, error: 'Table not initialized' };
+    }
+
+    const player = players.get(playerId);
+    if (!player) {
+      return { success: false, error: 'Must join table first' };
+    }
+
+    if (player.role === 'player') {
+      return { success: false, error: 'Already seated' };
+    }
+
+    // Update player role and chips
+    player.role = 'player';
+    player.chips = buyIn;
+
+    // Update table counts
+    const updatedTable = { 
+      ...table, 
+      players: table.players + 1,
+      observers: table.observers - 1
+    };
+    updatedTable.status = updatedTable.players >= updatedTable.maxPlayers ? 'full' : 'active';
+    this.tables.set(tableId, updatedTable);
+
     return { success: true };
   }
 
-  public standUp(tableId: number, nickname: string): boolean {  // Changed from playerId to nickname
+  public standUp(tableId: number, playerId: string): boolean {
     const table = this.tables.get(tableId);
     const players = this.tablePlayers.get(tableId);
 
@@ -336,7 +347,7 @@ class TableManager {
       return false;
     }
 
-    const player = players.get(nickname);  // Use nickname as key
+    const player = players.get(playerId);
     if (!player || player.role !== 'player') {
       return false;
     }
@@ -344,7 +355,6 @@ class TableManager {
     // Update player
     player.role = 'observer';
     player.chips = 0;
-    players.set(nickname, player);  // Use nickname as key
 
     // Update table
     const updatedTable = { ...table };
@@ -358,7 +368,6 @@ class TableManager {
 
   public getTablePlayers(tableId: number): TablePlayer[] {
     const players = Array.from(this.tablePlayers.get(tableId)?.values() || []);
-    console.log(`[getTablePlayers] Table ${tableId} players:`, players);
     return players;
   }
 

@@ -10,7 +10,7 @@ const execAsync = promisify(exec)
 // Helper function to clean up old screenshots
 async function cleanupScreenshots() {
   try {
-    console.log('🧹 Cleaning up old screenshots...')
+    console.log('🧹 Screenshots cleanup...')
     
     const screenshotDir = path.join(__dirname, '..', 'screenshots')
     
@@ -35,7 +35,7 @@ async function cleanupScreenshots() {
       fs.mkdirSync(freshTestDir, { recursive: true })
     }
     
-    console.log('✅ Screenshot cleanup completed')
+    console.log('✅ Screenshots ✓')
     
   } catch (error) {
     console.log(`⚠️ Screenshot cleanup failed (continuing anyway): ${error.message}`)
@@ -45,7 +45,7 @@ async function cleanupScreenshots() {
 // Enhanced helper function to kill all Chrome instances with multiple approaches
 async function killAllChromeInstances() {
   try {
-    console.log('🔥 Performing comprehensive Chrome cleanup...')
+    console.log('🔥 Chrome cleanup...')
     
     // Method 1: Kill Chrome processes by name pattern
     const chromeKillCommands = [
@@ -79,7 +79,7 @@ async function killAllChromeInstances() {
       // Ignore cleanup errors
     }
     
-    console.log('✅ Comprehensive Chrome cleanup completed')
+    console.log('✅ Chrome ✓')
     
     // Wait for cleanup to fully complete
     await new Promise(resolve => setTimeout(resolve, 2000))
@@ -91,18 +91,14 @@ async function killAllChromeInstances() {
 
 // Enhanced server health check with retries
 async function checkServersRunning() {
-  console.log('🔍 Performing comprehensive server health check...')
+  console.log('🔍 Server check...')
   
   const checks = [
     {
       name: 'Backend API',
       url: 'http://localhost:3001/api/tables',
-      timeout: 8000
-    },
-    {
-      name: 'Frontend',
-      url: 'http://localhost:3000/',
-      timeout: 8000
+      timeout: 8000,
+      required: true
     }
   ]
   
@@ -116,11 +112,11 @@ async function checkServersRunning() {
           timeout: check.timeout,
           validateStatus: (status) => status >= 200 && status < 400
         })
-        console.log(`✅ ${check.name} is healthy (${response.status})`)
+        console.log(`✅ ${check.name} OK`)
         success = true
       } catch (error) {
         retries--
-        console.log(`⚠️ ${check.name} check failed (${3 - retries}/3): ${error.message}`)
+        console.log(`⚠️ ${check.name} check failed (${3 - retries}/3): `)
         
         if (retries > 0) {
           await new Promise(resolve => setTimeout(resolve, 3000))
@@ -131,12 +127,12 @@ async function checkServersRunning() {
     }
   }
   
-  console.log('🎯 All servers are healthy and ready for testing!')
+  console.log('🎯 Backend API ready!')
 }
 
 // Enhanced environment preparation
 async function prepareTestEnvironment() {
-  console.log('🛠️ Preparing enhanced test environment...')
+  console.log('🛠️ Test env...')
   
   try {
     // Set optimal environment variables
@@ -157,7 +153,7 @@ async function prepareTestEnvironment() {
       }
     }
     
-    console.log('✅ Test environment prepared successfully')
+    console.log('✅ Env ready')
     
   } catch (error) {
     console.log(`⚠️ Environment preparation had issues: ${error.message}`)
@@ -166,7 +162,7 @@ async function prepareTestEnvironment() {
 
 // Global setup - runs once before all scenarios
 BeforeAll({timeout: 120000}, async function() {
-  console.log('🚀 Setting up enhanced Selenium test environment...')
+  console.log('🚀 Setup...')
   
   try {
     // Step 1: Clean up old screenshots
@@ -179,11 +175,12 @@ BeforeAll({timeout: 120000}, async function() {
     // Step 2: Wait for environment to stabilize
     await new Promise(resolve => setTimeout(resolve, 5000))
     
-         // Step 3: Verify servers are running (optional for robustness)
+         // Step 3: Verify servers are running (mandatory)
      try {
        await checkServersRunning()
      } catch (error) {
-       console.log(`⚠️ Server health check failed, but continuing for test robustness: ${error.message}`)
+       console.log(`❌ Server check failed: ${error.message}`)
+       throw new Error(`Cannot run tests - backend server required: ${error.message}`)
      }
     
     // Step 4: Test environment ready
@@ -193,7 +190,7 @@ BeforeAll({timeout: 120000}, async function() {
       console.log('🔥 Multi-browser test mode enabled - skipping single-browser setup')
     }
     
-    console.log('🎉 Enhanced test environment setup completed successfully!')
+    console.log('🎉 Setup complete!')
     
   } catch (error) {
     console.error('💥 Critical setup failure:', error.message)
@@ -203,7 +200,7 @@ BeforeAll({timeout: 120000}, async function() {
 
 // Setup before each scenario with enhanced cleanup
 Before({timeout: 90000}, async function() {
-  console.log('🔧 Setting up scenario with enhanced reliability...')
+  console.log('🔧 Scenario setup...')
   
   // Always kill Chrome instances for clean browser state
   await killAllChromeInstances()
@@ -223,7 +220,7 @@ Before({timeout: 90000}, async function() {
     try {
       await checkServersRunning()
     } catch (error) {
-      console.log(`❌ Server health check failed for 5-player test: ${error.message}`)
+      console.log(`❌ Server check failed: ${error.message}`)
       throw new Error(`Cannot proceed with 5-player test - servers not ready: ${error.message}`)
     }
     
@@ -232,7 +229,7 @@ Before({timeout: 90000}, async function() {
       global.gc()
     }
     
-    console.log('💪 5-player scenario preparation completed successfully!')
+    console.log('💪 5-player ready!')
   }
 })
 
@@ -331,7 +328,7 @@ AfterAll({timeout: 60000}, async function() {
       global.gc()
     }
     
-    console.log('🎉 Final enhanced cleanup completed successfully!')
+    console.log('🎉 Cleanup complete!')
     
   } catch (error) {
     console.error('⚠️ Final cleanup encountered issues:', error.message)

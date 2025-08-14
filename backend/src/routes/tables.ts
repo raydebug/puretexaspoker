@@ -140,12 +140,33 @@ router.get('/:tableId', async (req, res) => {
       return res.status(404).json({ error: 'Table not found' });
     }
 
+    // Get actual players and observers for this table
+    const allTablePlayers = tableManager.getTablePlayers(tableNumber);
+    const players = allTablePlayers.filter(p => p.role === 'player');
+    const observers = allTablePlayers.filter(p => p.role === 'observer');
+
     // Add currentGameId to response (using table ID as game ID)
     const currentGameId = tableNumber.toString();
     
     res.status(200).json({
       ...table,
-      currentGameId
+      currentGameId,
+      // Override the basic counts with actual player/observer objects
+      players: players.map(p => ({
+        id: p.id,
+        name: p.nickname,
+        nickname: p.nickname,
+        role: p.role,
+        chips: p.chips
+      })),
+      observers: observers.map(o => ({
+        id: o.id,
+        name: o.nickname,
+        nickname: o.nickname,
+        role: o.role
+      })),
+      playersCount: players.length,
+      observersCount: observers.length
     });
   } catch (error) {
     console.error('Error getting table:', error);

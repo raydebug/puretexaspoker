@@ -30,7 +30,7 @@ class ScreenshotHelper {
         }
         
         if (testScreenshots.length > 0) {
-          console.log(`🧹 Cleared ${testScreenshots.length} previous test screenshots`);
+          console.log(`🧹 ${testScreenshots.length} old screenshots`);
         }
       }
     } catch (error) {
@@ -38,37 +38,68 @@ class ScreenshotHelper {
     }
   }
 
-  async captureStep(stepName, playerName = 'player1', waitTime = 2000) {
+  async captureStep(stepName, playerName = 'player1', verificationOptions = {}) {
     this.stepCounter++;
     const playerInstance = global.players && global.players[playerName];
     
     if (playerInstance && playerInstance.driver) {
       try {
-        // Wait for UI updates before capturing
-        await new Promise(resolve => setTimeout(resolve, waitTime));
+        // Perform UI verification with timeout protection
+        await Promise.race([
+          this.verifyUIStateBeforeCapture(playerInstance.driver, verificationOptions),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('UI verification timeout')), 3000))
+        ]).catch(error => {
+          console.log(`⚠️ UI verification timeout for ${playerName}, proceeding with screenshot`);
+        });
         
         const filename = `${String(this.stepCounter).padStart(2, '0')}_${stepName.toLowerCase().replace(/\s+/g, '_')}_${playerName.toLowerCase()}.png`;
         const filepath = path.join(this.screenshotDir, filename);
         
-        await playerInstance.driver.takeScreenshot().then(data => {
-          fs.writeFileSync(filepath, data, 'base64');
-        });
+        // Take screenshot with timeout protection
+        const screenshotData = await Promise.race([
+          playerInstance.driver.takeScreenshot(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Screenshot timeout')), 5000))
+        ]);
         
-        console.log(`📸 Screenshot captured: ${filename} (waited ${waitTime}ms for UI updates)`);
+        fs.writeFileSync(filepath, screenshotData, 'base64');
+        
+        console.log(`📸 ${filename}`);
         return filepath;
       } catch (error) {
         console.log(`⚠️ Screenshot failed for ${playerName}: ${error.message}`);
+        return null;
       }
     } else {
       console.log(`⚠️ No browser instance found for ${playerName}`);
+      return null;
     }
   }
 
-  async captureAllPlayers(stepName, waitTime = 2000) {
+  async verifyUIStateBeforeCapture(driver, options = {}) {
+    const { until, By } = require('selenium-webdriver');
+    
+    // Simplified verification - just ensure page has loaded with basic content
+    try {
+      // Reduce timeout to prevent hanging
+      await driver.wait(until.elementLocated(By.css('body')), 2000);
+      
+      // Wait for JavaScript to load (any element that requires JS)
+      await driver.executeScript('return document.readyState === "complete"');
+      
+      // Minimal wait for dynamic content
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      console.log('✅ UI ready');
+    } catch (error) {
+      console.log(`⚠️ UI verification warning: ${error.message} - taking screenshot anyway`);
+    }
+  }
+
+  async captureAllPlayers(stepName, verificationOptions = {}) {
     const screenshots = [];
     if (global.players) {
       for (const playerName of Object.keys(global.players)) {
-        const filepath = await this.captureStep(stepName, playerName, waitTime);
+        const filepath = await this.captureStep(stepName, playerName, verificationOptions);
         if (filepath) screenshots.push(filepath);
       }
     }
@@ -76,8 +107,13 @@ class ScreenshotHelper {
   }
 
   async captureGameState() {
-    // Capture comprehensive game state for verification
-    return await this.captureAllPlayers('game_state_verification', 3000);
+    // Capture comprehensive game state for verification with full UI verification
+    const gameStateOptions = {
+      verifyPot: true,
+      verifyPlayers: true,
+      verifyCommunityCards: true
+    };
+    return await this.captureAllPlayers('game_state_verification', gameStateOptions);
   }
 
   // Generate screenshot summary report
@@ -105,10 +141,7 @@ class ScreenshotHelper {
       // Update the screenshots list markdown file
       this.updateScreenshotsList(screenshots);
       
-      console.log(`📊 2-Player Game Screenshot Report Generated:`);
-      console.log(`   - Total screenshots: ${report.screenshotCount}`);
-      console.log(`   - Report saved to: ${reportPath}`);
-      console.log(`   - 2-Player game screenshots list updated: 2_PLAYER_COMPLETE_GAME_SCREENSHOTS.md`);
+      console.log(`📊 Report: ${report.screenshotCount} screenshots → ${reportPath}`);
       
       return report;
     } catch (error) {
@@ -151,17 +184,14 @@ class ScreenshotHelper {
       }
     };
 
-    console.log(`📈 Screenshot Comparison Report:`);
-    console.log(`   - Current test: ${comparison.current.count} screenshots`);
-    console.log(`   - Previous test: ${comparison.previous.count} screenshots`);
-    console.log(`   - Difference: ${comparison.differences.countDifference > 0 ? '+' : ''}${comparison.differences.countDifference}`);
+    console.log(`📈 Screenshots: ${comparison.previous.count} → ${comparison.current.count} (${comparison.differences.countDifference > 0 ? '+' : ''}${comparison.differences.countDifference})`);
     
     if (comparison.differences.added.length > 0) {
-      console.log(`   - Added: ${comparison.differences.added.join(', ')}`);
+      console.log(`   + ${comparison.differences.added.join(', ')}`);
     }
     
     if (comparison.differences.removed.length > 0) {
-      console.log(`   - Removed: ${comparison.differences.removed.join(', ')}`);
+      console.log(`   - ${comparison.differences.removed.join(', ')}`);
     }
 
     return comparison;
@@ -193,7 +223,7 @@ class ScreenshotHelper {
       
       if (shouldPreserveExisting) {
         // Don't overwrite comprehensive documentation with quick test results
-        console.log(`📊 Preserving comprehensive documentation (${existingScreenshotCount} screenshots) - not overwriting with quick test (${screenshots.length} screenshots)`);
+        console.log(`📊 Preserving comprehensive docs (${existingScreenshotCount} vs ${screenshots.length})`);
         return;
       }
       

@@ -1392,30 +1392,48 @@ router.post('/auto-seat', async (req, res) => {
     if (!gameState) {
       // Initialize empty game state for this table
       gameState = {
-        id: targetTableId.toString(),
+        tableId: targetTableId,
         players: [],
-        communityCards: [],
+        deck: [],
+        board: [],
         pot: 0,
         currentPlayerId: null,
-        currentPlayerPosition: 0,
         dealerPosition: 0,
         smallBlindPosition: 1,
         bigBlindPosition: 2,
         status: 'waiting',
-        phase: 'preflop',
+        phase: 'waiting',
         minBet: 2,
         currentBet: 0,
-        smallBlind: 1,
-        bigBlind: 2
+        handNumber: 1
       };
     }
 
-    // Check if player already exists
-    const existingPlayer = gameState.players.find(p => p.name === playerName);
+    // Check if player already exists (gameState is guaranteed to exist here)
+    const existingPlayer = gameState!.players.find(p => p.name === playerName);
     if (existingPlayer) {
       console.log(`⚠️ TEST API: Player ${playerName} already exists in game state`);
       return res.status(400).json({ success: false, error: `Player ${playerName} already seated` });
     }
+
+    // Create Player record in database to fix foreign key constraint
+    await prisma.player.upsert({
+      where: { id: playerName },
+      update: {
+        nickname: playerName,
+        chips: buyIn,
+        table: targetTableId,
+        seat: parseInt(seatNumber),
+        updatedAt: new Date()
+      },
+      create: {
+        id: playerName,
+        nickname: playerName,
+        chips: buyIn,
+        table: targetTableId,
+        seat: parseInt(seatNumber)
+      }
+    });
 
     // Add player to game state
     const newPlayer = {
@@ -1429,31 +1447,41 @@ router.post('/auto-seat', async (req, res) => {
       isAway: false,
       isActive: true,
       avatar: {
-        type: 'default',
+        type: 'default' as const,
         color: '#007bff'
       },
       cards: []
     };
 
-    gameState.players.push(newPlayer);
-    gameState.players.sort((a, b) => a.seatNumber - b.seatNumber);
+    gameState!.players.push(newPlayer);
+    gameState!.players.sort((a, b) => a.seatNumber - b.seatNumber);
 
-    // CRITICAL: Also register player in TableManager's tablePlayers Map
+    // CRITICAL: First join table (adds as observer), then sit down (converts to player)
+    const joinResult = tableManager.joinTable(targetTableId, playerName, playerName);
+    if (!joinResult.success) {
+      console.log(`⚠️ TEST API: joinTable failed: ${joinResult.error}`);
+      return res.status(400).json({ success: false, error: `Failed to join table: ${joinResult.error}` });
+    } else {
+      console.log(`✅ TEST API: Player ${playerName} joined table as observer`);
+    }
+    
+    // Now sit down to become an actual player
     const sitDownResult = tableManager.sitDown(targetTableId, playerName, buyIn);
     if (!sitDownResult.success) {
       console.log(`⚠️ TEST API: sitDown failed: ${sitDownResult.error}`);
+      return res.status(400).json({ success: false, error: `Failed to sit down: ${sitDownResult.error}` });
     } else {
-      console.log(`✅ TEST API: Player ${playerName} registered in TableManager`);
+      console.log(`✅ TEST API: Player ${playerName} seated as player`);
     }
 
     console.log(`✅ TEST API DIRECT: Player ${playerName} added to game state at table ${tableId}, seat ${seatNumber}`);
-    console.log(`📊 TEST API: Game state now has ${gameState.players.length} players`);
+    console.log(`📊 TEST API: Game state now has ${gameState!.players.length} players`);
     console.log(`📊 TEST API: TableManager now sees ${tableManager.getTablePlayers(targetTableId).length} players`);
 
     // Emit socket event for real-time updates
     const io = (global as any).socketIO;
     if (io) {
-      io.to(`table:${tableId}`).emit('gameState', gameState);
+      io.to(`table:${tableId}`).emit('gameState', gameState!);
       io.to(`table:${tableId}`).emit('playerJoined', {
         tableId: targetTableId,
         player: newPlayer
@@ -1466,8 +1494,8 @@ router.post('/auto-seat', async (req, res) => {
       message: `Player ${playerName} seated at table ${tableId}, seat ${seatNumber}`,
       player: newPlayer,
       gameState: {
-        players: gameState.players.length,
-        status: gameState.status
+        players: gameState!.players.length,
+        status: gameState!.status
       }
     });
   } catch (error) {

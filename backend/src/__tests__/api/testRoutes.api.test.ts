@@ -120,12 +120,21 @@ describe('Test Routes API Integration Tests', () => {
     describe('GET /api/test/test_get_mock_table/:tableId', () => {
       it('should get mock table successfully', async () => {
         const mockTableState = {
-          tableId: 1,
-          status: 'playing',
-          players: [{ id: 'player1', name: 'Player1' }]
+          id: 1,
+          name: 'Test Table',
+          players: 1,
+          maxPlayers: 6,
+          observers: 0,
+          status: 'active' as const,
+          stakes: '$1/$2',
+          gameType: 'No Limit' as const,
+          smallBlind: 1,
+          bigBlind: 2,
+          minBuyIn: 40,
+          maxBuyIn: 200
         };
 
-        mockMemoryCache.getTable.mockReturnValue(mockTableState);
+        mockTableManager.getTable.mockReturnValue(mockTableState);
 
         const response = await request(app)
           .get('/api/test/test_get_mock_table/1')
@@ -133,11 +142,11 @@ describe('Test Routes API Integration Tests', () => {
 
         expect(response.body.success).toBe(true);
         expect(response.body.tableState).toEqual(mockTableState);
-        expect(mockMemoryCache.getTable).toHaveBeenCalledWith('1');
+        expect(mockTableManager.getTable).toHaveBeenCalledWith(1);
       });
 
       it('should handle table not found', async () => {
-        mockMemoryCache.getTable.mockReturnValue(null);
+        mockTableManager.getTable.mockReturnValue(null);
 
         const response = await request(app)
           .get('/api/test/test_get_mock_table/999')
@@ -161,7 +170,7 @@ describe('Test Routes API Integration Tests', () => {
           pot: 100
         };
 
-        mockMemoryCache.getTable.mockReturnValue(existingTable);
+        mockTableManager.getTable.mockReturnValue(existingTable);
         mockMemoryCache.updateTable.mockImplementation(() => {});
 
         const response = await request(app)
@@ -175,7 +184,7 @@ describe('Test Routes API Integration Tests', () => {
       });
 
       it('should handle update of non-existent table', async () => {
-        mockMemoryCache.getTable.mockReturnValue(null);
+        mockTableManager.getTable.mockReturnValue(null);
 
         const response = await request(app)
           .put('/api/test/test_update_mock_table/999')
@@ -200,7 +209,7 @@ describe('Test Routes API Integration Tests', () => {
           communityCards: ['A♠', 'K♥']
         };
 
-        mockMemoryCache.getTable.mockReturnValue(mockTableState);
+        mockTableManager.getTable.mockReturnValue(mockTableState);
 
         const response = await request(app)
           .post('/api/test/get_game_state')
@@ -209,7 +218,7 @@ describe('Test Routes API Integration Tests', () => {
 
         expect(response.body.success).toBe(true);
         expect(response.body.gameState).toEqual(mockTableState);
-        expect(mockMemoryCache.getTable).toHaveBeenCalledWith('1');
+        expect(mockTableManager.getTable).toHaveBeenCalledWith(1);
       });
 
       it('should handle missing tableId', async () => {
@@ -223,7 +232,7 @@ describe('Test Routes API Integration Tests', () => {
       });
 
       it('should handle table not found', async () => {
-        mockMemoryCache.getTable.mockReturnValue(null);
+        mockTableManager.getTable.mockReturnValue(null);
 
         const response = await request(app)
           .post('/api/test/get_game_state')
@@ -243,7 +252,7 @@ describe('Test Routes API Integration Tests', () => {
           players: [{ id: 'player1', name: 'Player1' }]
         };
 
-        mockMemoryCache.getTable.mockReturnValue(mockTableState);
+        mockTableManager.getTable.mockReturnValue(mockTableState);
 
         // Mock global socketIO
         const mockSocketIO = {
@@ -273,7 +282,7 @@ describe('Test Routes API Integration Tests', () => {
           players: []
         };
 
-        mockMemoryCache.getTable.mockReturnValue(mockTableState);
+        mockTableManager.getTable.mockReturnValue(mockTableState);
         delete (global as any).socketIO;
 
         const response = await request(app)
@@ -361,12 +370,18 @@ describe('Test Routes API Integration Tests', () => {
     describe('POST /api/test/start-game', () => {
       it('should start game successfully', async () => {
         const mockTable = {
-          tableId: 1,
-          status: 'waiting',
-          players: [
-            { id: 'player1', chips: 1000 },
-            { id: 'player2', chips: 1000 }
-          ]
+          id: 1,
+          name: 'Test Table',
+          players: 2,
+          maxPlayers: 6,
+          observers: 0,
+          status: 'waiting' as const,
+          stakes: '$1/$2',
+          gameType: 'No Limit' as const,
+          smallBlind: 1,
+          bigBlind: 2,
+          minBuyIn: 40,
+          maxBuyIn: 200
         };
 
         mockTableManager.getTable.mockReturnValue(mockTable);
@@ -557,8 +572,23 @@ describe('Test Routes API Integration Tests', () => {
   describe('Test Data Management', () => {
     describe('GET /api/test/test_data', () => {
       it('should get test data successfully', async () => {
+        const mockTable = {
+          id: 1,
+          name: 'Test Table',
+          players: 0,
+          maxPlayers: 6,
+          observers: 0,
+          status: 'waiting' as const,
+          stakes: '$1/$2',
+          gameType: 'No Limit' as const,
+          smallBlind: 1,
+          bigBlind: 2,
+          minBuyIn: 40,
+          maxBuyIn: 200
+        };
+
         const mockData = {
-          tables: [{ id: 1, name: 'Test Table' }],
+          tables: [mockTable],
           players: [{ id: 'player1', name: 'Test Player' }]
         };
 
@@ -604,7 +634,7 @@ describe('Test Routes API Integration Tests', () => {
 
   describe('Error Handling', () => {
     it('should handle general server errors gracefully', async () => {
-      mockMemoryCache.getTable.mockImplementation(() => {
+      mockTableManager.getTable.mockImplementation(() => {
         throw new Error('Unexpected server error');
       });
 

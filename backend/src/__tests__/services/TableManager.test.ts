@@ -1,11 +1,11 @@
 import { tableManager, TableData } from '../../services/TableManager';
 
 describe('TableManager', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     // Reset the table manager before each test
     (tableManager as any).tables.clear();
     (tableManager as any).tablePlayers.clear();
-    (tableManager as any).initializeTables();
+    await (tableManager as any).initializeTables();
   });
 
   describe('getAllTables', () => {
