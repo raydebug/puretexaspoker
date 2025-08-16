@@ -48,29 +48,62 @@ class ScreenshotHelper {
         await Promise.race([
           this.verifyUIStateBeforeCapture(playerInstance.driver, verificationOptions),
           new Promise((_, reject) => setTimeout(() => reject(new Error('UI verification timeout')), 3000))
-        ]).catch(error => {
-          console.log(`⚠️ UI verification timeout for ${playerName}, proceeding with screenshot`);
-        });
-        
-        const filename = `${String(this.stepCounter).padStart(2, '0')}_${stepName.toLowerCase().replace(/\s+/g, '_')}_${playerName.toLowerCase()}.png`;
-        const filepath = path.join(this.screenshotDir, filename);
-        
-        // Take screenshot with timeout protection
-        const screenshotData = await Promise.race([
-          playerInstance.driver.takeScreenshot(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Screenshot timeout')), 5000))
         ]);
         
-        fs.writeFileSync(filepath, screenshotData, 'base64');
-        
-        console.log(`📸 ${filename}`);
-        return filepath;
+        console.log('✅ UI ready');
       } catch (error) {
-        console.log(`⚠️ Screenshot failed for ${playerName}: ${error.message}`);
-        return null;
+        console.log(`⚠️ UI verification timeout for ${playerName}, proceeding with screenshot`);
       }
-    } else {
-      console.log(`⚠️ No browser instance found for ${playerName}`);
+      
+      await this.capturePlayerScreenshot(playerInstance.driver, stepName, playerName);
+    }
+  }
+
+  // Enhanced screenshot capture method for comprehensive tests
+  async captureAndLogScreenshot(driver, screenshotName) {
+    try {
+      console.log(`📸 Capturing screenshot: ${screenshotName}`);
+      
+      if (!driver) {
+        console.log(`⚠️ No driver available for screenshot: ${screenshotName}`);
+        return false;
+      }
+      
+      // Take screenshot
+      const screenshot = await driver.takeScreenshot();
+      
+      // Save screenshot
+      const filename = `${screenshotName}.png`;
+      const filepath = path.join(this.screenshotDir, filename);
+      
+      fs.writeFileSync(filepath, screenshot, 'base64');
+      console.log(`✅ Screenshot saved: ${filename}`);
+      
+      return true;
+    } catch (error) {
+      console.log(`❌ Screenshot capture failed for ${screenshotName}: ${error.message}`);
+      return false;
+    }
+  }
+
+  // Helper method for player-specific screenshots
+  async capturePlayerScreenshot(driver, stepName, playerName) {
+    try {
+      const filename = `${String(this.stepCounter).padStart(2, '0')}_${stepName.toLowerCase().replace(/\s+/g, '_')}_${playerName.toLowerCase()}.png`;
+      const filepath = path.join(this.screenshotDir, filename);
+      
+      // Take screenshot with timeout protection
+      const screenshotData = await Promise.race([
+        driver.takeScreenshot(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Screenshot timeout')), 5000))
+      ]);
+      
+      fs.writeFileSync(filepath, screenshotData, 'base64');
+      
+      console.log(`📸 ${filename}`);
+      return filepath;
+    } catch (error) {
+      console.log(`⚠️ Screenshot failed for ${playerName}: ${error.message}`);
       return null;
     }
   }
