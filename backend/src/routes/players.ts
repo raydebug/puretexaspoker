@@ -62,7 +62,7 @@ router.post('/register', async (req, res) => {
       data: {
         id: nickname, // Use nickname as ID
         nickname,
-        chips: chips !== undefined ? chips : null
+        chips: chips !== undefined ? chips : 1000 // Default to 1000 chips if not specified
       }
     });
 

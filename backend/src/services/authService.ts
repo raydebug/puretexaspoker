@@ -160,11 +160,7 @@ export class AuthService {
     // Generate tokens
     const tokens = this.generateTokens(user.id);
 
-    // Update last login
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() }
-    });
+    // Note: We don't set lastLoginAt during registration - only during actual login
 
     return {
       user: await this.formatUserProfile(user),

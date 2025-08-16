@@ -3,6 +3,17 @@ import { prisma } from '../db';
 import { tableManager } from '../services/TableManager';
 import { locationManager } from '../services/LocationManager';
 
+// Helper function to validate table ID
+function isValidTableId(tableNumber: number): boolean {
+  const table = tableManager.getTable(tableNumber);
+  return table !== undefined;
+}
+
+// Helper function to get available table IDs for error messages
+function getAvailableTableIds(): number[] {
+  return tableManager.getAllTables().map(table => table.id);
+}
+
 const router = express.Router();
 
 // Get all tables (only the default 3 tables)
@@ -24,10 +35,11 @@ router.post('/:tableId/join', async (req, res) => {
     const { tableId } = req.params;
     const { playerId, buyIn } = req.body;
 
-    // Only allow joining default tables (1, 2, 3)
+    // Validate table ID
     const tableNumber = parseInt(tableId);
-    if (tableNumber < 1 || tableNumber > 3) {
-      return res.status(400).json({ error: 'Only tables 1, 2, and 3 are available' });
+    if (isNaN(tableNumber) || !isValidTableId(tableNumber)) {
+      const availableIds = getAvailableTableIds();
+      return res.status(400).json({ error: `Only tables ${availableIds.join(', ')} are available` });
     }
 
     // Check if table exists in TableManager
@@ -51,10 +63,16 @@ router.post('/:tableId/join', async (req, res) => {
       return res.status(400).json({ error: 'Invalid buy-in amount' });
     }
 
-    // Join table using TableManager
-    const result = tableManager.joinTable(tableNumber, playerId, 'Player');
-    if (!result.success) {
-      return res.status(400).json({ error: result.error });
+    // Join table as observer first, then sit down as player
+    const joinResult = tableManager.joinTable(tableNumber, playerId, playerId);
+    if (!joinResult.success) {
+      return res.status(400).json({ error: joinResult.error });
+    }
+
+    // Sit down as player with buy-in
+    const sitResult = tableManager.sitDown(tableNumber, playerId, actualBuyIn);
+    if (!sitResult.success) {
+      return res.status(400).json({ error: sitResult.error });
     }
 
     res.status(200).json({ 
@@ -74,22 +92,23 @@ router.get('/monitor', async (req, res) => {
     const tableDetails = [];
 
     for (const table of tables) {
-      // Get observers and players for this table
-      const observers = locationManager.getObserversAtTable(table.id);
-      const players = locationManager.getPlayersAtTable(table.id);
+      // Get observers and players for this table from TableManager (consistent with join/spectate endpoints)
+      const allTablePlayers = tableManager.getTablePlayers(table.id);
+      const observers = allTablePlayers.filter(p => p.role === 'observer');
+      const players = allTablePlayers.filter(p => p.role === 'player');
 
       // Format observer and player data
       const observersList = observers.map(o => ({
-        playerId: o.playerId,
+        playerId: o.id,
         nickname: o.nickname,
-        updatedAt: o.updatedAt
+        updatedAt: new Date().toISOString()
       }));
 
       const playersList = players.map(p => ({
-        playerId: p.playerId,
+        playerId: p.id,
         nickname: p.nickname,
-        seat: p.seat,
-        updatedAt: p.updatedAt
+        seat: null, // TableManager doesn't track seat numbers yet
+        updatedAt: new Date().toISOString()
       }));
 
       tableDetails.push({
@@ -130,9 +149,10 @@ router.get('/:tableId', async (req, res) => {
     const { tableId } = req.params;
     const tableNumber = parseInt(tableId);
 
-    // Only allow access to default tables (1, 2, 3)
-    if (tableNumber < 1 || tableNumber > 3) {
-      return res.status(400).json({ error: 'Only tables 1, 2, and 3 are available' });
+    // Validate table ID
+    if (isNaN(tableNumber) || !isValidTableId(tableNumber)) {
+      const availableIds = getAvailableTableIds();
+      return res.status(400).json({ error: `Only tables ${availableIds.join(', ')} are available` });
     }
 
     const table = tableManager.getTable(tableNumber);
@@ -181,8 +201,9 @@ router.post('/:tableId/spectate', async (req, res) => {
     const { playerId } = req.body;
 
     const tableNumber = parseInt(tableId);
-    if (tableNumber < 1 || tableNumber > 3) {
-      return res.status(400).json({ error: 'Only tables 1, 2, and 3 are available' });
+    if (!isValidTableId(tableNumber)) {
+      const availableIds = getAvailableTableIds();
+      return res.status(400).json({ error: `Only tables ${availableIds.join(', ')} are available` });
     }
 
     // Check if table exists in TableManager
@@ -192,7 +213,7 @@ router.post('/:tableId/spectate', async (req, res) => {
     }
 
     // Join as observer using TableManager
-    const result = tableManager.joinTable(tableNumber, playerId, 'Observer');
+    const result = tableManager.joinTable(tableNumber, playerId, playerId);
     if (!result.success) {
       return res.status(400).json({ error: result.error });
     }
@@ -216,8 +237,9 @@ router.get('/:tableId/game/history', async (req, res) => {
     const tableNumber = parseInt(tableId);
 
     // Only allow access to default tables (1, 2, 3)
-    if (tableNumber < 1 || tableNumber > 3) {
-      return res.status(400).json({ error: 'Only tables 1, 2, and 3 are available' });
+    if (!isValidTableId(tableNumber)) {
+      const availableIds = getAvailableTableIds();
+      return res.status(400).json({ error: `Only tables ${availableIds.join(', ')} are available` });
     }
 
     console.log(`📊 Getting real game history for table ${tableNumber}${handNumber ? ` hand ${handNumber}` : ''}`);
@@ -253,11 +275,12 @@ router.get('/:tableId/actions/history', async (req, res) => {
 
     console.log(`🎯 Action history request for table ${tableNumber}, handNumber: ${handNumber}`);
 
-    // Only allow access to default tables (1, 2, 3)
-    if (tableNumber < 1 || tableNumber > 3) {
+    // Validate table ID
+    if (!isValidTableId(tableNumber)) {
+      const availableIds = getAvailableTableIds();
       return res.status(400).json({ 
         success: false,
-        error: 'Only tables 1, 2, and 3 are available' 
+        error: `Only tables ${availableIds.join(', ')} are available` 
       });
     }
 

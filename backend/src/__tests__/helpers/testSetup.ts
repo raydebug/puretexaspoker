@@ -4,20 +4,29 @@ import { tableManager } from '../../services/TableManager';
 export async function setupTestDatabase() {
   try {
     // Create default role if it doesn't exist
-    const existingRole = await prisma.role.findUnique({
-      where: { name: 'player' }
+    const playerRole = await prisma.role.upsert({
+      where: { name: 'player' },
+      update: {},
+      create: {
+        name: 'player',
+        displayName: 'Player',
+        description: 'Default player role',
+        level: 0
+      }
     });
+    // console.log('Player role created/updated:', playerRole.id);
 
-    if (!existingRole) {
-      await prisma.role.create({
-        data: {
-          name: 'player',
-          displayName: 'Player',
-          description: 'Default player role',
-          level: 0
-        }
-      });
-    }
+    // Create admin role if it doesn't exist
+    await prisma.role.upsert({
+      where: { name: 'admin' },
+      update: {},
+      create: {
+        name: 'admin',
+        displayName: 'Administrator',
+        description: 'Administrator role',
+        level: 100
+      }
+    });
 
     // Initialize TableManager
     await tableManager.init();
@@ -33,7 +42,11 @@ export async function cleanupTestDatabase() {
       where: {
         OR: [
           { username: { startsWith: 'testuser' } },
-          { email: { contains: 'test@' } }
+          { username: { startsWith: 'newuser' } },
+          { username: { startsWith: 'authtest' } },
+          { email: { contains: 'test@' } },
+          { email: { contains: 'example.com' } },
+          { email: { contains: 'authtest' } }
         ]
       }
     });

@@ -1,0 +1,3336 @@
+This Node.js version (v23.9.0) has not been tested with this version of Cucumber; it should work normally, but please raise an issue if you see anything unexpected.
+[
+  {
+    "description": "  As a comprehensive poker game testing system\n  I want to execute a complete 5-player Texas Hold'em game covering all possible actions\n  So that I can validate all poker mechanics, positions, and action types with enhanced formatting",
+    "elements": [
+      {
+        "description": "",
+        "id": "5-player-comprehensive-game-scenario-with-maximum-action-coverage;complete-5-player-texas-hold'em-with-maximum-action-coverage",
+        "keyword": "Scenario",
+        "line": 31,
+        "name": "Complete 5-Player Texas Hold'em with Maximum Action Coverage",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 8,
+            "name": "the database is reset to a clean state",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "the User table is seeded with test players",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 10,
+            "name": "I have exactly 5 players ready for a comprehensive poker game",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 11,
+            "name": "all players have starting stacks of $100",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Seat",
+                      "Position"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "1",
+                      "SB"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "2",
+                      "BB"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player3",
+                      "3",
+                      "UTG"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player4",
+                      "4",
+                      "CO"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player5",
+                      "5",
+                      "BTN"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "When ",
+            "line": 12,
+            "name": "exactly 5 players join the comprehensive table with positions:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 19,
+            "name": "all players should be seated correctly with position labels",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 20,
+            "name": "I verify exactly 5 players are present at the current table",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 21,
+            "name": "the page should be fully loaded for all players",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 22,
+            "name": "I manually start the game for table 1",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Position",
+                      "Player",
+                      "Amount",
+                      "Enhanced Format"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Small Blind",
+                      "Player1",
+                      "$1",
+                      "Player1 (SB) posts small blind $1"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Big Blind",
+                      "Player2",
+                      "$2",
+                      "Player2 (BB) posts big blind $2"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 23,
+            "name": "the game starts with enhanced blinds structure:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 27,
+            "name": "the pot should be $3 with enhanced display \"[Pot: $3]\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 28,
+            "name": "I capture screenshot \"00_game_setup_5players\" showing all players with positions",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Card1",
+                      "Card2",
+                      "Hand Strength",
+                      "Strategy"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "A♠",
+                      "K♠",
+                      "Premium",
+                      "Aggressive"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "Q♥",
+                      "J♥",
+                      "Strong",
+                      "Moderate"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player3",
+                      "7♣",
+                      "2♠",
+                      "Weak",
+                      "Fold Early"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player4",
+                      "10♦",
+                      "10♣",
+                      "Good Pair",
+                      "Call/Raise"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player5",
+                      "A♥",
+                      "Q♦",
+                      "Strong",
+                      "Selective"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "When ",
+            "line": 33,
+            "name": "hole cards are dealt according to comprehensive test scenario:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 41,
+            "name": "I capture screenshot \"01_hole_cards_dealt_all_players\" for all 5 players",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 42,
+            "name": "each player should see their own hole cards with position labels",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Element",
+                      "Expected Format"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Phase Header",
+                      "--- PRE-FLOP BETTING ---"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Pot Display",
+                      "[Pot: $0]"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "SB Action",
+                      "Player1 (SB) posts small blind $1"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "BB Action",
+                      "Player2 (BB) posts big blind $2"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "And ",
+            "line": 43,
+            "name": "the enhanced game history should show initial state:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 50,
+            "name": "I capture screenshot \"02_enhanced_game_history_initial\" showing enhanced formatting",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 51,
+            "name": "I verify exactly 5 players are present at the current table",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 54,
+            "name": "the pre-flop betting round begins with UTG action",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 55,
+            "name": "I capture screenshot \"03_preflop_start_utg_to_act\" showing Player3 to act",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 58,
+            "name": "Player3 (UTG) folds with weak hand 7♣2♠",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 59,
+            "name": "I should see enhanced game history: \"Player3 (UTG) folds — Stack: $100\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 60,
+            "name": "I capture screenshot \"04_preflop_utg_fold\" showing fold action",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 61,
+            "name": "I verify enhanced game history shows \"FOLD\" action by \"Player3 (UTG)\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 64,
+            "name": "Player4 (CO) raises to $8 with pocket 10s",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 65,
+            "name": "I should see enhanced game history: \"Player4 (CO) raises to $8 — Stack: $100 → $92\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 66,
+            "name": "I capture screenshot \"05_preflop_co_raise\" showing raise action with stack change",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 67,
+            "name": "I verify enhanced game history shows \"RAISE\" action by \"Player4 (CO)\" with amount \"$8\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 68,
+            "name": "the pot should be $11 with display \"[Pot: $11]\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 71,
+            "name": "Player5 (BTN) 3-bets to $24 with A♥Q♦",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 72,
+            "name": "I should see enhanced game history: \"Player5 (BTN) raises to $24 — Stack: $100 → $76\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 73,
+            "name": "I capture screenshot \"06_preflop_btn_3bet\" showing 3-bet action",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 74,
+            "name": "I verify enhanced game history shows \"RAISE\" action by \"Player5 (BTN)\" with amount \"$24\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 75,
+            "name": "the pot should be $27 with enhanced display",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 78,
+            "name": "Player1 (SB) folds premium hand A♠K♠ to 3-bet",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 79,
+            "name": "I should see enhanced game history: \"Player1 (SB) folds — Stack: $99\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 80,
+            "name": "I capture screenshot \"07_preflop_sb_fold\" showing SB fold to 3-bet",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 81,
+            "name": "I verify Player1 is marked as inactive",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 84,
+            "name": "Player2 (BB) calls $22 more with Q♥J♥",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 85,
+            "name": "I should see enhanced game history: \"Player2 (BB) calls $22 — Stack: $98 → $76\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 86,
+            "name": "I capture screenshot \"08_preflop_bb_call\" showing BB call",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 87,
+            "name": "the pot should be $49",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 90,
+            "name": "Player4 (CO) 4-bets to $60 with pocket 10s",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 91,
+            "name": "I should see enhanced game history: \"Player4 (CO) raises to $60 — Stack: $92 → $40\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 92,
+            "name": "I capture screenshot \"09_preflop_co_4bet\" showing 4-bet action",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 93,
+            "name": "the pot should be $109",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 96,
+            "name": "Player5 (BTN) folds A♥Q♦ to 4-bet",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 97,
+            "name": "I should see enhanced game history: \"Player5 (BTN) folds — Stack: $76\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 98,
+            "name": "I capture screenshot \"10_preflop_btn_fold_to_4bet\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 101,
+            "name": "Player2 (BB) goes all-in with remaining $76",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 102,
+            "name": "I should see enhanced game history: \"Player2 (BB) goes all-in $76 — Stack: $76 → $0\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 103,
+            "name": "I capture screenshot \"11_preflop_bb_allin\" showing all-in action",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 104,
+            "name": "the pot should be $161",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 107,
+            "name": "Player4 (CO) calls all-in for remaining $40",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 108,
+            "name": "I should see enhanced game history: \"Player4 (CO) calls $40 — Stack: $40 → $0\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 109,
+            "name": "I capture screenshot \"12_preflop_co_call_allin\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 110,
+            "name": "the pot should be $185",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 113,
+            "name": "I should see \"Pot: $185\" in enhanced game history",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 114,
+            "name": "I verify exactly 5 players are present at the current table",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 115,
+            "name": "2 players should remain active: Player2, Player4",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 116,
+            "name": "3 players should be folded: Player1, Player3, Player5",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 117,
+            "name": "I capture screenshot \"13_preflop_complete_summary\" showing final pre-flop state",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 120,
+            "name": "the flop is dealt: A♣, 10♠, 7♥",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Element",
+                      "Expected Format"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Phase Header",
+                      "--- FLOP [Pot: $185] ---"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Community Cards",
+                      "Community Cards: A♣ 10♠ 7♥"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 121,
+            "name": "I should see enhanced flop display:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 126,
+            "name": "I capture screenshot \"14_flop_dealt_with_sidepot\" showing flop with all-in players",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 127,
+            "name": "I verify exactly 5 players are present at the current table",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 128,
+            "name": "both all-in players should have cards revealed",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 129,
+            "name": "Player4 should have set of 10s (strong hand)",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 130,
+            "name": "Player2 should have top pair using Q♥J♥",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 133,
+            "name": "the turn is dealt: K♣",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Element",
+                      "Expected Format"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Phase Header",
+                      "--- TURN [Pot: $185] ---"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Turn Card",
+                      "Community Card: K♣"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 134,
+            "name": "I should see enhanced turn display:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 139,
+            "name": "I capture screenshot \"15_turn_dealt_allin_runout\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 140,
+            "name": "I verify exactly 5 players are present at the current table",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 141,
+            "name": "Player2 should have gutshot straight draw (Q♥J♥ needs 8 for straight)",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 142,
+            "name": "Player4 should still have set of 10s (strongest hand)",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 145,
+            "name": "the river is dealt: 8♦",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Element",
+                      "Expected Format"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Phase Header",
+                      "--- RIVER [Pot: $185] ---"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "River Card",
+                      "Community Card: 8♦"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 146,
+            "name": "I should see enhanced river display:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 151,
+            "name": "I capture screenshot \"16_river_dealt_final_card\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 152,
+            "name": "I verify exactly 5 players are present at the current table",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 153,
+            "name": "Player2 should now have straight (Q-J-10-9-8)",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 154,
+            "name": "the board should be A♣ 10♠ 7♥ K♣ 8♦",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 157,
+            "name": "the showdown begins",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Element",
+                      "Expected Format"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Phase Header",
+                      "--- SHOWDOWN ---"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Hand Reveals",
+                      "Player2 shows Q♥ J♥, Player4 shows 10♦ 10♣"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 158,
+            "name": "I should see enhanced showdown display:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 163,
+            "name": "I capture screenshot \"17_showdown_hand_reveals\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 164,
+            "name": "I verify exactly 5 players are present at the current table",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 167,
+            "name": "Player2 should have \"straight\" (Q-J-10-9-8)",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 168,
+            "name": "Player4 should have \"set of tens\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 169,
+            "name": "Player2 should win with higher hand ranking",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Element",
+                      "Expected Format"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Winner Declaration",
+                      "Player2 wins $185 with straight"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Final Pot Distribution",
+                      "All chips to Player2"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 171,
+            "name": "I should see enhanced showdown results:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 176,
+            "name": "I capture screenshot \"18_showdown_complete_winner\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Phase",
+                      "Action Count",
+                      "Key Elements"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "PRE-FLOP",
+                      "10 actions",
+                      "UTG fold, CO raise, BTN 3-bet, SB fold, BB call, CO 4-bet, BTN fold, BB all-in, CO call"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "FLOP",
+                      "1 transition",
+                      "Community cards display, all-in continuation"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "TURN",
+                      "1 transition",
+                      "Turn card, hand development"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "RIVER",
+                      "1 transition",
+                      "River card, final board"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "SHOWDOWN",
+                      "1 resolution",
+                      "Hand reveals, winner determination"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 179,
+            "name": "the complete enhanced game history should contain:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 187,
+            "name": "I capture screenshot \"19_complete_enhanced_history\" showing full game history",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Position",
+                      "Player",
+                      "Actions Taken"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "UTG",
+                      "Player3",
+                      "FOLD"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "CO",
+                      "Player4",
+                      "RAISE, RAISE (4-bet), CALL (all-in)"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "BTN",
+                      "Player5",
+                      "RAISE (3-bet), FOLD"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "SB",
+                      "Player1",
+                      "FOLD"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "BB",
+                      "Player2",
+                      "CALL, ALL-IN"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "And ",
+            "line": 190,
+            "name": "I verify all positions took actions:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 198,
+            "name": "I capture screenshot \"20_position_action_summary\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@comprehensive-5-player",
+            "line": 30
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "5-player-comprehensive-game-scenario-with-maximum-action-coverage;5-player-multi-way-pot-with-check-raise-and-complex-betting",
+        "keyword": "Scenario",
+        "line": 201,
+        "name": "5-Player Multi-Way Pot with Check-Raise and Complex Betting",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 8,
+            "name": "the database is reset to a clean state",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "the User table is seeded with test players",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 10,
+            "name": "I have exactly 5 players ready for a comprehensive poker game",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 11,
+            "name": "all players have starting stacks of $100",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Seat",
+                      "Position"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "1",
+                      "SB"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "2",
+                      "BB"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player3",
+                      "3",
+                      "UTG"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player4",
+                      "4",
+                      "CO"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player5",
+                      "5",
+                      "BTN"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "When ",
+            "line": 12,
+            "name": "exactly 5 players join the comprehensive table with positions:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 19,
+            "name": "all players should be seated correctly with position labels",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 20,
+            "name": "I verify exactly 5 players are present at the current table",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 21,
+            "name": "the page should be fully loaded for all players",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 22,
+            "name": "I manually start the game for table 1",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Position",
+                      "Player",
+                      "Amount",
+                      "Enhanced Format"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Small Blind",
+                      "Player1",
+                      "$1",
+                      "Player1 (SB) posts small blind $1"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Big Blind",
+                      "Player2",
+                      "$2",
+                      "Player2 (BB) posts big blind $2"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 23,
+            "name": "the game starts with enhanced blinds structure:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 27,
+            "name": "the pot should be $3 with enhanced display \"[Pot: $3]\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 28,
+            "name": "I capture screenshot \"00_game_setup_5players\" showing all players with positions",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Card1",
+                      "Card2",
+                      "Strategy"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "8♠",
+                      "8♥",
+                      "Play Cautiously"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "A♣",
+                      "5♣",
+                      "Aggressive Bluff"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player3",
+                      "K♦",
+                      "Q♠",
+                      "Moderate Play"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player4",
+                      "9♥",
+                      "9♠",
+                      "Value Betting"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player5",
+                      "J♣",
+                      "10♦",
+                      "Drawing Hands"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "When ",
+            "line": 203,
+            "name": "hole cards are dealt for complex multi-way scenario:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 212,
+            "name": "Player3 (UTG) calls $2 (limp)",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 213,
+            "name": "I should see \"Player3 (UTG) calls $2 — Stack: $100 → $98\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 214,
+            "name": "I capture screenshot \"21_preflop_utg_limp\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 216,
+            "name": "Player4 (CO) calls $2 (limp)",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 217,
+            "name": "I should see \"Player4 (CO) calls $2 — Stack: $100 → $98\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 219,
+            "name": "Player5 (BTN) calls $2 (limp)",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 220,
+            "name": "I should see \"Player5 (BTN) calls $2 — Stack: $100 → $98\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 222,
+            "name": "Player1 (SB) calls $1 more (complete)",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 223,
+            "name": "I should see \"Player1 (SB) calls $1 — Stack: $99 → $98\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 225,
+            "name": "Player2 (BB) checks",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 226,
+            "name": "I should see \"Player2 (BB) checks\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 227,
+            "name": "I capture screenshot \"22_preflop_all_limpers\" showing 5-way pot",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 228,
+            "name": "the pot should be $10 with all 5 players active",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 229,
+            "name": "I verify exactly 5 players are present at the current table",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 232,
+            "name": "the flop is dealt: 8♦, 9♣, 2♥",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 233,
+            "name": "I capture screenshot \"23_flop_multiway_pot\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 236,
+            "name": "Player1 (SB) checks",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 237,
+            "name": "I should see \"Player1 (SB) checks\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 240,
+            "name": "Player2 (BB) bets $6",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 241,
+            "name": "I should see \"Player2 (BB) bets $6 — Stack: $98 → $92\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 242,
+            "name": "the pot should be $16",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 245,
+            "name": "Player3 (UTG) calls $6",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 246,
+            "name": "I should see \"Player3 (UTG) calls $6 — Stack: $98 → $92\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 249,
+            "name": "Player4 (CO) raises to $20",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 250,
+            "name": "I should see \"Player4 (CO) raises to $20 — Stack: $98 → $78\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 251,
+            "name": "I capture screenshot \"24_flop_co_raise_with_set\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 254,
+            "name": "Player5 (BTN) folds",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 255,
+            "name": "I should see \"Player5 (BTN) folds — Stack: $98\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 258,
+            "name": "Player1 (SB) raises to $50 (check-raise)",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 259,
+            "name": "I should see \"Player1 (SB) raises to $50 — Stack: $98 → $48\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 260,
+            "name": "I capture screenshot \"25_flop_sb_check_raise\" showing check-raise action",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 263,
+            "name": "Player2 (BB) folds",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 264,
+            "name": "I should see \"Player2 (BB) folds — Stack: $92\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 267,
+            "name": "Player3 (UTG) folds",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 268,
+            "name": "I should see \"Player3 (UTG) folds — Stack: $92\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 271,
+            "name": "Player4 (CO) calls $30 more",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 272,
+            "name": "I should see \"Player4 (CO) calls $30 — Stack: $78 → $48\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 273,
+            "name": "I capture screenshot \"26_flop_heads_up_after_checkraise\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 274,
+            "name": "the pot should be $126 with 2 players remaining",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 275,
+            "name": "I verify exactly 5 players are present at the current table",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 278,
+            "name": "the turn is dealt: A♠",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 279,
+            "name": "I capture screenshot \"27_turn_heads_up_battle\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 281,
+            "name": "Player1 (SB) bets $25",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 282,
+            "name": "I should see \"Player1 (SB) bets $25 — Stack: $48 → $23\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 284,
+            "name": "Player4 (CO) calls $25",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 285,
+            "name": "I should see \"Player4 (CO) calls $25 — Stack: $48 → $23\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 286,
+            "name": "the pot should be $176",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 289,
+            "name": "the river is dealt: 8♣",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 290,
+            "name": "I capture screenshot \"28_river_final_battle\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 293,
+            "name": "Player1 (SB) goes all-in $23",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 294,
+            "name": "I should see \"Player1 (SB) goes all-in $23 — Stack: $23 → $0\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 296,
+            "name": "Player4 (CO) calls all-in",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 297,
+            "name": "I should see \"Player4 (CO) calls $23 — Stack: $23 → $0\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 298,
+            "name": "the pot should be $222",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 299,
+            "name": "I verify exactly 5 players are present at the current table",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 302,
+            "name": "the showdown begins",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 303,
+            "name": "Player1 should win with \"full house, eights full of aces\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 304,
+            "name": "Player4 should lose with \"set of nines\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 305,
+            "name": "I capture screenshot \"29_complex_showdown_fullhouse_wins\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Hand",
+                      "Result"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "8♠ 8♥ → Full House",
+                      "Winner: $222"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player4",
+                      "9♥ 9♠ → Set of 9s",
+                      "Loser"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "And ",
+            "line": 307,
+            "name": "I should see enhanced showdown results:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 312,
+            "name": "I capture screenshot \"30_final_complex_game_complete\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@multi-way-complex",
+            "line": 200
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "5-player-comprehensive-game-scenario-with-maximum-action-coverage;maximum-action-type-coverage-test",
+        "keyword": "Scenario",
+        "line": 315,
+        "name": "Maximum Action Type Coverage Test",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 8,
+            "name": "the database is reset to a clean state",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "the User table is seeded with test players",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 10,
+            "name": "I have exactly 5 players ready for a comprehensive poker game",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 11,
+            "name": "all players have starting stacks of $100",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Seat",
+                      "Position"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "1",
+                      "SB"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "2",
+                      "BB"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player3",
+                      "3",
+                      "UTG"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player4",
+                      "4",
+                      "CO"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player5",
+                      "5",
+                      "BTN"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "When ",
+            "line": 12,
+            "name": "exactly 5 players join the comprehensive table with positions:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 19,
+            "name": "all players should be seated correctly with position labels",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 20,
+            "name": "I verify exactly 5 players are present at the current table",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 21,
+            "name": "the page should be fully loaded for all players",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 22,
+            "name": "I manually start the game for table 1",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Position",
+                      "Player",
+                      "Amount",
+                      "Enhanced Format"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Small Blind",
+                      "Player1",
+                      "$1",
+                      "Player1 (SB) posts small blind $1"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Big Blind",
+                      "Player2",
+                      "$2",
+                      "Player2 (BB) posts big blind $2"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 23,
+            "name": "the game starts with enhanced blinds structure:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 27,
+            "name": "the pot should be $3 with enhanced display \"[Pot: $3]\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 28,
+            "name": "I capture screenshot \"00_game_setup_5players\" showing all players with positions",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Card1",
+                      "Card2"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "7♠",
+                      "3♦"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "A♠",
+                      "A♥"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player3",
+                      "K♣",
+                      "K♦"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player4",
+                      "Q♠",
+                      "J♠"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player5",
+                      "2♣",
+                      "2♦"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "When ",
+            "line": 317,
+            "name": "hole cards are dealt for maximum action coverage:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 326,
+            "name": "Player3 (UTG) raises to $6",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 327,
+            "name": "Player4 (CO) calls $6",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 328,
+            "name": "Player5 (BTN) folds",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 329,
+            "name": "Player1 (SB) folds",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 330,
+            "name": "Player2 (BB) raises to $20 (3-bet with AA)",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 331,
+            "name": "Player3 (UTG) calls $14",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 332,
+            "name": "Player4 (CO) folds",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 333,
+            "name": "I capture screenshot \"31_preflop_actions_variety\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 334,
+            "name": "I verify exactly 5 players are present at the current table",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 337,
+            "name": "the flop is dealt: K♠, Q♦, 10♣",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 338,
+            "name": "Player2 (BB) checks with AA (trap)",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 339,
+            "name": "Player3 (UTG) bets $15 with top set",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 340,
+            "name": "Player2 (BB) calls $15 (slowplay)",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 341,
+            "name": "I capture screenshot \"32_flop_check_bet_call\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 342,
+            "name": "I verify exactly 5 players are present at the current table",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 345,
+            "name": "the turn is dealt: 5♥",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 346,
+            "name": "Player2 (BB) checks",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 347,
+            "name": "Player3 (UTG) checks (pot control)",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 348,
+            "name": "I capture screenshot \"33_turn_double_check\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 351,
+            "name": "the river is dealt: A♦",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 352,
+            "name": "Player2 (BB) bets $30 with set of Aces",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 353,
+            "name": "Player3 (UTG) raises to $80 with full house (KKK AA)",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 354,
+            "name": "Player2 (BB) goes all-in with remaining chips",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 355,
+            "name": "Player3 (UTG) calls all-in",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 356,
+            "name": "I capture screenshot \"34_river_bet_raise_allin_call\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 357,
+            "name": "I verify exactly 5 players are present at the current table",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Action Type",
+                      "Count",
+                      "Players"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "FOLD",
+                      "3+",
+                      "Player1, Player4, Player5"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "CALL",
+                      "4+",
+                      "Various players"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "RAISE",
+                      "3+",
+                      "Various players"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "CHECK",
+                      "3+",
+                      "Player2, Player3"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "BET",
+                      "2+",
+                      "Player2, Player3"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "ALL-IN",
+                      "1+",
+                      "Player2"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 360,
+            "name": "the enhanced game history should show all action types:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 369,
+            "name": "I capture screenshot \"35_all_actions_covered_summary\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@comprehensive-actions",
+            "line": 314
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "5-player-comprehensive-game-scenario-with-maximum-action-coverage;final-comprehensive-enhanced-history-verification",
+        "keyword": "Scenario",
+        "line": 372,
+        "name": "Final Comprehensive Enhanced History Verification",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 8,
+            "name": "the database is reset to a clean state",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "the User table is seeded with test players",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 10,
+            "name": "I have exactly 5 players ready for a comprehensive poker game",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 11,
+            "name": "all players have starting stacks of $100",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Player",
+                      "Seat",
+                      "Position"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player1",
+                      "1",
+                      "SB"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player2",
+                      "2",
+                      "BB"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player3",
+                      "3",
+                      "UTG"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player4",
+                      "4",
+                      "CO"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Player5",
+                      "5",
+                      "BTN"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "When ",
+            "line": 12,
+            "name": "exactly 5 players join the comprehensive table with positions:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 19,
+            "name": "all players should be seated correctly with position labels",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 20,
+            "name": "I verify exactly 5 players are present at the current table",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 21,
+            "name": "the page should be fully loaded for all players",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 22,
+            "name": "I manually start the game for table 1",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Position",
+                      "Player",
+                      "Amount",
+                      "Enhanced Format"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Small Blind",
+                      "Player1",
+                      "$1",
+                      "Player1 (SB) posts small blind $1"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Big Blind",
+                      "Player2",
+                      "$2",
+                      "Player2 (BB) posts big blind $2"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 23,
+            "name": "the game starts with enhanced blinds structure:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 27,
+            "name": "the pot should be $3 with enhanced display \"[Pot: $3]\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 28,
+            "name": "I capture screenshot \"00_game_setup_5players\" showing all players with positions",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Verification Type",
+                      "Expected Elements"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Phase Headers",
+                      "--- PRE-FLOP BETTING ---, --- FLOP [Pot: $X] ---, etc."
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Position Labels",
+                      "(UTG), (CO), (BTN), (SB), (BB) throughout"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Stack Tracking",
+                      "Stack: $X → $Y for all bet/raise actions"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Pot Progress",
+                      "[Pot: $X] at phase headers, Pot: $X summaries"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Community Cards",
+                      "Community Cards: A♣ Q♠ 9♥, Community Card: K♣"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Action Arrows",
+                      "→ symbols for stack changes"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Professional Dashes",
+                      "— symbols for action separation"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "All-In Format",
+                      "goes all-in $X — Stack: $Y → $0"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Fold Format",
+                      "folds — Stack: $X (no change)"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Check Format",
+                      "checks (simple format)"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Showdown Results",
+                      "shows [cards] — [hand description]"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Winner Declaration",
+                      "[Player] wins $[amount]"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 378,
+            "name": "I perform complete enhanced game history verification:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Screenshot",
+                      "Content"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "enhanced_preflop_complete",
+                      "All pre-flop actions with enhanced formatting"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "enhanced_flop_complete",
+                      "Flop phase with pot and community cards"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "enhanced_turn_complete",
+                      "Turn phase with proper formatting"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "enhanced_river_complete",
+                      "River phase with all-in scenarios"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "enhanced_showdown_complete",
+                      "Complete showdown with hand reveals"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "enhanced_full_history",
+                      "Complete game history scroll"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "And ",
+            "line": 393,
+            "name": "I capture comprehensive verification screenshots:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 402,
+            "name": "the enhanced game history should auto-scroll to latest action",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 403,
+            "name": "all formatting elements should be consistent throughout",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 404,
+            "name": "position labels should be accurate for all 5 players",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "Metric",
+                      "Target",
+                      "Achieved"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Unique Actions",
+                      "8+ types",
+                      "✓ All covered"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Position Coverage",
+                      "5 positions",
+                      "✓ UTG,CO,BTN,SB,BB"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Phase Coverage",
+                      "5 phases",
+                      "✓ All phases"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Multi-Way Scenarios",
+                      "2+ scenarios",
+                      "✓ Multiple"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "All-In Scenarios",
+                      "2+ scenarios",
+                      "✓ Multiple"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Check Patterns",
+                      "2+ patterns",
+                      "✓ Multiple"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Fold Scenarios",
+                      "3+ folds",
+                      "✓ Multiple"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 407,
+            "name": "I verify comprehensive coverage statistics:",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 417,
+            "name": "I capture final comprehensive summary screenshot \"36_complete_coverage_achieved\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@comprehensive-verification",
+            "line": 371
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "5-player-comprehensive-game-scenario-with-maximum-action-coverage",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "5-Player Comprehensive Game Scenario with Maximum Action Coverage",
+    "tags": [],
+    "uri": "features/5-player-comprehensive-game-scenario.feature"
+  }
+]

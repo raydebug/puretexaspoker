@@ -17,8 +17,9 @@ router.post('/errors', (req, res) => {
 // Get recent errors (protected route)
 router.get('/errors', (req, res) => {
   try {
-    const limit = parseInt(req.query.limit as string) || 100;
-    const errors = errorTrackingService.getRecentErrors(limit);
+    const limitParam = req.query.limit as string;
+    const limit = limitParam !== undefined ? parseInt(limitParam) : 100;
+    const errors = errorTrackingService.getRecentErrors(isNaN(limit) ? 100 : limit);
     res.json({ success: true, errors });
   } catch (e) {
     console.error('Failed to get errors:', e);
@@ -29,8 +30,9 @@ router.get('/errors', (req, res) => {
 // Clear old logs (protected route)
 router.delete('/errors', (req, res) => {
   try {
-    const maxAge = parseInt(req.query.maxAge as string) || 30;
-    errorTrackingService.clearOldLogs(maxAge);
+    const maxAgeParam = req.query.maxAge as string;
+    const maxAge = maxAgeParam !== undefined ? parseInt(maxAgeParam) : 30;
+    errorTrackingService.clearOldLogs(isNaN(maxAge) ? 30 : maxAge);
     res.json({ success: true });
   } catch (e) {
     console.error('Failed to clear old logs:', e);

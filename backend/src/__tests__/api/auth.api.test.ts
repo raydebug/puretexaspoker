@@ -17,6 +17,40 @@ describe('Auth API Integration Tests', () => {
   beforeEach(async () => {
     // Clean up test data
     await cleanupTestDatabase();
+    
+    // Force recreation of roles - delete first then create to ensure fresh state
+    try {
+      await prisma.role.deleteMany({ where: { name: { in: ['player', 'admin'] } } });
+    } catch (error) {
+      // Ignore delete errors
+    }
+    
+    // Create roles with explicit wait and verification
+    const playerRole = await prisma.role.create({
+      data: {
+        name: 'player',
+        displayName: 'Player',
+        description: 'Default player role',
+        level: 0
+      }
+    });
+    
+    const adminRole = await prisma.role.create({
+      data: {
+        name: 'admin',
+        displayName: 'Administrator',
+        description: 'Administrator role',
+        level: 100
+      }
+    });
+
+    // Verify roles were created successfully
+    const verifyPlayerRole = await prisma.role.findUnique({ where: { name: 'player' } });
+    const verifyAdminRole = await prisma.role.findUnique({ where: { name: 'admin' } });
+    
+    if (!verifyPlayerRole || !verifyAdminRole) {
+      throw new Error('Failed to create test roles properly');
+    }
 
     // Create a test user for authenticated endpoints
     testUser = await authService.register({

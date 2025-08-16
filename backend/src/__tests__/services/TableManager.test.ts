@@ -1,10 +1,17 @@
 import { tableManager, TableData } from '../../services/TableManager';
+import { prisma } from '../../db';
 
 describe('TableManager', () => {
   beforeEach(async () => {
     // Reset the table manager before each test
     (tableManager as any).tables.clear();
     (tableManager as any).tablePlayers.clear();
+    
+    // Clear database tables to ensure clean state - delete in correct order due to foreign keys
+    await prisma.playerTable.deleteMany({});
+    await prisma.table.deleteMany({});
+    
+    // Initialize tables (this will create the default 3 tables)
     await (tableManager as any).initializeTables();
   });
 
@@ -33,6 +40,7 @@ describe('TableManager', () => {
 
     it('prevents joining multiple tables', () => {
       const tables = tableManager.getAllTables();
+      expect(tables.length).toBeGreaterThanOrEqual(2); // Ensure we have at least 2 tables
       
       tableManager.joinTable(tables[0].id, 'player1', 'TestPlayer');
       const result = tableManager.joinTable(tables[1].id, 'player1', 'TestPlayer');

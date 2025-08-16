@@ -195,32 +195,17 @@ export class SeatManager {
 
     if (isPreflop) {
       // Pre-flop: first to act is left of big blind
-      const firstToActPosition = 3; // Player4 (seat 4) should be first to act after BB
+      const blindPositions = this.getBlindPositions(players);
+      const firstToActPosition = (blindPositions.bigBlind + 1) % numPlayers;
       const result = turnOrder[firstToActPosition]?.playerId || null;
-      console.log(`🔍 Preflop: firstToActPosition=${firstToActPosition}, result=${result}`);
+      console.log(`🔍 Preflop: bigBlindPosition=${blindPositions.bigBlind}, firstToActPosition=${firstToActPosition}, result=${result}`);
       return result;
     } else {
       // Post-flop: first to act is the first active player left of the dealer
-      // Get the dealer's seat number
-      const dealerSeat = players.find(p => p.isActive && p.isDealer)?.seatNumber;
-      if (!dealerSeat) {
-        // Fallback: use dealerPosition from turnOrder
-        const dealerTurnOrder = turnOrder[this.dealerPosition];
-        if (!dealerTurnOrder) return null;
-        return dealerTurnOrder.playerId;
-      }
-      // Sort active players by seat number
-      const activePlayers = players.filter(p => p.isActive).sort((a, b) => a.seatNumber - b.seatNumber);
-      // Find the first active player after dealerSeat, wrapping around
-      for (let i = 1; i <= activePlayers.length; i++) {
-        const nextSeat = ((dealerSeat - 1 + i) % this.maxSeats) + 1;
-        const player = activePlayers.find(p => p.seatNumber === nextSeat);
-        if (player) {
-          console.log(`🔍 Postflop: dealerSeat=${dealerSeat}, firstToActSeat=${nextSeat}, player=${player.name}`);
-          return player.id;
-        }
-      }
-      return null;
+      const firstToActPosition = (this.dealerPosition + 1) % numPlayers;
+      const result = turnOrder[firstToActPosition]?.playerId || null;
+      console.log(`🔍 Postflop: dealerPosition=${this.dealerPosition}, firstToActPosition=${firstToActPosition}, result=${result}`);
+      return result;
     }
   }
 

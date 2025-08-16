@@ -183,7 +183,7 @@ describe('Players API Integration Tests', () => {
 
       expect(response.body.id).toBe('testplayer_reg2');
       expect(response.body.nickname).toBe('testplayer_reg2');
-      expect(response.body.chips).toBeNull(); // chips is null when not specified in register
+      expect(response.body.chips).toBe(1000); // chips defaults to 1000 when not specified in register
     });
 
     it('should fail when player already exists', async () => {

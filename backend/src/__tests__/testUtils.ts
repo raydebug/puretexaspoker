@@ -8,20 +8,13 @@ export async function cleanupDatabase(): Promise<void> {
   try {
     // Order matters! Delete dependent records first
     
-    // 1. Game Persistence related tables (no dependencies)
-    await prisma.connectionLog.deleteMany();
-    await prisma.gameActionHistory.deleteMany();
-    await prisma.playerSession.deleteMany();
-    
-    // 2. Role management related tables
+    // 1. Role management related tables
     await prisma.moderationAction.deleteMany();
     await prisma.rolePermission.deleteMany();
     
-    // 3. Game and table related tables
-    await prisma.gameAction.deleteMany();
-    await prisma.cardOrder.deleteMany();
-    await prisma.gameSession.deleteMany();
-    await prisma.game.deleteMany();
+    // 2. Game and table related tables
+    await prisma.tableAction.deleteMany();
+    await prisma.message.deleteMany();
     await prisma.playerTable.deleteMany();
     
     // 4. User related tables (users have relationships)
@@ -124,6 +117,7 @@ export async function createTestTable(name: string = 'Test Table') {
 export async function createTestPlayer(nickname: string, chips: number = 1000) {
   return await prisma.player.create({
     data: {
+      id: nickname,
       nickname,
       chips
     }

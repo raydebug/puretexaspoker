@@ -10,7 +10,7 @@ describe('Observer to Player Transition Bug Fix', () => {
   let io: Server;
   let clientSocket: any;
   let tableId: number;
-  let dbTableId: string;
+  let dbTableId: number;
 
   beforeAll(async () => {
     // Setup test HTTP server and Socket.IO
@@ -43,10 +43,7 @@ describe('Observer to Player Transition Bug Fix', () => {
 
   beforeEach(async () => {
     // Clean up database
-    await prisma.gameActionHistory.deleteMany();
-    await prisma.gameAction.deleteMany();
-    await prisma.cardOrder.deleteMany();
-    await prisma.game.deleteMany();
+    await prisma.tableAction.deleteMany();
     await prisma.playerTable.deleteMany();
     await prisma.player.deleteMany();
     await prisma.table.deleteMany();
