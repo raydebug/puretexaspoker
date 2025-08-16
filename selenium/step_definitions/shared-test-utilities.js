@@ -225,24 +225,24 @@ async function cleanupBrowsersShared() {
 }
 
 /**
- * Setup players for 5-player game
+ * Setup 5 players with enhanced timeout and error handling
  * @param {number} tableId - Table ID
  * @returns {Promise<boolean>} Success status
  */
 async function setup5PlayersShared(tableId) {
-  console.log('🎮 5-player setup...');
+  console.log('🎮 5-player setup with enhanced timeout handling...');
   
   // Initialize global.players if not exists
   if (!global.players) {
     global.players = {};
   }
   
-  // Create browser instances for 5 players with parallel approach for speed
-  console.log('🚀 Starting parallel browser creation for optimal speed...');
+  // Create browser instances for 5 players with enhanced timeout handling
+  console.log('🚀 Starting enhanced browser creation with timeout protection...');
   
   const browserPromises = [];
   
-  // Create all 5 browsers with staggered parallel approach
+  // Create all 5 browsers with staggered parallel approach and timeout protection
   for (let i = 1; i <= 5; i++) {
     const playerName = `Player${i}`;
     const baseId = Date.now() + i * 1000; // Stagger base timestamps
@@ -250,12 +250,18 @@ async function setup5PlayersShared(tableId) {
     
     const browserPromise = (async () => {
       // Small staggered delay to prevent resource conflicts
-      await new Promise(resolve => setTimeout(resolve, (i - 1) * 100));
+      await new Promise(resolve => setTimeout(resolve, (i - 1) * 200));
       
-      console.log(`🌐 Starting staggered parallel browser creation for ${playerName}...`);
+      console.log(`🌐 Starting enhanced browser creation for ${playerName}...`);
       
       try {
-        const driver = await createBrowserInstanceShared(uniqueId);
+        // Add timeout protection for browser creation
+        const driver = await Promise.race([
+          createBrowserInstanceShared(uniqueId),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Browser creation timeout')), 30000)
+          )
+        ]);
         
         console.log(`✅ Browser instance created for ${playerName}`);
         
@@ -275,11 +281,16 @@ async function setup5PlayersShared(tableId) {
     browserPromises.push(browserPromise);
   }
   
-  // Wait for all browsers to be created in parallel
-  console.log('⏳ Waiting for all 5 browsers to complete creation...');
+  // Wait for all browsers to be created in parallel with timeout protection
+  console.log('⏳ Waiting for all 5 browsers to complete creation with timeout protection...');
   
   try {
-    const browserResults = await Promise.all(browserPromises);
+    const browserResults = await Promise.race([
+      Promise.all(browserPromises),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Browser creation timeout - all browsers')), 60000)
+      )
+    ]);
     
     // Store all browsers in global players object
     for (const result of browserResults) {
@@ -291,14 +302,14 @@ async function setup5PlayersShared(tableId) {
       };
     }
     
-    console.log('🎉 All 5 browsers created successfully in parallel!');
+    console.log('🎉 All 5 browsers created successfully with timeout protection!');
     
   } catch (error) {
-    console.error('❌ Parallel browser creation failed:', error.message);
+    console.error('❌ Enhanced browser creation failed:', error.message);
     throw error;
   }
   
-  // Seat players using API
+  // Seat players using API with enhanced error handling
   const players = [
     { Player: 'Player1', Seat: 1, Position: 'SB' },
     { Player: 'Player2', Seat: 2, Position: 'BB' },
@@ -307,22 +318,46 @@ async function setup5PlayersShared(tableId) {
     { Player: 'Player5', Seat: 5, Position: 'BTN' }
   ];
   
-  // Seat all players via API first (fast)
+  // Seat all players via API first (fast) with retry logic
   for (const player of players) {
     const playerName = player.Player;
     const seatNumber = parseInt(player.Seat);
     
-    const seated = await seatPlayerShared(tableId, playerName, seatNumber, 100);
+    let seated = false;
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    while (!seated && retryCount < maxRetries) {
+      try {
+        seated = await seatPlayerShared(tableId, playerName, seatNumber, 100);
+        
+        if (!seated) {
+          console.log(`⚠️ Failed to seat ${playerName}, attempt ${retryCount + 1}/${maxRetries}`);
+          retryCount++;
+          
+          if (retryCount < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+      } catch (error) {
+        console.log(`❌ Error seating ${playerName}, attempt ${retryCount + 1}/${maxRetries}: ${error.message}`);
+        retryCount++;
+        
+        if (retryCount < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+    }
     
     if (!seated) {
-      console.error(`❌ Failed to seat ${playerName}`);
+      console.error(`❌ Failed to seat ${playerName} after ${maxRetries} attempts`);
       return false;
     }
   }
   
-  console.log('✅ All players seated via API, starting parallel navigation...');
+  console.log('✅ All players seated via API with retry logic, starting enhanced navigation...');
   
-  // Navigate all browsers in parallel for speed
+  // Navigate all browsers in parallel with enhanced timeout protection
   const navigationPromises = [];
   
   for (const player of players) {
@@ -333,12 +368,18 @@ async function setup5PlayersShared(tableId) {
     if (playerInstance && playerInstance.driver) {
       const navigationPromise = (async () => {
         try {
-          const navigated = await navigateToGameShared(playerInstance.driver, tableId, playerName);
+          // Add timeout protection for navigation
+          const navigated = await Promise.race([
+            navigateToGameShared(playerInstance.driver, tableId, playerName),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Navigation timeout')), 30000)
+            )
+          ]);
           
           if (navigated) {
             playerInstance.seat = seatNumber;
             playerInstance.tableId = tableId;
-            console.log(`✅ ${playerName} navigation complete`);
+            console.log(`✅ ${playerName} navigation complete with timeout protection`);
             return true;
           } else {
             console.log(`⚠️ ${playerName} navigation failed`);
@@ -354,25 +395,31 @@ async function setup5PlayersShared(tableId) {
     }
   }
   
-  // Wait for all navigations to complete
-  console.log('⏳ Waiting for all player navigations to complete...');
+  // Wait for all navigations to complete with timeout protection
+  console.log('⏳ Waiting for all player navigations to complete with timeout protection...');
   
   try {
-    const navigationResults = await Promise.all(navigationPromises);
+    const navigationResults = await Promise.race([
+      Promise.all(navigationPromises),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Navigation timeout - all players')), 60000)
+      )
+    ]);
+    
     const successfulNavigations = navigationResults.filter(result => result === true).length;
     
-    console.log(`🎯 Navigation complete: ${successfulNavigations}/${players.length} players`);
+    console.log(`🎯 Enhanced navigation complete: ${successfulNavigations}/${players.length} players`);
     
     if (successfulNavigations < players.length) {
       console.log(`⚠️ Some navigations failed, but continuing with ${successfulNavigations} players`);
     }
     
   } catch (error) {
-    console.error('❌ Parallel navigation failed:', error.message);
+    console.error('❌ Enhanced parallel navigation failed:', error.message);
     return false;
   }
   
-  console.log('✅ All 5 players setup complete');
+  console.log('✅ All 5 players setup complete with enhanced timeout handling');
   return true;
 }
 
