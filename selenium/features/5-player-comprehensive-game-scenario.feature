@@ -26,6 +26,12 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
       | Big Blind   | Player2 | $2     | Player2 (BB) posts big blind $2 |
     And the pot should be $3 with enhanced display "[Pot: $3]"
     And I capture screenshot "00_game_setup_5players" showing all players with positions
+    # DOM-based game history verification
+    And the game history should show 2 action records
+    And the game history should contain action with ID 1
+    And the game history should contain action with ID 2
+    And the game history should show player "Player1" performed "Small_Blind" action
+    And the game history should show player "Player2" performed "Big_Blind" action
 
   @comprehensive-5-player
   Scenario: Complete 5-Player Texas Hold'em with Maximum Action Coverage
@@ -59,6 +65,10 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
     Then I should see enhanced game history: "Player3 (UTG) folds — Stack: $100"
     And I capture screenshot "04_preflop_utg_fold" showing fold action
     And I verify enhanced game history shows "FOLD" action by "Player3 (UTG)"
+    # DOM verification - first player action should create ID 3
+    And the game history should show 3 action records
+    And the game history should contain action with ID 3
+    And the game history should show actions with IDs greater than 2
     
     # CO RAISE (Position: Cut Off)  
     And Player4 (CO) raises to $8 with pocket 10s
@@ -73,6 +83,10 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
     And I capture screenshot "06_preflop_btn_3bet" showing 3-bet action
     And I verify enhanced game history shows "RAISE" action by "Player5 (BTN)" with amount "$24"
     And the pot should be $27 with enhanced display
+    # DOM verification - multiple player actions should show comprehensive history
+    And the game history should show 5 action records
+    And the game history should show actions with IDs greater than 2
+    And the game history should show all 5 players have performed actions
     
     # SB FOLD (Position: Small Blind)
     And Player1 (SB) folds premium hand A♠K♠ to 3-bet

@@ -2,6 +2,7 @@
 
 > **Purpose**: This document describes the structure of the Pure Texas Poker project, the role of each major file/module, key reusable functions, constants, and test cases.
 > **Maintainers**: Only update this document with approval to ensure alignment with CLAUDE.md reuse policy.
+> **Note**: Project structure has been reorganized. See `docs/directory-structure.md` for current layout.
 
 ---
 

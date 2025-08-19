@@ -89,7 +89,7 @@ async function createBrowserInstanceShared(uniqueId = null) {
     '--no-sandbox',
     '--disable-dev-shm-usage',
     '--disable-blink-features=AutomationControlled',
-    '--window-size=800,600',
+    '--window-size=1920,1080',
     '--disable-background-timer-throttling',
     '--disable-backgrounding-occluded-windows',
     '--disable-renderer-backgrounding',
@@ -126,6 +126,9 @@ async function createBrowserInstanceShared(uniqueId = null) {
     .forBrowser('chrome')
     .setChromeOptions(options)
     .build();
+    
+  // Use window size from Chrome options, avoid setRect to prevent window state conflicts
+  console.log(`🖥️ Browser window using size from Chrome options (1920x1080)`);
     
   return driver;
 }
@@ -224,90 +227,132 @@ async function cleanupBrowsersShared() {
   }
 }
 
+// ===== BROWSER POOL MANAGEMENT =====
+
+// Global browser pool - created once and reused
+let globalBrowserPool = [];
+let browserPoolInitialized = false;
+
 /**
- * Setup 5 players with enhanced timeout and error handling
- * @param {number} tableId - Table ID
+ * Initialize fixed browser pool with exactly 5 instances
  * @returns {Promise<boolean>} Success status
  */
-async function setup5PlayersShared(tableId) {
-  console.log('🎮 5-player setup with enhanced timeout handling...');
-  
-  // Initialize global.players if not exists
-  if (!global.players) {
-    global.players = {};
+async function initializeBrowserPool() {
+  if (browserPoolInitialized && globalBrowserPool.length === 5) {
+    console.log('🏊‍♂️ Browser pool already initialized with 5 instances');
+    return true;
   }
   
-  // Create browser instances for 5 players with enhanced timeout handling
-  console.log('🚀 Starting enhanced browser creation with timeout protection...');
+  console.log('🏊‍♂️ Initializing fixed browser pool (5 instances)...');
+  
+  // Clear any existing browsers
+  if (globalBrowserPool.length > 0) {
+    console.log('🧹 Cleaning up existing browser pool...');
+    for (const browser of globalBrowserPool) {
+      try {
+        await browser.quit();
+      } catch (error) {
+        console.log('⚠️ Error closing browser:', error.message);
+      }
+    }
+    globalBrowserPool = [];
+  }
   
   const browserPromises = [];
   
-  // Create all 5 browsers with staggered parallel approach and timeout protection
+  // Create exactly 5 browser instances in parallel
   for (let i = 1; i <= 5; i++) {
-    const playerName = `Player${i}`;
-    const baseId = Date.now() + i * 1000; // Stagger base timestamps
-    const uniqueId = `${playerName}-${baseId}-${Math.random().toString(36).substr(2, 9)}`;
-    
     const browserPromise = (async () => {
-      // Small staggered delay to prevent resource conflicts
-      await new Promise(resolve => setTimeout(resolve, (i - 1) * 200));
-      
-      console.log(`🌐 Starting enhanced browser creation for ${playerName}...`);
+      const uniqueId = `Pool-${i}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
       try {
-        // Add timeout protection for browser creation
-        const driver = await Promise.race([
-          createBrowserInstanceShared(uniqueId),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Browser creation timeout')), 30000)
-          )
-        ]);
-        
-        console.log(`✅ Browser instance created for ${playerName}`);
-        
-        return {
-          playerName,
-          driver,
-          seat: i,
-          tableId: tableId,
-          buyIn: 100
-        };
+        console.log(`🌐 Creating browser instance ${i}/5...`);
+        const driver = await createBrowserInstanceShared(uniqueId);
+        console.log(`✅ Browser instance ${i}/5 created successfully`);
+        return { id: i, driver: driver, available: true };
       } catch (error) {
-        console.error(`❌ Failed to create browser for ${playerName}: ${error.message}`);
-        throw new Error(`Browser creation failed for ${playerName}: ${error.message}`);
+        console.error(`❌ Failed to create browser instance ${i}/5: ${error.message}`);
+        throw error;
       }
     })();
     
     browserPromises.push(browserPromise);
   }
   
-  // Wait for all browsers to be created in parallel with timeout protection
-  console.log('⏳ Waiting for all 5 browsers to complete creation with timeout protection...');
-  
   try {
-    const browserResults = await Promise.race([
-      Promise.all(browserPromises),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Browser creation timeout - all browsers')), 60000)
-      )
-    ]);
-    
-    // Store all browsers in global players object
-    for (const result of browserResults) {
-      global.players[result.playerName] = {
-        driver: result.driver,
-        seat: result.seat,
-        tableId: result.tableId,
-        buyIn: result.buyIn
-      };
-    }
-    
-    console.log('🎉 All 5 browsers created successfully with timeout protection!');
-    
+    globalBrowserPool = await Promise.all(browserPromises);
+    browserPoolInitialized = true;
+    console.log('🎉 Browser pool initialized successfully with 5 instances!');
+    return true;
   } catch (error) {
-    console.error('❌ Enhanced browser creation failed:', error.message);
-    throw error;
+    console.error('❌ Failed to initialize browser pool:', error.message);
+    browserPoolInitialized = false;
+    return false;
   }
+}
+
+/**
+ * Get browser from pool for a player
+ * @param {string} playerName - Player name (Player1, Player2, etc.)
+ * @returns {WebDriver|null} Browser driver or null if none available
+ */
+function getBrowserFromPool(playerName) {
+  const playerNumber = parseInt(playerName.replace('Player', ''));
+  
+  if (playerNumber >= 1 && playerNumber <= 5) {
+    const browser = globalBrowserPool[playerNumber - 1];
+    if (browser && browser.driver) {
+      console.log(`🎯 Assigned browser ${browser.id} to ${playerName}`);
+      return browser.driver;
+    }
+  }
+  
+  console.log(`⚠️ No browser available for ${playerName}`);
+  return null;
+}
+
+/**
+ * Setup 5 players with fixed browser pool
+ * @param {number} tableId - Table ID
+ * @returns {Promise<boolean>} Success status
+ */
+async function setup5PlayersShared(tableId) {
+  console.log('🎮 5-player setup with fixed browser pool...');
+  
+  // Initialize global.players if not exists
+  if (!global.players) {
+    global.players = {};
+  }
+  
+  // Initialize browser pool if needed
+  const poolReady = await initializeBrowserPool();
+  if (!poolReady) {
+    console.error('❌ Failed to initialize browser pool');
+    return false;
+  }
+  
+  // Assign browsers from pool to players
+  console.log('🎯 Assigning browsers from pool to players...');
+  
+  for (let i = 1; i <= 5; i++) {
+    const playerName = `Player${i}`;
+    const driver = getBrowserFromPool(playerName);
+    
+    if (driver) {
+      global.players[playerName] = {
+        driver: driver,
+        seat: i,
+        tableId: tableId,
+        buyIn: 100
+      };
+      console.log(`✅ ${playerName} assigned browser from pool`);
+    } else {
+      console.error(`❌ Failed to assign browser to ${playerName}`);
+      return false;
+    }
+  }
+  
+  console.log('🎉 All 5 players assigned browsers from pool successfully!');
   
   // Seat players using API with enhanced error handling
   const players = [
@@ -430,5 +475,7 @@ module.exports = {
   navigateToGameShared,
   startGameShared,
   cleanupBrowsersShared,
-  setup5PlayersShared
+  setup5PlayersShared,
+  initializeBrowserPool,
+  getBrowserFromPool
 };

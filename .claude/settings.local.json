@@ -129,7 +129,10 @@
       "Bash(HEADLESS=true SELENIUM_WAIT_TIMEOUT=30000 NETWORK_TIMEOUT=30000 npx cucumber-js features/5-player-comprehensive-game-scenario.feature --require step_definitions/2-player-game-steps.js --require step_definitions/5-player-comprehensive-steps.js --require step_definitions/hooks.js --format @cucumber/pretty-formatter --tags \"@comprehensive-5-player and not @multi-way-complex\" --fail-fast)",
       "Bash(time timeout:*)",
       "Bash(concurrently:*)",
-      "Bash(DEBUG=cucumber*)"
+      "Bash(DEBUG=cucumber*)",
+      "Bash(./start-servers.js)",
+      "Bash(HEADLESS=true npx cucumber-js features/5-player-comprehensive-game-scenario.feature --tags=\"@comprehensive-5-player\")",
+      "Bash(HEADLESS=true npx cucumber-js --dry-run features/5-player-comprehensive-game-scenario.feature --tags=\"@comprehensive-5-player\")"
     ],
     "deny": []
   }

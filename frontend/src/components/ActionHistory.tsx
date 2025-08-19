@@ -85,6 +85,17 @@ const ActionItem = styled.div<{ isLatest?: boolean }>`
   }
 `;
 
+const ActionId = styled.div`
+  font-size: 0.7rem;
+  color: #888;
+  font-family: monospace;
+  margin-top: 2px;
+  padding: 1px 4px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 2px;
+  display: inline-block;
+`;
+
 const ActionHeader = styled.div`
   display: flex;
   justify-content: space-between;
@@ -380,6 +391,7 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ gameId, tableId, h
                 <Phase>{action.phase}</Phase>
                 <Timestamp>{formatTimestamp(action.timestamp)}</Timestamp>
               </ActionDetails>
+              <ActionId>ID: {action.id}</ActionId>
             </ActionItem>
           ))}
         </ActionList>

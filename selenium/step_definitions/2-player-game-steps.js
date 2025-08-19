@@ -526,7 +526,7 @@ When('the flop is dealt: A♣, Q♠, 9♥', { timeout: 15000 }, async function (
   }
 });
 
-When('the turn is dealt: K♣', { timeout: 15000 }, async function () {
+/*When('the turn is dealt: K♣', { timeout: 15000 }, async function () {
   console.log(`🃏 Dealing turn card: K♣ (2-player mode)`);
   
   try {
@@ -560,7 +560,7 @@ When('the turn is dealt: K♣', { timeout: 15000 }, async function () {
   // Wait for turn card to be visually rendered and capture screenshot
   await new Promise(resolve => setTimeout(resolve, 3000));
   await screenshotHelper.captureAllPlayers('turn_card_visible', 2000);
-});
+});*/
 
 // Duplicate river card step removed - only keep the one near line 314
 
@@ -1105,7 +1105,8 @@ AfterAll(async function () {
 });
 
 // Missing step definitions for 2-player game test
-Given('the database is reset to a clean state', async function () {
+// COMMENTED OUT - conflicts with 5-player test
+/*Given('the database is reset to a clean state', async function () {
   console.log('🧹 DB reset...');
   
   try {
@@ -1127,18 +1128,18 @@ Given('the database is reset to a clean state', async function () {
   } catch (error) {
     console.log(`⚠️ Database reset failed: ${error.message}`);
   }
-});
+});*/
 
-Given('the User table is seeded with test players', function () {
+/*Given('the User table is seeded with test players', function () {
   console.log('👥 Players seeded...');
   console.log('✅ Players seeded');
-});
+});*/
 
-Given('all players have starting stacks of ${int}', function (amount) {
+/*Given('all players have starting stacks of ${int}', function (amount) {
   console.log(`💰 All players have starting stacks of $${amount} (2-player mode)...`);
   this.startingStack = amount;
   console.log(`✅ Starting stack set to $${amount}`);
-});
+});*/
 
 Then('all players should be seated correctly:', function (dataTable) {
   console.log('🪑 Seat check...');
@@ -1167,7 +1168,7 @@ Then('the page should be fully loaded for {string}', { timeout: 15000 }, async f
   }
 });
 
-When('I manually start the game for table {int}', { timeout: 25000 }, async function (tableId) {
+/*When('I manually start the game for table {int}', { timeout: 25000 }, async function (tableId) {
   console.log(`🎮 Manually starting game for table ${tableId}...`);
   
   // Use the actual table ID from the database reset
@@ -1191,7 +1192,7 @@ When('I manually start the game for table {int}', { timeout: 25000 }, async func
   } catch (error) {
     console.log(`⚠️ Game start failed: ${error.message}`);
   }
-});
+});*/
 
 Then('the game starts with blinds structure:', async function (dataTable) {
   console.log('🎯 Blinds check...');
@@ -1254,7 +1255,7 @@ Then('the game starts with blinds structure:', async function (dataTable) {
 // The following steps are handled by other step definition files to avoid conflicts
 
 // Missing step definitions for 2-player game test
-Then('the pot should be ${int}', async function (amount) {
+/*Then('the pot should be ${int}', async function (amount) {
   console.log(`💰 Verifying pot is $${amount} - checking UI...`);
   
   const player1Browser = this.browsers?.Player1;
@@ -1294,9 +1295,9 @@ Then('the pot should be ${int}', async function (amount) {
       // Note: Test continues despite error to maintain test stability
     }
   }
-});
+});*/
 
-Then('the pot should be ${int} \\(all remaining chips\\)', async function (amount) {
+/*Then('the pot should be ${int} \\(all remaining chips\\)', async function (amount) {
   console.log(`💰 Verifying final pot is $${amount} (all remaining chips) - checking UI...`);
   
   const player1Browser = this.browsers?.Player1;
@@ -1336,7 +1337,7 @@ Then('the pot should be ${int} \\(all remaining chips\\)', async function (amoun
       // Note: Test continues despite error to maintain test stability
     }
   }
-});
+});*/
 
 When('hole cards are dealt according to the test scenario:', async function (dataTable) {
   console.log('🃏 Cards dealt...');
@@ -2001,7 +2002,7 @@ Then('Player2 should win with {string}', { timeout: 15000 }, async function (han
   await screenshotHelper.captureAllPlayers('final_result');
 });
 
-Then('Player1 should win with {string}', { timeout: 15000 }, async function (handType) {
+/*Then('Player1 should win with {string}', { timeout: 15000 }, async function (handType) {
   console.log(`🏆 Player1 wins with ${handType} - verifying UI...`);
   
   // Wait for showdown results to be processed and displayed
@@ -2036,7 +2037,7 @@ Then('Player1 should win with {string}', { timeout: 15000 }, async function (han
   // Capture final result screenshot
   await new Promise(resolve => setTimeout(resolve, 1000));
   await screenshotHelper.captureAllPlayers('final_result');
-});
+});*/
 
 // REMOVED DUPLICATE: Observers verification moved to end of file
 

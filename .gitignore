@@ -28,6 +28,10 @@ yarn-error.log*
 logs/
 *.log
 
+# Test artifacts and debugging tools
+tests/manual/*.js
+tools/debug/*.js
+
 # Editor directories and files
 .idea/
 .vscode/
