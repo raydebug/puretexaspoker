@@ -68,7 +68,6 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
     # DOM verification - first player action should create ID 3
     And the game history should show 3 action records
     And the game history should contain action with ID 3
-    And the game history should show actions with IDs greater than 2
     
     # CO RAISE (Position: Cut Off)  
     And Player4 (CO) raises to $8 with pocket 10s
@@ -76,6 +75,8 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
     And I capture screenshot "05_preflop_co_raise" showing raise action with stack change
     And I verify enhanced game history shows "RAISE" action by "Player4 (CO)" with amount "$8"
     And the pot should be $11 with display "[Pot: $11]"
+    # DOM verification - Player4 raise should create ID 4
+    And the game history should contain action with ID 4
     
     # BTN 3-BET (Position: Button)
     And Player5 (BTN) 3-bets to $24 with A♥Q♦
@@ -83,45 +84,58 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
     And I capture screenshot "06_preflop_btn_3bet" showing 3-bet action
     And I verify enhanced game history shows "RAISE" action by "Player5 (BTN)" with amount "$24"
     And the pot should be $27 with enhanced display
-    # DOM verification - multiple player actions should show comprehensive history
+    # DOM verification - Player5 3-bet should create ID 5
+    And the game history should contain action with ID 5
     And the game history should show 5 action records
-    And the game history should show actions with IDs greater than 2
-    And the game history should show all 5 players have performed actions
     
     # SB FOLD (Position: Small Blind)
     And Player1 (SB) folds premium hand A♠K♠ to 3-bet
     Then I should see enhanced game history: "Player1 (SB) folds — Stack: $99"
     And I capture screenshot "07_preflop_sb_fold" showing SB fold to 3-bet
     And I verify Player1 is marked as inactive
+    # DOM verification - Player1 fold should create ID 6
+    And the game history should contain action with ID 6
     
     # BB CALL (Position: Big Blind)
     And Player2 (BB) calls $22 more with Q♥J♥
     Then I should see enhanced game history: "Player2 (BB) calls $22 — Stack: $98 → $76"
     And I capture screenshot "08_preflop_bb_call" showing BB call
     And the pot should be $49
+    # DOM verification - Player2 call should create ID 7
+    And the game history should contain action with ID 7
     
     # CO 4-BET (Cut Off Response)
     And Player4 (CO) 4-bets to $60 with pocket 10s
     Then I should see enhanced game history: "Player4 (CO) raises to $60 — Stack: $92 → $40"
     And I capture screenshot "09_preflop_co_4bet" showing 4-bet action
     And the pot should be $109
+    # DOM verification - Player4 4-bet should create ID 8
+    And the game history should contain action with ID 8
     
     # BTN FOLD to 4-bet
     And Player5 (BTN) folds A♥Q♦ to 4-bet
     Then I should see enhanced game history: "Player5 (BTN) folds — Stack: $76"
     And I capture screenshot "10_preflop_btn_fold_to_4bet"
+    # DOM verification - Player5 fold should create ID 9
+    And the game history should contain action with ID 9
     
     # BB ALL-IN (Big Blind Shove)
     And Player2 (BB) goes all-in with remaining $76
     Then I should see enhanced game history: "Player2 (BB) goes all-in $76 — Stack: $76 → $0"
     And I capture screenshot "11_preflop_bb_allin" showing all-in action
     And the pot should be $161
+    # DOM verification - Player2 all-in should create ID 10
+    And the game history should contain action with ID 10
     
     # CO CALL ALL-IN
     And Player4 (CO) calls all-in for remaining $40
     Then I should see enhanced game history: "Player4 (CO) calls $40 — Stack: $40 → $0"
     And I capture screenshot "12_preflop_co_call_allin"
     And the pot should be $185
+    # DOM verification - Player4 call all-in should create ID 11
+    And the game history should contain action with ID 11
+    # Total pre-flop actions complete: IDs 1-11 (blinds + 9 player actions)
+    And the game history should show 11 action records
     
     # Verify Pre-flop Summary
     Then I should see "Pot: $185" in enhanced game history
@@ -142,6 +156,8 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
     And both all-in players should have cards revealed
     And Player4 should have set of 10s (strong hand)
     And Player2 should have top pair using Q♥J♥
+    # DOM verification - Flop should create ID 12
+    And the game history should contain action with ID 12
     
     # PHASE 3: TURN - Continue All-In Runout
     When the turn is dealt: K♣
@@ -154,6 +170,8 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
     And I verify exactly 5 players are present at the current table
     And Player2 should have gutshot straight draw (Q♥J♥ needs 8 for straight)
     And Player4 should still have set of 10s (strongest hand)
+    # DOM verification - Turn should create ID 13
+    And the game history should contain action with ID 13
     
     # PHASE 4: RIVER - Final All-In Resolution
     When the river is dealt: 8♦
@@ -166,6 +184,8 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
     And I verify exactly 5 players are present at the current table
     And Player2 should now have straight (Q-J-10-9-8)
     And the board should be A♣ 10♠ 7♥ K♣ 8♦
+    # DOM verification - River should create ID 14
+    And the game history should contain action with ID 14
     
     # PHASE 5: SHOWDOWN - Enhanced Hand Reveals
     When the showdown begins
@@ -176,6 +196,8 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
     
     And I capture screenshot "17_showdown_hand_reveals"
     And I verify exactly 5 players are present at the current table
+    # DOM verification - Showdown begin should create ID 15
+    And the game history should contain action with ID 15
     
     # Hand Evaluation
     And Player2 should have "straight" (Q-J-10-9-8)
@@ -188,6 +210,12 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
       | Final Pot Distribution | All chips to Player2 |
     
     And I capture screenshot "18_showdown_complete_winner"
+    # DOM verification - Hand reveals should create ID 16
+    And the game history should contain action with ID 16
+    # DOM verification - Winner declaration should create ID 17
+    And the game history should contain action with ID 17
+    # Final DOM verification - all 17 action records must be present
+    And the game history should show 17 action records
     
     # COMPREHENSIVE ENHANCED GAME HISTORY VERIFICATION
     Then the complete enhanced game history should contain:
@@ -429,3 +457,10 @@ Feature: 5-Player Comprehensive Game Scenario with Maximum Action Coverage
       | Fold Scenarios | 3+ folds | ✓ Multiple |
     
     And I capture final comprehensive summary screenshot "36_complete_coverage_achieved"
+    
+    # Final comprehensive DOM verification - ensure all 17 action IDs are present
+    Then the complete game history should show all 17 action IDs including showdown
+    And the game history should contain action with ID 17
+    
+    # Final cleanup - ensure all browsers are closed
+    Then all browser instances should be closed

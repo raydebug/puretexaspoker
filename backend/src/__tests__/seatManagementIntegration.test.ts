@@ -10,8 +10,7 @@ describe.skip('Seat Management Integration', () => {
 
   beforeEach(async () => {
     // Clean up any existing data in correct order to avoid foreign key constraints
-    await prisma.gameAction.deleteMany();
-    await prisma.game.deleteMany();
+    await prisma.tableAction.deleteMany();
     await prisma.playerTable.deleteMany();
     await prisma.player.deleteMany();
     await prisma.table.deleteMany();
@@ -19,6 +18,7 @@ describe.skip('Seat Management Integration', () => {
     // Create players
     const player1 = await prisma.player.create({
       data: {
+        id: 'SeatPlayer1',
         nickname: 'SeatPlayer1',
         chips: 1000
       }
@@ -26,6 +26,7 @@ describe.skip('Seat Management Integration', () => {
 
     const player2 = await prisma.player.create({
       data: {
+        id: 'SeatPlayer2',
         nickname: 'SeatPlayer2',
         chips: 1000
       }
@@ -33,6 +34,7 @@ describe.skip('Seat Management Integration', () => {
 
     const player3 = await prisma.player.create({
       data: {
+        id: 'SeatPlayer3',
         nickname: 'SeatPlayer3',
         chips: 1000
       }
@@ -54,13 +56,13 @@ describe.skip('Seat Management Integration', () => {
       }
     });
 
-    tableId = table.id;
+    tableId = table.id.toString();
 
     // Add players to table with specific seat numbers
     await prisma.playerTable.create({
       data: {
         playerId: playerId1,
-        tableId,
+        tableId: parseInt(tableId),
         seatNumber: 1,
         buyIn: 500
       }
@@ -69,7 +71,7 @@ describe.skip('Seat Management Integration', () => {
     await prisma.playerTable.create({
       data: {
         playerId: playerId2,
-        tableId,
+        tableId: parseInt(tableId),
         seatNumber: 3,
         buyIn: 500
       }
@@ -78,7 +80,7 @@ describe.skip('Seat Management Integration', () => {
     await prisma.playerTable.create({
       data: {
         playerId: playerId3,
-        tableId,
+        tableId: parseInt(tableId),
         seatNumber: 5,
         buyIn: 500
       }
@@ -87,8 +89,7 @@ describe.skip('Seat Management Integration', () => {
 
   afterEach(async () => {
     // Clean up in correct order to avoid foreign key constraints
-    await prisma.gameAction.deleteMany();
-    await prisma.game.deleteMany();
+    await prisma.tableAction.deleteMany();
     await prisma.playerTable.deleteMany();
     await prisma.player.deleteMany();
     await prisma.table.deleteMany();

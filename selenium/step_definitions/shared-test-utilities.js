@@ -84,7 +84,7 @@ async function createBrowserInstanceShared(uniqueId = null) {
   // Use incognito mode to avoid any data directory issues
   options.addArguments('--incognito');
   
-  // Ultra-fast Chrome options optimized for parallel creation speed
+  // Ultra-stable Chrome options for multi-browser tests
   options.addArguments(
     '--no-sandbox',
     '--disable-dev-shm-usage',
@@ -119,7 +119,24 @@ async function createBrowserInstanceShared(uniqueId = null) {
     '--safebrowsing-disable-auto-update',
     '--disable-features=VizDisplayCompositor',
     '--disable-dev-shm-usage',
-    '--disable-shared-memory-support'
+    '--disable-shared-memory-support',
+    // Additional stability options for multi-browser tests
+    '--max_old_space_size=1024',
+    '--memory-pressure-off',
+    '--disable-background-downloads',
+    '--disable-breakpad',
+    '--disable-component-update',
+    '--disable-print-preview',
+    '--disable-web-security',
+    '--allow-running-insecure-content',
+    '--disable-notifications',
+    '--disable-popup-blocking',
+    '--disable-save-password-bubble',
+    '--disable-translate',
+    '--disable-web-resources',
+    '--force-device-scale-factor=1',
+    '--hide-scrollbars',
+    '--mute-audio'
   );
   
   const driver = await new Builder()
@@ -127,10 +144,62 @@ async function createBrowserInstanceShared(uniqueId = null) {
     .setChromeOptions(options)
     .build();
     
-  // Use window size from Chrome options, avoid setRect to prevent window state conflicts
-  console.log(`🖥️ Browser window using size from Chrome options (1920x1080)`);
+  // Test browser immediately to ensure it's working
+  try {
+    await driver.get('about:blank');
+    await driver.manage().setTimeouts({ 
+      implicit: 10000,
+      pageLoad: 30000,
+      script: 30000
+    });
+    
+    // Force garbage collection to free memory
+    await driver.executeScript('if (window.gc) { window.gc(); }');
+    
+    console.log(`🖥️ Browser window created and tested successfully (1920x1080)`);
+  } catch (testError) {
+    console.log(`⚠️ Browser creation test failed: ${testError.message}`);
+    try {
+      await driver.quit();
+    } catch (quitError) {
+      console.log(`⚠️ Error quitting failed browser: ${quitError.message}`);
+    }
+    throw new Error('Browser creation test failed');
+  }
     
   return driver;
+}
+
+/**
+ * Check if a browser is still healthy and responsive
+ * @param {WebDriver} driver - Browser driver
+ * @returns {Promise<boolean>} Health status
+ */
+async function checkBrowserHealth(driver) {
+  try {
+    await driver.getTitle();
+    return true;
+  } catch (error) {
+    console.log(`🩺 Browser health check failed: ${error.message}`);
+    return false;
+  }
+}
+
+/**
+ * Recreate a crashed browser
+ * @param {string} uniqueId - Unique identifier
+ * @returns {Promise<WebDriver|null>} New driver or null if failed
+ */
+async function recreateBrowser(uniqueId) {
+  try {
+    console.log(`🔄 Recreating crashed browser: ${uniqueId}`);
+    const newDriver = await createBrowserInstanceShared(uniqueId);
+    console.log(`✅ Browser recreated successfully: ${uniqueId}`);
+    return newDriver;
+  } catch (error) {
+    console.log(`❌ Failed to recreate browser: ${error.message}`);
+    return null;
+  }
 }
 
 /**
@@ -168,6 +237,16 @@ async function navigateToGameShared(driver, tableId, playerName = null) {
       return true;
     } catch (navError) {
       console.log(`⚠️ Navigation attempt ${attempt} failed: ${navError.message}`);
+      
+      // Check if this is a browser connection error
+      if (navError.message.includes('ECONNREFUSED')) {
+        console.log(`🩺 Browser connection lost - checking health...`);
+        const isHealthy = await checkBrowserHealth(driver);
+        if (!isHealthy) {
+          console.log(`💀 Browser is dead - cannot recover during navigation`);
+          return false;
+        }
+      }
       
       if (attempt < maxRetries) {
         console.log(`🔄 Retrying navigation in 1 second...`);
@@ -224,7 +303,42 @@ async function cleanupBrowsersShared() {
         }
       }
     }
+    
+    // Clear the global players object
+    global.players = {};
+    console.log('✅ Global players cleared');
   }
+}
+
+/**
+ * Cleanup entire browser pool and reset state
+ * @returns {Promise<void>}
+ */
+async function cleanupBrowserPool() {
+  console.log('🧹 Cleaning up browser pool...');
+  
+  // First cleanup any assigned players
+  await cleanupBrowsersShared();
+  
+  // Then cleanup the pool itself
+  if (globalBrowserPool && globalBrowserPool.length > 0) {
+    for (const browser of globalBrowserPool) {
+      try {
+        if (browser && browser.driver) {
+          await browser.driver.quit();
+          console.log(`✅ Pool browser ${browser.id} closed`);
+        }
+      } catch (error) {
+        console.log(`⚠️ Error closing pool browser ${browser.id}: ${error.message}`);
+      }
+    }
+  }
+  
+  // Reset pool state
+  globalBrowserPool = [];
+  browserPoolInitialized = false;
+  
+  console.log('✅ Browser pool cleaned up and reset');
 }
 
 // ===== BROWSER POOL MANAGEMENT =====
@@ -258,29 +372,35 @@ async function initializeBrowserPool() {
     globalBrowserPool = [];
   }
   
-  const browserPromises = [];
+  // Create browsers sequentially for better stability
+  globalBrowserPool = [];
   
-  // Create exactly 5 browser instances in parallel
   for (let i = 1; i <= 5; i++) {
-    const browserPromise = (async () => {
+    try {
       const uniqueId = `Pool-${i}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      console.log(`🌐 Creating browser instance ${i}/5...`);
       
-      try {
-        console.log(`🌐 Creating browser instance ${i}/5...`);
-        const driver = await createBrowserInstanceShared(uniqueId);
-        console.log(`✅ Browser instance ${i}/5 created successfully`);
-        return { id: i, driver: driver, available: true };
-      } catch (error) {
-        console.error(`❌ Failed to create browser instance ${i}/5: ${error.message}`);
-        throw error;
+      const driver = await createBrowserInstanceShared(uniqueId);
+      globalBrowserPool.push({ id: i, driver: driver, available: true });
+      console.log(`✅ Browser instance ${i}/5 created successfully`);
+      
+      // Small delay between browser creations to prevent resource conflicts
+      await new Promise(resolve => setTimeout(resolve, 1500));
+    } catch (error) {
+      console.error(`❌ Failed to create browser instance ${i}/5: ${error.message}`);
+      // Clean up any browsers created so far
+      for (const browser of globalBrowserPool) {
+        try {
+          await browser.driver.quit();
+        } catch (cleanupError) {
+          console.log('⚠️ Error during cleanup:', cleanupError.message);
+        }
       }
-    })();
-    
-    browserPromises.push(browserPromise);
+      return false;
+    }
   }
   
   try {
-    globalBrowserPool = await Promise.all(browserPromises);
     browserPoolInitialized = true;
     console.log('🎉 Browser pool initialized successfully with 5 instances!');
     return true;
@@ -475,6 +595,7 @@ module.exports = {
   navigateToGameShared,
   startGameShared,
   cleanupBrowsersShared,
+  cleanupBrowserPool,
   setup5PlayersShared,
   initializeBrowserPool,
   getBrowserFromPool

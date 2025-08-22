@@ -36,6 +36,8 @@
     "test:5player:full": "./scripts/test-5player-with-server.sh",
     "test:5player:full:concurrent": "concurrently --kill-others-on-fail --success first \"npm run backend\" \"wait-on http://localhost:3001 --timeout 30000 && cd selenium && HEADLESS=true SELENIUM_WAIT_TIMEOUT=30000 NETWORK_TIMEOUT=30000 npx cucumber-js features/5-player-comprehensive-game-scenario.feature --require step_definitions/2-player-game-steps.js --require step_definitions/5-player-comprehensive-steps.js --require step_definitions/hooks.js --format @cucumber/pretty-formatter\"",
     "test:5player:full:headed": "concurrently --kill-others-on-fail --success first \"npm run backend\" \"wait-on http://localhost:3001 && cd selenium && HEADLESS=false SELENIUM_WAIT_TIMEOUT=30000 NETWORK_TIMEOUT=30000 npx cucumber-js features/5-player-comprehensive-game-scenario.feature --require step_definitions/2-player-game-steps.js --require step_definitions/5-player-comprehensive-steps.js --require step_definitions/hooks.js --format @cucumber/pretty-formatter\"",
+    "test:5player:mock": "concurrently --kill-others-on-fail --success first \"npm run frontend\" \"wait-on http://localhost:3000 && HEADLESS=true MOCK_BACKEND=true npx cucumber-js selenium/features/5-player-comprehensive-game-scenario.feature --require selenium/step_definitions/5-player-comprehensive-steps.js --require selenium/step_definitions/hooks.js --format @cucumber/pretty-formatter --tags '@comprehensive-5-player'\"",
+    "test:5player:mock:headed": "concurrently --kill-others-on-fail --success first \"npm run frontend\" \"wait-on http://localhost:3000 && HEADLESS=false MOCK_BACKEND=true npx cucumber-js selenium/features/5-player-comprehensive-game-scenario.feature --require selenium/step_definitions/5-player-comprehensive-steps.js --require selenium/step_definitions/hooks.js --format @cucumber/pretty-formatter --tags '@comprehensive-5-player'\"",
     "test:2player:full": "concurrently --kill-others-on-fail --success first \"npm run backend\" \"wait-on http://localhost:3001 && cd selenium && HEADLESS=true SELENIUM_WAIT_TIMEOUT=30000 NETWORK_TIMEOUT=30000 npx cucumber-js features/2-player-complete-game-scenario.feature --require step_definitions/2-player-game-steps.js --require step_definitions/hooks.js --format @cucumber/pretty-formatter\"",
     "coverage:analyze": "node selenium/utils/runCoverageAnalysis.js",
     "coverage:compare": "node selenium/utils/runCoverageComparison.js",
@@ -82,7 +84,10 @@
   },
   "dependencies": {
     "axios": "^1.10.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
     "node-fetch": "^2.7.0",
+    "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1"
   }
 }

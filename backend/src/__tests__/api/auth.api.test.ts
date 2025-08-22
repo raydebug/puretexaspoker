@@ -44,21 +44,41 @@ describe('Auth API Integration Tests', () => {
       }
     });
 
-    // Verify roles were created successfully
-    const verifyPlayerRole = await prisma.role.findUnique({ where: { name: 'player' } });
-    const verifyAdminRole = await prisma.role.findUnique({ where: { name: 'admin' } });
+    // Verify roles were created successfully with retry
+    let verifyPlayerRole, verifyAdminRole;
+    let retries = 3;
+    
+    while (retries > 0) {
+      verifyPlayerRole = await prisma.role.findUnique({ where: { name: 'player' } });
+      verifyAdminRole = await prisma.role.findUnique({ where: { name: 'admin' } });
+      
+      if (verifyPlayerRole && verifyAdminRole) {
+        break;
+      }
+      
+      retries--;
+      if (retries > 0) {
+        await new Promise(resolve => setTimeout(resolve, 50)); // Small delay
+      }
+    }
     
     if (!verifyPlayerRole || !verifyAdminRole) {
+      console.error('Role verification failed:', { verifyPlayerRole, verifyAdminRole });
       throw new Error('Failed to create test roles properly');
     }
 
-    // Create a test user for authenticated endpoints
-    testUser = await authService.register({
-      username: 'testuser',
-      email: 'test@example.com',
-      password: 'password123',
-      displayName: 'Test User'
-    });
+    // Create a test user for authenticated endpoints  
+    try {
+      testUser = await authService.register({
+        username: 'testuser',
+        email: 'test@example.com',
+        password: 'password123',
+        displayName: 'Test User'
+      });
+    } catch (error) {
+      console.error('Test user creation failed:', error);
+      throw error;
+    }
   });
 
   afterEach(async () => {

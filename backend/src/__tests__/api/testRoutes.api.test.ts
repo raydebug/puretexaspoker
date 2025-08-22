@@ -210,12 +210,18 @@ describe.skip('Test Routes API Integration Tests (skipped - missing dependencies
     describe('POST /api/test/get_game_state', () => {
       it('should get game state successfully', async () => {
         const mockTableState = {
-          tableId: 1,
-          status: 'playing',
-          phase: 'flop',
-          players: [{ id: 'player1', name: 'Player1', chips: 1000 }],
-          pot: 50,
-          communityCards: ['A♠', 'K♥']
+          id: 1,
+          name: 'Test Table',
+          players: 1,
+          maxPlayers: 6,
+          observers: 0,
+          status: 'active' as const,
+          stakes: '$5/$10',
+          gameType: 'No Limit' as const,
+          smallBlind: 5,
+          bigBlind: 10,
+          minBuyIn: 100,
+          maxBuyIn: 1000
         };
 
         mockTableManager.getTable.mockReturnValue(mockTableState);
@@ -256,9 +262,18 @@ describe.skip('Test Routes API Integration Tests (skipped - missing dependencies
     describe('POST /api/test/emit_game_state', () => {
       it('should emit game state successfully', async () => {
         const mockTableState = {
-          tableId: 1,
-          status: 'playing',
-          players: [{ id: 'player1', name: 'Player1' }]
+          id: 1,
+          name: 'Test Table',
+          players: 1,
+          maxPlayers: 6,
+          observers: 0,
+          status: 'active' as const,
+          stakes: '$5/$10',
+          gameType: 'No Limit' as const,
+          smallBlind: 5,
+          bigBlind: 10,
+          minBuyIn: 100,
+          maxBuyIn: 1000
         };
 
         mockTableManager.getTable.mockReturnValue(mockTableState);
@@ -286,9 +301,18 @@ describe.skip('Test Routes API Integration Tests (skipped - missing dependencies
 
       it('should handle emit without socket connection', async () => {
         const mockTableState = {
-          tableId: 1,
-          status: 'playing',
-          players: []
+          id: 1,
+          name: 'Test Table',
+          players: 0,
+          maxPlayers: 6,
+          observers: 0,
+          status: 'waiting' as const,
+          stakes: '$5/$10',
+          gameType: 'No Limit' as const,
+          smallBlind: 5,
+          bigBlind: 10,
+          minBuyIn: 100,
+          maxBuyIn: 1000
         };
 
         mockTableManager.getTable.mockReturnValue(mockTableState);
@@ -394,7 +418,7 @@ describe.skip('Test Routes API Integration Tests (skipped - missing dependencies
         };
 
         mockTableManager.getTable.mockReturnValue(mockTable);
-        mockTableManager.startGame.mockResolvedValue(true);
+        mockTableManager.startTableGame.mockResolvedValue({ success: true });
 
         const response = await request(app)
           .post('/api/test/start-game')
@@ -403,7 +427,7 @@ describe.skip('Test Routes API Integration Tests (skipped - missing dependencies
 
         expect(response.body.success).toBe(true);
         expect(response.body.message).toBe('Game started successfully');
-        expect(mockTableManager.startGame).toHaveBeenCalledWith(1);
+        expect(mockTableManager.startTableGame).toHaveBeenCalledWith(1);
       });
 
       it('should handle missing tableId', async () => {
@@ -432,13 +456,22 @@ describe.skip('Test Routes API Integration Tests (skipped - missing dependencies
     describe('POST /api/test/advance-phase', () => {
       it('should advance game phase successfully', async () => {
         const mockTable = {
-          tableId: 1,
-          phase: 'preflop',
-          communityCards: []
+          id: 1,
+          name: 'Test Table',
+          players: 0,
+          maxPlayers: 6,
+          observers: 0,
+          status: 'waiting' as const,
+          stakes: '$5/$10',
+          gameType: 'No Limit' as const,
+          smallBlind: 5,
+          bigBlind: 10,
+          minBuyIn: 100,
+          maxBuyIn: 1000
         };
 
         mockTableManager.getTable.mockReturnValue(mockTable);
-        mockTableManager.advanceToPhase.mockResolvedValue(true);
+        // Note: advanceToPhase method doesn't exist in current TableManager
 
         const response = await request(app)
           .post('/api/test/advance-phase')
@@ -455,12 +488,25 @@ describe.skip('Test Routes API Integration Tests (skipped - missing dependencies
 
         expect(response.body.success).toBe(true);
         expect(response.body.message).toBe('Phase advanced successfully');
-        expect(mockTableManager.advanceToPhase).toHaveBeenCalled();
+        // expect(mockTableManager.advanceToPhase).toHaveBeenCalled(); // Method doesn't exist
       });
 
       it('should handle invalid phase advancement', async () => {
-        mockTableManager.getTable.mockReturnValue({ tableId: 1, phase: 'preflop' });
-        mockTableManager.advanceToPhase.mockRejectedValue(new Error('Invalid phase transition'));
+        mockTableManager.getTable.mockReturnValue({ 
+          id: 1, 
+          name: 'Test Table', 
+          players: 0, 
+          maxPlayers: 6, 
+          observers: 0, 
+          status: 'waiting' as const,
+          stakes: '$5/$10',
+          gameType: 'No Limit' as const,
+          smallBlind: 5, 
+          bigBlind: 10, 
+          minBuyIn: 100, 
+          maxBuyIn: 1000
+        });
+        // mockTableManager.advanceToPhase.mockRejectedValue(new Error('Invalid phase transition')); // Method doesn't exist
 
         const response = await request(app)
           .post('/api/test/advance-phase')
@@ -475,13 +521,22 @@ describe.skip('Test Routes API Integration Tests (skipped - missing dependencies
     describe('POST /api/test/raise', () => {
       it('should handle raise action successfully', async () => {
         const mockTable = {
-          tableId: 1,
-          currentPlayerId: 'player1',
-          players: [{ id: 'player1', chips: 1000 }]
+          id: 1,
+          name: 'Test Table',
+          players: 1,
+          maxPlayers: 6,
+          observers: 0,
+          status: 'active' as const,
+          stakes: '$5/$10',
+          gameType: 'No Limit' as const,
+          smallBlind: 5,
+          bigBlind: 10,
+          minBuyIn: 100,
+          maxBuyIn: 1000
         };
 
         mockTableManager.getTable.mockReturnValue(mockTable);
-        mockTableManager.handlePlayerAction.mockResolvedValue({ success: true });
+        mockTableManager.playerAction.mockResolvedValue({ success: true });
 
         const response = await request(app)
           .post('/api/test/raise')
@@ -494,7 +549,7 @@ describe.skip('Test Routes API Integration Tests (skipped - missing dependencies
 
         expect(response.body.success).toBe(true);
         expect(response.body.message).toBe('Raise action completed');
-        expect(mockTableManager.handlePlayerAction).toHaveBeenCalledWith(
+        expect(mockTableManager.playerAction).toHaveBeenCalledWith(
           1,
           'player1',
           'raise',
@@ -520,13 +575,22 @@ describe.skip('Test Routes API Integration Tests (skipped - missing dependencies
     describe('POST /api/test/call', () => {
       it('should handle call action successfully', async () => {
         const mockTable = {
-          tableId: 1,
-          currentPlayerId: 'player1',
-          players: [{ id: 'player1', chips: 1000 }]
+          id: 1,
+          name: 'Test Table',
+          players: 1,
+          maxPlayers: 6,
+          observers: 0,
+          status: 'active' as const,
+          stakes: '$5/$10',
+          gameType: 'No Limit' as const,
+          smallBlind: 5,
+          bigBlind: 10,
+          minBuyIn: 100,
+          maxBuyIn: 1000
         };
 
         mockTableManager.getTable.mockReturnValue(mockTable);
-        mockTableManager.handlePlayerAction.mockResolvedValue({ success: true });
+        mockTableManager.playerAction.mockResolvedValue({ success: true });
 
         const response = await request(app)
           .post('/api/test/call')
@@ -538,7 +602,7 @@ describe.skip('Test Routes API Integration Tests (skipped - missing dependencies
 
         expect(response.body.success).toBe(true);
         expect(response.body.message).toBe('Call action completed');
-        expect(mockTableManager.handlePlayerAction).toHaveBeenCalledWith(
+        expect(mockTableManager.playerAction).toHaveBeenCalledWith(
           1,
           'player1',
           'call',
@@ -550,13 +614,22 @@ describe.skip('Test Routes API Integration Tests (skipped - missing dependencies
     describe('POST /api/test/fold', () => {
       it('should handle fold action successfully', async () => {
         const mockTable = {
-          tableId: 1,
-          currentPlayerId: 'player1',
-          players: [{ id: 'player1', chips: 1000 }]
+          id: 1,
+          name: 'Test Table',
+          players: 1,
+          maxPlayers: 6,
+          observers: 0,
+          status: 'active' as const,
+          stakes: '$5/$10',
+          gameType: 'No Limit' as const,
+          smallBlind: 5,
+          bigBlind: 10,
+          minBuyIn: 100,
+          maxBuyIn: 1000
         };
 
         mockTableManager.getTable.mockReturnValue(mockTable);
-        mockTableManager.handlePlayerAction.mockResolvedValue({ success: true });
+        mockTableManager.playerAction.mockResolvedValue({ success: true });
 
         const response = await request(app)
           .post('/api/test/fold')
@@ -568,7 +641,7 @@ describe.skip('Test Routes API Integration Tests (skipped - missing dependencies
 
         expect(response.body.success).toBe(true);
         expect(response.body.message).toBe('Fold action completed');
-        expect(mockTableManager.handlePlayerAction).toHaveBeenCalledWith(
+        expect(mockTableManager.playerAction).toHaveBeenCalledWith(
           1,
           'player1',
           'fold',

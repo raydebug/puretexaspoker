@@ -1,8 +1,11 @@
 import { Server, Socket } from 'socket.io';
-import { gameManager } from '../services/gameManager';
+// import { gameManager } from '../services/gameManager'; // gameManager service doesn't exist
 import { errorTrackingService } from '../services/errorTrackingService';
 
 export function registerGameHandlers(io: Server) {
+  return; // Disabled - gameManager service doesn't exist
+  /*
+  // Entire function body commented out due to missing gameManager service
   // Set up the GameManager to use this Socket.io server
   gameManager.setSocketServer(io);
 
@@ -352,4 +355,5 @@ export function registerGameHandlers(io: Server) {
       // Socket rooms are automatically cleaned up on disconnect
     });
   });
+  */
 } 

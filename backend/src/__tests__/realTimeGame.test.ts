@@ -15,18 +15,18 @@ describe.skip('Real-time Game Integration', () => {
 
   beforeEach(async () => {
     // Clean up database
-    await prisma.gameAction.deleteMany();
-    await prisma.game.deleteMany();
+    // Clean up existing data - using models that exist in current schema
+    await prisma.tableAction.deleteMany();
     await prisma.playerTable.deleteMany();
     await prisma.player.deleteMany();
     await prisma.table.deleteMany();
 
     // Create test data
     const player1 = await prisma.player.create({
-      data: { nickname: 'RealTimePlayer1', chips: 1000 }
+      data: { id: 'RealTimePlayer1', nickname: 'RealTimePlayer1', chips: 1000 }
     });
     const player2 = await prisma.player.create({
-      data: { nickname: 'RealTimePlayer2', chips: 1000 }
+      data: { id: 'RealTimePlayer2', nickname: 'RealTimePlayer2', chips: 1000 }
     });
     playerId1 = player1.id;
     playerId2 = player2.id;
@@ -41,12 +41,12 @@ describe.skip('Real-time Game Integration', () => {
         maxBuyIn: 1000
       }
     });
-    tableId = table.id;
+    tableId = table.id.toString();
 
     await prisma.playerTable.createMany({
       data: [
-        { playerId: playerId1, tableId, seatNumber: 1, buyIn: 500 },
-        { playerId: playerId2, tableId, seatNumber: 2, buyIn: 500 }
+        { playerId: playerId1, tableId: table.id, seatNumber: 1, buyIn: 500 },
+        { playerId: playerId2, tableId: table.id, seatNumber: 2, buyIn: 500 }
       ]
     });
 

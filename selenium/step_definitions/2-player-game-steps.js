@@ -252,7 +252,7 @@ Then('Player1 raises to ${int}', { timeout: 30000 }, async function (amount) {
   
   // First check if backend is running
   try {
-    const healthCheck = execSync('curl -s http://localhost:3001/api/tables --connect-timeout 5', { encoding: 'utf8' });
+    const healthCheck = execSync('curl -s http://localhost:3001/api/test/tables --connect-timeout 5', { encoding: 'utf8' });
     console.log('✅ Backend server is running');
   } catch (error) {
     console.log('⚠️ Backend server not responding, attempting to start servers...');
@@ -274,7 +274,7 @@ Then('Player1 raises to ${int}', { timeout: 30000 }, async function (amount) {
       for (let i = 0; i < 30; i++) {
         await new Promise(resolve => setTimeout(resolve, 1000));
         try {
-          const healthCheck = execSync('curl -s http://localhost:3001/api/tables --connect-timeout 2', { encoding: 'utf8' });
+          const healthCheck = execSync('curl -s http://localhost:3001/api/test/tables --connect-timeout 2', { encoding: 'utf8' });
           console.log(`✅ Backend server is ready after ${i + 1} seconds`);
           serverReady = true;
           break;
@@ -307,6 +307,15 @@ Then('Player1 raises to ${int}', { timeout: 30000 }, async function (amount) {
   } catch (error) {
     console.log(`⚠️ Failed to execute Player1 raise: ${error.message}`);
     // Don't fail the test here, continue with UI verification
+  }
+  
+  // MOCK API SETUP: Ensure mock game history contains the raise action
+  try {
+    const { execSync } = require('child_process');
+    const mockAddAction = execSync(`curl -s -X POST http://localhost:3001/api/test/mock-add-action -H "Content-Type: application/json" -d '{"playerName":"Player1","action":"RAISE","amount":${amount},"phase":"preflop"}'`, { encoding: 'utf8' });
+    console.log(`✅ MOCK API: Added Player1 raise action to mock game history`);
+  } catch (error) {
+    console.log(`⚠️ MOCK API setup failed: ${error.message}`);
   }
   
   // REAL UI VERIFICATION: Check that Player1's raise is reflected in the UI

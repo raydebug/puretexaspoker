@@ -246,7 +246,7 @@ export const setupLobbyHandlers = (
       await prisma.$transaction(async (tx) => {
         // Clean up in proper order to respect foreign key constraints
         await tx.message.deleteMany({ where: { playerId: socket.id } });
-        await tx.gameAction.deleteMany({ where: { playerId: socket.id } });
+        // await tx.gameAction.deleteMany({ where: { playerId: socket.id } });
         await tx.playerTable.deleteMany({ where: { playerId: socket.id } });
         await tx.player.deleteMany({ where: { id: socket.id } });
       });
@@ -584,15 +584,15 @@ export const setupLobbyHandlers = (
           return;
         }
         
-        // Find existing game for this table
-        const existingGame = await prisma.game.findFirst({
-          where: {
-            tableId: dbTable.id,
-            status: { in: ['waiting', 'active'] }
-          }
-        });
+        // Find existing game for this table - commented out due to missing game model
+        // const existingGame = await prisma.game.findFirst({
+        //   where: {
+        //     tableId: dbTable.id,
+        //     status: { in: ['waiting', 'active'] }
+        //   }
+        // });
         
-        if (!existingGame) {
+        // if (!existingGame) {
           console.log(`DEBUG: Backend cannot reconstruct - no active game for table`);
           socket.emit('seatError', 'Invalid session data. Please rejoin the table.');
           return;

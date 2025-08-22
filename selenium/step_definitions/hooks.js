@@ -4,6 +4,8 @@ const { exec } = require('child_process')
 const { promisify } = require('util')
 const path = require('path')
 const fs = require('fs')
+const { cleanupBrowserPool } = require('./shared-test-utilities')
+const { testUtils } = require('../mocks/testUtils')
 
 const execAsync = promisify(exec)
 
@@ -95,9 +97,21 @@ async function checkServersRunning() {
   
   const checks = [
     {
-      name: 'Backend API',
-      url: 'http://localhost:3001/api/tables',
+      name: 'Frontend Server',
+      url: 'http://localhost:3000',
       timeout: 8000,
+      required: true
+    },
+    {
+      name: 'Backend API',
+              url: 'http://localhost:3001/api/test/tables',
+      timeout: 8000,
+      required: true
+    },
+    {
+      name: 'Game Page',
+      url: 'http://localhost:3000/game?table=4',
+      timeout: 10000,
       required: true
     }
   ]
@@ -112,22 +126,23 @@ async function checkServersRunning() {
           timeout: check.timeout,
           validateStatus: (status) => status >= 200 && status < 400
         })
-        console.log(`✅ ${check.name} OK`)
+        console.log(`✅ ${check.name} OK (Status: ${response.status})`)
         success = true
       } catch (error) {
         retries--
-        console.log(`⚠️ ${check.name} check failed (${3 - retries}/3): `)
+        console.log(`⚠️ ${check.name} check failed (${3 - retries}/3): ${error.message}`)
         
         if (retries > 0) {
+          console.log(`   Retrying in 3 seconds...`)
           await new Promise(resolve => setTimeout(resolve, 3000))
         } else {
-          throw new Error(`${check.name} is not accessible after 3 attempts`)
+          throw new Error(`${check.name} is not accessible after 3 attempts - ${error.message}`)
         }
       }
     }
   }
   
-  console.log('🎯 Backend API ready!')
+  console.log('🎯 All servers ready!')
 }
 
 // Enhanced environment preparation
@@ -172,16 +187,36 @@ BeforeAll({timeout: 120000}, async function() {
     await killAllChromeInstances()
     await prepareTestEnvironment()
     
-    // Step 2: Wait for environment to stabilize
-    await new Promise(resolve => setTimeout(resolve, 5000))
-    
-         // Step 3: Verify servers are running (mandatory)
-     try {
-       await checkServersRunning()
-     } catch (error) {
-       console.log(`❌ Server check failed: ${error.message}`)
-       throw new Error(`Cannot run tests - backend server required: ${error.message}`)
-     }
+    // Step 2.5: Start mock backend if MOCK_BACKEND=true
+    if (process.env.MOCK_BACKEND === 'true') {
+      console.log('🎭 Starting mock backend server...')
+      try {
+        await testUtils.startMockServer(3001)
+        console.log('✅ Mock backend server started successfully')
+        
+        // Verify mock server health
+        await testUtils.checkHealth()
+        console.log('✅ Mock backend health check passed')
+        
+        // Wait for mock server to be fully ready
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        
+      } catch (error) {
+        console.error('❌ Failed to start mock backend:', error.message)
+        throw new Error(`Mock backend startup failed: ${error.message}`)
+      }
+    } else {
+      // Step 2: Wait for environment to stabilize
+      await new Promise(resolve => setTimeout(resolve, 5000))
+      
+      // Step 3: Verify servers are running (mandatory for real backend)
+      try {
+        await checkServersRunning()
+      } catch (error) {
+        console.log(`❌ Server check failed: ${error.message}`)
+        throw new Error(`Cannot run tests - backend server required: ${error.message}`)
+      }
+    }
     
     // Step 4: Test environment ready
     if (process.env.MULTI_BROWSER_TEST !== 'true') {
@@ -283,8 +318,12 @@ After({timeout: 60000}, async function(scenario) {
   } else {
     console.log('🔥 Multi-browser test - performing comprehensive browser cleanup')
     
-    // For multi-browser tests, do aggressive cleanup
-    await killAllChromeInstances()
+    // PERSISTENT POOL: Don't cleanup browser pool after each scenario
+    // Browser pool should persist for entire test session
+    console.log('🏊‍♂️ Keeping browser pool persistent for performance')
+    
+    // PERSISTENT POOL: Skip aggressive Chrome cleanup to preserve browser instances
+    console.log('🏊‍♂️ Preserving Chrome instances for persistent browser pool')
     
     // Additional cleanup for failed scenarios
     if (scenarioStatus === Status.FAILED) {
@@ -312,6 +351,25 @@ AfterAll({timeout: 60000}, async function() {
   console.log('🏁 Starting final enhanced cleanup...')
   
   try {
+    // Stop mock backend server if it was started
+    if (process.env.MOCK_BACKEND === 'true') {
+      console.log('🎭 Stopping mock backend server...')
+      try {
+        await testUtils.stopMockServer()
+        console.log('✅ Mock backend server stopped successfully')
+      } catch (error) {
+        console.log(`⚠️ Mock backend cleanup failed: ${error.message}`)
+      }
+    }
+    
+    // FINAL CLEANUP: Now we properly cleanup browser pool at test suite end
+    try {
+      await cleanupBrowserPool()
+      console.log('✅ Browser pool cleaned up at test suite end')
+    } catch (error) {
+      console.log(`⚠️ Browser pool cleanup failed: ${error.message}`)
+    }
+    
     // Comprehensive final cleanup
     await killAllChromeInstances()
     

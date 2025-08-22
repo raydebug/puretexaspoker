@@ -15,6 +15,7 @@ describe.skip('Card Dealing Integration', () => {
     // Create players
     const player1 = await prisma.player.create({
       data: {
+        id: 'TestPlayer1',
         nickname: 'TestPlayer1',
         chips: 1000
       }
@@ -22,6 +23,7 @@ describe.skip('Card Dealing Integration', () => {
 
     const player2 = await prisma.player.create({
       data: {
+        id: 'TestPlayer2',
         nickname: 'TestPlayer2',
         chips: 1000
       }
@@ -42,13 +44,13 @@ describe.skip('Card Dealing Integration', () => {
       }
     });
 
-    tableId = table.id;
+    tableId = table.id.toString();
 
     // Add players to table
     await prisma.playerTable.create({
       data: {
         playerId: playerId1,
-        tableId,
+        tableId: table.id,
         seatNumber: 1,
         buyIn: 500
       }
@@ -57,7 +59,7 @@ describe.skip('Card Dealing Integration', () => {
     await prisma.playerTable.create({
       data: {
         playerId: playerId2,
-        tableId,
+        tableId: table.id,
         seatNumber: 2,
         buyIn: 500
       }

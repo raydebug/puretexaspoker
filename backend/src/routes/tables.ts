@@ -308,7 +308,7 @@ router.get('/:tableId/actions/history', async (req, res) => {
 
       // Transform actions to match ActionHistory component interface
       const actionHistory = actions.map(action => ({
-        id: action.id.toString(),
+        id: `GH-${action.id}`,
         playerId: action.playerId,
         playerName: action.playerId, // playerId is actually the player nickname
         action: action.type,

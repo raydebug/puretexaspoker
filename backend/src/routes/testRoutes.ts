@@ -13,8 +13,290 @@ import { v4 as uuidv4 } from 'uuid';
 const execAsync = promisify(exec);
 const router = express.Router();
 
+// Global test state to track current game phase for progressive history
+let currentTestPhase = 'setup';
+let testActionCounter = 0;
+
 // Test-only API endpoints with test_ prefix
 // These APIs are only for testing purposes and should not be used in production
+
+/**
+ * TEST API: Set current test phase for progressive game history
+ * POST /api/test/set-game-phase
+ */
+router.post('/set-game-phase', async (req, res) => {
+  try {
+    const { phase, actionCount } = req.body;
+    currentTestPhase = phase || 'setup';
+    testActionCounter = actionCount || testActionCounter;
+    
+    console.log(`🧪 TEST: Set phase to "${currentTestPhase}" with ${testActionCounter} actions`);
+    
+    res.json({ 
+      success: true, 
+      phase: currentTestPhase,
+      actionCount: testActionCounter
+    });
+  } catch (error) {
+    console.error('❌ TEST API Error setting phase:', error);
+    res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+/**
+ * TEST API: Get progressive game history for UI testing
+ * GET /api/test/progressive-game-history/:tableId
+ */
+router.get('/progressive-game-history/:tableId', async (req, res) => {
+  try {
+    const { tableId } = req.params;
+    
+    // Generate progressive actions based on current test phase
+    const progressiveActions = generateProgressiveGameHistory(currentTestPhase, testActionCounter);
+    
+    console.log(`🧪 TEST: Progressive history for table ${tableId}, phase: ${currentTestPhase}, actions: ${progressiveActions.length}`);
+    
+    res.json({
+      success: true,
+      actionHistory: progressiveActions,
+      tableId: parseInt(tableId),
+      currentPhase: currentTestPhase,
+      totalActions: progressiveActions.length
+    });
+  } catch (error) {
+    console.error('❌ TEST API Error getting progressive history:', error);
+    res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+/**
+ * Generate progressive game history based on test phase
+ */
+function generateProgressiveGameHistory(phase: string, maxActions: number = 20) {
+  const baseActions = [
+    {
+      id: 'GH-1',
+      playerId: 'Player1', 
+      playerName: 'Player1',
+      action: 'Small_Blind',
+      amount: 1,
+      phase: 'preflop',
+      handNumber: 1,
+      actionSequence: 1,
+      timestamp: new Date().toISOString()
+    },
+    {
+      id: 'GH-2',
+      playerId: 'Player2',
+      playerName: 'Player2', 
+      action: 'Big_Blind',
+      amount: 2,
+      phase: 'preflop',
+      handNumber: 1,
+      actionSequence: 2,
+      timestamp: new Date().toISOString()
+    }
+  ];
+  
+  // Add actions based on phase progression
+  if (phase.includes('fold') || maxActions >= 3) {
+    baseActions.push({
+      id: 'GH-3',
+      playerId: 'Player3',
+      playerName: 'Player3',
+      action: 'FOLD',
+      amount: 0,
+      phase: 'preflop',
+      handNumber: 1,
+      actionSequence: 3,
+      timestamp: new Date().toISOString()
+    });
+  }
+  
+  if (phase.includes('raise') || maxActions >= 4) {
+    baseActions.push({
+      id: 'GH-4',
+      playerId: 'Player4',
+      playerName: 'Player4',
+      action: 'RAISE',
+      amount: 8,
+      phase: 'preflop',
+      handNumber: 1,
+      actionSequence: 4,
+      timestamp: new Date().toISOString()
+    });
+  }
+  
+  if (phase.includes('3bet') || maxActions >= 5) {
+    baseActions.push({
+      id: 'GH-5',
+      playerId: 'Player5',
+      playerName: 'Player5',
+      action: 'RAISE',
+      amount: 24,
+      phase: 'preflop',
+      handNumber: 1,
+      actionSequence: 5,
+      timestamp: new Date().toISOString()
+    });
+  }
+  
+  if (phase.includes('sb_fold') || maxActions >= 6) {
+    baseActions.push({
+      id: 'GH-6',
+      playerId: 'Player1',
+      playerName: 'Player1',
+      action: 'FOLD',
+      amount: 0,
+      phase: 'preflop',
+      handNumber: 1,
+      actionSequence: 6,
+      timestamp: new Date().toISOString()
+    });
+  }
+  
+  if (phase.includes('call') || maxActions >= 7) {
+    baseActions.push({
+      id: 'GH-7',
+      playerId: 'Player2',
+      playerName: 'Player2',
+      action: 'CALL',
+      amount: 22,
+      phase: 'preflop',
+      handNumber: 1,
+      actionSequence: 7,
+      timestamp: new Date().toISOString()
+    });
+  }
+  
+  if (phase.includes('4bet') || maxActions >= 8) {
+    baseActions.push({
+      id: 'GH-8',
+      playerId: 'Player4',
+      playerName: 'Player4',
+      action: 'RAISE',
+      amount: 60,
+      phase: 'preflop',
+      handNumber: 1,
+      actionSequence: 8,
+      timestamp: new Date().toISOString()
+    });
+  }
+  
+  if (phase.includes('btn_fold') || maxActions >= 9) {
+    baseActions.push({
+      id: 'GH-9',
+      playerId: 'Player5',
+      playerName: 'Player5',
+      action: 'FOLD',
+      amount: 0,
+      phase: 'preflop',
+      handNumber: 1,
+      actionSequence: 9,
+      timestamp: new Date().toISOString()
+    });
+  }
+  
+  if (phase.includes('allin') || maxActions >= 10) {
+    baseActions.push({
+      id: 'GH-10',
+      playerId: 'Player2',
+      playerName: 'Player2',
+      action: 'ALL_IN',
+      amount: 76,
+      phase: 'preflop',
+      handNumber: 1,
+      actionSequence: 10,
+      timestamp: new Date().toISOString()
+    });
+  }
+  
+  if (phase.includes('call_allin') || maxActions >= 11) {
+    baseActions.push({
+      id: 'GH-11',
+      playerId: 'Player4',
+      playerName: 'Player4',
+      action: 'CALL',
+      amount: 40,
+      phase: 'preflop',
+      handNumber: 1,
+      actionSequence: 11,
+      timestamp: new Date().toISOString()
+    });
+  }
+  
+  // Add flop/turn/river actions if needed
+  if (phase.includes('flop') || maxActions >= 12) {
+    baseActions.push({
+      id: 'GH-12',
+      playerId: 'System',
+      playerName: 'System',
+      action: 'FLOP_REVEAL',
+      amount: 0,
+      phase: 'flop',
+      handNumber: 1,
+      actionSequence: 12,
+      timestamp: new Date().toISOString()
+    });
+  }
+  
+  // Return only the actions up to the current maxActions
+  return baseActions.slice(0, Math.min(baseActions.length, maxActions || 20));
+}
+
+// API endpoint to set the current test phase
+router.post('/api/test/set-game-phase', (req, res) => {
+  const { phase, maxActions } = req.body;
+  
+  console.log(`🧪 Received request body:`, req.body);
+  console.log(`🧪 Phase: ${phase}, maxActions: ${maxActions}`);
+  
+  if (phase) {
+    currentTestPhase = phase;
+    console.log(`🧪 Test phase updated to: ${phase}`);
+  }
+  
+  if (maxActions !== undefined) {
+    testActionCounter = maxActions;
+    console.log(`🧪 Test action counter updated to: ${maxActions}`);
+  }
+  
+  res.json({ 
+    success: true, 
+    phase: currentTestPhase,
+    actionCount: testActionCounter
+  });
+});
+
+// Progressive game history API endpoint for tests
+router.get('/api/test/progressive-game-history/:tableId', (req, res) => {
+  const { tableId } = req.params;
+  const { handNumber } = req.query;
+  
+  console.log(`🧪 Progressive game history requested for table ${tableId}, phase: ${currentTestPhase}, actions: ${testActionCounter}`);
+  
+  const progressiveActions = generateProgressiveGameHistory(currentTestPhase, testActionCounter || 20);
+  
+  res.json({
+    success: true,
+    actionHistory: progressiveActions,
+    testPhase: currentTestPhase,
+    totalActions: progressiveActions.length
+  });
+});
+
+// Reset test state
+router.post('/api/test/reset-game-state', (req, res) => {
+  currentTestPhase = 'setup';
+  testActionCounter = 0;
+  
+  console.log('🧪 Test game state reset');
+  
+  res.json({ 
+    success: true, 
+    message: 'Test state reset'
+  });
+});
 
 /**
  * TEST API: Create a mock table with predefined players
@@ -1345,36 +1627,7 @@ router.post('/create-test-data', async (req, res) => {
   }
 });
 
-// POST /api/test/start-game - Start a game for a specific table
-router.post('/start-game', async (req, res) => {
-  try {
-    const { tableId } = req.body;
-    
-    console.log(`🧪 TEST API: Start game request received for tableId: ${tableId}`);
-    
-    if (!tableId) {
-      return res.status(400).json({ success: false, error: 'No tableId provided' });
-    }
-
-    const targetTableId = parseInt(tableId);
-    if (isNaN(targetTableId)) {
-      return res.status(400).json({ success: false, error: 'Invalid tableId - must be a number' });
-    }
-
-    // Start the game using TableManager
-    const result = await req.app.get('tableManager').startTableGame(targetTableId);
-    
-    if (!result.success) {
-      return res.status(400).json({ success: false, error: result.error || 'Failed to start game' });
-    }
-
-    console.log(`✅ TEST API: Game started successfully for table: ${targetTableId}`);
-    res.json({ success: true, message: 'Game started successfully', gameState: result.gameState });
-  } catch (error) {
-    console.error('❌ TEST API: Error starting game:', error);
-    res.status(500).json({ success: false, error: 'Failed to start game' });
-  }
-});
+// Duplicate route removed to avoid conflicts
 
 // Use the auto-seat testing API instead
 router.post('/auto-seat', async (req, res) => {
@@ -2600,6 +2853,296 @@ router.post('/create-visible-elements', async (req, res) => {
       success: false,
       error: 'Failed to create visible UI elements' 
     });
+  }
+});
+
+/**
+ * MOCK GAME HISTORY APIs - Replace real API usage in UI tests
+ */
+
+// Global mock game history storage
+let mockGameHistory: any[] = [];
+let mockGameHistoryCounter = 0;
+
+/**
+ * MOCK API: Reset mock game history
+ * POST /api/test/mock-reset-game-history
+ */
+router.post('/mock-reset-game-history', async (req, res) => {
+  try {
+    mockGameHistory = [];
+    mockGameHistoryCounter = 0;
+    
+    console.log(`🧪 MOCK: Reset game history - cleared ${mockGameHistory.length} actions`);
+    
+    res.json({ 
+      success: true, 
+      message: 'Mock game history reset',
+      actionCount: 0
+    });
+  } catch (error) {
+    console.error('❌ MOCK API Error resetting game history:', error);
+    res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+/**
+ * MOCK API: Add action to mock game history
+ * POST /api/test/mock-add-action
+ */
+router.post('/mock-add-action', async (req, res) => {
+  try {
+    const { playerId, playerName, action, amount, phase, handNumber } = req.body;
+    
+    mockGameHistoryCounter++;
+    const newAction = {
+      id: `GH-${mockGameHistoryCounter}`,
+      playerId: playerId || 'Player1',
+      playerName: playerName || 'Player1',
+      action: action || 'FOLD',
+      amount: amount || 0,
+      phase: phase || 'preflop',
+      handNumber: handNumber || 1,
+      actionSequence: mockGameHistoryCounter,
+      timestamp: new Date().toISOString()
+    };
+    
+    mockGameHistory.push(newAction);
+    
+    console.log(`🧪 MOCK: Added action ${newAction.id} - ${playerName} ${action} $${amount}`);
+    
+    res.json({
+      success: true,
+      action: newAction,
+      totalActions: mockGameHistory.length
+    });
+  } catch (error) {
+    console.error('❌ MOCK API Error adding action:', error);
+    res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+/**
+ * MOCK API: Get mock game history (replaces /api/tables/:tableId/actions/history)
+ * GET /api/test/mock-game-history/:tableId
+ */
+router.get('/mock-game-history/:tableId', async (req, res) => {
+  try {
+    const { tableId } = req.params;
+    const { handNumber } = req.query;
+    
+    console.log(`🧪 MOCK: Get game history for table ${tableId}, actions: ${mockGameHistory.length}`);
+    
+    res.json({
+      success: true,
+      actionHistory: mockGameHistory,
+      tableId: parseInt(tableId),
+      handNumber: handNumber ? parseInt(handNumber as string) : 1,
+      count: mockGameHistory.length,
+      note: 'Mock game history data'
+    });
+  } catch (error) {
+    console.error('❌ MOCK API Error getting game history:', error);
+    res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+/**
+ * MOCK API: Set mock game history directly
+ * POST /api/test/mock-set-game-history
+ */
+router.post('/mock-set-game-history', async (req, res) => {
+  try {
+    const { actions } = req.body;
+    
+    if (Array.isArray(actions)) {
+      mockGameHistory = actions.map((action, index) => ({
+        id: action.id || `GH-${index + 1}`,
+        playerId: action.playerId || 'Player1',
+        playerName: action.playerName || 'Player1',
+        action: action.action || 'FOLD',
+        amount: action.amount || 0,
+        phase: action.phase || 'preflop',
+        handNumber: action.handNumber || 1,
+        actionSequence: action.actionSequence || index + 1,
+        timestamp: action.timestamp || new Date().toISOString()
+      }));
+      
+      mockGameHistoryCounter = mockGameHistory.length;
+    }
+    
+    console.log(`🧪 MOCK: Set game history with ${mockGameHistory.length} actions`);
+    
+    res.json({
+      success: true,
+      actionHistory: mockGameHistory,
+      totalActions: mockGameHistory.length
+    });
+  } catch (error) {
+    console.error('❌ MOCK API Error setting game history:', error);
+    res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+/**
+ * MOCK API: Get mock game history with specific action count
+ * GET /api/test/mock-game-history/:tableId/count/:count
+ */
+router.get('/mock-game-history/:tableId/count/:count', async (req, res) => {
+  try {
+    const { tableId, count } = req.params;
+    const actionCount = parseInt(count);
+    
+    // Generate actions up to the specified count
+    const actions = [];
+    for (let i = 1; i <= actionCount; i++) {
+      actions.push({
+        id: `GH-${i}`,
+        playerId: `Player${((i - 1) % 5) + 1}`,
+        playerName: `Player${((i - 1) % 5) + 1}`,
+        action: getActionType(i),
+        amount: getActionAmount(i),
+        phase: getActionPhase(i),
+        handNumber: 1,
+        actionSequence: i,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    console.log(`🧪 MOCK: Generated ${actionCount} actions for table ${tableId}`);
+    
+    res.json({
+      success: true,
+      actionHistory: actions,
+      tableId: parseInt(tableId),
+      count: actionCount,
+      note: 'Mock generated game history'
+    });
+  } catch (error) {
+    console.error('❌ MOCK API Error generating game history:', error);
+    res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+/**
+ * MOCK API: Get mock game history with specific action IDs
+ * GET /api/test/mock-game-history/:tableId/actions/:actionIds
+ */
+router.get('/mock-game-history/:tableId/actions/:actionIds', async (req, res) => {
+  try {
+    const { tableId, actionIds } = req.params;
+    const requestedIds = actionIds.split(',').map(id => parseInt(id));
+    
+    const actions = requestedIds.map(id => ({
+      id: `GH-${id}`,
+      playerId: `Player${((id - 1) % 5) + 1}`,
+      playerName: `Player${((id - 1) % 5) + 1}`,
+      action: getActionType(id),
+      amount: getActionAmount(id),
+      phase: getActionPhase(id),
+      handNumber: 1,
+      actionSequence: id,
+      timestamp: new Date().toISOString()
+    }));
+    
+    console.log(`🧪 MOCK: Generated actions ${actionIds} for table ${tableId}`);
+    
+    res.json({
+      success: true,
+      actionHistory: actions,
+      tableId: parseInt(tableId),
+      count: actions.length,
+      note: 'Mock specific action IDs'
+    });
+  } catch (error) {
+    console.error('❌ MOCK API Error generating specific actions:', error);
+    res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+// Helper functions for mock game history generation
+function getActionType(actionId: number): string {
+  const actionTypes = ['Small_Blind', 'Big_Blind', 'FOLD', 'CALL', 'RAISE', 'CHECK', 'BET', 'ALL_IN'];
+  return actionTypes[actionId % actionTypes.length];
+}
+
+function getActionAmount(actionId: number): number {
+  if (actionId === 1) return 1; // Small blind
+  if (actionId === 2) return 2; // Big blind
+  if (actionId % 3 === 0) return 0; // FOLD
+  return Math.floor(Math.random() * 50) + 5; // Random amount for other actions
+}
+
+function getActionPhase(actionId: number): string {
+  if (actionId <= 10) return 'preflop';
+  if (actionId <= 15) return 'flop';
+  if (actionId <= 17) return 'turn';
+  if (actionId <= 19) return 'river';
+  return 'showdown';
+}
+
+/**
+ * TEST API: Health check endpoint for testing
+ * GET /api/test/health
+ */
+router.get('/health', async (req, res) => {
+  try {
+    console.log('🧪 TEST: Health check requested');
+    
+    res.json({
+      success: true,
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      note: 'Test health endpoint'
+    });
+  } catch (error) {
+    console.error('❌ TEST API Error in health check:', error);
+    res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+/**
+ * TEST API: Tables health check for testing
+ * GET /api/test/tables
+ */
+router.get('/tables', async (req, res) => {
+  try {
+    console.log('🧪 TEST: Tables health check requested');
+    
+    // Return mock tables data for testing
+    const mockTables = [
+      {
+        id: 1,
+        name: 'Test Table 1',
+        maxPlayers: 9,
+        currentPlayers: 0,
+        status: 'waiting',
+        buyIn: 100,
+        smallBlind: 1,
+        bigBlind: 2
+      },
+      {
+        id: 2,
+        name: 'Test Table 2', 
+        maxPlayers: 9,
+        currentPlayers: 0,
+        status: 'waiting',
+        buyIn: 200,
+        smallBlind: 2,
+        bigBlind: 4
+      }
+    ];
+    
+    res.json({
+      success: true,
+      tables: mockTables,
+      count: mockTables.length,
+      timestamp: new Date().toISOString(),
+      note: 'Test tables endpoint'
+    });
+  } catch (error) {
+    console.error('❌ TEST API Error in tables check:', error);
+    res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 

@@ -925,7 +925,7 @@ class TableManager {
 
       // Format actions for game history
       return actions.map(action => ({
-        id: action.id,
+        id: `GH-${action.id}`,
         tableId: action.tableId,
         playerId: action.playerId,
         playerName: action.playerId, // Use playerId as playerName for now
@@ -980,7 +980,7 @@ class TableManager {
       });
 
       const formattedActions = actions.map(action => ({
-        id: action.id,
+        id: `GH-${action.id}`,
         tableId: action.tableId,
         playerId: action.playerId,
         playerName: action.playerId, // Use playerId as playerName for now
@@ -1020,7 +1020,7 @@ class TableManager {
       });
 
       return actions.map(action => ({
-        id: action.id,
+        id: `GH-${action.id}`,
         tableId: action.tableId,
         playerId: action.playerId,
         playerName: action.playerId,
