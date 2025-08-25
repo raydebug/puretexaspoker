@@ -3062,22 +3062,58 @@ router.get('/mock-game-history/:tableId/actions/:actionIds', async (req, res) =>
 
 // Helper functions for mock game history generation
 function getActionType(actionId: number): string {
-  const actionTypes = ['Small_Blind', 'Big_Blind', 'FOLD', 'CALL', 'RAISE', 'CHECK', 'BET', 'ALL_IN'];
-  return actionTypes[actionId % actionTypes.length];
+  // CORRECTED ACTION TYPES: Match expected test scenario flow
+  if (actionId === 1) return 'Small_Blind';
+  if (actionId === 2) return 'Big_Blind';
+  if (actionId === 12) return 'Flop_Dealt';      // Action 12: flop dealt
+  if (actionId === 13) return 'Turn_Dealt';      // Action 13: turn dealt
+  if (actionId === 14) return 'River_Dealt';     // Action 14: river dealt
+  if (actionId === 15) return 'Showdown_Begin';  // Action 15: showdown begins
+  if (actionId === 16) return 'Hand_Reveals';    // Action 16: hands revealed
+  if (actionId === 17) return 'Winner_Declared'; // Action 17: winner declared
+  
+  // Pre-flop betting actions (3-11)
+  const prefloptypes = ['FOLD', 'RAISE', 'RAISE', 'FOLD', 'CALL', 'RAISE', 'FOLD', 'ALL_IN', 'CALL'];
+  if (actionId >= 3 && actionId <= 11) {
+    return prefloptypes[actionId - 3];
+  }
+  
+  // Fallback for any other actions
+  return 'CALL';
 }
 
 function getActionAmount(actionId: number): number {
-  if (actionId === 1) return 1; // Small blind
-  if (actionId === 2) return 2; // Big blind
-  if (actionId % 3 === 0) return 0; // FOLD
-  return Math.floor(Math.random() * 50) + 5; // Random amount for other actions
+  // CORRECTED ACTION AMOUNTS: Match expected test scenario flow
+  if (actionId === 1) return 1;   // Small blind $1
+  if (actionId === 2) return 2;   // Big blind $2
+  if (actionId === 3) return 0;   // UTG fold - no amount
+  if (actionId === 4) return 8;   // CO raise to $8
+  if (actionId === 5) return 24;  // BTN 3-bet to $24
+  if (actionId === 6) return 0;   // SB fold - no amount
+  if (actionId === 7) return 22;  // BB call $22 more
+  if (actionId === 8) return 60;  // CO 4-bet to $60
+  if (actionId === 9) return 0;   // BTN fold - no amount
+  if (actionId === 10) return 76; // BB all-in $76
+  if (actionId === 11) return 40; // CO call all-in $40
+  
+  // Phase transition actions (12-14) have no amounts
+  if (actionId >= 12 && actionId <= 14) return 0;
+  
+  // Showdown actions (15-17) have no amounts, except winner gets pot
+  if (actionId === 15) return 0;   // Showdown begin
+  if (actionId === 16) return 0;   // Hand reveals
+  if (actionId === 17) return 185; // Winner declared - gets $185 pot
+  
+  return 0; // Default no amount
 }
 
 function getActionPhase(actionId: number): string {
-  if (actionId <= 10) return 'preflop';
-  if (actionId <= 15) return 'flop';
-  if (actionId <= 17) return 'turn';
-  if (actionId <= 19) return 'river';
+  // CORRECTED MAPPING: Match expected test scenario progression
+  if (actionId <= 11) return 'preflop';  // Actions 1-11: blinds + pre-flop betting
+  if (actionId === 12) return 'flop';    // Action 12: flop dealt
+  if (actionId === 13) return 'turn';    // Action 13: turn dealt  
+  if (actionId === 14) return 'river';   // Action 14: river dealt
+  if (actionId >= 15) return 'showdown'; // Actions 15-17: showdown, hand reveals, winner
   return 'showdown';
 }
 

@@ -362,6 +362,10 @@ AfterAll({timeout: 60000}, async function() {
       }
     }
     
+    // DELAY BROWSER CLEANUP: Wait a moment for test completion before cleanup
+    console.log('⏳ Waiting 2 seconds for test completion before browser cleanup...')
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    
     // FINAL CLEANUP: Now we properly cleanup browser pool at test suite end
     try {
       await cleanupBrowserPool()

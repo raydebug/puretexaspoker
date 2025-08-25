@@ -1091,27 +1091,12 @@ global.cleanupBrowsers = cleanupBrowsers;
 
 // All other step definitions are handled by the 5-player file to avoid ambiguity
 
-AfterAll(async function () {
-  console.log('🧹 [AfterAll] Final global cleanup for 2-player tests...');
-  if (global.players) {
-    for (const playerName in global.players) {
-      if (global.players[playerName] && global.players[playerName].driver) {
-        try {
-          await global.players[playerName].driver.quit();
-          console.log(`🗑️ [AfterAll] Closed browser for ${playerName}`);
-        } catch (error) {
-          console.log(`⚠️ [AfterAll] Error closing browser for ${playerName}: ${error.message}`);
-        }
-      }
-    }
-    global.players = {};
-  }
-  // Add any other global cleanup here if needed
-  setTimeout(() => {
-    console.log('🚪 [AfterAll] Forcing process exit to prevent hanging...');
-    process.exit(0);
-  }, 1000);
-});
+// DISABLED: AfterAll hook causing test timeout issues
+// Browser cleanup is handled by the main 5-player hooks.js file
+// AfterAll({ timeout: 10000 }, async function () {
+//   console.log('🧹 [AfterAll] Final global cleanup for 2-player tests...');
+//   // ... cleanup code disabled to prevent conflicts
+// });
 
 // Missing step definitions for 2-player game test
 // COMMENTED OUT - conflicts with 5-player test
