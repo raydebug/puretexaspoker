@@ -1,0 +1,11 @@
+# Table-Only Architecture
+
+- All backend and frontend logic must use the table and tableId as the core entity for poker state, seating, and actions.
+- Eliminate all references to game, gameId, game state, and game-related events, APIs, and models.
+- Refactor all logic to operate solely on table and tableId.
+- All WebSocket and API events must use tableId (UUID string) as the identifier.
+- Tests, test data, and Selenium/Cucumber step definitions must use only table/tableId.
+description:
+globs:
+alwaysApply: false
+---

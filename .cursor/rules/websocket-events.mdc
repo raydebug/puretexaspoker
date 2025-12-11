@@ -1,0 +1,11 @@
+# WebSocket Event Naming and Flow
+
+- The backend emits 'authenticated', 'tableJoined', and 'seatTaken' events.
+- The frontend must listen for these exact event names.
+- The frontend must emit 'authenticate', 'joinTable', and 'takeSeat' events with the correct payloads.
+- All event payloads must use string UUIDs for tableId and playerId.
+- The frontend must handle 'alreadySeated' as a success case for seat assignment.
+description:
+globs:
+alwaysApply: false
+---

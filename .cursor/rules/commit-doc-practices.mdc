@@ -1,0 +1,9 @@
+# Commit and Documentation Practices
+
+- Git commit each improvement with a message no more than 200 characters.
+- Keep communication, documentation, and code tidy and compact.
+- Update README.md, tasks.md, and other relevant docs with each significant change.
+description:
+globs:
+alwaysApply: false
+---

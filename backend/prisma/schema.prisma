@@ -1,0 +1,204 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String    @id @default(uuid())
+  username    String    @unique
+  email       String    @unique
+  password    String
+  displayName String
+  avatar      String?
+  chips       Int       @default(10000)
+  tablesPlayed Int      @default(0)
+  tablesWon   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
+  
+  // USER ROLE MANAGEMENT: Enhanced role system
+  roleId      String    @default("player") // Default role is player
+  role        Role      @relation(fields: [roleId], references: [id])
+  isActive    Boolean   @default(true)
+  isBanned    Boolean   @default(false)
+  bannedBy    String?   // Admin who banned this user
+  bannedAt    DateTime?
+  banReason   String?
+  lastActiveAt DateTime?
+  
+  // Relation to Player for backwards compatibility
+  player      Player?
+  
+  // USER ROLE MANAGEMENT: Administrative actions
+  moderatedBy ModerationAction[] @relation("ModeratedUser")
+  moderatorActions ModerationAction[] @relation("ModeratorUser")
+}
+
+// USER ROLE MANAGEMENT: Role definitions with hierarchical permissions
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique // player, spectator, moderator, administrator
+  displayName String   // Human-readable name
+  description String?  // Role description
+  level       Int      @default(0) // Hierarchy level (0=player, 10=spectator, 50=moderator, 100=admin)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  users       User[]
+  permissions RolePermission[]
+}
+
+// USER ROLE MANAGEMENT: Granular permission system
+model Permission {
+  id          String   @id @default(uuid())
+  name        String   @unique // join_table, place_bet, kick_player, etc.
+  displayName String   // Human-readable name
+  description String?  // Permission description
+  category    String   // table, moderation, administration
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  roles       RolePermission[]
+}
+
+// USER ROLE MANAGEMENT: Many-to-many relationship between roles and permissions
+model RolePermission {
+  id           String     @id @default(uuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime   @default(now())
+  
+  role         Role       @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
+  
+  @@unique([roleId, permissionId])
+}
+
+// USER ROLE MANAGEMENT: Moderation actions and audit trail
+model ModerationAction {
+  id           String   @id @default(uuid())
+  type         String   // warn, kick, mute, ban, unban
+  reason       String?
+  duration     Int?     // Duration in minutes (for temporary actions)
+  moderatorId  String   // User who performed the action
+  targetUserId String   // User who was moderated
+  tableId      Int?     // Table where action occurred (if applicable)
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime?
+  isActive     Boolean  @default(true)
+  
+  moderator    User     @relation("ModeratorUser", fields: [moderatorId], references: [id])
+  targetUser   User     @relation("ModeratedUser", fields: [targetUserId], references: [id])
+}
+
+model Player {
+  id          String        @id  // Use nickname as primary key
+  nickname    String        @unique // Ensure nickname uniqueness 
+  chips       Int
+  table       Int?          // Table ID - null means in lobby (changed from String? to Int?)
+  seat        Int?          // Seat number - null means observing (if table is not null)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  userId      String?       @unique // Optional link to User
+  user        User?         @relation(fields: [userId], references: [id])
+  playerTables PlayerTable[]
+  messages    Message[]
+  tableActions TableAction[]
+}
+
+model Table {
+  id          Int           @id @default(autoincrement())
+  name        String
+  maxPlayers  Int
+  smallBlind  Int
+  bigBlind    Int
+  minBuyIn    Int
+  maxBuyIn    Int
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  
+  // USER ROLE MANAGEMENT: Table administration
+  createdBy   String?       // User who created the table
+  isPrivate   Boolean       @default(false)
+  password    String?       // Optional table password
+  isActive    Boolean       @default(true)
+  
+  // TABLE STATE: All game state is now stored in the table
+  status      String        @default("waiting") // waiting, playing, finished
+  phase       String        @default("waiting") // waiting, preflop, flop, turn, river, showdown
+  pot         Int           @default(0)
+  deck        String?       // JSON string of remaining cards
+  board       String?       // JSON string of community cards
+  currentPlayerId String?   // Nickname of current player to act
+  dealerPosition Int        @default(0)
+  smallBlindPosition Int    @default(1)
+  bigBlindPosition Int      @default(2)
+  currentBet  Int           @default(0)
+  minBet      Int           @default(0)
+  handNumber  Int           @default(1)
+  
+  // CARD ORDER TRANSPARENCY
+  cardOrderSeed String?     // Random seed used for shuffling
+  cardOrder    String?      // JSON string of complete 52-card order
+  cardOrderHash String?     // SHA-256 hash of card order
+  isCardOrderRevealed Boolean @default(false)
+  
+  playerTables PlayerTable[]
+  actions      TableAction[]
+  messages     Message[]
+}
+
+model PlayerTable {
+  id        Int      @id @default(autoincrement())
+  playerId  String   // References Player.id (which is now nickname)
+  tableId   Int
+  seatNumber Int
+  buyIn     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  player    Player   @relation(fields: [playerId], references: [id])
+  table     Table    @relation(fields: [tableId], references: [id])
+
+  @@unique([tableId, seatNumber])
+}
+
+model TableAction {
+  id        Int      @id @default(autoincrement())
+  tableId   Int
+  playerId  String   // References Player.id (which is now nickname)
+  type      String   // bet, fold, check, raise, call, allIn
+  amount    Int?     // for bets/raises
+  phase     String   // preflop, flop, turn, river, showdown
+  handNumber Int     @default(1)
+  actionSequence Int // Sequence number within the hand
+  timestamp DateTime @default(now())
+  gameStateBefore String? // Game state before action (compressed)
+  gameStateAfter String?  // Game state after action (compressed)
+  
+  table     Table    @relation(fields: [tableId], references: [id])
+  player    Player   @relation(fields: [playerId], references: [id])
+  
+  @@index([tableId, handNumber, actionSequence])
+  @@index([tableId, timestamp])
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  content   String
+  playerId  String   // References Player.id (which is now nickname)
+  tableId   Int
+  createdAt DateTime @default(now())
+  player    Player   @relation(fields: [playerId], references: [id])
+  table     Table    @relation(fields: [tableId], references: [id])
+} 

@@ -1,0 +1,10 @@
+# Player and Seat Management
+
+- Player records in the database must use UUIDs as primary keys.
+- PlayerTable associations must reference playerId and tableId as UUID strings.
+- The backend must prevent duplicate seat assignments and handle "already seated" as a success.
+- The frontend must not attempt to take a seat multiple times for the same player/table.
+description:
+globs:
+alwaysApply: false
+---
