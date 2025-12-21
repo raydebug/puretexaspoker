@@ -30,6 +30,8 @@ yarn-debug.log*
 yarn-error.log*
 logs/
 *.log
+backend_log.txt
+frontend_log.txt
 
 # Test artifacts and debugging tools
 tests/manual/*.js
@@ -60,6 +62,7 @@ backend/prisma/dev.db-journal
 
 # Selenium test artifacts - Comprehensive cleanup
 selenium/screenshots/
+selenium/reports/
 selenium/auto-seat-failed-*.html
 selenium/debug-*.js
 selenium/test-*.js
@@ -70,10 +73,7 @@ selenium/*.gif
 selenium/*.html
 selenium/*.log
 
-# Allow test reports to be tracked in git
-!selenium/reports/
-!selenium/reports/*.json
-!selenium/reports/*.md
+# Allow test reports to be tracked in git - REMOVED
 
 # Test artifacts and temporary files
 *.screenshot

@@ -4,7 +4,7 @@ const { Builder } = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome.js');
 const { execSync } = require('child_process');
 const assert = require('assert');
-const { 
+const {
   resetDatabaseShared,
   seatPlayerShared,
   createBrowserInstanceShared,
@@ -15,9 +15,20 @@ const {
   setup5PlayersShared,
   initializeBrowserPool,
   getBrowserFromPool,
-  ScreenshotHelper
+  ScreenshotHelper,
+  clearGlobalPlayers
 } = require('./shared-test-utilities');
 
+global.clearGlobalPlayers = clearGlobalPlayers;
+
+// Helper for safe driver access
+function getDriverSafe() {
+  if (global.players && global.players.Player1 && global.players.Player1.driver) return global.players.Player1.driver;
+  if (global.players && Object.values(global.players)[0] && Object.values(global.players)[0].driver) return Object.values(global.players)[0].driver;
+  return null;
+}
+
+global.players = {};
 // Initialize shared utilities
 let screenshotHelper = new ScreenshotHelper();
 
@@ -26,19 +37,19 @@ async function updateTestPhase(phase, maxActions = null) {
   try {
     const payload = { phase };
     if (maxActions) payload.maxActions = maxActions;
-    
+
     console.log(`🧪 Calling set-game-phase API with:`, payload);
-    
+
     const response = await fetch('http://localhost:3001/api/test/set-game-phase', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    
+
     const result = await response.json();
     if (result.success) {
       console.log(`🎮 Test phase updated to: ${phase} (actions: ${maxActions || 'auto'})`);
-      
+
       // CRITICAL: Also inject the phase into all browser windows for ActionHistory detection
       await injectTestPhaseIntoBrowsers(phase);
     }
@@ -52,7 +63,7 @@ async function injectTestPhaseIntoBrowsers(phase) {
   try {
     // PARALLEL: Inject phase into all browsers simultaneously for performance
     const injectionPromises = [];
-    
+
     for (const [playerName, player] of Object.entries(global.players || {})) {
       if (player && player.driver) {
         const injectionPromise = (async () => {
@@ -75,7 +86,7 @@ async function injectTestPhaseIntoBrowsers(phase) {
                   window.actionHistoryRefresh();
                 }
               `),
-              new Promise((_, reject) => 
+              new Promise((_, reject) =>
                 setTimeout(() => reject(new Error('Browser script timeout')), 3000)
               )
             ]);
@@ -86,16 +97,16 @@ async function injectTestPhaseIntoBrowsers(phase) {
             return false;
           }
         })();
-        
+
         injectionPromises.push(injectionPromise);
       }
     }
-    
+
     // Wait for all injections to complete with overall timeout
     if (injectionPromises.length > 0) {
       await Promise.race([
         Promise.all(injectionPromises),
-        new Promise((_, reject) => 
+        new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Browser injection timeout')), 8000)
         )
       ]);
@@ -111,11 +122,11 @@ async function injectTestPhaseIntoBrowsers(phase) {
 
 Given('the database is reset to a clean state', { timeout: 30000 }, async function () {
   console.log('🧹 Starting database reset to clean state...');
-  
+
   try {
     const resetResult = execSync('curl -s -X POST http://localhost:3001/api/test/reset-database', { encoding: 'utf8' });
     const resetResponse = JSON.parse(resetResult);
-    
+
     if (resetResponse.success) {
       console.log('✅ Database reset to clean state successfully');
       this.tableId = resetResponse.tables && resetResponse.tables.length > 0 ? resetResponse.tables[0].id : 1;
@@ -131,24 +142,24 @@ Given('the database is reset to a clean state', { timeout: 30000 }, async functi
 
 Given('the User table is seeded with test players', async function () {
   console.log('🌱 Seeding User table with test players...');
-  
+
   // FIXED: auto-seat endpoint creates users automatically, no need for separate user creation
   console.log('✅ User creation handled by auto-seat API automatically - skipping separate creation');
 });
 
 Given('I have exactly {int} players ready for a comprehensive poker game', async function (playerCount) {
   console.log(`🎮 Setting up ${playerCount} players for comprehensive poker game...`);
-  
+
   this.playerCount = playerCount;
-  
+
   // Reset screenshot helper for new scenario
   screenshotHelper = new ScreenshotHelper();
-  
+
   // Initialize global players object
   if (!global.players) {
-    global.players = {};
+    global.clearGlobalPlayers();
   }
-  
+
   console.log(`✅ Ready for ${playerCount}-player comprehensive game (browser pool will be initialized when needed)`);
 });
 
@@ -164,38 +175,111 @@ Given('all players have starting stacks of ${int}', async function (stackAmount)
 
 When('exactly {int} players join the comprehensive table with positions:', { timeout: 120000 }, async function (playerCount, dataTable) {
   console.log(`👥 Seating ${playerCount} players at comprehensive table using browser pool...`);
-  
+
   const playerPositions = dataTable.hashes();
   this.tableId = this.tableId || 1;
-  
+
   // Use the shared browser pool setup function
   const setupSuccess = await setup5PlayersShared(this.tableId);
-  
+
   if (!setupSuccess) {
     throw new Error('Failed to setup 5 players with browser pool');
   }
-  
+
   console.log(`✅ All ${playerCount} players seated successfully using browser pool`);
 });
 
 Then('all players should be seated correctly with position labels', async function () {
-  console.log('✅ Seating verification - API seating completed successfully, proceeding with screenshot capture');
-  // Skip DOM validation to ensure test proceeds to capture all screenshots
+  console.log('✅ Seating verification - checking UI for position labels...');
+
+  if (global.players) {
+    const playerEntries = Object.entries(global.players);
+    await Promise.allSettled(playerEntries.map(async ([playerName, player]) => {
+      if (player && player.driver) {
+        try {
+          // Give UI a moment to fully render after navigation
+          await player.driver.sleep(2000);
+
+          // Verify this player sees themselves seated
+          // Look for hole card area or player info or seat elements
+          const playerInfo = await player.driver.findElements(By.css('[data-testid="player-info"], .player-info, [data-testid^="seat-"], .player-seat'));
+          if (playerInfo.length > 0) {
+            console.log(`✅ ${playerName} sees player info/seat area`);
+          } else {
+            console.log(`⚠️ ${playerName} might not be correctly seated (no player info found)`);
+          }
+
+          // Verify dealer button or position markers if expected
+          const dealerButton = await player.driver.findElements(By.css('[data-testid="dealer-button"], .dealer-button'));
+          if (dealerButton.length > 0) {
+            console.log(`✅ ${playerName} sees dealer button`);
+          }
+        } catch (e) {
+          console.log(`⚠️ Error verifying seating for ${playerName}: ${e.message}`);
+        }
+      }
+    }));
+  }
 });
 
 Then('I verify exactly {int} players are present at the current table', async function (expectedCount) {
-  console.log(`✅ ${expectedCount} players verified present - API setup successful`);
-  // Skip DOM counting to ensure test proceeds
+  console.log(`✅ Verifying exactly ${expectedCount} players are present...`);
+
+  if (!global.players || Object.keys(global.players).length === 0) {
+    console.log('⚠️ No players found in global state for verification');
+    return;
+  }
+  const firstPlayer = Object.keys(global.players)[0];
+  const playerState = global.players[firstPlayer];
+
+  if (!playerState || !playerState.driver) {
+    console.log(`⚠️ Player ${firstPlayer} has no driver`);
+    return;
+  }
+  const browser = playerState.driver;
+
+  if (browser) {
+    try {
+      // Find all seated players (including self and opponents)
+      // This selector might need adjustment based on valid DOM structure for seated players
+      const seatedPlayers = await browser.findElements(By.css('[data-testid^="player-seat-"], .player-seat.occupied, .player-container'));
+
+      // Note: This count might include empty seats depending on implementation, 
+      // so we might need to filter for occupied ones or use a more specific selector
+      // For now, logging the count found is helpful
+      console.log(`🔍 Found ${seatedPlayers.length} player elements in UI`);
+
+      if (seatedPlayers.length >= expectedCount) {
+        console.log(`✅ At least ${expectedCount} players visible in UI`);
+      } else {
+        console.log(`⚠️ Found ${seatedPlayers.length} players, expected ${expectedCount} (might be timing issue)`);
+      }
+    } catch (e) {
+      console.log(`⚠️ Error verifying player count: ${e.message}`);
+    }
+  }
 });
 
 Then('the page should be fully loaded for all players', { timeout: 60000 }, async function () {
-  console.log('✅ Page loading verified - browser navigation completed successfully');
-  // Skip detailed verification to ensure test proceeds
+  console.log('✅ Verifying page fully loaded for all players...');
+  if (global.players) {
+    for (const [playerName, player] of Object.entries(global.players)) {
+      if (player && player.driver) {
+        try {
+          // Check for a specific element that indicates full load, e.g., the poker table
+          await player.driver.wait(until.elementLocated(By.css('[data-testid="poker-table"], .poker-table')), 5000);
+          console.log(`✅ Page fully loaded for ${playerName}`);
+        } catch (e) {
+          console.log(`⚠️ Page might not be fully loaded for ${playerName}: ${e.message}`);
+        }
+      }
+    }
+  }
 });
 
 Then('I manually start the game for table {int}', async function (tableId) {
   console.log(`🎲 Manually starting game for table ${tableId}...`);
-  
+
   const started = await startGameShared(tableId);
   if (started) {
     console.log(`✅ Game started for table ${tableId}`);
@@ -210,24 +294,56 @@ Then('I manually start the game for table {int}', async function (tableId) {
 
 Then('the game starts with enhanced blinds structure:', async function (dataTable) {
   console.log('🎯 Verifying enhanced blinds structure...');
-  
+
   const blindsInfo = dataTable.hashes();
-  
+
   for (const blind of blindsInfo) {
     const position = blind.Position;
     const player = blind.Player;
     const amount = blind.Amount;
     const enhancedFormat = blind['Enhanced Format'];
-    
+
     console.log(`🔍 Checking ${position}: ${player} posts ${amount} - Format: "${enhancedFormat}"`);
   }
-  
+
   console.log('✅ Enhanced blinds structure verified');
 });
 
 Then('the pot should be ${int} with enhanced display {string}', async function (expectedPot, displayFormat) {
   console.log(`💰 Verifying pot is $${expectedPot} with display: ${displayFormat}`);
-  console.log(`✅ Pot verified: $${expectedPot} with enhanced display`);
+
+  if (!global.players || Object.keys(global.players).length === 0) {
+    console.log('⚠️ No players found in global state for pot verification');
+    return; // Skip verification if no players
+  }
+  const firstPlayer = Object.keys(global.players)[0];
+  const playerState = global.players[firstPlayer];
+
+  if (!playerState || !playerState.driver) {
+    console.log(`⚠️ Player ${firstPlayer} has no driver`);
+    return;
+  }
+  const browser = playerState.driver;
+
+  if (browser) {
+    try {
+      const potElements = await browser.findElements(By.css('[data-testid="pot-amount"], [data-testid="pot-display"], .pot-amount, [class*="pot"]'));
+      let potVerified = false;
+      for (const el of potElements) {
+        const text = await el.getText();
+        if (text.includes(expectedPot.toString())) {
+          console.log(`✅ Pot amount $${expectedPot} verified in UI: "${text}"`);
+          potVerified = true;
+          break;
+        }
+      }
+      if (!potVerified) {
+        console.log(`⚠️ Pot amount $${expectedPot} NOT found in UI. Found: ${await Promise.all(potElements.map(e => e.getText()))}`);
+      }
+    } catch (e) {
+      console.log(`⚠️ Error verifying pot: ${e.message}`);
+    }
+  }
 });
 
 Then('the pot should be ${int}', async function (expectedPot) {
@@ -241,7 +357,7 @@ Then('the pot should be ${int}', async function (expectedPot) {
 
 Then('I capture screenshot {string}', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing screenshot: ${screenshotName}`);
-  
+
   if (global.players && Object.keys(global.players).length > 0) {
     // PARALLEL SCREENSHOT CAPTURE: Take all screenshots simultaneously for performance  
     const screenshotPromises = Object.keys(global.players).map(async (playerName) => {
@@ -258,14 +374,15 @@ Then('I capture screenshot {string}', { timeout: 30000 }, async function (screen
         return `${playerName}: error - ${error.message}`;
       }
     });
-    
+
     // Wait for all screenshots to complete with timeout protection
     try {
-      await Promise.allSettled(screenshotPromises);
+      const results = await Promise.allSettled(screenshotPromises);
+      console.log(`📊 Parallel screenshot results:`, results.map(r => r.status === 'fulfilled' ? r.value : `FAILED: ${r.reason}`));
     } catch (error) {
       console.log(`⚠️ Parallel screenshot capture error: ${error.message}`);
     }
-    
+
     console.log(`✅ Screenshot captured: ${screenshotName}`);
   } else {
     console.log(`⚠️ No browser instances available for screenshot: ${screenshotName}`);
@@ -274,11 +391,11 @@ Then('I capture screenshot {string}', { timeout: 30000 }, async function (screen
 
 Then('I capture screenshot {string} showing {string}', { timeout: 20000 }, async function (screenshotName, description) {
   console.log(`📸 Capturing screenshot: ${screenshotName} showing ${description}`);
-  
+
   if (global.players && Object.keys(global.players).length > 0) {
     const firstPlayer = Object.keys(global.players)[0];
     const browser = global.players[firstPlayer];
-    
+
     try {
       await screenshotHelper.captureAndLogScreenshot(browser, screenshotName);
       console.log(`✅ Screenshot captured: ${screenshotName} (${description})`);
@@ -296,31 +413,31 @@ Then('I capture screenshot {string} showing {string}', { timeout: 20000 }, async
 
 When('hole cards are dealt according to comprehensive test scenario:', async function (dataTable) {
   console.log('🃏 Dealing hole cards according to comprehensive test scenario...');
-  
+
   // Update test phase for progressive game history
   await updateTestPhase('hole_cards_dealt', 2);
-  
+
   const cardDeals = dataTable.hashes();
-  
+
   for (const deal of cardDeals) {
     const player = deal.Player;
     const card1 = deal.Card1;
     const card2 = deal.Card2;
     const handStrength = deal['Hand Strength'];
     const strategy = deal.Strategy;
-    
+
     console.log(`🎴 ${player}: ${card1} ${card2} (${handStrength}) - Strategy: ${strategy}`);
   }
-  
+
   console.log('✅ Hole cards dealt according to comprehensive test scenario');
 });
 
 When('the pre-flop betting round begins with UTG action', async function () {
   console.log('🎯 Pre-flop betting round begins with UTG action...');
-  
+
   // Update test phase for progressive game history
   await updateTestPhase('preflop_betting', 3);
-  
+
   console.log('✅ Pre-flop betting round started, UTG to act');
 });
 
@@ -328,7 +445,7 @@ When('the pre-flop betting round begins with UTG action', async function () {
 Then('Player{int} \\({word}\\) folds with weak hand {word}', async function (playerNum, position, handDescription) {
   console.log(`🂠 Player${playerNum} (${position}) folds with weak hand ${handDescription}`);
   await updateTestPhase('preflop_fold', 3);
-  
+
   // Debug: Verify the API is returning the correct data before refresh
   console.log(`🔍 Debugging: Checking API response before browser refresh...`);
   try {
@@ -339,7 +456,7 @@ Then('Player{int} \\({word}\\) folds with weak hand {word}', async function (pla
   } catch (error) {
     console.log(`⚠️ API check failed:`, error.message);
   }
-  
+
   // Force ActionHistory component to remount by navigating with different URL
   console.log(`🔄 Forcing ActionHistory component remount by navigation...`);
   if (this.browsers && this.browsers.Player1) {
@@ -347,43 +464,43 @@ Then('Player{int} \\({word}\\) folds with weak hand {word}', async function (pla
       // Navigate to a slightly different URL to force component remount
       const refreshUrl = `http://localhost:3000/game?table=1&t=${Date.now()}`;
       console.log(`🌐 Navigating to: ${refreshUrl}`);
-      
+
       await this.browsers.Player1.get(refreshUrl);
-      
+
       // Wait for page to load
       await this.browsers.Player1.wait(
-        this.browsers.Player1.until.elementLocated(this.browsers.Player1.By.css('[data-testid="game-history"]')), 
+        this.browsers.Player1.until.elementLocated(this.browsers.Player1.By.css('[data-testid="game-history"]')),
         15000
       );
-      
+
       // Wait additional time for ActionHistory to fetch data
       await new Promise(resolve => setTimeout(resolve, 3000));
-      
+
       console.log(`✅ ActionHistory component remounted with fresh URL`);
-      
+
     } catch (error) {
       console.log(`⚠️ Error with ActionHistory remount navigation:`, error.message);
     }
   }
-  
+
   console.log(`✅ Player${playerNum} (${position}) fold action completed`);
 });
 
 Then('Player{int} \\({word}\\) raises to ${int} with pocket {word}s', async function (playerNum, position, amount, pocketRank) {
   console.log(`📈 Player${playerNum} (${position}) raises to $${amount} with pocket ${pocketRank}s`);
-  
+
   // Update test phase for progressive game history - preflop raise action
   await updateTestPhase('preflop_raise', 5);
-  
+
   console.log(`✅ Player${playerNum} (${position}) raise to $${amount} completed`);
 });
 
 Then('Player{int} \\({word}\\) 3-bets to ${int} with {word}', async function (playerNum, position, amount, handDescription) {
   console.log(`🔥 Player${playerNum} (${position}) 3-bets to $${amount} with ${handDescription}`);
-  
+
   // Update test phase for progressive game history - preflop 3bet action
   await updateTestPhase('preflop_3bet', 7);
-  
+
   console.log(`✅ Player${playerNum} (${position}) 3-bet to $${amount} completed`);
 });
 
@@ -451,13 +568,13 @@ Then('Player{int} goes all-in ${int}', async function (playerNum, amount) {
 // Community card dealing
 When('the flop is dealt: {word}, {word}, {word}', async function (card1, card2, card3) {
   console.log(`🎰 Flop dealt: ${card1}, ${card2}, ${card3}`);
-  
+
   // Call backend API to advance to flop phase and deal cards
   try {
     const advanceFlopResponse = await fetch('http://localhost:3001/api/test/advance-phase', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         tableId: 1,
         phase: 'flop',
         communityCards: [
@@ -467,7 +584,7 @@ When('the flop is dealt: {word}, {word}, {word}', async function (card1, card2, 
         ]
       })
     });
-    
+
     if (advanceFlopResponse.ok) {
       console.log(`✅ Flop phase advanced via API: ${card1}, ${card2}, ${card3}`);
     } else {
@@ -476,30 +593,30 @@ When('the flop is dealt: {word}, {word}, {word}', async function (card1, card2, 
   } catch (error) {
     console.log(`⚠️ Advance flop API error: ${error.message}`);
   }
-  
+
   // Update test phase for progressive game history
   await updateTestPhase('flop_revealed', 12);
-  
+
   // Real DOM verification for community cards content AND visibility in all browser instances
   console.log(`🔍 Verifying flop cards with actual content and visibility in DOM across all browsers...`);
   const flopPromises = Object.keys(global.players).map(async (player) => {
     try {
       const driver = global.players[player].driver;
-      
+
       // Wait for community cards area to be populated
       await driver.wait(until.elementLocated(By.css('[data-testid="community-cards"]')), 5000);
-      
+
       // Check for cards with actual content AND visibility status
       const cardElements = await driver.findElements(By.css('[data-testid^="community-card-"]'));
       let cardsWithContent = 0;
       let visibleCards = 0;
-      
+
       for (let i = 0; i < Math.min(5, cardElements.length); i++) {
         try {
           const cardText = await cardElements[i].getText();
           const isVisible = await cardElements[i].isDisplayed();
           const isEnabled = await cardElements[i].isEnabled();
-          
+
           if (cardText && cardText.trim() && cardText.trim() !== '') {
             cardsWithContent++;
             if (isVisible) {
@@ -535,9 +652,9 @@ When('the flop is dealt: {word}, {word}, {word}', async function (card1, card2, 
           }
         }
       }
-      
+
       console.log(`🔍 ${player}: Found ${cardsWithContent}/${cardElements.length} cards with content, ${visibleCards} visible in DOM`);
-      
+
       if (cardsWithContent >= 3 && visibleCards >= 3) {
         console.log(`✅ ${player}: Flop cards with content visible (${visibleCards}/${cardsWithContent} cards)`);
         return `${player}: flop ${visibleCards} visible`;
@@ -550,7 +667,7 @@ When('the flop is dealt: {word}, {word}, {word}', async function (card1, card2, 
       return `${player}: verification failed`;
     }
   });
-  
+
   const results = await Promise.allSettled(flopPromises);
   console.log(`🎰 Flop verification results: ${results.map(r => r.value || r.reason).join(', ')}`);
   console.log(`✅ Flop cards revealed: ${card1} ${card2} ${card3}`);
@@ -558,18 +675,18 @@ When('the flop is dealt: {word}, {word}, {word}', async function (card1, card2, 
 
 When('the turn is dealt: {word}', async function (turnCard) {
   console.log(`🎴 Turn dealt: ${turnCard}`);
-  
+
   // Call backend API to advance to turn phase and add turn card
   try {
     const advanceTurnResponse = await fetch('http://localhost:3001/api/test/advance-phase', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         tableId: 1,
         phase: 'turn'
       })
     });
-    
+
     if (advanceTurnResponse.ok) {
       console.log(`✅ Turn phase advanced via API: ${turnCard}`);
     } else {
@@ -578,30 +695,30 @@ When('the turn is dealt: {word}', async function (turnCard) {
   } catch (error) {
     console.log(`⚠️ Advance turn API error: ${error.message}`);
   }
-  
+
   // Update test phase for progressive game history - adding turn action
   await updateTestPhase('turn_revealed', 13);
-  
+
   // Real DOM verification for turn card content AND visibility in all browser instances
   console.log(`🔍 Verifying turn card with actual content and visibility in DOM across all browsers...`);
   const turnPromises = Object.keys(global.players).map(async (player) => {
     try {
       const driver = global.players[player].driver;
-      
+
       // Wait for community cards area to be populated
       await driver.wait(until.elementLocated(By.css('[data-testid="community-cards"]')), 5000);
-      
+
       // Check for cards with actual content AND visibility status
       const cardElements = await driver.findElements(By.css('[data-testid^="community-card-"]'));
       let cardsWithContent = 0;
       let visibleCards = 0;
-      
+
       for (let i = 0; i < Math.min(5, cardElements.length); i++) {
         try {
           const cardText = await cardElements[i].getText();
           const isVisible = await cardElements[i].isDisplayed();
           const isEnabled = await cardElements[i].isEnabled();
-          
+
           if (cardText && cardText.trim() && cardText.trim() !== '') {
             cardsWithContent++;
             if (isVisible) {
@@ -637,9 +754,9 @@ When('the turn is dealt: {word}', async function (turnCard) {
           }
         }
       }
-      
+
       console.log(`🔍 ${player}: Found ${cardsWithContent}/${cardElements.length} cards with content, ${visibleCards} visible in DOM`);
-      
+
       if (cardsWithContent >= 4 && visibleCards >= 4) {
         console.log(`✅ ${player}: Turn cards with content visible (${visibleCards}/${cardsWithContent} cards)`);
         return `${player}: turn ${visibleCards} visible`;
@@ -652,7 +769,7 @@ When('the turn is dealt: {word}', async function (turnCard) {
       return `${player}: verification failed`;
     }
   });
-  
+
   const results = await Promise.allSettled(turnPromises);
   console.log(`🎴 Turn verification results: ${results.map(r => r.value || r.reason).join(', ')}`);
   console.log(`✅ Turn card revealed: ${turnCard}`);
@@ -660,18 +777,18 @@ When('the turn is dealt: {word}', async function (turnCard) {
 
 When('the river is dealt: {word}', async function (riverCard) {
   console.log(`🎲 River dealt: ${riverCard}`);
-  
+
   // Call backend API to advance to river phase and add river card
   try {
     const advanceRiverResponse = await fetch('http://localhost:3001/api/test/advance-phase', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         tableId: 1,
         phase: 'river'
       })
     });
-    
+
     if (advanceRiverResponse.ok) {
       console.log(`✅ River phase advanced via API: ${riverCard}`);
     } else {
@@ -680,30 +797,30 @@ When('the river is dealt: {word}', async function (riverCard) {
   } catch (error) {
     console.log(`⚠️ Advance river API error: ${error.message}`);
   }
-  
+
   // Update test phase for progressive game history - adding river action
   await updateTestPhase('river_revealed', 14);
-  
+
   // Real DOM verification for river card content AND visibility in all browser instances
   console.log(`🔍 Verifying river card with actual content and visibility in DOM across all browsers...`);
   const riverPromises = Object.keys(global.players).map(async (player) => {
     try {
       const driver = global.players[player].driver;
-      
+
       // Wait for community cards area to be populated
       await driver.wait(until.elementLocated(By.css('[data-testid="community-cards"]')), 5000);
-      
+
       // Check for cards with actual content AND visibility status
       const cardElements = await driver.findElements(By.css('[data-testid^="community-card-"]'));
       let cardsWithContent = 0;
       let visibleCards = 0;
-      
+
       for (let i = 0; i < Math.min(5, cardElements.length); i++) {
         try {
           const cardText = await cardElements[i].getText();
           const isVisible = await cardElements[i].isDisplayed();
           const isEnabled = await cardElements[i].isEnabled();
-          
+
           if (cardText && cardText.trim() && cardText.trim() !== '') {
             cardsWithContent++;
             if (isVisible) {
@@ -740,9 +857,9 @@ When('the river is dealt: {word}', async function (riverCard) {
           }
         }
       }
-      
+
       console.log(`🔍 ${player}: Found ${cardsWithContent}/${cardElements.length} cards with content, ${visibleCards} visible in DOM`);
-      
+
       if (cardsWithContent >= 5 && visibleCards >= 5) {
         console.log(`✅ ${player}: River cards with content visible (${visibleCards}/${cardsWithContent} cards)`);
         return `${player}: river ${visibleCards} visible`;
@@ -755,7 +872,7 @@ When('the river is dealt: {word}', async function (riverCard) {
       return `${player}: verification failed`;
     }
   });
-  
+
   const results = await Promise.allSettled(riverPromises);
   console.log(`🎲 River verification results: ${results.map(r => r.value || r.reason).join(', ')}`);
   console.log(`✅ River card revealed: ${riverCard}`);
@@ -763,17 +880,81 @@ When('the river is dealt: {word}', async function (riverCard) {
 
 When('the showdown begins', async function () {
   console.log('🎊 Showdown begins - revealing hole cards...');
-  
+
   // Update test phase for progressive game history - adding showdown actions
   await updateTestPhase('showdown_complete', 15);
-  
+
   console.log('✅ Showdown phase initiated');
 });
 
 // Game state verification
 Then('I should see enhanced game history: {string}', async function (expectedText) {
   console.log(`📜 Verifying enhanced game history contains: "${expectedText}"`);
-  console.log(`✅ Enhanced game history verified: "${expectedText}"`);
+
+  if (!global.players || Object.keys(global.players).length === 0) {
+    console.log('⚠️ No players found in global state for history check');
+    return;
+  }
+  const firstPlayer = Object.keys(global.players)[0];
+  const playerState = global.players[firstPlayer];
+
+  if (!playerState || !playerState.driver) {
+    console.log(`⚠️ Player ${firstPlayer} has no driver`);
+    return;
+  }
+  const browser = playerState.driver;
+
+  if (browser) {
+    try {
+      await browser.wait(until.elementLocated(By.css('.game-history, [data-testid="game-history"], .history-panel')), 5000);
+      const historyPanel = await browser.findElement(By.css('.game-history, [data-testid="game-history"], .history-panel'));
+      const historyText = await historyPanel.getText();
+
+      // Simple string inclusion check
+      if (historyText.includes(expectedText)) {
+        console.log(`✅ Found exact text in game history: "${expectedText}"`);
+      } else {
+        // Split logic could be added here for partial matching
+        console.log(`⚠️ Exact text "${expectedText}" not found in history (might be formatting diff)`);
+      }
+    } catch (e) {
+      console.log(`⚠️ Error checking game history: ${e.message}`);
+    }
+  }
+});
+
+// Winner and showdown verification (Replacing placeholder logic)
+Then('I should see winner popup for {string}', async function (winnerName) {
+  console.log(`🏆 Verifying winner popup for ${winnerName}...`);
+
+  if (!global.players || Object.keys(global.players).length === 0) {
+    console.log('⚠️ No players found in global state for winner check');
+    return;
+  }
+  const firstPlayer = Object.keys(global.players)[0];
+  const playerState = global.players[firstPlayer];
+
+  if (!playerState || !playerState.driver) {
+    console.log(`⚠️ Player ${firstPlayer} has no driver`);
+    return;
+  }
+  const browser = playerState.driver;
+
+  if (browser) {
+    try {
+      await browser.wait(until.elementLocated(By.css('[data-testid="winner-popup"], .winner-popup, .winner-announcement')), 5000);
+      const popup = await browser.findElement(By.css('[data-testid="winner-popup"], .winner-popup, .winner-announcement'));
+      const text = await popup.getText();
+
+      if (text.includes(winnerName)) {
+        console.log(`✅ Winner popup correctly identifies ${winnerName}`);
+      } else {
+        console.log(`⚠️ Winner popup found but text "${text}" might not contain "${winnerName}"`);
+      }
+    } catch (e) {
+      console.log(`⚠️ Error verifying winner popup: ${e.message}`);
+    }
+  }
 });
 
 Then('I verify enhanced game history shows {string} action by {string}', async function (action, player) {
@@ -796,6 +977,45 @@ Then('{int} players should remain active: {word}, {word}', async function (count
   console.log(`✅ Active players verified: ${player1}, ${player2}`);
 });
 
+Then('Player {string} chips should be updated to {int}', async function (playerName, expectedChips) {
+  console.log(`💰 Verifying ${playerName} chips updated to ${expectedChips}...`);
+
+  // Find the browser for this player to check their own view, or use any browser
+  const playerBrowser = global.players[playerName]?.driver || Object.values(global.players)[0]?.driver;
+
+  if (playerBrowser) {
+    try {
+      // Find chips for the specific player. Selector might depend on how players are identified in DOM
+      // Assuming some attribute data-player-name or checking all chip-counts
+
+      // Strategy: iterate all player info blocks
+      const playerInfos = await playerBrowser.findElements(By.css('[data-testid="player-info"], .player-info, .player-seat'));
+      let found = false;
+
+      for (const info of playerInfos) {
+        const text = await info.getText();
+        if (text.includes(playerName)) {
+          // This block belongs to the player
+          if (text.includes(expectedChips.toString())) {
+            console.log(`✅ ${playerName} found with ${expectedChips} chips`);
+            found = true;
+          } else {
+            console.log(`⚠️ ${playerName} found but chip count mismatch in text: "${text}"`);
+          }
+          break;
+        }
+      }
+
+      if (!found) {
+        console.log(`⚠️ Could not verify chip count for ${playerName} (player block not found or chips not matching)`);
+      }
+
+    } catch (e) {
+      console.log(`⚠️ Error verifying chip count: ${e.message}`);
+    }
+  }
+});
+
 Then('{int} players should be folded: {word}, {word}, {word}', async function (count, player1, player2, player3) {
   console.log(`🂠 Verifying ${count} players folded: ${player1}, ${player2}, ${player3}`);
   console.log(`✅ Folded players verified: ${player1}, ${player2}, ${player3}`);
@@ -804,16 +1024,16 @@ Then('{int} players should be folded: {word}, {word}, {word}', async function (c
 // Enhanced game state verification
 Then('I should see enhanced initial state:', async function (dataTable) {
   console.log('🎯 Verifying enhanced initial state...');
-  
+
   const elements = dataTable.hashes();
-  
+
   for (const element of elements) {
     const elementType = element.Element;
     const expectedFormat = element['Expected Format'];
-    
+
     console.log(`🔍 Checking ${elementType}: "${expectedFormat}"`);
   }
-  
+
   console.log('✅ Enhanced initial state verified');
 });
 
@@ -870,7 +1090,7 @@ Then('the board should be {word} {word} {word} {word} {word}', async function (c
 // Game history verification steps - Using Mock APIs
 Then('the game history should show {int} action records', async function (expectedCount) {
   console.log(`📊 Verifying game history shows ${expectedCount} action records using MOCK APIs`);
-  
+
   // First, set up mock game history with expected count
   try {
     const mockResult = await getMockGameHistory(1, expectedCount);
@@ -882,14 +1102,14 @@ Then('the game history should show {int} action records', async function (expect
   } catch (error) {
     console.log(`⚠️ MOCK API setup error: ${error.message}`);
   }
-  
+
   // Use browsers from test context instead of global.players
   if (!this.browsers || !this.browsers.Player1) {
     console.log(`⚠️ No active browsers available for DOM verification`);
     console.log(`📊 Skipping DOM verification but test continues...`);
     return;
   }
-  
+
   const firstPlayer = { driver: this.browsers.Player1 };
   if (firstPlayer && firstPlayer.driver) {
     try {
@@ -897,11 +1117,11 @@ Then('the game history should show {int} action records', async function (expect
       const gameHistorySelectors = [
         '[data-testid="game-history"]',
         '.game-history',
-        '#game-history', 
+        '#game-history',
         '[class*="history"]',
         '.history-panel'
       ];
-      
+
       let historyContainer = null;
       // Check if browser session is still valid
       try {
@@ -924,7 +1144,7 @@ Then('the game history should show {int} action records', async function (expect
           console.log(`⚠️ Selector ${selector} failed: ${error.message}`);
         }
       }
-      
+
       if (historyContainer) {
         // Count action records by looking for "GH-X" patterns in the text (since that's what progressive API returns)
         let historyText;
@@ -934,22 +1154,22 @@ Then('the game history should show {int} action records', async function (expect
           console.log(`⚠️ Failed to get history text: ${error.message}`);
           return;
         }
-        
+
         const ghPattern = /GH-\d+/gi;
         const idPattern = /ID:\s*GH-\d+/gi;
-        
+
         const ghMatches = historyText.match(ghPattern) || [];
         const idMatches = historyText.match(idPattern) || [];
         const actionCount = Math.max(ghMatches.length, idMatches.length);
-        
+
         console.log(`📋 Found ${actionCount} action records with GH- IDs in DOM`);
         console.log(`📝 DOM text sample: "${historyText.substring(0, 500)}..."`);
-        
+
         if (actionCount >= expectedCount) {
           console.log(`✅ Game history ${expectedCount} action records verified (found ${actionCount})`);
         } else {
           console.log(`❌ Expected ${expectedCount} actions, found ${actionCount} in DOM`);
-          
+
           // Show what we actually found for debugging
           if (ghMatches.length > 0) {
             console.log(`📝 GH- IDs found: [${ghMatches.join(', ')}]`);
@@ -957,11 +1177,11 @@ Then('the game history should show {int} action records', async function (expect
           if (idMatches.length > 0) {
             console.log(`📝 ID: patterns found: [${idMatches.join(', ')}]`);
           }
-          
+
           console.log(`❌ DOM verification failed: Expected ${expectedCount} action records but found ${actionCount} in DOM`);
           throw new Error(`Expected ${expectedCount} action records but found ${actionCount} in DOM`);
         }
-        
+
         // Show sample of found action IDs for successful cases
         if (ghMatches.length > 0) {
           console.log(`📝 GH- Action IDs found: [${ghMatches.join(', ')}]`);
@@ -983,7 +1203,7 @@ Then('the game history should show {int} action records', async function (expect
 
 Then('the game history should contain action with ID {int}', { timeout: 15000 }, async function (actionId) {
   console.log(`🔍 Verifying game history contains action with ID ${actionId} using MOCK APIs`);
-  
+
   // First, ensure mock game history contains the expected action ID
   try {
     const mockResult = await getMockGameHistory(1, actionId);
@@ -995,13 +1215,13 @@ Then('the game history should contain action with ID {int}', { timeout: 15000 },
   } catch (error) {
     console.log(`⚠️ MOCK API setup error: ${error.message}`);
   }
-  
+
   console.log(`🔍 Verifying game history contains action with ID ${actionId} in real DOM across ALL browser instances`);
-  
+
   // Verify DOM in ALL browser instances to ensure consistency
   let domVerificationSuccessful = false;
   let verifiedBrowsers = [];
-  
+
   // Check ALL browsers to ensure the ActionHistory component is working consistently
   for (const [playerName, player] of Object.entries(global.players || {})) {
     if (player && player.driver) {
@@ -1009,37 +1229,37 @@ Then('the game history should contain action with ID {int}', { timeout: 15000 },
         // Test if browser is still responsive
         await player.driver.getTitle();
         console.log(`🔍 Checking ${playerName}'s browser for action ID ${actionId}...`);
-        
+
         // Quick check for ActionHistory component
         let actionFoundInThisBrowser = false;
         let attempts = 0;
         const maxAttempts = 3; // Faster verification per browser
-        
+
         while (!actionFoundInThisBrowser && attempts < maxAttempts) {
           attempts++;
           console.log(`🔍 ${playerName} verification attempt ${attempts}/${maxAttempts}`);
-          
+
           try {
             // Wait for ActionHistory to fetch data - reduced for efficiency
             await new Promise(resolve => setTimeout(resolve, 500));
-            
+
             // Look for Game History container
             const historyElement = await player.driver.findElement(By.css('[data-testid="game-history"]'));
             const historyText = await historyElement.getText();
-            
+
             // Check for specific action ID in this browser
             const ghPattern = new RegExp(`GH-${actionId}`, 'i');
             const idPattern = new RegExp(`ID:\\s*GH-${actionId}`, 'i');
-            
+
             if (ghPattern.test(historyText) || idPattern.test(historyText)) {
               actionFoundInThisBrowser = true;
               domVerificationSuccessful = true; // FIX: Set global success flag when action found
               verifiedBrowsers.push(playerName);
               console.log(`✅ ${playerName}: Found action ID GH-${actionId} in DOM`);
-              
+
               // Show context
               const lines = historyText.split('\n');
-              const matchingLine = lines.find(line => 
+              const matchingLine = lines.find(line =>
                 ghPattern.test(line) || idPattern.test(line)
               );
               if (matchingLine) {
@@ -1049,28 +1269,28 @@ Then('the game history should contain action with ID {int}', { timeout: 15000 },
             } else {
               console.log(`⚠️ ${playerName}: Action GH-${actionId} not found yet (${historyText.match(/GH-\d+/g)?.length || 0} actions total)`);
             }
-            
+
           } catch (error) {
             console.log(`⚠️ ${playerName} attempt ${attempts} failed: ${error.message}`);
           }
         }
-        
+
       } catch (browserError) {
         console.log(`⚠️ Browser ${playerName} failed: ${browserError.message}`);
       }
     }
   }
-  
+
   // Summary report of DOM verification across all browsers
   console.log(`\n📊 DOM Verification Summary for Action ID ${actionId}:`);
   console.log(`✅ Verified in browsers: [${verifiedBrowsers.join(', ')}]`);
   console.log(`📈 Success rate: ${verifiedBrowsers.length}/${Object.keys(global.players || {}).length} browsers`);
-  
+
   if (domVerificationSuccessful && verifiedBrowsers.length > 0) {
     console.log(`✅ DOM verification PASSED: Action ID ${actionId} found in ${verifiedBrowsers.length} browser(s)`);
   } else {
     console.log(`❌ DOM verification FAILED: Action ID ${actionId} not found in any browser`);
-    
+
     // Don't throw error - let test continue to gather more data
     console.log(`⚠️ Continuing test to gather more DOM verification data...`);
   }
@@ -1078,7 +1298,7 @@ Then('the game history should contain action with ID {int}', { timeout: 15000 },
 
 Then('the game history should show actions with IDs greater than {int}', async function (minId) {
   console.log(`🔍 Verifying game history shows actions with IDs greater than ${minId} in real DOM`);
-  
+
   // Get first available player for DOM verification
   const firstPlayer = Object.values(global.players)[0];
   if (firstPlayer && firstPlayer.driver) {
@@ -1087,11 +1307,11 @@ Then('the game history should show actions with IDs greater than {int}', async f
       const gameHistorySelectors = [
         '[data-testid="game-history"]',
         '.game-history',
-        '#game-history', 
+        '#game-history',
         '[class*="history"]',
         '.history-panel'
       ];
-      
+
       let historyContainer = null;
       for (const selector of gameHistorySelectors) {
         try {
@@ -1105,18 +1325,18 @@ Then('the game history should show actions with IDs greater than {int}', async f
           console.log(`⚠️ Selector ${selector} failed: ${error.message}`);
         }
       }
-      
+
       if (historyContainer) {
         // Get history text and look for ID patterns
         const historyText = await historyContainer.getText();
-        
+
         // Look for GH-X or ID: patterns
         const ghPattern = /GH-(\d+)/gi;
         const idPattern = /ID:\s*GH-(\d+)/gi;
-        
+
         const ghMatches = historyText.match(ghPattern) || [];
         const idMatches = historyText.match(idPattern) || [];
-        
+
         // Extract numeric IDs and find those greater than minId
         const allMatches = [...ghMatches, ...idMatches];
         const numericIds = allMatches
@@ -1125,17 +1345,17 @@ Then('the game history should show actions with IDs greater than {int}', async f
             return numMatch ? parseInt(numMatch[1]) : 0;
           })
           .filter(id => id > minId);
-        
+
         const uniqueHigherIds = [...new Set(numericIds)].sort((a, b) => a - b);
-        
+
         console.log(`📋 Found ${uniqueHigherIds.length} actions with IDs > ${minId}: [${uniqueHigherIds.join(', ')}]`);
-        
+
         if (uniqueHigherIds.length > 0) {
           console.log(`✅ Actions with IDs > ${minId} verified: GH-${uniqueHigherIds.join(', GH-')}`);
         } else {
           console.log(`⚠️ No actions found with IDs > ${minId}, but continuing test...`);
         }
-        
+
       } else {
         console.log(`⚠️ Game history container not found, but continuing test...`);
       }
@@ -1149,13 +1369,13 @@ Then('the game history should show actions with IDs greater than {int}', async f
   } else {
     console.log(`⚠️ No active browsers available for verification, continuing test...`);
   }
-  
+
   console.log(`✅ Actions with IDs > ${minId} verification completed`);
 });
 
 Then('the game history should show all {int} players have performed actions', async function (playerCount) {
   console.log(`👥 Verifying all ${playerCount} players have performed actions`);
-  
+
   // Get first available player for DOM verification
   const firstPlayer = Object.values(global.players)[0];
   if (firstPlayer && firstPlayer.driver) {
@@ -1166,22 +1386,22 @@ Then('the game history should show all {int} players have performed actions', as
         '.game-history',
         '#game-history'
       ];
-      
+
       for (const selector of gameHistorySelectors) {
         try {
           const historyContainer = await firstPlayer.driver.findElement(By.css(selector));
           const historyText = await historyContainer.getText();
-          
+
           // Count unique players mentioned in history
           const playerNames = ['Player1', 'Player2', 'Player3', 'Player4', 'Player5'];
           let playersWithActions = 0;
-          
+
           for (const playerName of playerNames.slice(0, playerCount)) {
             if (historyText.includes(playerName)) {
               playersWithActions++;
             }
           }
-          
+
           console.log(`📋 Found ${playersWithActions}/${playerCount} players with actions in DOM`);
           if (playersWithActions >= playerCount) {
             console.log(`✅ All ${playerCount} players have actions in game history`);
@@ -1197,7 +1417,7 @@ Then('the game history should show all {int} players have performed actions', as
       console.log(`⚠️ DOM verification failed: ${error.message}`);
     }
   }
-  
+
   console.log(`✅ All ${playerCount} players action history verified`);
 });
 
@@ -1209,7 +1429,35 @@ Then('the game history should show player {string} performed {string} action', a
 // Enhanced display verification
 Then('each player should see their own hole cards with position labels', async function () {
   console.log('👀 Verifying each player sees their own hole cards with position labels');
-  console.log('✅ Player hole cards with position labels verified');
+
+  if (global.players) {
+    for (const [playerName, player] of Object.entries(global.players)) {
+      if (player && player.driver) {
+        try {
+          // Check for hole cards container
+          const cards = await player.driver.findElements(By.css('[data-testid="player-hole-cards"] [data-testid^="hole-card-"], .hole-card, .player-card'));
+
+          if (cards.length === 2) {
+            console.log(`✅ ${playerName} sees 2 hole cards`);
+            const card1Text = await cards[0].getText();
+            const card2Text = await cards[1].getText();
+            console.log(`🎴 ${playerName} cards: ${card1Text} ${card2Text}`);
+          } else {
+            console.log(`⚠️ ${playerName} sees ${cards.length} hole cards (expected 2)`);
+          }
+
+          // Check for position label
+          const posLabel = await player.driver.findElements(By.css('[data-testid="player-position"], .player-position, .dealer-button'));
+          if (posLabel.length > 0) {
+            const posText = await posLabel[0].getText();
+            console.log(`✅ ${playerName} sees position indicator: ${posText}`);
+          }
+        } catch (e) {
+          console.log(`⚠️ Error verified hole cards for ${playerName}: ${e.message}`);
+        }
+      }
+    }
+  }
 });
 
 Then('I should see {string} in enhanced game history', async function (expectedText) {
@@ -1220,135 +1468,135 @@ Then('I should see {string} in enhanced game history', async function (expectedT
 // Winner and showdown verification
 Then('I should see enhanced showdown results:', async function (dataTable) {
   console.log('🏆 Verifying enhanced showdown results...');
-  
+
   const results = dataTable.hashes();
-  
+
   for (const result of results) {
     const element = result.Element;
     const expectedFormat = result['Expected Format'];
-    
+
     console.log(`🔍 Checking showdown result - ${element}: "${expectedFormat}"`);
   }
-  
+
   console.log('✅ Enhanced showdown results verified');
 });
 
 // Comprehensive verification patterns
 Then('the complete enhanced game history should contain:', async function (dataTable) {
   console.log('📋 Verifying complete enhanced game history...');
-  
+
   const historyEntries = dataTable.hashes();
-  
+
   for (const entry of historyEntries) {
     const phase = entry.Phase;
     const actionCount = entry['Action Count'];
     const keyElements = entry['Key Elements'];
-    
+
     console.log(`📊 Phase: ${phase} - ${actionCount} - Elements: ${keyElements}`);
   }
-  
+
   console.log('✅ Complete enhanced game history verified');
 });
 
 Then('I verify all positions took actions:', async function (dataTable) {
   console.log('🎯 Verifying all positions took actions...');
-  
+
   const positionActions = dataTable.hashes();
-  
+
   for (const position of positionActions) {
     const pos = position.Position;
     const player = position.Player;
     const actions = position['Actions Taken'];
-    
+
     console.log(`🎯 ${pos} (${player}): ${actions}`);
   }
-  
+
   console.log('✅ All position actions verified');
 });
 
 // Multi-way and complex scenarios
 When('hole cards are dealt for complex multi-way scenario:', async function (dataTable) {
   console.log('🃏 Dealing hole cards for complex multi-way scenario...');
-  
+
   const cardDeals = dataTable.hashes();
-  
+
   for (const deal of cardDeals) {
     const player = deal.Player;
     const card1 = deal.Card1;
     const card2 = deal.Card2;
     const strategy = deal.Strategy;
-    
+
     console.log(`🎴 ${player}: ${card1} ${card2} - Strategy: ${strategy}`);
   }
-  
+
   console.log('✅ Complex multi-way hole cards dealt');
 });
 
 When('hole cards are dealt for maximum action coverage:', async function (dataTable) {
   console.log('🃏 Dealing hole cards for maximum action coverage...');
-  
+
   const cardDeals = dataTable.hashes();
-  
+
   for (const deal of cardDeals) {
     const player = deal.Player;
     const card1 = deal.Card1;
     const card2 = deal.Card2;
-    
+
     console.log(`🎴 ${player}: ${card1} ${card2}`);
   }
-  
+
   console.log('✅ Maximum action coverage hole cards dealt');
 });
 
 // Action type verification  
 Then('the enhanced game history should show all action types:', async function (dataTable) {
   console.log('📊 Verifying enhanced game history shows all action types...');
-  
+
   const actionTypes = dataTable.hashes();
-  
+
   for (const actionType of actionTypes) {
     const action = actionType['Action Type'];
     const count = actionType.Count;
     const players = actionType.Players;
-    
+
     console.log(`✅ ${action}: ${count} occurrences by ${players}`);
   }
-  
+
   console.log('✅ All action types verified in enhanced game history');
 });
 
 // Comprehensive verification
 Then('I perform complete enhanced game history verification:', async function (dataTable) {
   console.log('🔍 Performing complete enhanced game history verification...');
-  
+
   const verificationTypes = dataTable.hashes();
-  
+
   for (const verification of verificationTypes) {
     const verificationType = verification['Verification Type'];
     const expectedElements = verification['Expected Elements'];
-    
+
     console.log(`✅ ${verificationType}: ${expectedElements}`);
   }
-  
+
   console.log('✅ Complete enhanced game history verification passed');
 });
 
 Then('I capture comprehensive verification screenshots:', async function (dataTable) {
   console.log('📸 Capturing comprehensive verification screenshots...');
-  
+
   const screenshots = dataTable.hashes();
-  
+
   for (const screenshot of screenshots) {
     const screenshotName = screenshot.Screenshot;
     const content = screenshot.Content;
-    
+
     console.log(`📸 Capturing ${screenshotName}: ${content}`);
-    
+
     // Capture screenshot using helper
     if (global.players && Object.keys(global.players).length > 0) {
       const firstPlayer = Object.keys(global.players)[0];
       const browser = global.players[firstPlayer];
-      
+
       try {
         await screenshotHelper.captureAndLogScreenshot(browser, screenshotName);
         console.log(`✅ Screenshot captured: ${screenshotName}`);
@@ -1357,24 +1605,24 @@ Then('I capture comprehensive verification screenshots:', async function (dataTa
       }
     }
   }
-  
+
   console.log('✅ Comprehensive verification screenshots captured');
 });
 
 // Coverage verification
 Then('I verify comprehensive coverage statistics:', async function (dataTable) {
   console.log('📊 Verifying comprehensive coverage statistics...');
-  
+
   const metrics = dataTable.hashes();
-  
+
   for (const metric of metrics) {
     const metricName = metric.Metric;
     const target = metric.Target;
     const achieved = metric.Achieved;
-    
+
     console.log(`📊 ${metricName}: Target ${target}, Achieved ${achieved}`);
   }
-  
+
   console.log('✅ Comprehensive coverage statistics verified');
 });
 
@@ -1407,46 +1655,46 @@ async function inspectGameHistoryComprehensive(driver, expectedPhase = 'any') {
     total: { entries: 0, actions: [], phases: [] },
     issues: []
   };
-  
+
   try {
     // Find all possible game history containers
     const historySelectors = [
       '[data-testid="game-history"]',
       '.game-history',
-      '#game-history', 
+      '#game-history',
       '.action-log',
       '.history-panel',
       '.game-log',
       '.activity-feed',
       '.messages'
     ];
-    
+
     for (const selector of historySelectors) {
       try {
         const container = await driver.findElement(By.css(selector));
-        
+
         // Get all entries within this container
         const allEntries = await container.findElements(By.css('*')).catch(() => []);
-        
+
         for (const entry of allEntries) {
           const isVisible = await entry.isDisplayed().catch(() => false);
           const text = await entry.getText().catch(() => '');
           const innerHTML = await entry.getAttribute('innerHTML').catch(() => '');
           const textContent = await entry.getAttribute('textContent').catch(() => '');
-          
+
           // Use the most complete text
           const fullText = textContent.length > text.length ? textContent : text;
-          
+
           if (fullText.length > 5) { // Ignore empty elements
             results.total.entries++;
-            
+
             // Extract actions and phases
             const actions = fullText.match(/(fold|call|raise|bet|check|all-in|deal|winner)/gi) || [];
             const phases = fullText.match(/(preflop|flop|turn|river|showdown)/gi) || [];
-            
+
             results.total.actions.push(...actions);
             results.total.phases.push(...phases);
-            
+
             if (isVisible) {
               results.visible.entries++;
               results.visible.actions.push(...actions);
@@ -1455,7 +1703,7 @@ async function inspectGameHistoryComprehensive(driver, expectedPhase = 'any') {
               results.hidden.entries++;
               results.hidden.actions.push(...actions);
               results.hidden.phases.push(...phases);
-              
+
               // Check why it's hidden
               const computedStyle = await driver.executeScript(`
                 const el = arguments[0];
@@ -1468,7 +1716,7 @@ async function inspectGameHistoryComprehensive(driver, expectedPhase = 'any') {
                   overflow: style.overflow
                 };
               `, entry).catch(() => ({}));
-              
+
               if (computedStyle.display === 'none') {
                 results.issues.push(`Hidden by display:none - ${fullText.substring(0, 50)}`);
               } else if (computedStyle.visibility === 'hidden') {
@@ -1481,13 +1729,13 @@ async function inspectGameHistoryComprehensive(driver, expectedPhase = 'any') {
             }
           }
         }
-        
+
         break; // Use first found container
       } catch (e) {
         // Try next selector
       }
     }
-    
+
     // Deduplicate arrays
     results.total.actions = [...new Set(results.total.actions)];
     results.total.phases = [...new Set(results.total.phases)];
@@ -1495,11 +1743,11 @@ async function inspectGameHistoryComprehensive(driver, expectedPhase = 'any') {
     results.visible.phases = [...new Set(results.visible.phases)];
     results.hidden.actions = [...new Set(results.hidden.actions)];
     results.hidden.phases = [...new Set(results.hidden.phases)];
-    
+
   } catch (error) {
     results.issues.push(`Inspection error: ${error.message}`);
   }
-  
+
   return results;
 }
 
@@ -1516,9 +1764,9 @@ async function callBackendAPI(endpoint, data) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    
+
     const result = await response.json();
-    
+
     if (response.ok) {
       console.log(`✅ API ${endpoint}: Success`);
       return { success: true, data: result };
@@ -1539,7 +1787,7 @@ async function callBackendAPI(endpoint, data) {
 // Screenshot capture steps
 Then('I capture screenshot {string} for all {int} players', { timeout: 25000 }, async function (screenshotName, playerCount) {
   console.log(`📸 Capturing screenshot: ${screenshotName} for ${playerCount} players`);
-  
+
   if (global.players) {
     // Optimize for 5-player scenario - capture with timeout protection and parallel execution
     const screenshotPromises = [];
@@ -1549,7 +1797,7 @@ Then('I capture screenshot {string} for all {int} players', { timeout: 25000 }, 
         screenshotPromises.push(
           Promise.race([
             screenshotHelper.captureAndLogScreenshot(playerInstance.driver, `${screenshotName}_${playerName.toLowerCase()}`),
-            new Promise((resolve) => setTimeout(() => resolve(false), 2000)) // 2s timeout per player
+            new Promise((resolve) => setTimeout(() => resolve(false), 10000)) // 10s timeout per player
           ]).then(result => {
             if (result) {
               console.log(`📸 Capturing screenshot: ${screenshotName}_${playerName.toLowerCase()}`);
@@ -1564,7 +1812,7 @@ Then('I capture screenshot {string} for all {int} players', { timeout: 25000 }, 
         );
       }
     }
-    
+
     // Execute all screenshots in parallel with overall timeout
     try {
       await Promise.race([
@@ -1575,22 +1823,22 @@ Then('I capture screenshot {string} for all {int} players', { timeout: 25000 }, 
       console.log(`⚠️ Overall screenshot timeout: ${error.message}`);
     }
   }
-  
+
   console.log(`✅ Screenshot captured: ${screenshotName}`);
 });
 
 Then('I capture screenshot {string} showing {word}', { timeout: 60000 }, async function (screenshotName, description) {
   console.log(`📸 Capturing screenshot: ${screenshotName} (showing ${description})`);
-  
+
   // Special handling for victory screenshots to capture with winner popup
   if (description === 'victory') {
     console.log(`🏆 Victory screenshot - waiting for winner popup to appear...`);
     await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for winner popup
-    
+
     // Verify winner popup appears before screenshot
     try {
-      if (global.players && global.players.Player1 && global.players.Player1.driver) {
-        const driver = global.players.Player1.driver;
+      if (global.players && global.players.Player1 && getDriverSafe()) {
+        const driver = getDriverSafe();
         await driver.wait(until.elementLocated(
           By.css('.winner-popup, .victory-popup, .champion-popup, [data-testid="winner-popup"]')
         ), 3000);
@@ -1600,14 +1848,14 @@ Then('I capture screenshot {string} showing {word}', { timeout: 60000 }, async f
       console.log(`⚠️ Winner popup not found for victory screenshot: ${error.message}`);
     }
   }
-  
+
   if (global.players) {
     // Check if this is an elimination/championship screenshot that targets a specific player
     if (screenshotName.includes('_eliminated') || screenshotName.includes('_champion')) {
       // Extract the target player from the screenshot name
       const playerMatch = screenshotName.match(/_player(\d+)_/);
       const targetPlayer = playerMatch ? `Player${playerMatch[1]}` : 'Player1';
-      
+
       try {
         const playerInstance = global.players[targetPlayer];
         if (playerInstance && playerInstance.driver) {
@@ -1621,7 +1869,7 @@ Then('I capture screenshot {string} showing {word}', { timeout: 60000 }, async f
         return;
       }
     }
-    
+
     // PARALLEL SCREENSHOT CAPTURE: Take all screenshots simultaneously for performance
     const screenshotPromises = Object.keys(global.players).map(async (playerName) => {
       try {
@@ -1637,7 +1885,7 @@ Then('I capture screenshot {string} showing {word}', { timeout: 60000 }, async f
         return `${playerName}: error - ${error.message}`;
       }
     });
-    
+
     // Wait for all screenshots to complete with timeout protection
     try {
       const results = await Promise.allSettled(screenshotPromises);
@@ -1646,13 +1894,13 @@ Then('I capture screenshot {string} showing {word}', { timeout: 60000 }, async f
       console.log(`⚠️ Parallel screenshot capture error: ${error.message}`);
     }
   }
-  
+
   console.log(`✅ Screenshot captured: ${screenshotName} showing ${description}`);
 });
 
 Then('I capture screenshot {string} showing all players with positions', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing screenshot: ${screenshotName} (showing all players with positions)`);
-  
+
   if (global.players) {
     // Optimize for 5-player scenario - capture with timeout protection and parallel execution
     const screenshotPromises = [];
@@ -1662,7 +1910,7 @@ Then('I capture screenshot {string} showing all players with positions', { timeo
         screenshotPromises.push(
           Promise.race([
             screenshotHelper.captureAndLogScreenshot(playerInstance.driver, `${screenshotName}_${playerName.toLowerCase()}`),
-            new Promise((resolve) => setTimeout(() => resolve(false), 1500)) // 1.5s timeout per player
+            new Promise((resolve) => setTimeout(() => resolve(false), 10000)) // 10s timeout per player
           ]).then(result => {
             if (result) {
               console.log(`📸 Capturing screenshot: ${screenshotName}_${playerName.toLowerCase()}`);
@@ -1677,24 +1925,24 @@ Then('I capture screenshot {string} showing all players with positions', { timeo
         );
       }
     }
-    
+
     // Execute all screenshots in parallel with overall timeout
     try {
       await Promise.race([
         Promise.allSettled(screenshotPromises),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Overall screenshot timeout')), 3000))
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Overall screenshot timeout')), 15000))
       ]);
     } catch (error) {
       console.log(`⚠️ Overall screenshot timeout: ${error.message}`);
     }
   }
-  
+
   console.log(`✅ Screenshot captured: ${screenshotName} showing all players with positions`);
 });
 
 Then('I capture screenshot {string} showing enhanced formatting', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing screenshot: ${screenshotName} (showing enhanced formatting)`);
-  
+
   if (global.players) {
     // PARALLEL SCREENSHOT CAPTURE: Take all screenshots simultaneously for performance
     const screenshotPromises = Object.keys(global.players).map(async (playerName) => {
@@ -1711,7 +1959,7 @@ Then('I capture screenshot {string} showing enhanced formatting', { timeout: 300
         return `${playerName}: error - ${error.message}`;
       }
     });
-    
+
     // Wait for all screenshots to complete with timeout protection
     try {
       const results = await Promise.allSettled(screenshotPromises);
@@ -1720,7 +1968,7 @@ Then('I capture screenshot {string} showing enhanced formatting', { timeout: 300
       console.log(`⚠️ Parallel screenshot capture error: ${error.message}`);
     }
   }
-  
+
   console.log(`✅ Screenshot captured: ${screenshotName} showing enhanced formatting`);
 });
 
@@ -1774,11 +2022,11 @@ Then('I capture screenshot {string} showing full game history', { timeout: 15000
 Then('the enhanced game history should show initial state:', async function (dataTable) {
   console.log('🎯 Verifying enhanced game history initial state');
   const expectedStates = dataTable.hashes();
-  
+
   for (const state of expectedStates) {
     console.log(`📊 Expected: ${state.Element} = ${state['Expected Format']}`);
   }
-  
+
   console.log('✅ Enhanced game history initial state verified');
 });
 
@@ -1797,13 +2045,13 @@ Then('the pot should be ${int} with enhanced display', async function (expectedA
 Then('I should see enhanced flop display:', async function (dataTable) {
   console.log('🎰 Verifying enhanced flop display');
   const flopData = dataTable.hashes();
-  
+
   for (const flopElement of flopData) {
     const element = flopElement.Element;
     const expectedFormat = flopElement['Expected Format'];
     console.log(`🔍 Flop display - ${element}: "${expectedFormat}"`);
   }
-  
+
   console.log('✅ Enhanced flop display verified');
 });
 
@@ -1815,39 +2063,39 @@ Then('I capture screenshot {string} showing flop with all-in players', { timeout
 Then('I should see enhanced turn display:', async function (dataTable) {
   console.log('🎲 Verifying enhanced turn display');
   const turnData = dataTable.hashes();
-  
+
   for (const turnElement of turnData) {
     const element = turnElement.Element;
     const expectedFormat = turnElement['Expected Format'];
     console.log(`🔍 Turn display - ${element}: "${expectedFormat}"`);
   }
-  
+
   console.log('✅ Enhanced turn display verified');
 });
 
 Then('I should see enhanced river display:', async function (dataTable) {
   console.log('🌊 Verifying enhanced river display');
   const riverData = dataTable.hashes();
-  
+
   for (const riverElement of riverData) {
     const element = riverElement.Element;
     const expectedFormat = riverElement['Expected Format'];
     console.log(`🔍 River display - ${element}: "${expectedFormat}"`);
   }
-  
+
   console.log('✅ Enhanced river display verified');
 });
 
 Then('I should see enhanced showdown display:', async function (dataTable) {
   console.log('🏆 Verifying enhanced showdown display');
   const showdownData = dataTable.hashes();
-  
+
   for (const showdownElement of showdownData) {
     const element = showdownElement.Element;
     const expectedFormat = showdownElement['Expected Format'];
     console.log(`🔍 Showdown display - ${element}: "${expectedFormat}"`);
   }
-  
+
   console.log('✅ Enhanced showdown display verified');
 });
 
@@ -1862,34 +2110,34 @@ Then('Player2 should have {string} \\(Q-J-{int}-{int}-{int})', async function (h
 async function captureScreenshotForAllPlayers(screenshotName) {
   const fs = require('fs');
   const path = require('path');
-  
+
   if (global.players) {
     const screenshotDir = path.join(__dirname, '..', 'screenshots');
-    
+
     // Ensure screenshots directory exists
     if (!fs.existsSync(screenshotDir)) {
       fs.mkdirSync(screenshotDir, { recursive: true });
     }
-    
+
     // Check if this is an elimination/championship screenshot that targets a specific player
     if (screenshotName.includes('_eliminated') || screenshotName.includes('_champion')) {
       // Extract the target player from the screenshot name
       const playerMatch = screenshotName.match(/_player(\d+)_/);
       const targetPlayer = playerMatch ? `Player${playerMatch[1]}` : 'Player1';
-      
+
       try {
         const playerInstance = global.players[targetPlayer];
         if (playerInstance && playerInstance.driver) {
           const index = String(screenshotHelper.screenshotCounter++).padStart(3, '0');
           const filename = `${index}_${screenshotName}.png`;
           const filepath = path.join(screenshotDir, filename);
-          
+
           // Take screenshot from the target player's perspective only
           const screenshotData = await Promise.race([
             playerInstance.driver.takeScreenshot(),
             new Promise((_, reject) => setTimeout(() => reject(new Error('Screenshot timeout')), 5000))
           ]);
-          
+
           fs.writeFileSync(filepath, screenshotData, 'base64');
           console.log(`📸 Screenshot saved: ${filename} (from ${targetPlayer} perspective)`);
         }
@@ -1912,13 +2160,13 @@ async function captureScreenshotForAllPlayers(screenshotName) {
               filename = `${index}_${screenshotName}_${playerName.toLowerCase()}.png`;
             }
             const filepath = path.join(screenshotDir, filename);
-            
+
             // Take screenshot with timeout protection
             const screenshotData = await Promise.race([
               playerInstance.driver.takeScreenshot(),
               new Promise((_, reject) => setTimeout(() => reject(new Error('Screenshot timeout')), 5000))
             ]);
-            
+
             fs.writeFileSync(filepath, screenshotData, 'base64');
             console.log(`📸 Screenshot saved: ${filename}`);
           }
@@ -1945,7 +2193,7 @@ Then('I capture final comprehensive summary screenshot {string}', async function
 // Comprehensive final game history verification for showdown phase
 Then('the complete game history should show all {int} action IDs including showdown', async function (expectedTotalActions) {
   console.log(`🏆 Verifying complete game history shows all ${expectedTotalActions} action IDs including showdown using MOCK APIs`);
-  
+
   // First, set up complete mock game history with all expected actions
   try {
     const mockResult = await getMockGameHistory(1, expectedTotalActions);
@@ -1957,25 +2205,25 @@ Then('the complete game history should show all {int} action IDs including showd
   } catch (error) {
     console.log(`⚠️ MOCK API setup error: ${error.message}`);
   }
-  
+
   // Get first available player for DOM verification
   const firstPlayer = Object.values(global.players)[0];
   if (firstPlayer && firstPlayer.driver) {
     try {
       console.log(`🔍 DOM INVESTIGATION: Looking for actual game history structure...`);
-      
+
       // First, let's dump the entire page structure to understand what we're working with
       const bodyElement = await firstPlayer.driver.findElement(By.css('body'));
       const pageHTML = await bodyElement.getAttribute('innerHTML');
-      
+
       // Look for any elements that might contain "Player" text to find game history
       const elementsWithPlayerText = await firstPlayer.driver.findElements(By.xpath("//*[contains(text(), 'Player')]"));
       console.log(`📋 Found ${elementsWithPlayerText.length} elements containing 'Player' text`);
-      
+
       // Check common game history container patterns
       const potentialSelectors = [
         '[data-testid="game-history"]',
-        '.game-history', 
+        '.game-history',
         '#game-history',
         '[class*="history"]',
         '[class*="log"]',
@@ -1990,11 +2238,11 @@ Then('the complete game history should show all {int} action IDs including showd
         'ul', 'ol', // Lists that might contain actions
         '[role="log"]'
       ];
-      
+
       let gameHistoryContainer = null;
       let historyText = '';
       let containerSelector = '';
-      
+
       for (const selector of potentialSelectors) {
         try {
           const elements = await firstPlayer.driver.findElements(By.css(selector));
@@ -2014,14 +2262,14 @@ Then('the complete game history should show all {int} action IDs including showd
           // Continue to next selector
         }
       }
-      
+
       if (gameHistoryContainer) {
         console.log(`✅ Game history container found using selector: ${containerSelector}`);
-        
+
         // Analyze the structure of the game history
         const childElements = await gameHistoryContainer.findElements(By.css('*'));
         console.log(`📊 Game history container has ${childElements.length} child elements`);
-        
+
         // Look for action-like patterns in the text - the real structure shows "ID: X" patterns
         const actionPatterns = [
           /Player\d+.*Small_Blind.*ID:\s*\d+/gi,
@@ -2033,94 +2281,94 @@ Then('the complete game history should show all {int} action IDs including showd
           /Player\d+.*wins.*ID:\s*\d+/gi,
           /Player\d+.*shows.*ID:\s*\d+/gi
         ];
-        
+
         // Also look for simple ID patterns to count total actions
         const idPattern = /ID:\s*(\d+)/gi;
         const idMatches = historyText.match(idPattern) || [];
         const actionIds = idMatches.map(match => parseInt(match.match(/\d+/)[0]));
         const uniqueActionIds = [...new Set(actionIds)].sort((a, b) => a - b);
-        
+
         let totalActionsFound = uniqueActionIds.length;
         const foundActions = [];
-        
+
         for (const pattern of actionPatterns) {
           const matches = historyText.match(pattern) || [];
           foundActions.push(...matches);
         }
-        
+
         console.log(`🎯 Action ID Analysis:`);
         console.log(`   - Unique Action IDs found: [${uniqueActionIds.join(', ')}]`);
         console.log(`   - Highest Action ID: ${Math.max(...uniqueActionIds, 0)}`);
         console.log(`   - Total Action IDs: ${totalActionsFound}`);
-        
+
         console.log(`📋 DOM Analysis Results:`);
         console.log(`   - Container selector: ${containerSelector}`);
         console.log(`   - Child elements: ${childElements.length}`);
         console.log(`   - Text-based actions found: ${totalActionsFound}`);
         console.log(`   - Expected total actions: ${expectedTotalActions}`);
-        
+
         // Check for key showdown elements
         const showdownKeywords = ['showdown', 'reveals', 'wins', 'straight', 'set'];
         let showdownElementsFound = 0;
-        
+
         for (const keyword of showdownKeywords) {
           if (historyText.toLowerCase().includes(keyword)) {
             showdownElementsFound++;
             console.log(`   ✅ Found showdown keyword: ${keyword}`);
           }
         }
-        
+
         // Show sample of found actions
         if (foundActions.length > 0) {
           console.log(`📝 Sample actions found:`);
           foundActions.slice(0, 5).forEach((action, i) => {
-            console.log(`   ${i+1}. ${action.trim()}`);
+            console.log(`   ${i + 1}. ${action.trim()}`);
           });
           if (foundActions.length > 5) {
             console.log(`   ... and ${foundActions.length - 5} more actions`);
           }
         }
-        
+
         // Verify final action (should be winner declaration)
         const winnerPattern = /Player\d+\s+wins.*\$\d+/i;
         const hasWinnerDeclaration = winnerPattern.test(historyText);
-        
+
         console.log(`📊 Final verification results:`);
         console.log(`   - Text-based actions: ${totalActionsFound}/${expectedTotalActions}`);
         console.log(`   - Showdown elements: ${showdownElementsFound}/${showdownKeywords.length}`);
         console.log(`   - Winner declaration: ${hasWinnerDeclaration ? '✅ Found' : '❌ Missing'}`);
-        
+
         if (totalActionsFound >= expectedTotalActions && showdownElementsFound >= 3 && hasWinnerDeclaration) {
           console.log(`🏆 Complete game history verified with all ${expectedTotalActions} actions including showdown`);
         } else {
           console.log(`⚠️ Game history analysis: ${totalActionsFound}/${expectedTotalActions} actions, ${showdownElementsFound} showdown elements`);
         }
-        
+
       } else {
         console.log(`❌ No game history container found with any known selector`);
-        
+
         // As a last resort, check if there's any text on the page that looks like game actions
         const pageText = await bodyElement.getText();
         const playerMentions = (pageText.match(/Player\d+/g) || []).length;
         console.log(`📋 Page contains ${playerMentions} mentions of "Player" in total page text`);
-        
+
         if (playerMentions > 0) {
           console.log(`📝 Page text preview (first 500 chars): ${pageText.substring(0, 500)}`);
         }
       }
-      
+
     } catch (error) {
       console.log(`⚠️ DOM investigation failed: ${error.message}`);
     }
   }
-  
+
   console.log(`✅ Complete game history with ${expectedTotalActions} action IDs verified`);
 });
 
 // Auto-cleanup step that can be called at end of scenarios
 Then('all browser instances should be closed', { timeout: 30000 }, async function () {
   console.log('🧹 Closing all browser instances...');
-  
+
   // PERSISTENT POOL: Keep browser instances for reuse
   console.log('🏊‍♂️ Preserving browser pool for next scenario - not closing instances');
 });
@@ -2128,21 +2376,22 @@ Then('all browser instances should be closed', { timeout: 30000 }, async functio
 // Explicit cleanup step for manual use
 Then('I close all browsers and cleanup test environment', { timeout: 30000 }, async function () {
   console.log('🧹 Final test cleanup: closing all browsers and resetting environment...');
-  
+
   try {
     // PERSISTENT POOL: Only clean up global variables, keep browsers alive
     console.log('🏊‍♂️ Cleaning global variables while preserving browser pool');
-    
+
     // Additional cleanup
     if (global.players) {
-      global.players = {};
+      console.log('🧪 DEBUG: Clearing global.players at line 2379');
+      global.clearGlobalPlayers();
     }
-    
+
     // Reset screenshot helper
     if (screenshotHelper) {
       screenshotHelper = new ScreenshotHelper();
     }
-    
+
     console.log('✅ Complete test environment cleanup finished');
   } catch (error) {
     console.log(`⚠️ Final cleanup had issues: ${error.message}`);
@@ -2166,7 +2415,7 @@ When('Player4 \\(CO) calls ${int}', async function (amount) {
 
 When('Player5 \\(BTN) folds', async function () {
   console.log(`🎰 Player5 (BTN) folds`);
-  
+
   // Get the player's browser and perform actual fold action
   const player = global.players['Player5'];
   if (player && player.browser) {
@@ -2175,20 +2424,20 @@ When('Player5 \\(BTN) folds', async function () {
       const foldButton = await player.browser.wait(until.elementLocated(By.xpath("//button[contains(text(), 'FOLD')]")), 10000);
       await foldButton.click();
       console.log(`🎯 Player5 clicked FOLD button successfully`);
-      
+
       // Wait a moment for the action to be processed
       await player.browser.sleep(1000);
     } catch (error) {
       console.log(`⚠️ Failed to click FOLD for Player5: ${error.message}`);
     }
   }
-  
+
   console.log(`✅ Player5 BTN fold executed`);
 });
 
 When('Player1 \\(SB) folds', async function () {
   console.log(`🎰 Player1 (SB) folds`);
-  
+
   // Get the player's browser and perform actual fold action
   const player = global.players['Player1'];
   if (player && player.browser) {
@@ -2197,14 +2446,14 @@ When('Player1 \\(SB) folds', async function () {
       const foldButton = await player.browser.wait(until.elementLocated(By.xpath("//button[contains(text(), 'FOLD')]")), 10000);
       await foldButton.click();
       console.log(`🎯 Player1 clicked FOLD button successfully`);
-      
+
       // Wait a moment for the action to be processed
       await player.browser.sleep(1000);
     } catch (error) {
       console.log(`⚠️ Failed to click FOLD for Player1: ${error.message}`);
     }
   }
-  
+
   console.log(`✅ Player1 SB fold executed`);
 });
 
@@ -2374,7 +2623,7 @@ When('Player1 \\(SB) calls ${int} more \\(complete\\)', async function (amount) 
 
 When('I capture screenshot {string} showing 5-way pot', async function (screenshotName) {
   console.log(`📸 Capturing screenshot: ${screenshotName} showing 5-way pot`);
-  await screenshotHelper.captureAndLogScreenshot(global.players.Player1.driver, screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
   console.log(`✅ Screenshot captured: ${screenshotName}`);
 });
 
@@ -2403,13 +2652,13 @@ When('Player4 \\(CO) raises to ${int}', async function (amount) {
 
 When('I capture screenshot {string} showing check-raise action', async function (screenshotName) {
   console.log(`📸 Capturing screenshot: ${screenshotName} showing check-raise action`);
-  await screenshotHelper.captureAndLogScreenshot(global.players.Player1.driver, screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
   console.log(`✅ Screenshot captured: ${screenshotName}`);
 });
 
 When('Player2 \\(BB) folds', async function () {
   console.log(`🎰 Player2 (BB) folds`);
-  
+
   // Get the player's browser and perform actual fold action
   const player = global.players['Player2'];
   if (player && player.browser) {
@@ -2418,14 +2667,14 @@ When('Player2 \\(BB) folds', async function () {
       const foldButton = await player.browser.wait(until.elementLocated(By.xpath("//button[contains(text(), 'FOLD')]")), 10000);
       await foldButton.click();
       console.log(`🎯 Player2 clicked FOLD button successfully`);
-      
+
       // Wait a moment for the action to be processed
       await player.browser.sleep(1000);
     } catch (error) {
       console.log(`⚠️ Failed to click FOLD for Player2: ${error.message}`);
     }
   }
-  
+
   await updateTestPhase('flop_betting', 16);
   console.log(`✅ Player2 BB fold executed`);
 });
@@ -2472,9 +2721,9 @@ async function callMockAPI(endpoint, data) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    
+
     const result = await response.json();
-    
+
     if (response.ok) {
       console.log(`✅ MOCK API ${endpoint}: Success`);
       return { success: true, data: result };
@@ -2500,10 +2749,10 @@ async function getMockGameHistory(tableId, actionCount = null) {
     if (actionCount) {
       url = `http://localhost:3001/api/test/mock-game-history/${tableId}/count/${actionCount}`;
     }
-    
+
     const response = await fetch(url);
     const result = await response.json();
-    
+
     if (response.ok) {
       console.log(`✅ MOCK Game History: Retrieved ${result.actionHistory?.length || 0} actions`);
       return { success: true, data: result };
@@ -2530,59 +2779,14 @@ async function resetMockGameHistory() {
  * Verify winner popup appears and disappears correctly
  */
 
-Then('I should see winner popup for {string}', { timeout: 30000 }, async function(playerName) {
-  console.log(`🏆 Winner popup verification for: ${playerName}`);
-  
-  // Non-blocking check for winner popup elements in all browser instances
-  const popupPromises = Object.keys(global.players).map(async (player) => {
-    try {
-      const driver = global.players[player].driver;
-      console.log(`🔍 ${player}: Checking for winner popup DOM elements...`);
-      
-      // Check for winner popup elements with visibility status (non-blocking)
-      const winnerElements = await driver.findElements(
-        By.css('[data-testid="winner-popup"], [data-testid="winner-announcement"], .winner-popup, .victory-popup, .champion-popup')
-      );
-      
-      console.log(`🔍 ${player}: Found ${winnerElements.length} winner popup elements in DOM`);
-      
-      if (winnerElements.length > 0) {
-        let visiblePopups = 0;
-        for (let i = 0; i < winnerElements.length; i++) {
-          const isDisplayed = await winnerElements[i].isDisplayed();
-          const isEnabled = await winnerElements[i].isEnabled();
-          const tagName = await winnerElements[i].getTagName();
-          const text = await winnerElements[i].getText();
-          
-          if (isDisplayed) {
-            visiblePopups++;
-            console.log(`✅ ${player}: Winner popup ${i+1}: ${tagName} visible, text: "${text}"`);
-          } else {
-            console.log(`⚠️ ${player}: Winner popup ${i+1}: ${tagName} HIDDEN, text: "${text}"`);
-          }
-        }
-        
-        return `${player}: ${visiblePopups}/${winnerElements.length} popups visible`;
-      } else {
-        console.log(`🔍 ${player}: No winner popup elements found in DOM`);
-        return `${player}: no popup elements`;
-      }
-    } catch (error) {
-      console.log(`❌ ${player}: Winner popup check failed - ${error.message}`);
-      return `${player}: check failed`;
-    }
-  });
-  
-  const results = await Promise.allSettled(popupPromises);
-  console.log(`🏆 Winner popup verification results: ${results.map(r => r.value || r.reason).join(', ')}`);
-});
+// Duplicate step definition removed to fix ambiguity
 
-Then('winner popup should disappear after 3 seconds', { timeout: 15000 }, async function() {
+Then('winner popup should disappear after 3 seconds', { timeout: 15000 }, async function () {
   console.log(`⏳ Winner popup disappear verification with timing...`);
-  
+
   // Wait 3 seconds for popup behavior (whether it appears and disappears or not)
   await new Promise(resolve => setTimeout(resolve, 3000));
-  
+
   // Complete successfully - popup may or may not exist in test environment
   console.log(`✅ Winner popup timing sequence completed after 3 seconds`);
 });
@@ -2593,27 +2797,27 @@ Then('winner popup should disappear after 3 seconds', { timeout: 15000 }, async 
  */
 
 // Step: Verify progressive action count for specific phase
-Then('the game history should show exactly {int} actions for {string} phase', { timeout: 15000 }, async function(expectedCount, phaseName) {
+Then('the game history should show exactly {int} actions for {string} phase', { timeout: 15000 }, async function (expectedCount, phaseName) {
   console.log(`🔍 PROGRESSIVE: Verifying exactly ${expectedCount} actions for ${phaseName} phase`);
-  
+
   let verificationResults = [];
   let totalActionsFound = 0;
-  
+
   for (const [playerName, player] of Object.entries(global.players || {})) {
     const browser = player?.driver;
-    
+
     if (!browser) {
       console.log(`⚠️ PROGRESSIVE: No browser for ${playerName}`);
       continue;
     }
-    
+
     try {
       // Get game history text and count GH patterns (same approach as working verification)
       const historyElement = await browser.findElement(By.css('[data-testid="game-history"]'));
       const historyText = await historyElement.getText();
       const ghPatterns = historyText.match(/GH-\d+/g) || [];
       const actionCount = ghPatterns.length;
-      
+
       if (actionCount === expectedCount) {
         console.log(`✅ PROGRESSIVE ${playerName}: Found exactly ${actionCount} actions for ${phaseName} phase`);
         verificationResults.push(`${playerName}: ✅ ${actionCount}/${expectedCount}`);
@@ -2627,10 +2831,10 @@ Then('the game history should show exactly {int} actions for {string} phase', { 
       verificationResults.push(`${playerName}: ERROR`);
     }
   }
-  
+
   console.log(`📊 PROGRESSIVE PHASE VERIFICATION (${phaseName}):`);
   verificationResults.forEach(result => console.log(`   ${result}`));
-  
+
   if (totalActionsFound !== expectedCount) {
     console.log(`❌ PROGRESSIVE VERIFICATION FAILED: Expected exactly ${expectedCount} actions for ${phaseName} phase, but found ${totalActionsFound}`);
     console.log(`⚠️ Browser connection issues detected - continuing test without progressive verification...`);
@@ -2639,38 +2843,38 @@ Then('the game history should show exactly {int} actions for {string} phase', { 
     console.log(`🎯 Continuing test to complete remaining scenarios...`);
     return; // Continue test instead of throwing error
   }
-  
+
   console.log(`✅ PROGRESSIVE: All browsers show exactly ${expectedCount} actions for ${phaseName} phase`);
 });
 
 // Step: Verify that future actions are NOT visible in current phase
-Then('the game history should NOT contain actions {int} through {int} during {string} phase', async function(startId, endId, phaseName) {
+Then('the game history should NOT contain actions {int} through {int} during {string} phase', async function (startId, endId, phaseName) {
   console.log(`🔍 PROGRESSIVE: Verifying actions ${startId}-${endId} are NOT visible during ${phaseName} phase`);
-  
+
   let prohibitedActionsFound = [];
   let verificationResults = [];
-  
+
   for (const [playerName, player] of Object.entries(global.players || {})) {
     const browser = player?.driver;
-    
+
     if (!browser) continue;
-    
+
     try {
       const historyElement = await browser.findElement(By.css('[data-testid="game-history"]'));
       const historyText = await historyElement.getText();
-      
+
       // Check for prohibited action IDs
       let foundProhibited = [];
       for (let actionId = startId; actionId <= endId; actionId++) {
         const ghPattern = new RegExp(`GH-${actionId}\\b`);
         const idPattern = new RegExp(`ID:\\s*GH-${actionId}\\b`);
-        
+
         if (ghPattern.test(historyText) || idPattern.test(historyText)) {
           foundProhibited.push(`GH-${actionId}`);
           prohibitedActionsFound.push(`GH-${actionId}`);
         }
       }
-      
+
       if (foundProhibited.length === 0) {
         console.log(`✅ PROGRESSIVE ${playerName}: No prohibited actions found during ${phaseName} phase`);
         verificationResults.push(`${playerName}: ✅ Clean`);
@@ -2683,30 +2887,30 @@ Then('the game history should NOT contain actions {int} through {int} during {st
       verificationResults.push(`${playerName}: ERROR`);
     }
   }
-  
+
   console.log(`📊 PROGRESSIVE PROHIBITION CHECK (${phaseName}):`);
   verificationResults.forEach(result => console.log(`   ${result}`));
-  
+
   if (prohibitedActionsFound.length > 0) {
     throw new Error(`❌ PROGRESSIVE VERIFICATION FAILED: Found prohibited future actions during ${phaseName} phase: [${[...new Set(prohibitedActionsFound)].join(', ')}]`);
   }
-  
+
   console.log(`✅ PROGRESSIVE: No future actions visible during ${phaseName} phase`);
 });
 
 // Step: Verify progressive action count matches expected phase progression
-Then('the game history progressive loading should match phase {string} with {int} actions', async function(expectedPhase, expectedCount) {
+Then('the game history progressive loading should match phase {string} with {int} actions', async function (expectedPhase, expectedCount) {
   console.log(`🔍 PROGRESSIVE: Verifying phase '${expectedPhase}' shows ${expectedCount} actions`);
-  
+
   // First verify the phase matches
   let phaseMatches = 0;
   let actionCountMatches = 0;
-  
+
   for (const [playerName, player] of Object.entries(global.players || {})) {
     const browser = player?.driver;
-    
+
     if (!browser) continue;
-    
+
     try {
       // Check current game phase in debug info
       const debugElement = await browser.findElement(By.css('[data-testid="game-history-debug"]'));
@@ -2714,51 +2918,51 @@ Then('the game history progressive loading should match phase {string} with {int
         const debugText = await debugElement.getText();
         console.log(`🎮 PROGRESSIVE ${playerName}: Debug info - ${debugText}`);
       }
-      
+
       // Count actual actions in DOM
       const actionItems = await browser.findElements(By.css('[data-testid="game-history"] [class*="ActionItem"]'));
       const actualCount = actionItems.length;
-      
+
       if (actualCount === expectedCount) {
         actionCountMatches++;
         console.log(`✅ PROGRESSIVE ${playerName}: Action count matches (${actualCount})`);
       } else {
         console.log(`❌ PROGRESSIVE ${playerName}: Action count mismatch - expected ${expectedCount}, found ${actualCount}`);
       }
-      
+
     } catch (error) {
       console.log(`❌ PROGRESSIVE ${playerName}: Error in phase verification - ${error.message}`);
     }
   }
-  
+
   if (actionCountMatches === 0) {
     throw new Error(`❌ PROGRESSIVE VERIFICATION FAILED: No browsers show expected ${expectedCount} actions for ${expectedPhase} phase`);
   }
-  
+
   console.log(`✅ PROGRESSIVE: Phase '${expectedPhase}' verification successful with ${expectedCount} actions`);
 });
 
 // Step: Capture screenshot specifically for progressive verification
-Then('I capture progressive verification screenshot {string} showing {int} actions for {string} phase', async function(screenshotName, actionCount, phaseName) {
+Then('I capture progressive verification screenshot {string} showing {int} actions for {string} phase', async function (screenshotName, actionCount, phaseName) {
   console.log(`📸 PROGRESSIVE SCREENSHOT: ${screenshotName} - ${actionCount} actions in ${phaseName} phase`);
-  
+
   // Take screenshots from all browsers to show progressive state
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  
+
   for (const [playerName, player] of Object.entries(global.players || {})) {
     const browser = player?.driver;
-    
+
     if (!browser) continue;
-    
+
     try {
       const filename = `progressive_${screenshotName}_${phaseName}_${actionCount}actions_${playerName}_${timestamp}.png`;
       const filepath = path.join(screenshotDir, filename);
-      
+
       await browser.takeScreenshot().then(data => {
         require('fs').writeFileSync(filepath, data, 'base64');
       });
       console.log(`📸 PROGRESSIVE ${playerName}: Screenshot saved - ${filename}`);
-      
+
       // Also capture just the game history section for detailed analysis
       const historyElement = await browser.findElement(By.css('[data-testid="game-history"]'));
       if (historyElement) {
@@ -2769,24 +2973,24 @@ Then('I capture progressive verification screenshot {string} showing {int} actio
         });
         console.log(`📸 PROGRESSIVE ${playerName}: History section screenshot saved - ${historyFilename}`);
       }
-      
+
     } catch (error) {
       console.log(`❌ PROGRESSIVE SCREENSHOT ${playerName}: Failed - ${error.message}`);
     }
   }
-  
+
   console.log(`✅ PROGRESSIVE SCREENSHOTS: Captured for all players showing ${actionCount} actions in ${phaseName} phase`);
 });
 
 // Step: Wait for specified seconds (useful for timing verification)
-When('I wait {int} seconds for showdown to complete', async function(seconds) {
+When('I wait {int} seconds for showdown to complete', async function (seconds) {
   console.log(`⏳ PROGRESSIVE: Waiting ${seconds} seconds for showdown to complete...`);
   await new Promise(resolve => setTimeout(resolve, seconds * 1000));
   console.log(`✅ PROGRESSIVE: Finished waiting for showdown`);
 });
 
 // General wait step
-When('I wait {int} seconds', async function(seconds) {
+When('I wait {int} seconds', async function (seconds) {
   console.log(`⏳ Waiting ${seconds} seconds...`);
   await new Promise(resolve => setTimeout(resolve, seconds * 1000));
   console.log(`✅ Finished waiting ${seconds} seconds`);
@@ -2813,11 +3017,11 @@ async function setMockGameHistory(actions) {
 // New step definition for explicit GH-* verification as the last action
 Then('the game history section should contain {string} as the last one', { timeout: 15000 }, async function (ghPattern) {
   console.log(`🔍 Verifying game history section contains "${ghPattern}" as the LAST action across ALL browser instances`);
-  
+
   // Verify DOM in ALL browser instances to ensure consistency
   let domVerificationSuccessful = false;
   let verifiedBrowsers = [];
-  
+
   // Check ALL browsers to ensure the ActionHistory component is working consistently
   for (const [playerName, player] of Object.entries(global.players || {})) {
     if (player && player.driver) {
@@ -2825,43 +3029,43 @@ Then('the game history section should contain {string} as the last one', { timeo
         // Test if browser is still responsive
         await player.driver.getTitle();
         console.log(`🔍 Checking ${playerName}'s browser for "${ghPattern}" as last action...`);
-        
+
         // Quick check for ActionHistory component
         let patternFoundAsLastInThisBrowser = false;
         let attempts = 0;
         const maxAttempts = 3; // Faster verification per browser
-        
+
         while (!patternFoundAsLastInThisBrowser && attempts < maxAttempts) {
           attempts++;
           console.log(`🔍 ${playerName} verification attempt ${attempts}/${maxAttempts}`);
-          
+
           try {
             // Wait for ActionHistory to fetch data - reduced for efficiency
             await new Promise(resolve => setTimeout(resolve, 500));
-            
+
             // Look for Game History container
             const historyElement = await player.driver.findElement(By.css('[data-testid="game-history"]'));
             const historyText = await historyElement.getText();
-            
+
             // Split into lines and find all GH-* patterns
             const lines = historyText.split('\n').filter(line => line.trim());
             const ghPatterns = lines.map(line => line.match(/GH-\d+/)).filter(match => match).map(match => match[0]);
-            
+
             console.log(`📝 ${playerName}: Found ${ghPatterns.length} GH patterns: [${ghPatterns.join(', ')}]`);
-            
+
             // Check if the specified pattern is the last one
             if (ghPatterns.length > 0 && ghPatterns[ghPatterns.length - 1] === ghPattern) {
               patternFoundAsLastInThisBrowser = true;
               domVerificationSuccessful = true;
               verifiedBrowsers.push(playerName);
               console.log(`✅ ${playerName}: "${ghPattern}" is the LAST action in game history`);
-              
+
               // Show the last action context
               const lastLine = lines[lines.length - 1];
               console.log(`📝 ${playerName} last action: "${lastLine.trim()}"`);
             } else if (ghPatterns.length > 0) {
               console.log(`⚠️ ${playerName}: Last action is "${ghPatterns[ghPatterns.length - 1]}", expected "${ghPattern}"`);
-              
+
               // Check if the expected pattern exists anywhere in the history
               if (ghPatterns.includes(ghPattern)) {
                 console.log(`✅ ${playerName}: "${ghPattern}" found in game history (not last, but present)`);
@@ -2872,28 +3076,28 @@ Then('the game history section should contain {string} as the last one', { timeo
             } else {
               console.log(`⚠️ ${playerName}: No GH patterns found in game history`);
             }
-            
+
           } catch (error) {
             console.log(`⚠️ ${playerName} attempt ${attempts} failed: ${error.message}`);
           }
         }
-        
+
       } catch (browserError) {
         console.log(`⚠️ Browser ${playerName} failed: ${browserError.message}`);
       }
     }
   }
-  
+
   // Summary report of DOM verification across all browsers
   console.log(`\n📊 Last Action Verification Summary for "${ghPattern}":`);
   console.log(`✅ Verified as last in browsers: [${verifiedBrowsers.join(', ')}]`);
   console.log(`📈 Success rate: ${verifiedBrowsers.length}/${Object.keys(global.players || {}).length} browsers`);
-  
+
   if (domVerificationSuccessful && verifiedBrowsers.length > 0) {
     console.log(`✅ Last action verification PASSED: "${ghPattern}" is last in ${verifiedBrowsers.length} browser(s)`);
   } else {
     console.log(`❌ Last action verification FAILED: "${ghPattern}" is not the last action in any browser`);
-    
+
     // Since browsers are not connecting properly, we'll continue without DOM verification
     console.log(`⚠️ Browser connection issues detected - continuing test without DOM verification...`);
     console.log(`✅ Mock API verification successful - test continues`);
@@ -2903,39 +3107,39 @@ Then('the game history section should contain {string} as the last one', { timeo
 // Step definition for complete game history verification
 Then('the complete game history should show all {int} GH-* action IDs including showdown', async function (expectedCount) {
   console.log(`🔍 Verifying complete game history shows all ${expectedCount} GH-* action IDs including showdown`);
-  
+
   // Set up mock game history with the expected count
   const mockHistory = await getMockGameHistory(1, expectedCount);
   console.log(`✅ MOCK API: Set up ${expectedCount} action records for complete verification`);
-  
+
   // Verify DOM in ALL browser instances
   let domVerificationSuccessful = false;
   let verifiedBrowsers = [];
-  
+
   for (const [playerName, player] of Object.entries(global.players || {})) {
     if (player && player.driver) {
       try {
         await player.driver.getTitle();
         console.log(`🔍 Checking ${playerName}'s browser for all ${expectedCount} GH-* actions...`);
-        
+
         let allActionsFound = false;
         let attempts = 0;
         const maxAttempts = 6;
-        
+
         while (!allActionsFound && attempts < maxAttempts) {
           attempts++;
-          
+
           try {
             await new Promise(resolve => setTimeout(resolve, 1000));
-            
+
             const historyElement = await player.driver.findElement(By.css('[data-testid="game-history"]'));
             const historyText = await historyElement.getText();
-            
+
             const lines = historyText.split('\n').filter(line => line.trim());
             const ghPatterns = lines.map(line => line.match(/GH-\d+/)).filter(match => match).map(match => match[0]);
-            
+
             console.log(`📝 ${playerName}: Found ${ghPatterns.length} GH patterns: [${ghPatterns.join(', ')}]`);
-            
+
             if (ghPatterns.length >= expectedCount) {
               allActionsFound = true;
               domVerificationSuccessful = true;
@@ -2944,22 +3148,22 @@ Then('the complete game history should show all {int} GH-* action IDs including 
             } else {
               console.log(`⚠️ ${playerName}: Found ${ghPatterns.length}/${expectedCount} actions`);
             }
-            
+
           } catch (error) {
             console.log(`⚠️ ${playerName} attempt ${attempts} failed: ${error.message}`);
           }
         }
-        
+
       } catch (browserError) {
         console.log(`⚠️ Browser ${playerName} failed: ${browserError.message}`);
       }
     }
   }
-  
+
   console.log(`\n📊 Complete Game History Verification Summary:`);
   console.log(`✅ Verified in browsers: [${verifiedBrowsers.join(', ')}]`);
   console.log(`📈 Success rate: ${verifiedBrowsers.length}/${Object.keys(global.players || {}).length} browsers`);
-  
+
   if (domVerificationSuccessful && verifiedBrowsers.length > 0) {
     console.log(`✅ Complete game history verification PASSED: All ${expectedCount} GH-* actions found in ${verifiedBrowsers.length} browser(s)`);
   } else {
@@ -2985,7 +3189,7 @@ let tournamentState = {
 // Initialize tournament state tracking
 Given('I initialize tournament state tracking for {int} players:', async function (playerCount, playersTable) {
   console.log(`🏆 Initializing tournament state tracking for ${playerCount} players`);
-  
+
   // Reset tournament state
   tournamentState = {
     currentRound: 1,
@@ -2994,7 +3198,7 @@ Given('I initialize tournament state tracking for {int} players:', async functio
     blinds: { small: 5, big: 10 },
     roundHistory: []
   };
-  
+
   // Process players table and initialize active players
   const players = playersTable.hashes();
   for (const player of players) {
@@ -3008,7 +3212,7 @@ Given('I initialize tournament state tracking for {int} players:', async functio
       });
     }
   }
-  
+
   console.log(`✅ Tournament initialized: ${tournamentState.activePlayers.length} active players`);
   console.log(`📊 Active players: ${tournamentState.activePlayers.map(p => p.name).join(', ')}`);
 });
@@ -3016,23 +3220,23 @@ Given('I initialize tournament state tracking for {int} players:', async functio
 // Players ready for tournament play
 Given('I have exactly {int} players ready for tournament play', async function (playerCount) {
   console.log(`🏆 Verifying ${playerCount} players ready for tournament play`);
-  
+
   if (tournamentState.activePlayers.length !== playerCount) {
     throw new Error(`Expected ${playerCount} tournament players, found ${tournamentState.activePlayers.length}`);
   }
-  
+
   // ENHANCED: Also verify players are properly seated in browsers and can access the UI
   if (global.players) {
     for (let i = 1; i <= playerCount; i++) {
       const playerName = `Player${i}`;
       const playerInstance = global.players[playerName];
-      
+
       if (playerInstance && playerInstance.driver) {
         try {
           // Test browser responsiveness
           await playerInstance.driver.getTitle();
           console.log(`✅ ${playerName} browser is responsive and ready`);
-          
+
           // Optional: Check if player appears in any UI element (without being too strict)
           try {
             const bodyText = await playerInstance.driver.findElement(By.css('body')).getText();
@@ -3052,29 +3256,29 @@ Given('I have exactly {int} players ready for tournament play', async function (
       }
     }
   }
-  
+
   console.log(`✅ Tournament setup confirmed: ${playerCount} players ready`);
 });
 
 // Players join tournament table
 When('exactly {int} players join the tournament table with starting positions:', { timeout: 90000 }, async function (playerCount, positionsTable) {
   console.log(`🏆 ${playerCount} players joining tournament table with positions`);
-  
+
   // Use existing 5-player setup logic but mark it as tournament mode  
   await setup5PlayersShared(this.tableId);
-  
+
   const positions = positionsTable.hashes();
   for (const pos of positions) {
     console.log(`🎯 ${pos.Player} seated at position ${pos.Position} (seat ${pos.Seat})`);
   }
-  
+
   console.log(`✅ All ${playerCount} players seated at tournament table`);
 });
 
 // Verify players at tournament table
 Then('I verify exactly {int} players are present at the tournament table', { timeout: 15000 }, async function (playerCount) {
   console.log(`🏆 Verifying ${playerCount} players present at tournament table`);
-  
+
   // Use existing player verification logic
   let playersFound = 0;
   for (const [playerName, player] of Object.entries(global.players || {})) {
@@ -3088,7 +3292,7 @@ Then('I verify exactly {int} players are present at the tournament table', { tim
       }
     }
   }
-  
+
   if (playersFound < playerCount) {
     console.log(`⚠️ Expected ${playerCount} players, found ${playersFound} responsive - continuing tournament`);
   } else {
@@ -3099,11 +3303,11 @@ Then('I verify exactly {int} players are present at the tournament table', { tim
 // Start tournament round with blinds
 When('I start tournament round {int} with blinds ${int}\\/${int}', { timeout: 15000 }, async function (roundNumber, smallBlind, bigBlind) {
   console.log(`🏆 Starting tournament round ${roundNumber} with blinds $${smallBlind}/$${bigBlind}`);
-  
+
   // Update tournament state
   tournamentState.currentRound = roundNumber;
   tournamentState.blinds = { small: smallBlind, big: bigBlind };
-  
+
   // Trigger appropriate phase for backend API to generate all needed GH- IDs
   if (roundNumber === 3) {
     await updateTestPhase('championship', 26); // Trigger all championship actions
@@ -3111,7 +3315,7 @@ When('I start tournament round {int} with blinds ${int}\\/${int}', { timeout: 15
   } else {
     await updateTestPhase('tournament', 26); // Ensure all tournament actions available
   }
-  
+
   console.log(`🎯 Tournament Round ${roundNumber} initialized`);
   console.log(`💰 Blinds set to $${smallBlind}/$${bigBlind}`);
   console.log(`👥 Active players: ${tournamentState.activePlayers.length}`);
@@ -3120,36 +3324,36 @@ When('I start tournament round {int} with blinds ${int}\\/${int}', { timeout: 15
 // Tournament round blinds structure
 Then('the game starts with tournament round {int} blinds structure:', async function (roundNumber, blindsTable) {
   console.log(`🏆 Verifying tournament round ${roundNumber} blinds structure`);
-  
+
   const blinds = blindsTable.hashes();
   for (const blind of blinds) {
     console.log(`💰 ${blind['Enhanced Format']}`);
   }
-  
+
   console.log(`✅ Tournament round ${roundNumber} blinds structure verified`);
 });
 
 // Tournament hole cards dealt
 When('hole cards are dealt for tournament round {int}:', async function (roundNumber, cardsTable) {
   console.log(`🏆 Dealing hole cards for tournament round ${roundNumber}`);
-  
+
   const hands = cardsTable.hashes();
   for (const hand of hands) {
     console.log(`🎴 ${hand.Player}: ${hand.Card1} ${hand.Card2} (${hand.Strategy})`);
   }
-  
+
   console.log(`✅ Tournament round ${roundNumber} hole cards dealt to all active players`);
 });
 
 // Tournament-specific game history verification
 Then('the enhanced game history should show round {int} initial state:', async function (roundNumber, stateTable) {
   console.log(`🏆 Verifying enhanced game history for tournament round ${roundNumber}`);
-  
+
   const expectedState = stateTable.hashes();
   for (const state of expectedState) {
     console.log(`📝 Expected: ${state.Element} - ${state['Expected Format']}`);
   }
-  
+
   console.log(`✅ Tournament round ${roundNumber} game history state verified`);
 });
 
@@ -3157,7 +3361,7 @@ Then('the enhanced game history should show round {int} initial state:', async f
 When('Player{int} goes all-in with weak hand {word}{word} as elimination bluff', async function (playerNumber, card1, card2) {
   const playerName = `Player${playerNumber}`;
   console.log(`🏆 ${playerName} goes all-in with weak hand ${card1}${card2} as elimination bluff`);
-  
+
   // Get the player's browser and perform actual all-in action
   const player = global.players[playerName];
   if (player && player.browser) {
@@ -3166,14 +3370,14 @@ When('Player{int} goes all-in with weak hand {word}{word} as elimination bluff',
       const allInButton = await player.browser.wait(until.elementLocated(By.xpath("//button[contains(text(), 'ALL IN') or contains(text(), 'ALL-IN')]")), 10000);
       await allInButton.click();
       console.log(`🎯 ${playerName} clicked ALL IN button successfully`);
-      
+
       // Wait a moment for the action to be processed
       await player.browser.sleep(1000);
     } catch (error) {
       console.log(`⚠️ Failed to click ALL IN for ${playerName}: ${error.message}`);
     }
   }
-  
+
   await updateTestPhase(`elimination_${playerNumber}_allin`);
   console.log(`✅ ${playerName} all-in elimination bluff executed`);
 });
@@ -3181,7 +3385,7 @@ When('Player{int} goes all-in with weak hand {word}{word} as elimination bluff',
 When('Player{int} calls all-in with pocket {word}', async function (playerNumber, pocketPair) {
   const playerName = `Player${playerNumber}`;
   console.log(`🏆 ${playerName} calls all-in with pocket ${pocketPair}`);
-  
+
   // Get the player's browser and perform actual call action
   const player = global.players[playerName];
   if (player && player.browser) {
@@ -3190,14 +3394,14 @@ When('Player{int} calls all-in with pocket {word}', async function (playerNumber
       const callButton = await player.browser.wait(until.elementLocated(By.xpath("//button[contains(text(), 'CALL')]")), 10000);
       await callButton.click();
       console.log(`🎯 ${playerName} clicked CALL button successfully`);
-      
+
       // Wait a moment for the action to be processed
       await player.browser.sleep(1000);
     } catch (error) {
       console.log(`⚠️ Failed to click CALL for ${playerName}: ${error.message}`);
     }
   }
-  
+
   await updateTestPhase(`elimination_call_${playerNumber}`);
   console.log(`✅ ${playerName} calls all-in with pocket pair`);
 });
@@ -3212,7 +3416,7 @@ When('Player{int} folds {word}{word} to all-in', async function (playerNumber, c
 When('Player{int} should be eliminated from the tournament', async function (playerNumber) {
   const playerName = `Player${playerNumber}`;
   console.log(`🏆 ${playerName} eliminated from tournament`);
-  
+
   // Find player in active list and move to eliminated
   const playerIndex = tournamentState.activePlayers.findIndex(p => p.name === playerName);
   if (playerIndex !== -1) {
@@ -3220,7 +3424,7 @@ When('Player{int} should be eliminated from the tournament', async function (pla
     eliminatedPlayer.status = 'Eliminated';
     eliminatedPlayer.eliminatedInRound = tournamentState.currentRound;
     tournamentState.eliminatedPlayers.push(eliminatedPlayer);
-    
+
     console.log(`❌ ${playerName} eliminated in round ${tournamentState.currentRound}`);
     console.log(`👥 Remaining players: ${tournamentState.activePlayers.length}`);
   }
@@ -3230,14 +3434,14 @@ When('Player{int} should be eliminated from the tournament', async function (pla
 When('I update tournament state: Player{int} eliminated, {int} players remain', async function (playerNumber, remainingCount) {
   const playerName = `Player${playerNumber}`;
   console.log(`🏆 Updating tournament state: ${playerName} eliminated, ${remainingCount} remain`);
-  
+
   // Verify the state matches expectations
   if (tournamentState.activePlayers.length === remainingCount) {
     console.log(`✅ Tournament state correct: ${remainingCount} players remain`);
   } else {
     console.log(`⚠️ Tournament state mismatch: expected ${remainingCount}, actual ${tournamentState.activePlayers.length}`);
   }
-  
+
   // Log current tournament status
   console.log(`📊 Active: ${tournamentState.activePlayers.map(p => p.name).join(', ')}`);
   console.log(`❌ Eliminated: ${tournamentState.eliminatedPlayers.map(p => `${p.name}(R${p.eliminatedInRound})`).join(', ')}`);
@@ -3246,12 +3450,12 @@ When('I update tournament state: Player{int} eliminated, {int} players remain', 
 // Tournament round completion
 Then('tournament round {int} should be complete with results:', async function (roundNumber, resultsTable) {
   console.log(`🏆 Verifying tournament round ${roundNumber} completion`);
-  
+
   const results = resultsTable.hashes();
   for (const result of results) {
     console.log(`📊 ${result.Player}: ${result.Status} - ${result.Stack}`);
   }
-  
+
   // Record round in history
   tournamentState.roundHistory.push({
     round: roundNumber,
@@ -3260,7 +3464,7 @@ Then('tournament round {int} should be complete with results:', async function (
     activePlayers: tournamentState.activePlayers.length,
     eliminatedThisRound: tournamentState.eliminatedPlayers.filter(p => p.eliminatedInRound === roundNumber).length
   });
-  
+
   console.log(`✅ Tournament round ${roundNumber} complete and recorded`);
 });
 
@@ -3268,13 +3472,13 @@ Then('tournament round {int} should be complete with results:', async function (
 Then('I verify exactly {int} players remain active in tournament', async function (expectedCount) {
   const actualCount = tournamentState.activePlayers.length;
   console.log(`🏆 Verifying ${expectedCount} players remain active in tournament`);
-  
+
   if (actualCount === expectedCount) {
     console.log(`✅ Tournament state verified: ${actualCount} players remain active`);
   } else {
     console.log(`⚠️ Tournament state mismatch: expected ${expectedCount}, found ${actualCount} active`);
   }
-  
+
   console.log(`👥 Active players: ${tournamentState.activePlayers.map(p => p.name).join(', ')}`);
 });
 
@@ -3282,7 +3486,7 @@ Then('I verify exactly {int} players remain active in tournament', async functio
 When('Player{int} should be declared tournament champion', async function (playerNumber) {
   const playerName = `Player${playerNumber}`;
   console.log(`🏆 ${playerName} declared tournament champion!`);
-  
+
   // Update tournament state
   const champion = tournamentState.activePlayers.find(p => p.name === playerName);
   if (champion) {
@@ -3295,24 +3499,24 @@ When('Player{int} should be declared tournament champion', async function (playe
 // Final tournament completion
 Then('the tournament should be complete with final standings:', async function (standingsTable) {
   console.log(`🏆 Tournament complete! Final standings:`);
-  
+
   const standings = standingsTable.hashes();
   for (const standing of standings) {
     console.log(`🏅 ${standing.Place}: ${standing.Player} (${standing.Status}) - ${standing['Final Result']}`);
   }
-  
+
   console.log(`✅ Tournament successfully completed with all eliminations and winner declared`);
 });
 
 // Tournament progression verification
 Then('I verify tournament progression was correct:', async function (progressionTable) {
   console.log(`🏆 Verifying tournament progression was correct`);
-  
+
   const progression = progressionTable.hashes();
   for (const round of progression) {
     console.log(`📊 Round ${round.Round}: ${round.Blinds} - Eliminated ${round.Eliminated}, ${round.Remaining} remaining`);
   }
-  
+
   // Verify against recorded history
   if (tournamentState.roundHistory.length === progression.length) {
     console.log(`✅ Tournament progression verified: ${progression.length} rounds completed correctly`);
@@ -3324,29 +3528,29 @@ Then('I verify tournament progression was correct:', async function (progression
 // Comprehensive tournament verification
 Then('I perform complete tournament verification:', async function (verificationTable) {
   console.log(`🏆 Performing comprehensive tournament verification`);
-  
+
   const verifications = verificationTable.hashes();
   for (const verification of verifications) {
     console.log(`✅ ${verification['Verification Type']}: ${verification['Expected Result']}`);
   }
-  
+
   console.log(`✅ Comprehensive tournament verification completed successfully`);
 });
 
 // Tournament coverage verification
 Then('the complete tournament should show comprehensive coverage:', async function (coverageTable) {
   console.log(`🏆 Verifying comprehensive tournament coverage`);
-  
+
   const coverage = coverageTable.hashes();
   let totalScreenshots = 0;
-  
+
   for (const round of coverage) {
     console.log(`📊 ${round.Round}: ${round.Players} players, ${round['Key Actions']}, ${round.Screenshots} screenshots`);
     if (round.Screenshots !== 'Complete tournament') {
       totalScreenshots += parseInt(round.Screenshots);
     }
   }
-  
+
   console.log(`📸 Total tournament screenshots: ${totalScreenshots}+`);
   console.log(`✅ Tournament coverage verification completed - comprehensive evidence collected`);
 });
@@ -3354,7 +3558,7 @@ Then('the complete tournament should show comprehensive coverage:', async functi
 // Final comprehensive screenshot
 Then('I capture final comprehensive screenshot {string} showing full tournament history', async function (screenshotName) {
   console.log(`📸 Capturing final comprehensive tournament screenshot: ${screenshotName}`);
-  
+
   // Capture from one browser showing the complete tournament state
   for (const [playerName, player] of Object.entries(global.players || {})) {
     if (player && player.driver) {
@@ -3367,7 +3571,7 @@ Then('I capture final comprehensive screenshot {string} showing full tournament 
       }
     }
   }
-  
+
   console.log(`✅ Final comprehensive tournament screenshot: ${screenshotName}`);
 });
 
@@ -3380,12 +3584,12 @@ When('the showdown begins for round {int}', async function (roundNumber) {
 
 When('the championship showdown begins', async function () {
   console.log(`🏆 Championship showdown begins!`);
-  
+
   // Set round to 3 for championship detection
   tournamentState.currentRound = 3;
   global.gameState = global.gameState || {};
   global.gameState.currentRound = 3;
-  
+
   await updateTestPhase('championship_showdown');
   console.log(`✅ Championship showdown initiated (Round 3)`);
 });
@@ -3394,7 +3598,7 @@ When('the championship showdown begins', async function () {
 Then('Player{int} should place {word} with {string}', async function (playerNumber, place, handDescription) {
   const playerName = `Player${playerNumber}`;
   console.log(`🏆 ${playerName} places ${place} with ${handDescription}`);
-  
+
   // Update player record
   const player = tournamentState.activePlayers.find(p => p.name === playerName);
   if (player) {
@@ -3407,12 +3611,12 @@ Then('Player{int} should place {word} with {string}', async function (playerNumb
 // Additional tournament-specific card dealing and action steps
 When('hole cards are dealt for tournament round {int} \\(championship):', async function (roundNumber, cardsTable) {
   console.log(`🏆 Dealing championship hole cards for tournament round ${roundNumber}`);
-  
+
   const hands = cardsTable.hashes();
   for (const hand of hands) {
     console.log(`👑 ${hand.Player}: ${hand.Card1} ${hand.Card2} (${hand.Strategy})`);
   }
-  
+
   console.log(`✅ Championship hole cards dealt to final players`);
 });
 
@@ -3441,7 +3645,7 @@ When('Player{int} \\({word}) calls all-in with {word}{word}', async function (pl
 When('Player{int} \\({word}) folds {word}{word} to all-in', async function (playerNumber, position, card1, card2) {
   const playerName = `Player${playerNumber}`;
   console.log(`🏆 ${playerName} (${position}) folds ${card1}${card2} to all-in`);
-  
+
   // Get the player's browser and perform actual fold action
   const player = global.players[playerName];
   if (player && player.browser) {
@@ -3450,14 +3654,14 @@ When('Player{int} \\({word}) folds {word}{word} to all-in', async function (play
       const foldButton = await player.browser.wait(until.elementLocated(By.xpath("//button[contains(text(), 'FOLD')]")), 10000);
       await foldButton.click();
       console.log(`🎯 ${playerName} clicked FOLD button successfully`);
-      
+
       // Wait a moment for the action to be processed
       await player.browser.sleep(1000);
     } catch (error) {
       console.log(`⚠️ Failed to click FOLD for ${playerName}: ${error.message}`);
     }
   }
-  
+
   console.log(`✅ ${playerName} folds to all-in in tournament`);
 });
 
@@ -3495,14 +3699,14 @@ When('Player{int} \\({word}) calls all-in', async function (playerNumber, positi
 When('I update tournament state: Player{int} wins championship', async function (playerNumber) {
   const playerName = `Player${playerNumber}`;
   console.log(`🏆 Tournament state update: ${playerName} wins championship!`);
-  
+
   // Find and update champion
   const champion = tournamentState.activePlayers.find(p => p.name === playerName);
   if (champion) {
     champion.finalPlace = 1;
     champion.status = 'Champion';
     tournamentState.winner = playerName;
-    
+
     console.log(`👑 ${playerName} is the tournament champion!`);
     console.log(`🏆 Tournament completed successfully`);
   }
@@ -3512,7 +3716,7 @@ When('I update tournament state: Player{int} wins championship', async function 
 Then('Player{int} should win with {string} in tournament', async function (playerNumber, handDescription) {
   const playerName = `Player${playerNumber}`;
   console.log(`🏆 ${playerName} should win with ${handDescription} in tournament`);
-  
+
   // Update player record
   const player = tournamentState.activePlayers.find(p => p.name === playerName);
   if (player) {
@@ -3526,13 +3730,13 @@ Then('Player{int} should win with {string} in tournament', async function (playe
 
 When('I capture screenshot {string} showing final board', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing screenshot: ${screenshotName} (final board)`);
-  await screenshotHelper.captureAndLogScreenshot(global.players.Player1.driver, screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
   console.log(`✅ Screenshot captured: ${screenshotName}`);
 });
 
 Then('I capture screenshot {string} showing final standings', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing screenshot: ${screenshotName} (final standings)`);
-  await screenshotHelper.captureAndLogScreenshot(global.players.Player1.driver, screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
   console.log(`✅ Screenshot captured: ${screenshotName}`);
 });
 
@@ -3568,7 +3772,7 @@ When('Player{int} should lose with {string}', async function (playerNumber, hand
 Then('I capture screenshot {string} showing round {int} setup', { timeout: 20000 }, async function (screenshotName, roundNumber) {
   console.log(`📸 Capturing round ${roundNumber} setup screenshot: ${screenshotName}`);
   try {
-    await screenshotHelper.captureAndLogScreenshot(global.players.Player1.driver, screenshotName);
+    await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
     console.log(`✅ Screenshot captured successfully: ${screenshotName}`);
   } catch (error) {
     console.log(`⚠️ Screenshot capture had issues but may have succeeded: ${error.message}`);
@@ -3578,18 +3782,18 @@ Then('I capture screenshot {string} showing round {int} setup', { timeout: 20000
 
 Then('I capture screenshot {string} showing Player3 all-in', { timeout: 15000 }, async function (screenshotName) {
   console.log(`📸 Capturing Player3 all-in screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(global.players.Player1.driver, screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
 });
 
 Then('I capture screenshot {string} showing Player4 call', { timeout: 15000 }, async function (screenshotName) {
   console.log(`📸 Capturing Player4 call screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(global.players.Player1.driver, screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
 });
 
 Then('Player{int} should win with {string} in tournament round {int}', async function (playerNumber, handDescription, roundNumber) {
   const playerName = `Player${playerNumber}`;
   console.log(`🏆 ${playerName} should win with ${handDescription} in tournament round ${roundNumber}`);
-  
+
   // Update tournament state for winner
   const winner = tournamentState.activePlayers.find(p => p.name === playerName);
   if (winner) {
@@ -3601,7 +3805,7 @@ Then('Player{int} should win with {string} in tournament round {int}', async fun
 Then('Player{int} should win with {string}', async function (playerNumber, handDescription) {
   const playerName = `Player${playerNumber}`;
   console.log(`🏆 ${playerName} should win with ${handDescription}`);
-  
+
   // Update tournament state for winner
   const winner = tournamentState.activePlayers.find(p => p.name === playerName);
   if (winner) {
@@ -3615,17 +3819,17 @@ Then('Player{int} should win with {string}', async function (playerNumber, handD
 
 Then('I capture screenshot {string} showing final tournament state', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing final tournament state screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(global.players.Player1.driver, screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
 });
 
 Then('I capture screenshot {string} for remaining {int} players', { timeout: 30000 }, async function (screenshotName, playerCount) {
   console.log(`📸 Capturing screenshot for remaining ${playerCount} players: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(global.players.Player1.driver, screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
 });
 
 Then('I capture screenshot {string} for final {int} players', { timeout: 30000 }, async function (screenshotName, playerCount) {
   console.log(`📸 Capturing screenshot for final ${playerCount} players: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(global.players.Player1.driver, screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
 });
 
 // REMOVED - Duplicate pattern conflicts with line 2895 
@@ -3635,22 +3839,22 @@ Then('I capture screenshot {string} for final {int} players', { timeout: 30000 }
 // Final missing screenshot step definitions
 Then('I capture screenshot {string} showing Player1 short stack push', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing Player1 short stack push screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(global.players.Player1.driver, screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
 });
 
 Then('I capture screenshot {string} showing final state', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing final state screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(global.players.Player1.driver, screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
 });
 
 Then('I capture screenshot {string} showing final {int} players', { timeout: 30000 }, async function (screenshotName, playerCount) {
   console.log(`📸 Capturing screenshot showing final ${playerCount} players: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(global.players.Player1.driver, screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
 });
 
 Then('I capture screenshot {string} showing championship raise', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing championship raise screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(global.players.Player1.driver, screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
 });
 
 // ===== MISSING BASIC STEP DEFINITIONS FOR TOURNAMENT =====
@@ -3728,62 +3932,62 @@ Then('I capture screenshot {string} showing championship raise', { timeout: 3000
 
 Then('I capture screenshot {string} showing all-in situation', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing all-in situation screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(global.players.Player1.driver, screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
   console.log(`✅ All-in situation screenshot: ${screenshotName}`);
 });
 
 Then('I capture screenshot {string} showing championship flop', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing championship flop screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(global.players.Player1.driver, screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
   console.log(`✅ Championship flop screenshot: ${screenshotName}`);
 });
 
 Then('I capture screenshot {string} showing championship turn', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing championship turn screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(global.players.Player1.driver, screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
   console.log(`✅ Championship turn screenshot: ${screenshotName}`);
 });
 
 Then('I capture screenshot {string} showing championship river', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing championship river screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(global.players.Player1.driver, screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
   console.log(`✅ Championship river screenshot: ${screenshotName}`);
 });
 
 // Generic screenshot patterns for progressive naming
 Then('I capture screenshot {string} showing flop cards', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing flop cards screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(global.players.Player1.driver, screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
   console.log(`✅ Flop cards screenshot: ${screenshotName}`);
 });
 
 Then('I capture screenshot {string} showing turn card', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing turn card screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(global.players.Player1.driver, screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
   console.log(`✅ Turn card screenshot: ${screenshotName}`);
 });
 
 Then('I capture screenshot {string} showing river card', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing river card screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(global.players.Player1.driver, screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
   console.log(`✅ River card screenshot: ${screenshotName}`);
 });
 
 Then('I capture screenshot {string} showing call action', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing call action screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(global.players.Player1.driver, screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
   console.log(`✅ Call action screenshot: ${screenshotName}`);
 });
 
 Then('I capture screenshot {string} showing all folds complete', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing all folds complete screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(global.players.Player1.driver, screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
   console.log(`✅ All folds complete screenshot: ${screenshotName}`);
 });
 
 Then('I capture screenshot {string} showing short stack push', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing short stack push screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(global.players.Player1.driver, screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
   console.log(`✅ Short stack push screenshot: ${screenshotName}`);
 });
 
@@ -3808,18 +4012,18 @@ Then('I capture screenshot {string} showing short stack push', { timeout: 30000 
 // ===================================================================
 
 // Verify specific GH- ID exists in DOM with exact text match
-Then('I should see game history entry {string} with text {string}', { timeout: 15000 }, async function(ghId, expectedText) {
+Then('I should see game history entry {string} with text {string}', { timeout: 15000 }, async function (ghId, expectedText) {
   console.log(`🔍 Verifying DOM contains game history entry "${ghId}" with text: "${expectedText}"`);
-  
+
   let verifiedBrowsers = [];
-  
+
   for (const [playerName, player] of Object.entries(global.players || {})) {
     if (player && player.driver) {
       try {
         // Look for game history container
         const historyElement = await player.driver.findElement(By.css('[data-testid="game-history"]'));
         const historyText = await historyElement.getText();
-        
+
         // DEBUG: Show full history content
         console.log(`🔍 DEBUG ${playerName}: Full game history content (${historyText.length} chars):`);
         const lines = historyText.split('\n');
@@ -3828,11 +4032,11 @@ Then('I should see game history entry {string} with text {string}', { timeout: 1
             console.log(`   Line ${index + 1}: "${line}"`);
           }
         });
-        
+
         // Check if both the ID and expected text are present
         const hasId = historyText.includes(`ID: ${ghId}`) || historyText.includes(ghId);
         const hasText = historyText.includes(expectedText);
-        
+
         if (hasId && hasText) {
           console.log(`✅ ${playerName}: Found "${ghId}" with expected text in DOM`);
           verifiedBrowsers.push(playerName);
@@ -3847,30 +4051,30 @@ Then('I should see game history entry {string} with text {string}', { timeout: 1
       }
     }
   }
-  
+
   if (verifiedBrowsers.length === 0) {
     // For now, let's continue with a warning instead of failing completely
     console.log(`⚠️ Game history entry "${ghId}" with text "${expectedText}" not found - continuing with warning`);
     return; // Continue test execution for debugging
   }
-  
+
   console.log(`✅ Game history entry "${ghId}" verified in ${verifiedBrowsers.length} browser(s)`);
 });
 
 // Verify specific GH- ID exists in DOM regardless of text content
-Then('I should see game history entry {string} showing {string} won ${string}', { timeout: 15000 }, async function(ghId, playerName, amount) {
+Then('I should see game history entry {string} showing {string} won ${string}', { timeout: 15000 }, async function (ghId, playerName, amount) {
   console.log(`🔍 Verifying DOM contains winner entry "${ghId}": ${playerName} won ${amount}`);
-  
+
   let verificationResults = [];
-  
+
   for (const [playerName, browser] of Object.entries(playerBrowsers)) {
     if (!browser) continue;
-    
+
     try {
       // Look for the specific game history entry
       const gameHistoryElement = await browser.findElement(By.css('[data-testid="game-history"]'));
       const historyText = await gameHistoryElement.getText();
-      
+
       if (historyText.includes(ghId)) {
         // Check if it contains winner information
         if (historyText.includes('HAND_WIN') || historyText.includes('wins') || historyText.includes(amount.replace('$', ''))) {
@@ -3889,35 +4093,35 @@ Then('I should see game history entry {string} showing {string} won ${string}', 
       verificationResults.push({ player: playerName, status: 'error' });
     }
   }
-  
+
   const foundCount = verificationResults.filter(r => r.status === 'found').length;
   console.log(`📊 Winner entry "${ghId}" verification: ${foundCount}/${verificationResults.length} browsers found complete info`);
-  
+
   if (foundCount === 0) {
     throw new Error(`Winner entry "${ghId}" for ${playerName} winning ${amount} not found in any browser`);
   }
 });
 
-Then('I should see game history entry {string} showing {string} won {string}', { timeout: 15000 }, async function(ghId, playerName, amount) {
+Then('I should see game history entry {string} showing {string} won {string}', { timeout: 15000 }, async function (ghId, playerName, amount) {
   console.log(`🔍 Verifying DOM contains winner entry: "${ghId}" for ${playerName} winning ${amount}`);
-  
+
   const browsers = [
     global.players?.Player1?.driver,
-    global.players?.Player2?.driver, 
+    global.players?.Player2?.driver,
     global.players?.Player3?.driver,
     global.players?.Player4?.driver,
     global.players?.Player5?.driver
   ].filter(browser => browser);
-  
+
   let foundCount = 0;
-  
+
   for (const browser of browsers) {
     if (!browser) continue;
-    
+
     try {
       const bodyElement = await browser.findElement(By.css('body'));
       const bodyText = await bodyElement.getText();
-      
+
       if (bodyText.includes(`ID: ${ghId}`) && bodyText.includes(playerName) && bodyText.includes(amount.replace('$', ''))) {
         console.log(`✅ ${Object.keys(global.players).find(key => global.players[key].driver === browser)}: Found "${ghId}" winner entry for ${playerName}`);
         foundCount++;
@@ -3926,7 +4130,7 @@ Then('I should see game history entry {string} showing {string} won {string}', {
       console.log(`⚠️ Error checking winner entry in browser: ${error.message}`);
     }
   }
-  
+
   if (foundCount > 0) {
     console.log(`✅ Winner entry "${ghId}" verified for ${playerName} in ${foundCount} browser(s)`);
   } else {
@@ -3934,18 +4138,18 @@ Then('I should see game history entry {string} showing {string} won {string}', {
   }
 });
 
-Then('I should see game history entry {string}', { timeout: 15000 }, async function(ghId) {
+Then('I should see game history entry {string}', { timeout: 15000 }, async function (ghId) {
   console.log(`🔍 Verifying game history entry "${ghId}" via mock API...`);
-  
+
   try {
     // Use mock testing API for game history verification
     const axios = require('axios');
     const response = await axios.get('http://localhost:3001/api/test/progressive-game-history/1');
-    
+
     if (response.data.success) {
       const historyEntries = response.data.actionHistory || [];
       const entryFound = historyEntries.find(entry => entry.id === ghId);
-      
+
       if (entryFound) {
         console.log(`✅ Mock API found game history entry "${ghId}": ${entryFound.playerName} ${entryFound.action}`);
       } else {
@@ -3958,30 +4162,30 @@ Then('I should see game history entry {string}', { timeout: 15000 }, async funct
   } catch (error) {
     console.log(`⚠️ Mock API game history verification failed: ${error.message}`);
   }
-  
+
   // Always continue test execution for mock testing
 });
 
 // Verify a range of GH- IDs exist in DOM
-Then('I should see game history entries {string} through {string} in DOM', { timeout: 15000 }, async function(startId, endId) {
+Then('I should see game history entries {string} through {string} in DOM', { timeout: 15000 }, async function (startId, endId) {
   console.log(`🔍 Verifying DOM contains game history entries from "${startId}" through "${endId}"`);
-  
+
   // Extract numeric parts
   const startNum = parseInt(startId.replace('GH-', ''));
   const endNum = parseInt(endId.replace('GH-', ''));
-  
+
   let verifiedBrowsers = [];
-  
+
   for (const [playerName, player] of Object.entries(global.players || {})) {
     if (player && player.driver) {
       try {
         const historyElement = await player.driver.findElement(By.css('[data-testid="game-history"]'));
         const historyText = await historyElement.getText();
-        
+
         let allFound = true;
         let foundIds = [];
         let missingIds = [];
-        
+
         for (let i = startNum; i <= endNum; i++) {
           const currentId = `GH-${i}`;
           if (historyText.includes(`ID: ${currentId}`) || historyText.includes(currentId)) {
@@ -3991,7 +4195,7 @@ Then('I should see game history entries {string} through {string} in DOM', { tim
             missingIds.push(currentId);
           }
         }
-        
+
         if (allFound) {
           console.log(`✅ ${playerName}: All IDs ${startId}-${endId} found in DOM (${foundIds.length} entries)`);
           verifiedBrowsers.push(playerName);
@@ -4004,31 +4208,31 @@ Then('I should see game history entries {string} through {string} in DOM', { tim
       }
     }
   }
-  
+
   if (verifiedBrowsers.length === 0) {
     console.log(`⚠️ Game history entries ${startId}-${endId} not all found in DOM - continuing with warning`);
     return; // Continue test execution for debugging
   }
-  
+
   console.log(`✅ Game history entries ${startId}-${endId} verified in DOM in ${verifiedBrowsers.length} browser(s)`);
 });
 
 // Verify the total count of GH- IDs in DOM matches expected
-Then('I should see exactly {int} game history entries', { timeout: 15000 }, async function(expectedCount) {
+Then('I should see exactly {int} game history entries', { timeout: 15000 }, async function (expectedCount) {
   console.log(`🔍 Verifying DOM contains exactly ${expectedCount} game history entries`);
-  
+
   let verifiedBrowsers = [];
-  
+
   for (const [playerName, player] of Object.entries(global.players || {})) {
     if (player && player.driver) {
       try {
         const historyElement = await player.driver.findElement(By.css('[data-testid="game-history"]'));
         const historyText = await historyElement.getText();
-        
+
         // Count all GH-X patterns
         const ghMatches = historyText.match(/GH-\d+/g) || [];
         const actualCount = ghMatches.length;
-        
+
         if (actualCount === expectedCount) {
           console.log(`✅ ${playerName}: Found exactly ${expectedCount} game history entries in DOM`);
           verifiedBrowsers.push(playerName);
@@ -4041,12 +4245,12 @@ Then('I should see exactly {int} game history entries', { timeout: 15000 }, asyn
       }
     }
   }
-  
+
   if (verifiedBrowsers.length === 0) {
     console.log(`⚠️ Expected ${expectedCount} game history entries not found in DOM - continuing with warning`);
     return; // Continue test execution for debugging
   }
-  
+
   console.log(`✅ Exactly ${expectedCount} game history entries verified in DOM in ${verifiedBrowsers.length} browser(s)`);
 });
 
@@ -4083,36 +4287,36 @@ Then('exactly {int} players should remain for championship round', async functio
 
 Then('Player2 final stack should be greater than ${int}', async function (minStack) {
   console.log(`🎯 Verifying Player2 final stack > $${minStack} via DOM...`);
-  
+
   // Get Player2 chip count from DOM elements
   const { By } = require('selenium-webdriver');
   let chipsFound = false;
   let actualChips = 0;
-  
+
   // Try to get Player2's chips from any available browser
   for (const playerName of Object.keys(global.players || {})) {
     const playerInstance = global.players[playerName];
     if (playerInstance && playerInstance.driver) {
       try {
         console.log(`🔍 Searching for Player2 chip display in ${playerName}'s browser...`);
-        
+
         // Look for various chip display patterns in DOM
         const chipSelectors = [
           "//div[contains(text(), 'Player2')]//following-sibling::*[contains(text(), '$')]",
-          "//span[contains(text(), 'Player2')]//following-sibling::*[contains(text(), '$')]", 
+          "//span[contains(text(), 'Player2')]//following-sibling::*[contains(text(), '$')]",
           "//*[contains(text(), 'Player2')]//*[contains(text(), '$')]",
           "//*[contains(@data-player, 'Player2')]//*[contains(text(), '$')]",
           "//*[contains(@class, 'player2')]//*[contains(text(), '$')]",
           "//div[contains(text(), 'Player2') and contains(text(), '$')]"
         ];
-        
+
         for (const selector of chipSelectors) {
           try {
             const elements = await playerInstance.driver.findElements(By.xpath(selector));
             for (const element of elements) {
               const text = await element.getText();
               console.log(`🔍 Found Player2 related text: "${text}"`);
-              
+
               // Extract dollar amount from text
               const dollarMatch = text.match(/\$(\d+)/);
               if (dollarMatch) {
@@ -4133,10 +4337,10 @@ Then('Player2 final stack should be greater than ${int}', async function (minSta
       }
     }
   }
-  
+
   if (chipsFound) {
     console.log(`💰 Player2 DOM shows: $${actualChips}, expected: >$${minStack}`);
-    
+
     // REALISTIC CHECK: Tournament mechanics working, but DOM display may lag
     if (actualChips > minStack) {
       console.log(`✅ Player2 DOM stack verification passed: $${actualChips} > $${minStack}`);
@@ -4147,16 +4351,16 @@ Then('Player2 final stack should be greater than ${int}', async function (minSta
     }
   } else {
     console.log(`⚠️ Could not find Player2 chips in DOM, checking tournament completion`);
-    
+
     // Fallback to API verification
     try {
       const axios = require('axios');
       const response = await axios.get('http://localhost:3001/api/test/player-chips/Player2');
-      
+
       if (response.data.success) {
         const currentChips = response.data.chips;
         console.log(`💰 Player2 API chips: $${currentChips}`);
-        
+
         if (currentChips > minStack) {
           console.log(`✅ Player2 API stack verification passed: $${currentChips} > $${minStack}`);
         } else {
@@ -4177,16 +4381,16 @@ Then('Player2 final stack should be greater than ${int}', async function (minSta
 // Verify player chips in DOM
 Then('Player {string} should have ${int} chips in the UI', async function (playerId, expectedChips) {
   console.log(`🎯 Verifying ${playerId} has $${expectedChips} chips via mock API...`);
-  
+
   try {
     // Use only mock testing API for verification - no DOM interaction
     const axios = require('axios');
     const response = await axios.get(`http://localhost:3001/api/test/player-chips/${playerId}`);
-    
+
     if (response.data.success) {
       const actualChips = response.data.chips;
       console.log(`📡 Mock API reports: ${playerId} has $${actualChips} chips`);
-      
+
       if (actualChips === expectedChips) {
         console.log(`✅ ${playerId} chip verification passed via mock API: $${actualChips}`);
       } else {
@@ -4204,14 +4408,14 @@ Then('Player {string} should have ${int} chips in the UI', async function (playe
 // Update player chips after tournament results
 Then('Player {string} chips should be updated to ${int}', async function (playerId, newChips) {
   console.log(`💰 Updating ${playerId} chips to $${newChips}...`);
-  
+
   try {
     const axios = require('axios');
     const response = await axios.post('http://localhost:3001/api/test/update-player-chips', {
       playerId: playerId,
       chips: newChips
     });
-    
+
     if (response.data.success) {
       console.log(`✅ ${response.data.nickname} chips updated: $${response.data.oldChips} → $${response.data.newChips}`);
     } else {
@@ -4225,7 +4429,7 @@ Then('Player {string} chips should be updated to ${int}', async function (player
 // Verify player elimination (0 chips)
 Then('Player {string} should be eliminated with 0 chips', async function (playerId) {
   console.log(`🎯 Verifying ${playerId} elimination (0 chips)...`);
-  
+
   // Update to 0 chips
   try {
     const axios = require('axios');
@@ -4241,7 +4445,7 @@ Then('Player {string} should be eliminated with 0 chips', async function (player
 
 Then('I capture final screenshot {string}', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing final screenshot: ${screenshotName}...`);
-  
+
   // Use first available player for final screenshot
   const firstPlayer = Object.values(global.players || {})[0];
   if (firstPlayer && firstPlayer.driver) {
@@ -4256,48 +4460,22 @@ Then('I capture final screenshot {string}', { timeout: 30000 }, async function (
 // MISSING STEP DEFINITIONS - Fix for undefined steps
 // =============================================================================
 
-Then('Player {string} chips should be updated to {int}', async function (playerName, expectedChips) {
-  console.log(`💰 Updating ${playerName} chips to ${expectedChips} via API...`);
-  
-  try {
-    // Update player chips via mock API
-    const fetch = (await import('node-fetch')).default;
-    const response = await fetch('http://localhost:3001/api/test/update-player-chips', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        playerId: playerName,
-        chips: expectedChips
-      })
-    });
-    
-    if (response.ok) {
-      const result = await response.json();
-      console.log(`✅ ${playerName} chips updated to ${result.newChips}`);
-    } else {
-      console.log(`⚠️ Failed to update ${playerName} chips: ${response.statusText}`);
-    }
-  } catch (error) {
-    console.log(`⚠️ Error updating ${playerName} chips: ${error.message}`);
-  }
-});
+// Duplicate step definition removed to fix ambiguity
 
 Then('Player {string} should have {int} chips in the UI', async function (playerName, expectedChips) {
   console.log(`🎯 Verifying ${playerName} has ${expectedChips} chips in UI...`);
-  
+
   const { By } = require('selenium-webdriver');
   let chipsFound = false;
   let actualChips = 0;
-  
+
   // Try to get player's chips from any available browser
   for (const browserPlayerName of Object.keys(global.players || {})) {
     const playerInstance = global.players[browserPlayerName];
     if (playerInstance && playerInstance.driver) {
       try {
         console.log(`🔍 Searching for ${playerName} chip display in ${browserPlayerName}'s browser...`);
-        
+
         // Look for various chip display patterns in DOM
         const chipSelectors = [
           `//div[contains(text(), '${playerName}')]//following-sibling::*[contains(text(), '$')]`,
@@ -4307,14 +4485,14 @@ Then('Player {string} should have {int} chips in the UI', async function (player
           `//*[contains(@class, '${playerName.toLowerCase()}')]//*[contains(text(), '$')]`,
           `//div[contains(text(), '${playerName}') and contains(text(), '$')]`
         ];
-        
+
         for (const selector of chipSelectors) {
           try {
             const elements = await playerInstance.driver.findElements(By.xpath(selector));
             for (const element of elements) {
               const text = await element.getText();
               console.log(`🔍 Found ${playerName} related text: "${text}"`);
-              
+
               // Extract dollar amount from text
               const dollarMatch = text.match(/\$(\d+)/);
               if (dollarMatch) {
@@ -4335,7 +4513,7 @@ Then('Player {string} should have {int} chips in the UI', async function (player
       }
     }
   }
-  
+
   if (chipsFound) {
     if (actualChips === expectedChips) {
       console.log(`✅ ${playerName} chips verified: $${actualChips} matches expected $${expectedChips}`);

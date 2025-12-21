@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
@@ -23,10 +26,10 @@ async function createDefaultTables() {
   try {
     // Check if any tables exist
     const existingTables = await prisma.table.findMany();
-    
+
     if (existingTables.length === 0) {
       console.log('Creating default tables for testing...');
-      
+
       const defaultTables = [
         {
           name: 'No Limit $0.01/$0.02 Micro Table 1',
@@ -53,11 +56,11 @@ async function createDefaultTables() {
           maxBuyIn: 20000
         }
       ];
-      
+
       for (const tableData of defaultTables) {
         await prisma.table.create({ data: tableData });
       }
-      
+
       console.log('Default tables created successfully!');
     }
   } catch (error) {
@@ -115,18 +118,18 @@ async function initializeServer() {
   try {
     // Step 1: Clean up stale test data
     await cleanupTestData();
-    
+
     // Step 2: Create default tables if needed
     await createDefaultTables();
-    
+
     // Step 3: Initialize TableManager with database tables
     await tableManager.init();
-    
+
     // Step 4: Initialize location manager
     await locationManager.initialize();
-    
 
-    
+
+
     // Step 6: Start server
     httpServer.listen(port, () => {
       console.log(`Server is running on port ${port}`);

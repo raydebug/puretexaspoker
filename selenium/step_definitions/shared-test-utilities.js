@@ -16,11 +16,11 @@ const chrome = require('selenium-webdriver/chrome');
  */
 async function resetDatabaseShared() {
   console.log('🧹 DB reset...');
-  
+
   try {
     const resetResult = execSync('curl -s -X POST http://localhost:3001/api/test/reset-database', { encoding: 'utf8' });
     const resetResponse = JSON.parse(resetResult);
-    
+
     if (resetResponse.success) {
       if (resetResponse.tables && resetResponse.tables.length > 0) {
         const tableId = resetResponse.tables[0].id;
@@ -50,12 +50,12 @@ async function resetDatabaseShared() {
  */
 async function seatPlayerShared(tableId, playerName, seatNumber, buyIn = 100) {
   console.log(`⚡ API seating ${playerName} at seat ${seatNumber}...`);
-  
+
   try {
     const seatApiCall = `curl -s -X POST http://localhost:3001/api/test/auto-seat -H "Content-Type: application/json" -d '{"tableId": ${tableId}, "playerName": "${playerName}", "seatNumber": ${seatNumber}, "buyIn": ${buyIn}}'`;
     const seatResult = execSync(seatApiCall, { encoding: 'utf8' });
     const seatResponse = JSON.parse(seatResult);
-    
+
     if (seatResponse.success) {
       console.log(`✅ ${playerName} seated via API at table ${tableId}, seat ${seatNumber}`);
       return true;
@@ -79,11 +79,11 @@ async function createBrowserInstanceShared(uniqueId = null) {
   if (process.env.HEADLESS === 'true') {
     options.addArguments('--headless');
   }
-  
+
   // For parallel browser creation, completely avoid user data directory conflicts
   // Use incognito mode to avoid any data directory issues
   options.addArguments('--incognito');
-  
+
   // Ultra-stable Chrome options for multi-browser tests
   options.addArguments(
     '--no-sandbox',
@@ -137,24 +137,24 @@ async function createBrowserInstanceShared(uniqueId = null) {
     '--hide-scrollbars',
     '--mute-audio'
   );
-  
+
   const driver = await new Builder()
     .forBrowser('chrome')
     .setChromeOptions(options)
     .build();
-    
+
   // Test browser immediately to ensure it's working
   try {
     await driver.get('about:blank');
-    await driver.manage().setTimeouts({ 
+    await driver.manage().setTimeouts({
       implicit: 10000,
       pageLoad: 30000,
       script: 30000
     });
-    
+
     // Force garbage collection to free memory
     await driver.executeScript('if (window.gc) { window.gc(); }');
-    
+
     console.log(`🖥️ Browser window created and tested successfully (1920x1080)`);
   } catch (testError) {
     console.log(`⚠️ Browser creation test failed: ${testError.message}`);
@@ -165,7 +165,7 @@ async function createBrowserInstanceShared(uniqueId = null) {
     }
     throw new Error('Browser creation test failed');
   }
-    
+
   return driver;
 }
 
@@ -211,18 +211,18 @@ async function recreateBrowser(uniqueId) {
 async function navigateToGameShared(driver, tableId, playerName = null) {
   const gameUrl = `http://localhost:3000/game?table=${tableId}`;
   const maxRetries = 3;
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(`🌐 Navigating to: ${gameUrl} (attempt ${attempt}/${maxRetries})`);
-      
+
       await driver.get(gameUrl);
       // Wait for body first
       await driver.wait(until.elementLocated(By.css('body')), 5000);
-      
+
       // CRITICAL: Wait for React app to fully render poker table interface
       console.log(`⏳ Waiting for React app to load poker table interface...`);
-      
+
       // First wait for basic React app to load
       await driver.wait(async () => {
         const rootDiv = await driver.findElement(By.id('root'));
@@ -230,22 +230,22 @@ async function navigateToGameShared(driver, tableId, playerName = null) {
         return rootContent && rootContent.length > 100;  // Basic React content
       }, 10000);
       console.log(`✅ React app basic loading complete`);
-      
+
       // Wait for poker table interface elements to appear (not just "Connecting...")
       console.log(`⏳ Waiting for poker table interface (may take 20-30 seconds)...`);
       let pokerTableLoaded = false;
       let attempts = 0;
       const maxAttempts = 30;
-      
+
       while (!pokerTableLoaded && attempts < maxAttempts) {
         try {
           // Check root div content size first (should be >7000 when fully loaded)
           const rootDiv = await driver.findElement(By.id('root'));
           const rootContent = await rootDiv.getAttribute('innerHTML');
-          
+
           if (rootContent && rootContent.length > 7000) {
             // FIXED: Check for any poker interface elements, not just empty seats
-            
+
             // Check for any seat buttons (CLICK TO SIT, or active game buttons)
             const gameButtons = await driver.findElements(By.xpath("//*[contains(text(), 'CLICK TO SIT') or contains(text(), 'SIT') or contains(text(), 'FOLD') or contains(text(), 'CALL') or contains(text(), 'RAISE')]"));
             if (gameButtons.length > 0) {
@@ -253,7 +253,7 @@ async function navigateToGameShared(driver, tableId, playerName = null) {
               pokerTableLoaded = true;
               break;
             }
-            
+
             // Check for game interface elements (OBSERVERS, Game History, etc.)
             const gameElements = await driver.findElements(By.xpath("//*[contains(text(), 'OBSERVERS') or contains(text(), 'Game History') or contains(text(), 'Table')]"));
             if (gameElements.length > 0) {
@@ -261,51 +261,51 @@ async function navigateToGameShared(driver, tableId, playerName = null) {
               pokerTableLoaded = true;
               break;
             }
-            
+
             // FALLBACK: If content contains poker-specific text, assume ready
             if (rootContent.includes('OBSERVERS') || rootContent.includes('Game History') || rootContent.includes('DEALER') || rootContent.includes('Preflop')) {
               console.log(`✅ Poker content detected in large interface (${rootContent.length} chars)`);
               pokerTableLoaded = true;
               break;
             }
-            
+
             console.log(`✅ Large poker interface content loaded (${rootContent.length} chars)`);
             pokerTableLoaded = true;
             break;
           }
-          
+
           attempts++;
           console.log(`⏳ Poker table loading, attempt ${attempts}/${maxAttempts} (content: ${rootContent ? rootContent.length : 0} chars)...`);
           await driver.sleep(500);
-          
+
         } catch (error) {
           attempts++;
           console.log(`⚠️ Error checking poker table elements: ${error.message}`);
           await driver.sleep(500);
         }
       }
-      
+
       if (!pokerTableLoaded) {
         console.log(`⚠️ Poker table interface may not be fully loaded, continuing anyway...`);
       }
-      
+
       // Additional wait to ensure everything is stable
       await driver.sleep(2000);
       console.log(`✅ Poker table interface wait complete`);
-      
+
       // OPTIMIZED: Set the correct player nickname in localStorage to prevent random nickname generation
       if (playerName) {
         console.log(`🔐 Setting nickname in localStorage: ${playerName}`);
         await driver.executeScript(`localStorage.setItem('nickname', '${playerName}');`);
-        
+
         // OPTIMIZED: Refresh the page to ensure all connections use the correct nickname
         console.log(`🔄 Refreshing page to ensure localStorage takes effect for all connections`);
         await driver.navigate().refresh();
         await driver.wait(until.elementLocated(By.css('body')), 5000);
-        
+
         // Wait for poker table interface to reload after refresh
         console.log(`⏳ Waiting for poker table interface to reload after refresh...`);
-        
+
         // Wait for basic React content after refresh
         await driver.wait(async () => {
           const rootDiv = await driver.findElement(By.id('root'));
@@ -313,12 +313,12 @@ async function navigateToGameShared(driver, tableId, playerName = null) {
           return rootContent && rootContent.length > 100;
         }, 10000);
         console.log(`✅ React basic content reloaded`);
-        
+
         // Wait for poker table interface after refresh (shorter wait since it's a refresh)
         let pokerReloaded = false;
         let refreshAttempts = 0;
         const maxRefreshAttempts = 10;
-        
+
         while (!pokerReloaded && refreshAttempts < maxRefreshAttempts) {
           try {
             const rootDiv = await driver.findElement(By.id('root'));
@@ -331,7 +331,7 @@ async function navigateToGameShared(driver, tableId, playerName = null) {
                 break;
               }
             }
-            
+
             // Check for any game buttons (not just empty seat buttons)
             const gameButtons = await driver.findElements(By.xpath("//*[contains(text(), 'CLICK TO SIT') or contains(text(), 'SIT') or contains(text(), 'FOLD') or contains(text(), 'CALL') or contains(text(), 'RAISE')]"));
             if (gameButtons.length > 0) {
@@ -339,29 +339,29 @@ async function navigateToGameShared(driver, tableId, playerName = null) {
               pokerReloaded = true;
               break;
             }
-            
+
             refreshAttempts++;
             console.log(`⏳ Poker table reloading, attempt ${refreshAttempts}/${maxRefreshAttempts}...`);
             await driver.sleep(1000);
-            
+
           } catch (error) {
             refreshAttempts++;
             await driver.sleep(1000);
           }
         }
-        
+
         // Additional post-refresh stabilization wait
         await driver.sleep(3000);
         console.log(`✅ Poker interface refresh complete`);
       }
-      
+
       await driver.sleep(500); // Reduced sleep time for faster parallel setup
-      
+
       console.log(`✅ Navigation complete to ${gameUrl}${playerName ? ` with nickname ${playerName}` : ''}`);
       return true;
     } catch (navError) {
       console.log(`⚠️ Navigation attempt ${attempt} failed: ${navError.message}`);
-      
+
       // Check if this is a browser connection error
       if (navError.message.includes('ECONNREFUSED')) {
         console.log(`🩺 Browser connection lost - checking health...`);
@@ -371,14 +371,14 @@ async function navigateToGameShared(driver, tableId, playerName = null) {
           return false;
         }
       }
-      
+
       if (attempt < maxRetries) {
         console.log(`🔄 Retrying navigation in 1 second...`);
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
   }
-  
+
   console.log(`❌ Navigation failed after ${maxRetries} attempts`);
   return false;
 }
@@ -390,11 +390,11 @@ async function navigateToGameShared(driver, tableId, playerName = null) {
  */
 async function startGameShared(tableId) {
   console.log(`🎮 Starting game for table ${tableId}...`);
-  
+
   try {
     const startResult = execSync(`curl -s -X POST http://localhost:3001/api/test/start-game -H "Content-Type: application/json" -d '{"tableId": ${tableId}}'`, { encoding: 'utf8' });
     const startResponse = JSON.parse(startResult);
-    
+
     if (startResponse.success) {
       console.log(`✅ Game started successfully for table ${tableId}`);
       return true;
@@ -414,7 +414,7 @@ async function startGameShared(tableId) {
  */
 async function cleanupBrowsersShared() {
   console.log('🧹 Browser cleanup...');
-  
+
   if (global.players) {
     for (const playerName of Object.keys(global.players)) {
       const playerInstance = global.players[playerName];
@@ -427,9 +427,9 @@ async function cleanupBrowsersShared() {
         }
       }
     }
-    
+
     // Clear the global players object
-    global.players = {};
+    global.clearGlobalPlayers();
     console.log('✅ Global players cleared');
   }
 }
@@ -440,10 +440,10 @@ async function cleanupBrowsersShared() {
  */
 async function cleanupBrowserPool() {
   console.log('🧹 Cleaning up browser pool...');
-  
+
   // First cleanup any assigned players
   await cleanupBrowsersShared();
-  
+
   // Then cleanup the pool itself
   if (globalBrowserPool && globalBrowserPool.length > 0) {
     for (const browser of globalBrowserPool) {
@@ -457,11 +457,11 @@ async function cleanupBrowserPool() {
       }
     }
   }
-  
+
   // Reset pool state
   globalBrowserPool = [];
   browserPoolInitialized = false;
-  
+
   console.log('✅ Browser pool cleaned up and reset');
 }
 
@@ -480,9 +480,9 @@ async function initializeBrowserPool() {
     console.log('🏊‍♂️ Browser pool already initialized with 5 instances');
     return true;
   }
-  
+
   console.log('🏊‍♂️ Initializing fixed browser pool (5 instances)...');
-  
+
   // Clear any existing browsers
   if (globalBrowserPool.length > 0) {
     console.log('🧹 Cleaning up existing browser pool...');
@@ -495,28 +495,28 @@ async function initializeBrowserPool() {
     }
     globalBrowserPool = [];
   }
-  
+
   // Create browsers in parallel for faster setup
   globalBrowserPool = [];
-  
+
   console.log('🚀 Creating 5 browsers in parallel for optimal performance...');
-  
+
   try {
     const browserPromises = [];
     for (let i = 1; i <= 5; i++) {
       const uniqueId = `Pool-${i}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       console.log(`🌐 Initiating browser instance ${i}/5...`);
-      
+
       const browserPromise = createBrowserInstanceShared(uniqueId)
         .then(driver => ({ id: i, driver: driver, available: true }))
         .catch(error => ({ id: i, error: error.message, failed: true }));
-      
+
       browserPromises.push(browserPromise);
     }
-    
+
     // Wait for all browsers to be created
     const results = await Promise.all(browserPromises);
-    
+
     // Process results and check for failures
     for (const result of results) {
       if (result.failed) {
@@ -541,7 +541,7 @@ async function initializeBrowserPool() {
     }
     return false;
   }
-  
+
   try {
     browserPoolInitialized = true;
     console.log('🎉 Browser pool initialized successfully with 5 instances!');
@@ -560,7 +560,7 @@ async function initializeBrowserPool() {
  */
 function getBrowserFromPool(playerName) {
   const playerNumber = parseInt(playerName.replace('Player', ''));
-  
+
   if (playerNumber >= 1 && playerNumber <= 5) {
     const browser = globalBrowserPool[playerNumber - 1];
     if (browser && browser.driver) {
@@ -568,7 +568,7 @@ function getBrowserFromPool(playerName) {
       return browser.driver;
     }
   }
-  
+
   console.log(`⚠️ No browser available for ${playerName}`);
   return null;
 }
@@ -580,26 +580,26 @@ function getBrowserFromPool(playerName) {
  */
 async function setup5PlayersShared(tableId) {
   console.log('🎮 5-player setup with fixed browser pool...');
-  
+
   // Initialize global.players if not exists
   if (!global.players) {
-    global.players = {};
+    global.clearGlobalPlayers();
   }
-  
+
   // Initialize browser pool if needed
   const poolReady = await initializeBrowserPool();
   if (!poolReady) {
     console.error('❌ Failed to initialize browser pool');
     return false;
   }
-  
+
   // Assign browsers from pool to players
   console.log('🎯 Assigning browsers from pool to players...');
-  
+
   for (let i = 1; i <= 5; i++) {
     const playerName = `Player${i}`;
     const driver = getBrowserFromPool(playerName);
-    
+
     if (driver) {
       global.players[playerName] = {
         driver: driver,
@@ -607,15 +607,17 @@ async function setup5PlayersShared(tableId) {
         tableId: tableId,
         buyIn: 100
       };
+      console.log(`📡 Player ${playerName} object created in global.players. Keys: ${Object.keys(global.players[playerName]).join(', ')}`);
+      console.log(`📡 Driver has takeScreenshot: ${!!global.players[playerName].driver.takeScreenshot}`);
       console.log(`✅ ${playerName} assigned browser from pool`);
     } else {
       console.error(`❌ Failed to assign browser to ${playerName}`);
       return false;
     }
   }
-  
+
   console.log('🎉 All 5 players assigned browsers from pool successfully!');
-  
+
   // Seat players using API with enhanced error handling
   const players = [
     { Player: 'Player1', Seat: 1, Position: 'SB' },
@@ -624,24 +626,24 @@ async function setup5PlayersShared(tableId) {
     { Player: 'Player4', Seat: 4, Position: 'CO' },
     { Player: 'Player5', Seat: 5, Position: 'BTN' }
   ];
-  
+
   // Seat all players via API first (fast) with retry logic
   for (const player of players) {
     const playerName = player.Player;
     const seatNumber = parseInt(player.Seat);
-    
+
     let seated = false;
     let retryCount = 0;
     const maxRetries = 3;
-    
+
     while (!seated && retryCount < maxRetries) {
       try {
         seated = await seatPlayerShared(tableId, playerName, seatNumber, 100);
-        
+
         if (!seated) {
           console.log(`⚠️ Failed to seat ${playerName}, attempt ${retryCount + 1}/${maxRetries}`);
           retryCount++;
-          
+
           if (retryCount < maxRetries) {
             await new Promise(resolve => setTimeout(resolve, 1000));
           }
@@ -649,41 +651,46 @@ async function setup5PlayersShared(tableId) {
       } catch (error) {
         console.log(`❌ Error seating ${playerName}, attempt ${retryCount + 1}/${maxRetries}: ${error.message}`);
         retryCount++;
-        
+
         if (retryCount < maxRetries) {
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
     }
-    
+
     if (!seated) {
       console.error(`❌ Failed to seat ${playerName} after ${maxRetries} attempts`);
       return false;
     }
   }
-  
+
   console.log('✅ All players seated via API with retry logic, verifying UI updates...');
-  
+
   // CRITICAL: Wait for UI to reflect API seating changes before proceeding
   console.log('🔍 Waiting for UI to reflect seating changes...');
   await new Promise(resolve => setTimeout(resolve, 3000)); // Give UI time to update
-  
+
   // Verify seating in UI for at least one browser to confirm API changes took effect
   let uiSeatingVerified = false;
   for (const player of players) {
     const playerName = player.Player;
     const playerInstance = global.players[playerName];
-    
+
     if (playerInstance && playerInstance.driver) {
       try {
         const { By } = require('selenium-webdriver');
-        
+        const {
+          clearGlobalPlayers
+        } = require('./shared-test-utilities');
+
+        global.clearGlobalPlayers = clearGlobalPlayers;
+
         // Quick check if this browser shows seated players
         const clickToSitButtons = await playerInstance.driver.findElements(By.xpath("//*[contains(text(), 'CLICK TO SIT')]"));
         console.log(`🔍 ${playerName}: Found ${clickToSitButtons.length} empty seats`);
-        
+
         if (clickToSitButtons.length <= 1) { // At most 1 empty seat is acceptable
-          console.log(`✅ ${playerName}: UI shows players seated (${5-clickToSitButtons.length}/5)`);
+          console.log(`✅ ${playerName}: UI shows players seated (${5 - clickToSitButtons.length}/5)`);
           uiSeatingVerified = true;
           break;
         }
@@ -692,30 +699,30 @@ async function setup5PlayersShared(tableId) {
       }
     }
   }
-  
+
   if (!uiSeatingVerified) {
     console.log('⚠️ UI seating verification failed, but continuing with navigation...');
   }
-  
+
   // Navigate all browsers in parallel with enhanced timeout protection
   const navigationPromises = [];
-  
+
   for (const player of players) {
     const playerName = player.Player;
     const seatNumber = parseInt(player.Seat);
     const playerInstance = global.players[playerName];
-    
+
     if (playerInstance && playerInstance.driver) {
       const navigationPromise = (async () => {
         try {
           // Add timeout protection for navigation
           const navigated = await Promise.race([
             navigateToGameShared(playerInstance.driver, tableId, playerName),
-            new Promise((_, reject) => 
+            new Promise((_, reject) =>
               setTimeout(() => reject(new Error('Navigation timeout')), 180000)
             )
           ]);
-          
+
           if (navigated) {
             playerInstance.seat = seatNumber;
             playerInstance.tableId = tableId;
@@ -731,36 +738,36 @@ async function setup5PlayersShared(tableId) {
           return false;
         }
       })();
-      
+
       navigationPromises.push(navigationPromise);
     }
   }
-  
+
   // Wait for all navigations to complete with timeout protection
   console.log('⏳ Waiting for all player navigations to complete with timeout protection...');
-  
+
   try {
     const navigationResults = await Promise.race([
       Promise.all(navigationPromises),
-      new Promise((_, reject) => 
+      new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Navigation timeout - all players')), 300000)
       )
     ]);
-    
+
     const successfulNavigations = navigationResults.filter(result => result === true).length;
-    
+
     console.log(`🎯 Enhanced navigation complete: ${successfulNavigations}/${players.length} players`);
-    
+
     if (successfulNavigations < players.length) {
       console.log(`⚠️ Some navigations failed, but continuing with ${successfulNavigations} players`);
     }
-    
+
   } catch (error) {
     console.error('❌ Enhanced parallel navigation failed:', error.message);
     console.log('⚠️ Continuing test with available browser instances...');
     // Don't fail the test - continue with available browsers
   }
-  
+
   console.log('✅ All 5 players setup complete with enhanced timeout handling');
   return true;
 }
@@ -785,31 +792,54 @@ class ScreenshotHelper {
     }
   }
 
-  async captureAndLogScreenshot(driver, screenshotName) {
+  async captureAndLogScreenshot(input, screenshotName) {
     try {
+      // Robust driver detection - works if passed a driver OR a player object
+      let driver = input;
+      if (input && !input.takeScreenshot && (input.driver || input.browser)) {
+        driver = input.driver || input.browser;
+        console.log(`📡 Extracted driver from player object for: ${screenshotName}`);
+      }
+
       console.log(`📸 Capturing screenshot: ${screenshotName}`);
-      
-      if (!driver) {
-        console.log(`⚠️ No driver available for screenshot: ${screenshotName}`);
+
+      if (!driver || !driver.takeScreenshot) {
+        const props = input ? Object.keys(input).join(', ') : 'null';
+        console.log(`⚠️ No valid driver available for screenshot: ${screenshotName} (Input type: ${typeof input}, Properties: ${props})`);
         return false;
       }
-      
-      // Take screenshot
-      const screenshot = await driver.takeScreenshot();
-      
+
       // Save screenshot with 3-digit index
       const index = String(this.screenshotCounter++).padStart(3, '0');
       const filename = `${index}_${screenshotName}.png`;
+
+      console.log(`📸 Taking actual screenshot for: ${filename}...`);
+      const screenshot = await driver.takeScreenshot();
+      console.log(`📸 Screenshot data received (${screenshot.length} bytes)`);
+
       const filepath = path.join(this.screenshotDir, filename);
-      
+      console.log(`📂 Writing to: ${filepath}`);
+
       fs.writeFileSync(filepath, screenshot, 'base64');
-      console.log(`✅ Screenshot saved: ${filename}`);
-      
+      console.log(`✅ Screenshot saved SUCCESSFULLY: ${filename}`);
+
       return true;
     } catch (error) {
       console.log(`❌ Screenshot capture failed for ${screenshotName}: ${error.message}`);
       return false;
     }
+  }
+}
+
+function clearGlobalPlayers() {
+  if (!global.players) {
+    console.log('📡 Initializing global.players object...');
+    global.players = {};
+    return;
+  }
+  console.log('🧹 Clearing global.players properties...');
+  for (const key of Object.keys(global.players)) {
+    delete global.players[key];
   }
 }
 
@@ -824,5 +854,6 @@ module.exports = {
   setup5PlayersShared,
   initializeBrowserPool,
   getBrowserFromPool,
-  ScreenshotHelper
+  ScreenshotHelper,
+  clearGlobalPlayers
 };

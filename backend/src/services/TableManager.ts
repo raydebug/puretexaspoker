@@ -77,11 +77,11 @@ class TableManager {
       this.tablePlayers.clear();
       this.tableGameStates.clear();
       // Debug: Cleared existing in-memory state
-      
+
       // Load actual tables from database
       let dbTables = await prisma.table.findMany();
       // Debug: Found ${dbTables.length} tables in database
-      
+
       if (dbTables.length === 0) {
         // Debug: No tables found in database, creating default tables...
         // Create default tables if none exist
@@ -117,15 +117,15 @@ class TableManager {
         // Reload tables after creation
         dbTables = await prisma.table.findMany();
       }
-      
+
       // Load player seating from database
       const playerTables = await prisma.playerTable.findMany({
         include: { player: true }
       });
       // console.log(`TableManager: Found ${playerTables.length} player-table associations`);
-      
+
       // Convert database tables to TableData format
-      dbTables.forEach((dbTable, index) => {
+      dbTables.forEach((dbTable: any, index: any) => {
         const tableData: TableData = {
           id: dbTable.id, // Use the actual database integer ID
           name: dbTable.name,
@@ -140,15 +140,15 @@ class TableManager {
           minBuyIn: dbTable.minBuyIn,
           maxBuyIn: dbTable.maxBuyIn
         };
-        
+
         // console.log(`TableManager: Adding table ${tableData.id} (${tableData.name}) to in-memory state`);
         this.tables.set(tableData.id, tableData);
         this.tablePlayers.set(tableData.id, new Map());
         this.initializeTableGameState(tableData.id);
       });
-      
+
       // Populate tablePlayers with seated players from database
-      playerTables.forEach((pt) => {
+      playerTables.forEach((pt: any) => {
         const tableId = Number(pt.tableId);
         const playerMap = this.tablePlayers.get(tableId);
         if (playerMap) {
@@ -158,7 +158,7 @@ class TableManager {
             role: 'player', // All seated players are 'player' role
             chips: pt.buyIn
           });
-          
+
           // Update table player count
           const table = this.tables.get(tableId);
           if (table) {
@@ -168,7 +168,7 @@ class TableManager {
           }
         }
       });
-      
+
       // console.log(`TableManager: Initialized with ${this.tables.size} tables from database`);
       // console.log(`TableManager: Loaded ${playerTables.length} seated players from database`);
     } catch (error) {
@@ -238,7 +238,7 @@ class TableManager {
         return { success: false, error: 'Already joined another table' };
       }
     }
-    
+
     // If player is already at this table, just return success (idempotent)
     if (players.has(playerId)) {
       return { success: true };
@@ -298,9 +298,9 @@ class TableManager {
 
     // Validate buy-in amount
     if (buyIn < table.minBuyIn || buyIn > table.maxBuyIn) {
-      return { 
-        success: false, 
-        error: `Buy-in must be between ${table.minBuyIn} and ${table.maxBuyIn}` 
+      return {
+        success: false,
+        error: `Buy-in must be between ${table.minBuyIn} and ${table.maxBuyIn}`
       };
     }
 
@@ -328,8 +328,8 @@ class TableManager {
     player.chips = buyIn;
 
     // Update table counts
-    const updatedTable = { 
-      ...table, 
+    const updatedTable = {
+      ...table,
       players: table.players + 1,
       observers: table.observers - 1
     };
@@ -375,7 +375,7 @@ class TableManager {
   public async startTableGame(tableId: number): Promise<{ success: boolean; error?: string; gameState?: TableGameState }> {
     const table = this.tables.get(tableId);
     const gameState = this.tableGameStates.get(tableId);
-    
+
     if (!table || !gameState) {
       return { success: false, error: 'Table not found' };
     }
@@ -433,13 +433,13 @@ class TableManager {
       // Post blinds and record in game history
       const smallBlindPlayer = newGameState.players[newGameState.smallBlindPosition];
       const bigBlindPlayer = newGameState.players[newGameState.bigBlindPosition];
-      
+
       if (smallBlindPlayer) {
         const smallBlindAmount = Math.min(table.smallBlind, smallBlindPlayer.chips);
         smallBlindPlayer.chips -= smallBlindAmount;
         smallBlindPlayer.currentBet = smallBlindAmount;
         newGameState.pot += smallBlindAmount;
-        
+
         // Record small blind action
         try {
           await prisma.tableAction.create({
@@ -464,13 +464,13 @@ class TableManager {
           console.error('❌ Failed to record small blind:', error);
         }
       }
-      
+
       if (bigBlindPlayer) {
         const bigBlindAmount = Math.min(table.bigBlind, bigBlindPlayer.chips);
         bigBlindPlayer.chips -= bigBlindAmount;
         bigBlindPlayer.currentBet = bigBlindAmount;
         newGameState.pot += bigBlindAmount;
-        
+
         // Record big blind action
         try {
           await prisma.tableAction.create({
@@ -527,7 +527,7 @@ class TableManager {
         // Also emit to all clients for debugging/fallback
         io.emit('gameState', newGameState);
         // Emit game started event to table room only
-        const gameStartedData = { 
+        const gameStartedData = {
           tableId,
           gameState: newGameState,
           message: `Game started at table ${tableId} with ${newGameState.players.length} players`
@@ -548,9 +548,9 @@ class TableManager {
   }
 
   public async playerAction(
-    tableId: number, 
-    playerId: string, 
-    action: string, 
+    tableId: number,
+    playerId: string,
+    action: string,
     amount?: number
   ): Promise<{ success: boolean; error?: string; gameState?: TableGameState }> {
     const gameState = this.tableGameStates.get(tableId);
@@ -570,10 +570,10 @@ class TableManager {
     try {
       // Record action in database for complete game history
       console.log(`📊 RECORDING ACTION: ${playerId} ${action} ${amount ? `$${amount}` : ''} in ${gameState.phase} phase`);
-      
+
       // Get next action sequence for proper ordering
       const actionSequence = await this.getNextActionSequence(tableId, gameState.handNumber);
-      
+
       // Create TableAction record for game history
       await prisma.tableAction.create({
         data: {
@@ -594,7 +594,7 @@ class TableManager {
           gameStateAfter: null // Will be updated after action processing
         }
       });
-      
+
       console.log(`✅ TableAction recorded: ${action} by ${playerId} (sequence: ${actionSequence})`);
 
       // Process action
@@ -682,13 +682,13 @@ class TableManager {
       const io = (global as any).socketIO;
       if (io) {
         console.log(`📡 TableManager: Player action processed - emitting updated game state for table ${tableId}`);
-        
+
         // Emit to table-based rooms (table-only architecture)
         io.to(`table:${tableId}`).emit('gameState', gameState);
-        
+
         // Also emit to all clients for debugging/fallback
         io.emit('gameState', gameState);
-        
+
         console.log(`📡 TableManager: WebSocket game state update emitted after player action`);
       }
 
@@ -720,7 +720,7 @@ class TableManager {
   private async advanceToNextPhase(tableId: number, gameState: TableGameState): Promise<void> {
     const phaseOrder = ['preflop', 'flop', 'turn', 'river', 'showdown'];
     const currentIndex = phaseOrder.indexOf(gameState.phase);
-    
+
     if (currentIndex === -1 || currentIndex >= phaseOrder.length - 1) {
       // Game is complete, determine winner
       await this.determineWinner(tableId, gameState);
@@ -751,7 +751,7 @@ class TableManager {
     // Record phase transition in game history
     try {
       const actionSequence = await this.getNextActionSequence(tableId, gameState.handNumber);
-      
+
       await prisma.tableAction.create({
         data: {
           tableId: tableId,
@@ -770,7 +770,7 @@ class TableManager {
           gameStateAfter: null
         }
       });
-      
+
       console.log(`✅ Phase transition recorded: ${prevPhase} → ${nextPhase} (sequence: ${actionSequence})`);
     } catch (error) {
       console.error('❌ Failed to record phase transition:', error);
@@ -807,13 +807,13 @@ class TableManager {
     const io = (global as any).socketIO;
     if (io) {
       console.log(`📡 TableManager: Phase transition to ${nextPhase} - emitting updated game state for table ${tableId}`);
-      
+
       // Emit to table-based rooms (table-only architecture)
       io.to(`table:${tableId}`).emit('gameState', gameState);
-      
+
       // Also emit to all clients for debugging/fallback
       io.emit('gameState', gameState);
-      
+
       // Emit specific phase transition event
       const phaseTransitionData = {
         tableId,
@@ -825,10 +825,10 @@ class TableManager {
         isAutomatic: true,
         timestamp: Date.now()
       };
-      
+
       io.to(`table:${tableId}`).emit('phaseTransition', phaseTransitionData);
       io.to(`table:${tableId}`).emit(`automatic${nextPhase.charAt(0).toUpperCase() + nextPhase.slice(1)}`, phaseTransitionData);
-      
+
       console.log(`📡 TableManager: WebSocket events emitted for phase transition to ${nextPhase}`);
     } else {
       console.log(`⚠️ TableManager: Socket.IO instance not available for phase transition to ${nextPhase}`);
@@ -837,7 +837,7 @@ class TableManager {
 
   private async determineWinner(tableId: number, gameState: TableGameState): Promise<void> {
     const activePlayers = gameState.players.filter(p => p.isActive);
-    
+
     if (activePlayers.length === 1) {
       // Last player standing wins
       const winner = activePlayers[0];
@@ -851,11 +851,11 @@ class TableManager {
       }));
 
       // Find winner(s)
-      const bestHand = hands.reduce((best, current) => 
+      const bestHand = hands.reduce((best, current) =>
         this.handEvaluator.compareHands(current.hand, best.hand) > 0 ? current : best
       );
 
-      const winners = hands.filter(h => 
+      const winners = hands.filter(h =>
         this.handEvaluator.compareHands(h.hand, bestHand.hand) === 0
       );
 
@@ -864,12 +864,12 @@ class TableManager {
       winners.forEach(({ player }) => {
         player.chips += winAmount;
       });
-      
+
       // Record winner information in game history
       if (winners.length === 1) {
         const winner = winners[0];
         const actionSequence = await this.getNextActionSequence(tableId, gameState.handNumber);
-        
+
         await prisma.tableAction.create({
           data: {
             tableId: tableId,
@@ -890,12 +890,12 @@ class TableManager {
             })
           }
         });
-        
+
         console.log(`✅ Hand winner recorded: ${winner.player.name} wins $${winAmount} (sequence: ${actionSequence})`);
       } else if (winners.length > 1) {
         // Record split pot
         const actionSequence = await this.getNextActionSequence(tableId, gameState.handNumber);
-        
+
         await prisma.tableAction.create({
           data: {
             tableId: tableId,
@@ -913,10 +913,10 @@ class TableManager {
             gameStateAfter: null
           }
         });
-        
+
         console.log(`✅ Split pot recorded: ${winners.length} winners split $${gameState.pot} (sequence: ${actionSequence})`);
       }
-      
+
       gameState.pot = 0;
     }
 
@@ -956,7 +956,7 @@ class TableManager {
         actionSequence: 'desc'
       }
     });
-    
+
     return (lastAction?.actionSequence || 0) + 1;
   }
 
@@ -977,7 +977,7 @@ class TableManager {
       });
 
       // Format actions for game history
-      return actions.map(action => ({
+      return actions.map((action: any) => ({
         id: `GH-${action.id}`,
         tableId: action.tableId,
         playerId: action.playerId,
@@ -997,9 +997,9 @@ class TableManager {
     }
   }
 
-  public async getActionHistory(tableId: number, options?: { 
-    page?: number; 
-    limit?: number; 
+  public async getActionHistory(tableId: number, options?: {
+    page?: number;
+    limit?: number;
     handNumber?: number;
   }): Promise<{
     actions: any[];
@@ -1012,7 +1012,7 @@ class TableManager {
   }> {
     try {
       const { page = 1, limit = 20, handNumber } = options || {};
-      
+
       const whereClause: any = { tableId };
       if (handNumber) {
         whereClause.handNumber = handNumber;
@@ -1020,7 +1020,7 @@ class TableManager {
 
       // Get total count for pagination
       const total = await prisma.tableAction.count({ where: whereClause });
-      
+
       // Get paginated results
       const actions = await prisma.tableAction.findMany({
         where: whereClause,
@@ -1032,7 +1032,7 @@ class TableManager {
         take: limit
       });
 
-      const formattedActions = actions.map(action => ({
+      const formattedActions = actions.map((action: any) => ({
         id: `GH-${action.id}`,
         tableId: action.tableId,
         playerId: action.playerId,
@@ -1072,7 +1072,7 @@ class TableManager {
         ]
       });
 
-      return actions.map(action => ({
+      return actions.map((action: any) => ({
         id: `GH-${action.id}`,
         tableId: action.tableId,
         playerId: action.playerId,
@@ -1097,7 +1097,7 @@ class TableManager {
     try {
       const gameState = this.getTableGameState(tableId);
       if (!gameState || !gameState.board) return null;
-      
+
       const board = gameState.board;
       switch (phase) {
         case 'flop':
@@ -1127,12 +1127,12 @@ class TableManager {
   public async getDetailedFormattedGameHistory(tableId: number, handNumber?: number): Promise<string> {
     try {
       const gameHistory = await this.getGameHistory(tableId, handNumber);
-      
+
       let formatted = '';
       let currentPhase = '';
       let currentPot = 0;
       let playerStacks: { [key: string]: number } = {};
-      
+
       // Initialize player stacks (get from current game state or assume 100 for completed hands)
       const gameState = this.getTableGameState(tableId);
       if (gameState && gameState.players) {
@@ -1148,7 +1148,7 @@ class TableManager {
           }
         });
       }
-      
+
       // Position mapping for players
       const getPosition = (playerName: string): string => {
         // This should ideally come from game state, but for now use simple mapping
@@ -1157,20 +1157,20 @@ class TableManager {
         const index = positionOrder.indexOf(playerName);
         return index !== -1 && index < positionMap.length ? positionMap[index] : '';
       };
-      
+
       for (const action of gameHistory) {
         // Phase header with pot information - check for phase transitions including PHASE_TRANSITION actions
         const actionPhase = action.action === 'PHASE_TRANSITION' ? action.phase : action.phase;
-        
+
         if (actionPhase !== currentPhase) {
           const prevPhase = currentPhase;
           currentPhase = actionPhase;
-          
+
           // Add pot summary for previous phase
           if (prevPhase && currentPot > 0) {
             formatted += `Pot: $${currentPot}\n`;
           }
-          
+
           switch (currentPhase) {
             case 'preflop':
               formatted += `--- PRE-FLOP BETTING ---\n[Pot: $${currentPot}]\n`;
@@ -1195,58 +1195,58 @@ class TableManager {
               break;
           }
         }
-        
+
         // Format action display with enhanced details
         if (action.playerId === 'System' && action.action !== 'PHASE_TRANSITION') continue; // Skip system actions except phase transitions
         if (action.action === 'PHASE_TRANSITION') continue; // Skip phase transition after processing header
-        
+
         const position = getPosition(action.playerId);
         const playerWithPosition = position ? `${action.playerId} (${position})` : action.playerId;
         const stackBefore = playerStacks[action.playerId] || 0;
-        
+
         if (action.action === 'SMALL_BLIND') {
           playerStacks[action.playerId] -= action.amount;
           currentPot += action.amount;
           formatted += `${playerWithPosition} posts small blind $${action.amount}\n`;
-          
+
         } else if (action.action === 'BIG_BLIND') {
           playerStacks[action.playerId] -= action.amount;
           currentPot += action.amount;
           formatted += `${playerWithPosition} posts big blind $${action.amount}\n`;
-          
+
         } else if (action.action === 'RAISE') {
           const betAmount = action.amount;
           playerStacks[action.playerId] -= betAmount;
           currentPot += betAmount;
           const stackAfter = playerStacks[action.playerId];
           formatted += `${playerWithPosition} raises to $${betAmount} — Stack: $${stackBefore} → $${stackAfter}\n`;
-          
+
         } else if (action.action === 'CALL') {
           const callAmount = action.amount;
           playerStacks[action.playerId] -= callAmount;
           currentPot += callAmount;
           const stackAfter = playerStacks[action.playerId];
           formatted += `${playerWithPosition} calls $${callAmount} — Stack: $${stackBefore} → $${stackAfter}\n`;
-          
+
         } else if (action.action === 'BET') {
           const betAmount = action.amount;
           playerStacks[action.playerId] -= betAmount;
           currentPot += betAmount;
           const stackAfter = playerStacks[action.playerId];
           formatted += `${playerWithPosition} bets $${betAmount} — Stack: $${stackBefore} → $${stackAfter}\n`;
-          
+
         } else if (action.action === 'FOLD') {
           formatted += `${playerWithPosition} folds — Stack: $${stackBefore}\n`;
-          
+
         } else if (action.action === 'CHECK') {
           formatted += `${playerWithPosition} checks\n`;
-          
+
         } else if (action.action.includes('ALL') || action.action === 'ALLIN') {
           const allInAmount = action.amount || stackBefore;
           playerStacks[action.playerId] = 0;
           currentPot += allInAmount;
           formatted += `${playerWithPosition} goes all-in $${allInAmount} — Stack: $${stackBefore} → $0\n`;
-          
+
         } else if (action.action === 'PHASE_TRANSITION') {
           // Add pot summary at end of betting round
           if (['preflop', 'flop', 'turn', 'river'].includes(currentPhase)) {
@@ -1254,7 +1254,7 @@ class TableManager {
           }
         }
       }
-      
+
       // Add showdown results if we're in showdown phase
       if (currentPhase === 'showdown') {
         formatted += `\n--- SHOWDOWN RESULTS ---\n`;
@@ -1262,9 +1262,9 @@ class TableManager {
         formatted += 'Hand reveals and winner determination would appear here\n';
         formatted += `Final pot: $${currentPot}\n`;
       }
-      
+
       return formatted;
-      
+
     } catch (error) {
       console.error('Error generating detailed formatted game history:', error);
       return 'Error formatting game history';
