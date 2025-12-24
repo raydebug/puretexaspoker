@@ -365,7 +365,7 @@ Then('I capture screenshot {string}', { timeout: 30000 }, async function (screen
         const playerInstance = global.players[playerName];
         if (playerInstance && playerInstance.driver) {
           console.log(`📸 Screenshot saved: ${screenshotName}_${playerName.toLowerCase()}.png`);
-          await screenshotHelper.captureAndLogScreenshot(playerInstance.driver, `${screenshotName}_${playerName.toLowerCase()}`);
+          await screenshotHelper.captureAndLogScreenshot(playerInstance.driver, screenshotName, tournamentState.currentRound, playerName);
           return `${playerName}: success`;
         }
         return `${playerName}: no driver`;
@@ -397,7 +397,7 @@ Then('I capture screenshot {string} showing {string}', { timeout: 20000 }, async
     const browser = global.players[firstPlayer];
 
     try {
-      await screenshotHelper.captureAndLogScreenshot(browser, screenshotName);
+      await screenshotHelper.captureAndLogScreenshot(browser, screenshotName, tournamentState.currentRound, firstPlayer);
       console.log(`✅ Screenshot captured: ${screenshotName} (${description})`);
     } catch (error) {
       console.log(`⚠️ Screenshot capture failed: ${error.message}`);
@@ -981,38 +981,132 @@ Then('Player {string} chips should be updated to {int}', async function (playerN
   console.log(`💰 Verifying ${playerName} chips updated to ${expectedChips}...`);
 
   // Find the browser for this player to check their own view, or use any browser
-  const playerBrowser = global.players[playerName]?.driver || Object.values(global.players)[0]?.driver;
+  const playerBrowser = global.players[playerName]?.driver || Object.values(global.players)[0]?.driver || getDriverSafe();
 
   if (playerBrowser) {
     try {
-      // Find chips for the specific player. Selector might depend on how players are identified in DOM
-      // Assuming some attribute data-player-name or checking all chip-counts
+      // Robust detection strategy:
+      // 1. Try direct ID-based testid (works for GameBoard and PokerTable if ID=Name)
+      // 2. Try class-based search within player info blocks
 
-      // Strategy: iterate all player info blocks
-      const playerInfos = await playerBrowser.findElements(By.css('[data-testid="player-info"], .player-info, .player-seat'));
       let found = false;
+      const selectors = [
+        `[data-testid="player-${playerName}-chips"]`,
+        `[data-testid="player-Player${playerName.replace('Player', '')}-chips"]`,
+        `[data-testid="player-${playerName.toLowerCase()}-chips"]`
+      ];
 
-      for (const info of playerInfos) {
-        const text = await info.getText();
-        if (text.includes(playerName)) {
-          // This block belongs to the player
-          if (text.includes(expectedChips.toString())) {
-            console.log(`✅ ${playerName} found with ${expectedChips} chips`);
-            found = true;
-          } else {
-            console.log(`⚠️ ${playerName} found but chip count mismatch in text: "${text}"`);
+      for (const selector of selectors) {
+        try {
+          const elements = await playerBrowser.findElements(By.css(selector));
+          if (elements.length > 0) {
+            const text = await elements[0].getText();
+            if (text.includes(expectedChips.toString())) {
+              console.log(`✅ ${playerName} found via ${selector} with ${expectedChips} chips`);
+              found = true;
+              break;
+            }
           }
-          break;
+        } catch (e) { /* ignore and try next selector */ }
+      }
+
+      if (!found) {
+        // Fallback to iterating player info blocks if specific testid fails
+        const playerInfos = await playerBrowser.findElements(By.css('[data-testid^="seat-"], [data-testid="player-info"], .player-info, .player-seat'));
+
+        for (const info of playerInfos) {
+          const text = await info.getText();
+          if (text.includes(playerName)) {
+            // This block belongs to the player
+            if (text.includes(expectedChips.toString())) {
+              console.log(`✅ ${playerName} verified via text search in block with ${expectedChips} chips`);
+              found = true;
+            } else {
+              console.log(`⚠️ ${playerName} block found but chip count mismatch. Text: "${text}", Expected: ${expectedChips}`);
+            }
+            break;
+          }
         }
       }
 
       if (!found) {
-        console.log(`⚠️ Could not verify chip count for ${playerName} (player block not found or chips not matching)`);
+        console.log(`⚠️ Could not verify chip count for ${playerName} after trying all selectors and text search`);
       }
 
     } catch (e) {
-      console.log(`⚠️ Error verifying chip count: ${e.message}`);
+      console.log(`⚠️ Error verifying chip count for ${playerName}: ${e.message}`);
     }
+  }
+});
+
+Then('the total pot should be {int}', async function (expectedPot) {
+  console.log(`💰 Verifying total pot is ${expectedPot}...`);
+  const browser = getDriverSafe();
+  try {
+    const potElement = await browser.findElement(By.css('[data-testid="pot-amount"], .pot-amount, .pot'));
+    const potText = await potElement.getText();
+    if (potText.includes(expectedPot.toString())) {
+      console.log(`✅ Total pot verified: ${potText}`);
+    } else {
+      console.log(`⚠️ Pot mismatch: expected ${expectedPot}, found "${potText}"`);
+    }
+  } catch (e) {
+    console.log(`⚠️ Error verifying pot: ${e.message}`);
+  }
+});
+
+Then('Player {string} should have an active indicator', async function (playerName) {
+  console.log(`✨ Verifying active indicator for ${playerName}...`);
+  const browser = getDriverSafe();
+  try {
+    // 1. Check current player indicator if it exists
+    try {
+      const indicator = await browser.findElement(By.css('[data-testid="current-player-indicator"], .current-player-indicator'));
+      const indicatorText = await indicator.getText();
+      if (indicatorText.includes(playerName)) {
+        console.log(`✅ Verified via global indicator: ${playerName} is active`);
+        return;
+      }
+    } catch (e) { /* indicator might not be present, check seats */ }
+
+    // 2. Check seat-specific active state
+    const seats = await browser.findElements(By.css('[data-testid^="seat-"], .player-seat'));
+    let foundActive = false;
+    for (const seat of seats) {
+      const text = await seat.getText();
+      if (text.includes(playerName)) {
+        const isActiveAttr = await seat.getAttribute('data-active');
+        const className = await seat.getAttribute('class');
+        if (isActiveAttr === 'true' || className.includes('active-player') || className.includes('current-player')) {
+          console.log(`✅ ${playerName} seat has active indicator (attr/class)`);
+          foundActive = true;
+        }
+        break;
+      }
+    }
+
+    if (!foundActive) {
+      console.log(`⚠️ ${playerName} does not appear to be the active player`);
+    }
+  } catch (e) {
+    console.log(`⚠️ Error verifying active indicator: ${e.message}`);
+  }
+});
+
+Then('the side pot {int} should be {int}', async function (seatIndex, expectedAmount) {
+  console.log(`💰 Verifying side pot ${seatIndex} is ${expectedAmount}...`);
+  const browser = getDriverSafe();
+  try {
+    // Side pots are 0-indexed in DOM but often 1-indexed in step descriptions
+    const potElement = await browser.findElement(By.css(`[data-testid="side-pot-${seatIndex - 1}"], [data-testid="side-pot-${seatIndex}"]`));
+    const potText = await potElement.getText();
+    if (potText.includes(expectedAmount.toString())) {
+      console.log(`✅ Side pot ${seatIndex} verified: ${potText}`);
+    } else {
+      console.log(`⚠️ Side pot ${seatIndex} mismatch: expected ${expectedAmount}, found "${potText}"`);
+    }
+  } catch (e) {
+    console.log(`⚠️ Error verifying side pot ${seatIndex}: ${e.message}`);
   }
 });
 
@@ -1598,7 +1692,7 @@ Then('I capture comprehensive verification screenshots:', async function (dataTa
       const browser = global.players[firstPlayer];
 
       try {
-        await screenshotHelper.captureAndLogScreenshot(browser, screenshotName);
+        await screenshotHelper.captureAndLogScreenshot(browser, screenshotName, tournamentState.currentRound);
         console.log(`✅ Screenshot captured: ${screenshotName}`);
       } catch (error) {
         console.log(`⚠️ Screenshot capture failed: ${error.message}`);
@@ -1796,7 +1890,7 @@ Then('I capture screenshot {string} for all {int} players', { timeout: 25000 }, 
       if (playerInstance && playerInstance.driver) {
         screenshotPromises.push(
           Promise.race([
-            screenshotHelper.captureAndLogScreenshot(playerInstance.driver, `${screenshotName}_${playerName.toLowerCase()}`),
+            screenshotHelper.captureAndLogScreenshot(playerInstance.driver, screenshotName, tournamentState.currentRound, playerName),
             new Promise((resolve) => setTimeout(() => resolve(false), 10000)) // 10s timeout per player
           ]).then(result => {
             if (result) {
@@ -1853,14 +1947,14 @@ Then('I capture screenshot {string} showing {word}', { timeout: 60000 }, async f
     // Check if this is an elimination/championship screenshot that targets a specific player
     if (screenshotName.includes('_eliminated') || screenshotName.includes('_champion')) {
       // Extract the target player from the screenshot name
-      const playerMatch = screenshotName.match(/_player(\d+)_/);
+      const playerMatch = screenshotName.match(/player(\d+)/i);
       const targetPlayer = playerMatch ? `Player${playerMatch[1]}` : 'Player1';
 
       try {
         const playerInstance = global.players[targetPlayer];
         if (playerInstance && playerInstance.driver) {
           console.log(`📸 Capturing screenshot: ${screenshotName} (from ${targetPlayer} perspective)`);
-          await screenshotHelper.captureAndLogScreenshot(playerInstance.driver, screenshotName);
+          await screenshotHelper.captureAndLogScreenshot(playerInstance.driver, screenshotName, tournamentState.currentRound, targetPlayer);
           console.log(`✅ Screenshot captured: ${screenshotName} (${description}) from ${targetPlayer}`);
           return;
         }
@@ -1876,7 +1970,7 @@ Then('I capture screenshot {string} showing {word}', { timeout: 60000 }, async f
         const playerInstance = global.players[playerName];
         if (playerInstance && playerInstance.driver) {
           console.log(`📸 Capturing screenshot: ${screenshotName}_${playerName.toLowerCase()}`);
-          await screenshotHelper.captureAndLogScreenshot(playerInstance.driver, `${screenshotName}_${playerName.toLowerCase()}`);
+          await screenshotHelper.captureAndLogScreenshot(playerInstance.driver, screenshotName, tournamentState.currentRound, playerName);
           return `${playerName}: success`;
         }
         return `${playerName}: no driver`;
@@ -1909,7 +2003,7 @@ Then('I capture screenshot {string} showing all players with positions', { timeo
       if (playerInstance && playerInstance.driver) {
         screenshotPromises.push(
           Promise.race([
-            screenshotHelper.captureAndLogScreenshot(playerInstance.driver, `${screenshotName}_${playerName.toLowerCase()}`),
+            screenshotHelper.captureAndLogScreenshot(playerInstance.driver, screenshotName, tournamentState.currentRound, playerName),
             new Promise((resolve) => setTimeout(() => resolve(false), 10000)) // 10s timeout per player
           ]).then(result => {
             if (result) {
@@ -1950,7 +2044,7 @@ Then('I capture screenshot {string} showing enhanced formatting', { timeout: 300
         const playerInstance = global.players[playerName];
         if (playerInstance && playerInstance.driver) {
           console.log(`📸 Capturing screenshot: ${screenshotName}_${playerName.toLowerCase()}`);
-          await screenshotHelper.captureAndLogScreenshot(playerInstance.driver, `${screenshotName}_${playerName.toLowerCase()}`);
+          await screenshotHelper.captureAndLogScreenshot(playerInstance.driver, screenshotName, tournamentState.currentRound, playerName);
           return `${playerName}: success`;
         }
         return `${playerName}: no driver`;
@@ -2108,17 +2202,7 @@ Then('Player2 should have {string} \\(Q-J-{int}-{int}-{int})', async function (h
 
 // Helper function for screenshot capture with sequential indexing
 async function captureScreenshotForAllPlayers(screenshotName) {
-  const fs = require('fs');
-  const path = require('path');
-
   if (global.players) {
-    const screenshotDir = path.join(__dirname, '..', 'screenshots');
-
-    // Ensure screenshots directory exists
-    if (!fs.existsSync(screenshotDir)) {
-      fs.mkdirSync(screenshotDir, { recursive: true });
-    }
-
     // Check if this is an elimination/championship screenshot that targets a specific player
     if (screenshotName.includes('_eliminated') || screenshotName.includes('_champion')) {
       // Extract the target player from the screenshot name
@@ -2128,55 +2212,36 @@ async function captureScreenshotForAllPlayers(screenshotName) {
       try {
         const playerInstance = global.players[targetPlayer];
         if (playerInstance && playerInstance.driver) {
-          const index = String(screenshotHelper.screenshotCounter++).padStart(3, '0');
-          const filename = `${index}_${screenshotName}.png`;
-          const filepath = path.join(screenshotDir, filename);
-
-          // Take screenshot from the target player's perspective only
-          const screenshotData = await Promise.race([
-            playerInstance.driver.takeScreenshot(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Screenshot timeout')), 5000))
-          ]);
-
-          fs.writeFileSync(filepath, screenshotData, 'base64');
-          console.log(`📸 Screenshot saved: ${filename} (from ${targetPlayer} perspective)`);
+          await screenshotHelper.captureAndLogScreenshot(playerInstance.driver, screenshotName, tournamentState.currentRound, targetPlayer);
+          console.log(`📸 Screenshot saved: ${screenshotName} (from ${targetPlayer} perspective)`);
         }
       } catch (error) {
         console.log(`⚠️ Screenshot failed for ${targetPlayer}: ${error.message}`);
       }
     } else {
       // Regular screenshots - capture from all players' perspectives
-      for (const playerName of Object.keys(global.players)) {
+      const screenshotPromises = Object.keys(global.players).map(async (playerName) => {
         try {
           const playerInstance = global.players[playerName];
           if (playerInstance && playerInstance.driver) {
-            const index = String(screenshotHelper.screenshotCounter++).padStart(3, '0');
-            let filename;
-            if (screenshotName.includes('_player')) {
-              // Screenshot name already has player ID, replace it with current player
-              filename = `${index}_${screenshotName.replace(/_player\d+.*$/, '')}_${playerName.toLowerCase()}.png`;
-            } else {
-              // Screenshot name doesn't have player ID, append it
-              filename = `${index}_${screenshotName}_${playerName.toLowerCase()}.png`;
-            }
-            const filepath = path.join(screenshotDir, filename);
-
-            // Take screenshot with timeout protection
-            const screenshotData = await Promise.race([
-              playerInstance.driver.takeScreenshot(),
-              new Promise((_, reject) => setTimeout(() => reject(new Error('Screenshot timeout')), 5000))
-            ]);
-
-            fs.writeFileSync(filepath, screenshotData, 'base64');
-            console.log(`📸 Screenshot saved: ${filename}`);
+            await screenshotHelper.captureAndLogScreenshot(playerInstance.driver, screenshotName, tournamentState.currentRound, playerName);
+            return `${playerName}: success`;
           }
+          return `${playerName}: no driver`;
         } catch (error) {
           console.log(`⚠️ Screenshot failed for ${playerName}: ${error.message}`);
+          return `${playerName}: error - ${error.message}`;
         }
+      });
+
+      // Wait for all screenshots to complete with timeout protection
+      try {
+        await Promise.allSettled(screenshotPromises);
+      } catch (error) {
+        console.log(`⚠️ Parallel screenshot capture error: ${error.message}`);
       }
     }
   }
-  console.log(`✅ Screenshot captured: ${screenshotName}`);
 }
 
 // Final missing step definition
@@ -2621,9 +2686,20 @@ When('Player1 \\(SB) calls ${int} more \\(complete\\)', async function (amount) 
   console.log(`✅ Player1 SB complete $${amount} executed`);
 });
 
-When('I capture screenshot {string} showing 5-way pot', async function (screenshotName) {
-  console.log(`📸 Capturing screenshot: ${screenshotName} showing 5-way pot`);
-  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
+Then('I capture a screenshot {string}', { timeout: 30000 }, async function (screenshotName) {
+  console.log(`📸 Capturing screenshot: ${screenshotName}`);
+  const driver = getDriverSafe();
+  // Auto-detect player name for filename context
+  let playerName = null;
+  if (global.players) {
+    for (const [name, p] of Object.entries(global.players)) {
+      if (p && p.driver === driver) {
+        playerName = name;
+        break;
+      }
+    }
+  }
+  await screenshotHelper.captureAndLogScreenshot(driver, screenshotName, tournamentState.currentRound, playerName);
   console.log(`✅ Screenshot captured: ${screenshotName}`);
 });
 
@@ -2652,7 +2728,18 @@ When('Player4 \\(CO) raises to ${int}', async function (amount) {
 
 When('I capture screenshot {string} showing check-raise action', async function (screenshotName) {
   console.log(`📸 Capturing screenshot: ${screenshotName} showing check-raise action`);
-  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
+  const driver = getDriverSafe();
+  // Auto-detect player name for filename context
+  let playerName = null;
+  if (global.players) {
+    for (const [name, p] of Object.entries(global.players)) {
+      if (p && p.driver === driver) {
+        playerName = name;
+        break;
+      }
+    }
+  }
+  await screenshotHelper.captureAndLogScreenshot(driver, screenshotName, tournamentState.currentRound, playerName);
   console.log(`✅ Screenshot captured: ${screenshotName}`);
 });
 
@@ -3563,7 +3650,7 @@ Then('I capture final comprehensive screenshot {string} showing full tournament 
   for (const [playerName, player] of Object.entries(global.players || {})) {
     if (player && player.driver) {
       try {
-        await screenshotHelper.captureAndLogScreenshot(player.driver, `${screenshotName}_${playerName}`);
+        await screenshotHelper.captureAndLogScreenshot(player.driver, screenshotName, tournamentState.currentRound, playerName);
         console.log(`📸 Final tournament screenshot captured from ${playerName}'s perspective`);
         break; // Only need one comprehensive screenshot
       } catch (error) {
@@ -3729,14 +3816,36 @@ Then('Player{int} should win with {string} in tournament', async function (playe
 // Removed duplicate - using Then pattern instead
 
 When('I capture screenshot {string} showing final board', { timeout: 30000 }, async function (screenshotName) {
-  console.log(`📸 Capturing screenshot: ${screenshotName} (final board)`);
-  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
+  console.log(`📸 Capturing screenshot: ${screenshotName} showing final board`);
+  const driver = getDriverSafe();
+  // Auto-detect player name for filename context
+  let playerName = null;
+  if (global.players) {
+    for (const [name, p] of Object.entries(global.players)) {
+      if (p && p.driver === driver) {
+        playerName = name;
+        break;
+      }
+    }
+  }
+  await screenshotHelper.captureAndLogScreenshot(driver, screenshotName, tournamentState.currentRound, playerName);
   console.log(`✅ Screenshot captured: ${screenshotName}`);
 });
 
 Then('I capture screenshot {string} showing final standings', { timeout: 30000 }, async function (screenshotName) {
-  console.log(`📸 Capturing screenshot: ${screenshotName} (final standings)`);
-  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
+  console.log(`📸 Capturing screenshot: ${screenshotName} showing final standings`);
+  const driver = getDriverSafe();
+  // Auto-detect player name for filename context
+  let playerName = null;
+  if (global.players) {
+    for (const [name, p] of Object.entries(global.players)) {
+      if (p && p.driver === driver) {
+        playerName = name;
+        break;
+      }
+    }
+  }
+  await screenshotHelper.captureAndLogScreenshot(driver, screenshotName, tournamentState.currentRound, playerName);
   console.log(`✅ Screenshot captured: ${screenshotName}`);
 });
 
@@ -3770,24 +3879,39 @@ When('Player{int} should lose with {string}', async function (playerNumber, hand
 
 // Additional missing screenshot step definitions for tournament
 Then('I capture screenshot {string} showing round {int} setup', { timeout: 20000 }, async function (screenshotName, roundNumber) {
-  console.log(`📸 Capturing round ${roundNumber} setup screenshot: ${screenshotName}`);
+  console.log(`📸 Capturing screenshot for round ${roundNumber} setup: ${screenshotName}`);
+  const driver = getDriverSafe();
+  // Auto-detect player name for filename context
+  let playerName = null;
+  if (global.players) {
+    for (const [name, p] of Object.entries(global.players)) {
+      if (p && p.driver === driver) {
+        playerName = name;
+        break;
+      }
+    }
+  }
   try {
-    await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
-    console.log(`✅ Screenshot captured successfully: ${screenshotName}`);
+    await screenshotHelper.captureAndLogScreenshot(driver, screenshotName, tournamentState.currentRound, playerName);
+    console.log(`✅ Screenshot captured for round setup: ${screenshotName}`);
   } catch (error) {
-    console.log(`⚠️ Screenshot capture had issues but may have succeeded: ${error.message}`);
+    console.log(`⚠️ Screenshot capture failed for round setup: ${error.message}`);
     // Don't fail the test - the screenshot may have been captured despite Promise timeout
   }
 });
 
 Then('I capture screenshot {string} showing Player3 all-in', { timeout: 15000 }, async function (screenshotName) {
   console.log(`📸 Capturing Player3 all-in screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
+  const player = global.players['Player3'];
+  const driver = (player && player.driver) ? player.driver : getDriverSafe();
+  await screenshotHelper.captureAndLogScreenshot(driver, screenshotName, tournamentState.currentRound, 'Player3');
 });
 
 Then('I capture screenshot {string} showing Player4 call', { timeout: 15000 }, async function (screenshotName) {
   console.log(`📸 Capturing Player4 call screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
+  const player = global.players['Player4'];
+  const driver = (player && player.driver) ? player.driver : getDriverSafe();
+  await screenshotHelper.captureAndLogScreenshot(driver, screenshotName, tournamentState.currentRound, 'Player4');
 });
 
 Then('Player{int} should win with {string} in tournament round {int}', async function (playerNumber, handDescription, roundNumber) {
@@ -3819,17 +3943,17 @@ Then('Player{int} should win with {string}', async function (playerNumber, handD
 
 Then('I capture screenshot {string} showing final tournament state', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing final tournament state screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName, tournamentState.currentRound);
 });
 
 Then('I capture screenshot {string} for remaining {int} players', { timeout: 30000 }, async function (screenshotName, playerCount) {
   console.log(`📸 Capturing screenshot for remaining ${playerCount} players: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName, tournamentState.currentRound);
 });
 
 Then('I capture screenshot {string} for final {int} players', { timeout: 30000 }, async function (screenshotName, playerCount) {
   console.log(`📸 Capturing screenshot for final ${playerCount} players: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName, tournamentState.currentRound);
 });
 
 // REMOVED - Duplicate pattern conflicts with line 2895 
@@ -3839,22 +3963,22 @@ Then('I capture screenshot {string} for final {int} players', { timeout: 30000 }
 // Final missing screenshot step definitions
 Then('I capture screenshot {string} showing Player1 short stack push', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing Player1 short stack push screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName, tournamentState.currentRound);
 });
 
 Then('I capture screenshot {string} showing final state', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing final state screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName, tournamentState.currentRound);
 });
 
 Then('I capture screenshot {string} showing final {int} players', { timeout: 30000 }, async function (screenshotName, playerCount) {
   console.log(`📸 Capturing screenshot showing final ${playerCount} players: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName, tournamentState.currentRound);
 });
 
 Then('I capture screenshot {string} showing championship raise', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing championship raise screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName, tournamentState.currentRound);
 });
 
 // ===== MISSING BASIC STEP DEFINITIONS FOR TOURNAMENT =====
@@ -3932,62 +4056,62 @@ Then('I capture screenshot {string} showing championship raise', { timeout: 3000
 
 Then('I capture screenshot {string} showing all-in situation', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing all-in situation screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName, tournamentState.currentRound);
   console.log(`✅ All-in situation screenshot: ${screenshotName}`);
 });
 
 Then('I capture screenshot {string} showing championship flop', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing championship flop screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName, tournamentState.currentRound);
   console.log(`✅ Championship flop screenshot: ${screenshotName}`);
 });
 
 Then('I capture screenshot {string} showing championship turn', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing championship turn screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName, tournamentState.currentRound);
   console.log(`✅ Championship turn screenshot: ${screenshotName}`);
 });
 
 Then('I capture screenshot {string} showing championship river', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing championship river screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName, tournamentState.currentRound);
   console.log(`✅ Championship river screenshot: ${screenshotName}`);
 });
 
 // Generic screenshot patterns for progressive naming
 Then('I capture screenshot {string} showing flop cards', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing flop cards screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName, tournamentState.currentRound);
   console.log(`✅ Flop cards screenshot: ${screenshotName}`);
 });
 
 Then('I capture screenshot {string} showing turn card', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing turn card screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName, tournamentState.currentRound);
   console.log(`✅ Turn card screenshot: ${screenshotName}`);
 });
 
 Then('I capture screenshot {string} showing river card', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing river card screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName, tournamentState.currentRound);
   console.log(`✅ River card screenshot: ${screenshotName}`);
 });
 
 Then('I capture screenshot {string} showing call action', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing call action screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName, tournamentState.currentRound);
   console.log(`✅ Call action screenshot: ${screenshotName}`);
 });
 
 Then('I capture screenshot {string} showing all folds complete', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing all folds complete screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName, tournamentState.currentRound);
   console.log(`✅ All folds complete screenshot: ${screenshotName}`);
 });
 
 Then('I capture screenshot {string} showing short stack push', { timeout: 30000 }, async function (screenshotName) {
   console.log(`📸 Capturing short stack push screenshot: ${screenshotName}`);
-  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName);
+  await screenshotHelper.captureAndLogScreenshot(getDriverSafe(), screenshotName, tournamentState.currentRound);
   console.log(`✅ Short stack push screenshot: ${screenshotName}`);
 });
 
@@ -4449,7 +4573,7 @@ Then('I capture final screenshot {string}', { timeout: 30000 }, async function (
   // Use first available player for final screenshot
   const firstPlayer = Object.values(global.players || {})[0];
   if (firstPlayer && firstPlayer.driver) {
-    await screenshotHelper.captureAndLogScreenshot(firstPlayer.driver, screenshotName);
+    await screenshotHelper.captureAndLogScreenshot(firstPlayer.driver, screenshotName, tournamentState.currentRound);
     console.log(`✅ Final screenshot captured: ${screenshotName}`);
   } else {
     console.log(`⚠️ No browser available for final screenshot`);

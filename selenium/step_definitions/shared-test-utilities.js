@@ -792,7 +792,7 @@ class ScreenshotHelper {
     }
   }
 
-  async captureAndLogScreenshot(input, screenshotName) {
+  async captureAndLogScreenshot(input, screenshotName, round = null, player = null) {
     try {
       // Robust driver detection - works if passed a driver OR a player object
       let driver = input;
@@ -809,9 +809,49 @@ class ScreenshotHelper {
         return false;
       }
 
-      // Save screenshot with 3-digit index
+      // Save screenshot with index and optional round/player info
       const index = String(this.screenshotCounter++).padStart(3, '0');
-      const filename = `${index}_${screenshotName}.png`;
+
+      // Build filename component by component
+      let filenameParts = [index];
+
+      // Always include Round Tag
+      const roundTag = round ? `R${round}` : 'R?';
+      filenameParts.push(roundTag);
+
+      // Deduplicate: If screenshotName already starts with roundTag (e.g. "R1_"), strip it
+      const roundPrefix = `${roundTag}_`;
+      if (screenshotName.startsWith(roundPrefix)) {
+        screenshotName = screenshotName.substring(roundPrefix.length);
+      }
+
+      // Always include Player Tag
+      let playerTag = player ? (typeof player === 'string' ? player : 'Player') : null;
+
+      // AUTO-DETECTION: If playerTag is missing, try to find the player name from global.players
+      if (!playerTag && global.players) {
+        for (const [name, p] of Object.entries(global.players)) {
+          if (p && (p.driver === driver || p.browser === driver)) {
+            playerTag = name;
+            console.log(`🔍 Auto-detected player: ${playerTag} for screenshot: ${screenshotName}`);
+            break;
+          }
+        }
+      }
+
+      // Fallback to Global
+      if (!playerTag) playerTag = 'Global';
+      filenameParts.push(playerTag);
+
+      // Deduplicate: If screenshotName starts with playerTag matching (case insensitive)
+      const playerPrefix = `${playerTag.toLowerCase()}_`;
+      if (screenshotName.toLowerCase().startsWith(playerPrefix)) {
+        screenshotName = screenshotName.substring(playerPrefix.length);
+      }
+
+      filenameParts.push(screenshotName);
+
+      const filename = `${filenameParts.join('_')}.png`;
 
       console.log(`📸 Taking actual screenshot for: ${filename}...`);
       const screenshot = await driver.takeScreenshot();
