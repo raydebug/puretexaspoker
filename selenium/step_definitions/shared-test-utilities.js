@@ -476,12 +476,12 @@ let browserPoolInitialized = false;
  * @returns {Promise<boolean>} Success status
  */
 async function initializeBrowserPool() {
-  if (browserPoolInitialized && globalBrowserPool.length === 5) {
-    console.log('🏊‍♂️ Browser pool already initialized with 5 instances');
+  if (browserPoolInitialized && globalBrowserPool.length === 6) {
+    console.log('🏊‍♂️ Browser pool already initialized with 6 instances');
     return true;
   }
 
-  console.log('🏊‍♂️ Initializing fixed browser pool (5 instances)...');
+  console.log('🏊‍♂️ Initializing fixed browser pool (6 instances)...');
 
   // Clear any existing browsers
   if (globalBrowserPool.length > 0) {
@@ -503,9 +503,9 @@ async function initializeBrowserPool() {
 
   try {
     const browserPromises = [];
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= 6; i++) {
       const uniqueId = `Pool-${i}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      console.log(`🌐 Initiating browser instance ${i}/5...`);
+      console.log(`🌐 Initiating browser instance ${i}/6...`);
 
       const browserPromise = createBrowserInstanceShared(uniqueId)
         .then(driver => ({ id: i, driver: driver, available: true }))
@@ -520,11 +520,11 @@ async function initializeBrowserPool() {
     // Process results and check for failures
     for (const result of results) {
       if (result.failed) {
-        console.error(`❌ Failed to create browser instance ${result.id}/5: ${result.error}`);
+        console.error(`❌ Failed to create browser instance ${result.id}/6: ${result.error}`);
         throw new Error(`Browser ${result.id} creation failed: ${result.error}`);
       } else {
         globalBrowserPool.push(result);
-        console.log(`✅ Browser instance ${result.id}/5 created successfully`);
+        console.log(`✅ Browser instance ${result.id}/6 created successfully`);
       }
     }
   } catch (error) {
@@ -544,7 +544,7 @@ async function initializeBrowserPool() {
 
   try {
     browserPoolInitialized = true;
-    console.log('🎉 Browser pool initialized successfully with 5 instances!');
+    console.log('🎉 Browser pool initialized successfully with 6 instances!');
     return true;
   } catch (error) {
     console.error('❌ Failed to initialize browser pool:', error.message);
@@ -559,6 +559,15 @@ async function initializeBrowserPool() {
  * @returns {WebDriver|null} Browser driver or null if none available
  */
 function getBrowserFromPool(playerName) {
+  // Handle Observer specifically as the 6th browser
+  if (playerName === 'Observer') {
+    const browser = globalBrowserPool[5]; // 0-indexed, 6th position
+    if (browser && browser.driver) {
+      console.log(`🎯 Assigned browser ${browser.id} to Observer`);
+      return browser.driver;
+    }
+  }
+
   const playerNumber = parseInt(playerName.replace('Player', ''));
 
   if (playerNumber >= 1 && playerNumber <= 5) {
@@ -616,7 +625,23 @@ async function setup5PlayersShared(tableId) {
     }
   }
 
-  console.log('🎉 All 5 players assigned browsers from pool successfully!');
+  // Setup Observer (6th browser from pool)
+  const observerDriver = getBrowserFromPool('Observer');
+  if (observerDriver) {
+    global.players['Observer'] = {
+      driver: observerDriver,
+      seat: 0, // Observer has no seat
+      tableId: tableId,
+      isObserver: true
+    };
+    console.log(`📡 Observer object created in global.players`);
+    console.log(`✅ Observer assigned browser from pool`);
+  } else {
+    console.error(`❌ Failed to assign browser to Observer`);
+    return false;
+  }
+
+  console.log('🎉 All 5 players + Observer assigned browsers from pool successfully!');
 
   // Seat players using API with enhanced error handling
   const players = [
@@ -707,9 +732,14 @@ async function setup5PlayersShared(tableId) {
   // Navigate all browsers in parallel with enhanced timeout protection
   const navigationPromises = [];
 
-  for (const player of players) {
-    const playerName = player.Player;
-    const seatNumber = parseInt(player.Seat);
+  // Add Observer to navigation list
+  const navigationPlayers = [
+    ...players.map(p => ({ playerName: p.Player, seatNumber: parseInt(p.Seat) })),
+    { playerName: 'Observer', seatNumber: 0 }
+  ];
+
+  for (const navPlayer of navigationPlayers) {
+    const { playerName, seatNumber } = navPlayer;
     const playerInstance = global.players[playerName];
 
     if (playerInstance && playerInstance.driver) {
@@ -717,7 +747,7 @@ async function setup5PlayersShared(tableId) {
         try {
           // Add timeout protection for navigation
           const navigated = await Promise.race([
-            navigateToGameShared(playerInstance.driver, tableId, playerName),
+            navigateToGameShared(playerInstance.driver, tableId, playerName === 'Observer' ? null : playerName),
             new Promise((_, reject) =>
               setTimeout(() => reject(new Error('Navigation timeout')), 180000)
             )
@@ -756,10 +786,10 @@ async function setup5PlayersShared(tableId) {
 
     const successfulNavigations = navigationResults.filter(result => result === true).length;
 
-    console.log(`🎯 Enhanced navigation complete: ${successfulNavigations}/${players.length} players`);
+    console.log(`🎯 Enhanced navigation complete: ${successfulNavigations}/${navigationPlayers.length} players`);
 
-    if (successfulNavigations < players.length) {
-      console.log(`⚠️ Some navigations failed, but continuing with ${successfulNavigations} players`);
+    if (successfulNavigations < navigationPlayers.length) {
+      console.log(`⚠️ Some navigations failed, but continuing with ${successfulNavigations} browsers`);
     }
 
   } catch (error) {
@@ -768,7 +798,7 @@ async function setup5PlayersShared(tableId) {
     // Don't fail the test - continue with available browsers
   }
 
-  console.log('✅ All 5 players setup complete with enhanced timeout handling');
+  console.log('✅ All 5 players + Observer setup complete with enhanced timeout handling');
   return true;
 }
 

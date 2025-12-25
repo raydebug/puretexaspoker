@@ -23,6 +23,7 @@ global.clearGlobalPlayers = clearGlobalPlayers;
 
 // Helper for safe driver access
 function getDriverSafe() {
+  if (global.players && global.players.Observer && global.players.Observer.driver) return global.players.Observer.driver;
   if (global.players && global.players.Player1 && global.players.Player1.driver) return global.players.Player1.driver;
   if (global.players && Object.values(global.players)[0] && Object.values(global.players)[0].driver) return Object.values(global.players)[0].driver;
   return null;
@@ -392,12 +393,11 @@ Then('I capture screenshot {string}', { timeout: 30000 }, async function (screen
 Then('I capture screenshot {string} showing {string}', { timeout: 20000 }, async function (screenshotName, description) {
   console.log(`📸 Capturing screenshot: ${screenshotName} showing ${description}`);
 
-  if (global.players && Object.keys(global.players).length > 0) {
-    const firstPlayer = Object.keys(global.players)[0];
-    const browser = global.players[firstPlayer];
+  const browser = getDriverSafe();
 
+  if (browser) {
     try {
-      await screenshotHelper.captureAndLogScreenshot(browser, screenshotName, tournamentState.currentRound, firstPlayer);
+      await screenshotHelper.captureAndLogScreenshot(browser, screenshotName, tournamentState.currentRound);
       console.log(`✅ Screenshot captured: ${screenshotName} (${description})`);
     } catch (error) {
       console.log(`⚠️ Screenshot capture failed: ${error.message}`);
