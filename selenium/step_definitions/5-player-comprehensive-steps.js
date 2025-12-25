@@ -230,15 +230,7 @@ Then('I verify exactly {int} players are present at the current table', async fu
     console.log('⚠️ No players found in global state for verification');
     return;
   }
-  const firstPlayer = Object.keys(global.players)[0];
-  const playerState = global.players[firstPlayer];
-
-  if (!playerState || !playerState.driver) {
-    console.log(`⚠️ Player ${firstPlayer} has no driver`);
-    return;
-  }
-  const browser = playerState.driver;
-
+  const browser = getDriverSafe();
   if (browser) {
     try {
       // Find all seated players (including self and opponents)
