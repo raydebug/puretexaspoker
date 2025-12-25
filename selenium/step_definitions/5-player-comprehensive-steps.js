@@ -309,15 +309,7 @@ Then('the pot should be ${int} with enhanced display {string}', async function (
     console.log('⚠️ No players found in global state for pot verification');
     return; // Skip verification if no players
   }
-  const firstPlayer = Object.keys(global.players)[0];
-  const playerState = global.players[firstPlayer];
-
-  if (!playerState || !playerState.driver) {
-    console.log(`⚠️ Player ${firstPlayer} has no driver`);
-    return;
-  }
-  const browser = playerState.driver;
-
+  const browser = getDriverSafe();
   if (browser) {
     try {
       const potElements = await browser.findElements(By.css('[data-testid="pot-amount"], [data-testid="pot-display"], .pot-amount, [class*="pot"]'));
@@ -887,15 +879,7 @@ Then('I should see enhanced game history: {string}', async function (expectedTex
     console.log('⚠️ No players found in global state for history check');
     return;
   }
-  const firstPlayer = Object.keys(global.players)[0];
-  const playerState = global.players[firstPlayer];
-
-  if (!playerState || !playerState.driver) {
-    console.log(`⚠️ Player ${firstPlayer} has no driver`);
-    return;
-  }
-  const browser = playerState.driver;
-
+  const browser = getDriverSafe();
   if (browser) {
     try {
       await browser.wait(until.elementLocated(By.css('.game-history, [data-testid="game-history"], .history-panel')), 5000);
@@ -923,15 +907,7 @@ Then('I should see winner popup for {string}', async function (winnerName) {
     console.log('⚠️ No players found in global state for winner check');
     return;
   }
-  const firstPlayer = Object.keys(global.players)[0];
-  const playerState = global.players[firstPlayer];
-
-  if (!playerState || !playerState.driver) {
-    console.log(`⚠️ Player ${firstPlayer} has no driver`);
-    return;
-  }
-  const browser = playerState.driver;
-
+  const browser = getDriverSafe();
   if (browser) {
     try {
       await browser.wait(until.elementLocated(By.css('[data-testid="winner-popup"], .winner-popup, .winner-announcement')), 5000);
@@ -1679,10 +1655,8 @@ Then('I capture comprehensive verification screenshots:', async function (dataTa
     console.log(`📸 Capturing ${screenshotName}: ${content}`);
 
     // Capture screenshot using helper
-    if (global.players && Object.keys(global.players).length > 0) {
-      const firstPlayer = Object.keys(global.players)[0];
-      const browser = global.players[firstPlayer];
-
+    const browser = getDriverSafe();
+    if (browser) {
       try {
         await screenshotHelper.captureAndLogScreenshot(browser, screenshotName, tournamentState.currentRound);
         console.log(`✅ Screenshot captured: ${screenshotName}`);
