@@ -24,6 +24,7 @@ Feature: 5-Player 3-Round Tournament with Comprehensive Coverage
       | Player5 | 5    | BTN      |
     Then all players should be seated correctly with position labels
     And I verify exactly 5 players are present at the tournament table
+    And I verify the observer list shows only "Observer"
     And the page should be fully loaded for all players
     And I capture screenshot "tournament_setup_5players" showing all players with positions
 
