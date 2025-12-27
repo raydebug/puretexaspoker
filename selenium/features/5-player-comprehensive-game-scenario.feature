@@ -6,6 +6,7 @@ Feature: 5-Player 3-Round Tournament with Comprehensive Coverage
 
   Background:
     Given the database is reset to a clean state
+    And certain order cards set as testing data
     And the User table is seeded with test players
     And I initialize tournament state tracking for 5 players:
       | Player  | Seat | Position | Starting Stack | Status |

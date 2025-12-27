@@ -66,6 +66,16 @@ class TableManager {
     this.handEvaluator = new HandEvaluator();
   }
 
+  // Test-only: Queue specific decks for a table (array of decks)
+  private queuedDecks: Map<number, Card[][]> = new Map();
+
+  public queueDeck(tableId: number, decks: Card[][]): void {
+    console.log(`🃏 TableManager: Queuing ${decks.length} decks for table ${tableId}`);
+    // Append to existing if any
+    const existing = this.queuedDecks.get(tableId) || [];
+    this.queuedDecks.set(tableId, [...existing, ...decks]);
+  }
+
   public async init(): Promise<void> {
     await this.initializeTables();
   }
@@ -425,9 +435,42 @@ class TableManager {
       };
 
       // Deal cards and post blinds
-      this.deckService.shuffle(newGameState.deck);
-      newGameState.players.forEach(player => {
-        player.cards = this.deckService.dealCards(2, newGameState.deck);
+      // CHECK FOR QUEUED DECK (TESTING CHEAT)
+      const queuedDecks = this.queuedDecks.get(tableId);
+
+      if (queuedDecks && queuedDecks.length > 0) {
+        // Shift the first deck from the queue
+        const nextDeck = queuedDecks.shift();
+
+        if (nextDeck && nextDeck.length > 0) {
+          console.log(`🃏 USING QUEUED DECK for table ${tableId} (${nextDeck.length} cards). Remaining decks: ${queuedDecks.length}`);
+          // Use the queued deck directly without shuffling
+          newGameState.deck = [...nextDeck];
+
+          // Update the queue (if empty, we can leave it empty array or delete)
+          if (queuedDecks.length === 0) {
+            this.queuedDecks.delete(tableId);
+          }
+        } else {
+          // Fallback if empty deck was scheduled
+          this.deckService.shuffle(newGameState.deck);
+        }
+      } else {
+        // Normal random deck
+        this.deckService.shuffle(newGameState.deck);
+      }
+
+      // Sort players by seat number to ensure deterministic dealing order
+      // This is critical for the programmed deck to work correctly
+      const sortedPlayers = [...newGameState.players].sort((a, b) => a.seatNumber - b.seatNumber);
+
+      // Deal cards to players
+      sortedPlayers.forEach(player => {
+        // Find the player object in the game state array to update the correct reference
+        const statePlayer = newGameState.players.find(p => p.id === player.id);
+        if (statePlayer) {
+          statePlayer.cards = this.deckService.dealCards(2, newGameState.deck);
+        }
       });
 
       // Post blinds and record in game history
@@ -1204,7 +1247,11 @@ class TableManager {
         const playerWithPosition = position ? `${action.playerId} (${position})` : action.playerId;
         const stackBefore = playerStacks[action.playerId] || 0;
 
-        if (action.action === 'SMALL_BLIND') {
+        if (action.action === 'SIT_DOWN') {
+          formatted += `${playerWithPosition} sits down with $${action.amount}\n`;
+          playerStacks[action.playerId] = action.amount;
+
+        } else if (action.action === 'SMALL_BLIND') {
           playerStacks[action.playerId] -= action.amount;
           currentPot += action.amount;
           formatted += `${playerWithPosition} posts small blind $${action.amount}\n`;

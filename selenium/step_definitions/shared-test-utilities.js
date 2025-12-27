@@ -747,7 +747,7 @@ async function setup5PlayersShared(tableId) {
         try {
           // Add timeout protection for navigation
           const navigated = await Promise.race([
-            navigateToGameShared(playerInstance.driver, tableId, playerName === 'Observer' ? null : playerName),
+            navigateToGameShared(playerInstance.driver, tableId, playerName),
             new Promise((_, reject) =>
               setTimeout(() => reject(new Error('Navigation timeout')), 180000)
             )

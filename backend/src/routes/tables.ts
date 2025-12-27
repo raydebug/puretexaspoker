@@ -75,8 +75,8 @@ router.post('/:tableId/join', async (req, res) => {
       return res.status(400).json({ error: sitResult.error });
     }
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       tableId: tableNumber
     });
   } catch (error) {
@@ -167,7 +167,7 @@ router.get('/:tableId', async (req, res) => {
 
     // Add currentGameId to response (using table ID as game ID)
     const currentGameId = tableNumber.toString();
-    
+
     res.status(200).json({
       ...table,
       currentGameId,
@@ -218,8 +218,8 @@ router.post('/:tableId/spectate', async (req, res) => {
       return res.status(400).json({ error: result.error });
     }
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       tableId: tableNumber,
       message: 'Successfully joined as spectator'
     });
@@ -246,7 +246,7 @@ router.get('/:tableId/game/history', async (req, res) => {
 
     // Get actual game history from TableManager
     const gameHistory = await tableManager.getGameHistory(
-      tableNumber, 
+      tableNumber,
       handNumber ? parseInt(handNumber as string) : undefined
     );
 
@@ -258,7 +258,7 @@ router.get('/:tableId/game/history', async (req, res) => {
     });
   } catch (error) {
     console.error('Error getting table game history:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       error: 'Failed to get table game history',
       details: error instanceof Error ? error.message : 'Unknown error'
@@ -278,9 +278,9 @@ router.get('/:tableId/actions/history', async (req, res) => {
     // Validate table ID
     if (!isValidTableId(tableNumber)) {
       const availableIds = getAvailableTableIds();
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        error: `Only tables ${availableIds.join(', ')} are available` 
+        error: `Only tables ${availableIds.join(', ')} are available`
       });
     }
 
@@ -326,9 +326,9 @@ router.get('/:tableId/actions/history', async (req, res) => {
             id: 'init-1',
             playerId: 'Player1',
             playerName: 'Player1',
-            action: 'small blind',
-            amount: 1,
-            phase: 'preflop',
+            action: 'SIT_DOWN',
+            amount: 100,
+            phase: 'waiting',
             handNumber: 1,
             actionSequence: 1,
             timestamp: new Date().toISOString()
@@ -337,11 +337,33 @@ router.get('/:tableId/actions/history', async (req, res) => {
             id: 'init-2',
             playerId: 'Player2',
             playerName: 'Player2',
+            action: 'SIT_DOWN',
+            amount: 100,
+            phase: 'waiting',
+            handNumber: 1,
+            actionSequence: 2,
+            timestamp: new Date().toISOString()
+          },
+          {
+            id: 'init-3',
+            playerId: 'Player1',
+            playerName: 'Player1',
+            action: 'small blind',
+            amount: 1,
+            phase: 'preflop',
+            handNumber: 1,
+            actionSequence: 3,
+            timestamp: new Date().toISOString()
+          },
+          {
+            id: 'init-4',
+            playerId: 'Player2',
+            playerName: 'Player2',
             action: 'big blind',
             amount: 2,
             phase: 'preflop',
             handNumber: 1,
-            actionSequence: 2,
+            actionSequence: 4,
             timestamp: new Date().toISOString()
           }
         ];
@@ -367,16 +389,16 @@ router.get('/:tableId/actions/history', async (req, res) => {
 
     } catch (dbError) {
       console.log(`⚠️ Database query failed, returning mock data for table ${tableNumber}`);
-      
+
       // Return mock action history data for testing
       const mockActions = [
         {
           id: '1',
           playerId: 'Player1',
           playerName: 'Player1',
-          action: 'small blind',
-          amount: 1,
-          phase: 'preflop',
+          action: 'SIT_DOWN',
+          amount: 100,
+          phase: 'waiting',
           handNumber: 1,
           actionSequence: 1,
           timestamp: new Date().toISOString()
@@ -385,11 +407,33 @@ router.get('/:tableId/actions/history', async (req, res) => {
           id: '2',
           playerId: 'Player2',
           playerName: 'Player2',
+          action: 'SIT_DOWN',
+          amount: 100,
+          phase: 'waiting',
+          handNumber: 1,
+          actionSequence: 2,
+          timestamp: new Date().toISOString()
+        },
+        {
+          id: '3',
+          playerId: 'Player1',
+          playerName: 'Player1',
+          action: 'small blind',
+          amount: 1,
+          phase: 'preflop',
+          handNumber: 1,
+          actionSequence: 3,
+          timestamp: new Date().toISOString()
+        },
+        {
+          id: '4',
+          playerId: 'Player2',
+          playerName: 'Player2',
           action: 'big blind',
           amount: 2,
           phase: 'preflop',
           handNumber: 1,
-          actionSequence: 2,
+          actionSequence: 4,
           timestamp: new Date().toISOString()
         }
       ];
@@ -406,7 +450,7 @@ router.get('/:tableId/actions/history', async (req, res) => {
 
   } catch (error) {
     console.error('Error getting table action history:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       error: 'Failed to get table action history',
       details: error instanceof Error ? error.message : 'Unknown error'

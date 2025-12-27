@@ -44,6 +44,43 @@ router.post('/set-game-phase', async (req, res) => {
 });
 
 /**
+ * TEST API: Queue a specific deck for a table (Cheat)
+ * POST /api/test/queue-deck
+ */
+router.post('/queue-deck', async (req, res) => {
+  try {
+    // Accept either 'deck' (single) or 'decks' (multiple)
+    const { tableId, deck, decks } = req.body;
+
+    let decksToQueue: any[] = [];
+
+    if (decks && Array.isArray(decks)) {
+      decksToQueue = decks;
+    } else if (deck && Array.isArray(deck)) {
+      decksToQueue = [deck];
+    } else {
+      return res.status(400).json({ success: false, error: 'Invalid parameters: provide "deck" or "decks"' });
+    }
+
+    if (!tableId) {
+      return res.status(400).json({ success: false, error: 'Invalid tableId' });
+    }
+
+    console.log(`🧪 TEST: Queuing ${decksToQueue.length} decks for table ${tableId}`);
+
+    tableManager.queueDeck(parseInt(tableId), decksToQueue);
+
+    res.json({
+      success: true,
+      message: `Queued ${decksToQueue.length} decks`
+    });
+  } catch (error) {
+    console.error('❌ TEST API Error queuing deck:', error);
+    res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+/**
  * TEST API: Get progressive game history for UI testing
  * GET /api/test/progressive-game-history/:tableId
  */
@@ -78,9 +115,9 @@ function generateProgressiveGameHistory(phase: string, maxActions: number = 20) 
       id: 'GH-1',
       playerId: 'Player1',
       playerName: 'Player1',
-      action: 'Small_Blind',
-      amount: 1,
-      phase: 'preflop',
+      action: 'SIT_DOWN',
+      amount: 100,
+      phase: 'waiting',
       handNumber: 1,
       actionSequence: 1,
       timestamp: new Date().toISOString()
@@ -89,11 +126,33 @@ function generateProgressiveGameHistory(phase: string, maxActions: number = 20) 
       id: 'GH-2',
       playerId: 'Player2',
       playerName: 'Player2',
+      action: 'SIT_DOWN',
+      amount: 100,
+      phase: 'waiting',
+      handNumber: 1,
+      actionSequence: 2,
+      timestamp: new Date().toISOString()
+    },
+    {
+      id: 'GH-3',
+      playerId: 'Player1',
+      playerName: 'Player1',
+      action: 'Small_Blind',
+      amount: 1,
+      phase: 'preflop',
+      handNumber: 1,
+      actionSequence: 3,
+      timestamp: new Date().toISOString()
+    },
+    {
+      id: 'GH-4',
+      playerId: 'Player2',
+      playerName: 'Player2',
       action: 'Big_Blind',
       amount: 2,
       phase: 'preflop',
       handNumber: 1,
-      actionSequence: 2,
+      actionSequence: 4,
       timestamp: new Date().toISOString()
     }
   ];
@@ -101,39 +160,11 @@ function generateProgressiveGameHistory(phase: string, maxActions: number = 20) 
   // Add actions based on phase progression
   if (phase.includes('fold') || maxActions >= 3) {
     baseActions.push({
-      id: 'GH-3',
+      id: 'GH-5',
       playerId: 'Player3',
       playerName: 'Player3',
       action: 'FOLD',
       amount: 0,
-      phase: 'preflop',
-      handNumber: 1,
-      actionSequence: 3,
-      timestamp: new Date().toISOString()
-    });
-  }
-
-  if (phase.includes('raise') || maxActions >= 4) {
-    baseActions.push({
-      id: 'GH-4',
-      playerId: 'Player4',
-      playerName: 'Player4',
-      action: 'RAISE',
-      amount: 8,
-      phase: 'preflop',
-      handNumber: 1,
-      actionSequence: 4,
-      timestamp: new Date().toISOString()
-    });
-  }
-
-  if (phase.includes('3bet') || maxActions >= 5) {
-    baseActions.push({
-      id: 'GH-5',
-      playerId: 'Player5',
-      playerName: 'Player5',
-      action: 'RAISE',
-      amount: 24,
       phase: 'preflop',
       handNumber: 1,
       actionSequence: 5,
@@ -141,13 +172,13 @@ function generateProgressiveGameHistory(phase: string, maxActions: number = 20) 
     });
   }
 
-  if (phase.includes('sb_fold') || maxActions >= 6) {
+  if (phase.includes('raise') || maxActions >= 4) {
     baseActions.push({
       id: 'GH-6',
-      playerId: 'Player1',
-      playerName: 'Player1',
-      action: 'FOLD',
-      amount: 0,
+      playerId: 'Player4',
+      playerName: 'Player4',
+      action: 'RAISE',
+      amount: 8,
       phase: 'preflop',
       handNumber: 1,
       actionSequence: 6,
@@ -155,13 +186,13 @@ function generateProgressiveGameHistory(phase: string, maxActions: number = 20) 
     });
   }
 
-  if (phase.includes('call') || maxActions >= 7) {
+  if (phase.includes('3bet') || maxActions >= 5) {
     baseActions.push({
       id: 'GH-7',
-      playerId: 'Player2',
-      playerName: 'Player2',
-      action: 'CALL',
-      amount: 22,
+      playerId: 'Player5',
+      playerName: 'Player5',
+      action: 'RAISE',
+      amount: 24,
       phase: 'preflop',
       handNumber: 1,
       actionSequence: 7,
@@ -169,13 +200,13 @@ function generateProgressiveGameHistory(phase: string, maxActions: number = 20) 
     });
   }
 
-  if (phase.includes('4bet') || maxActions >= 8) {
+  if (phase.includes('sb_fold') || maxActions >= 6) {
     baseActions.push({
       id: 'GH-8',
-      playerId: 'Player4',
-      playerName: 'Player4',
-      action: 'RAISE',
-      amount: 60,
+      playerId: 'Player1',
+      playerName: 'Player1',
+      action: 'FOLD',
+      amount: 0,
       phase: 'preflop',
       handNumber: 1,
       actionSequence: 8,
@@ -183,13 +214,13 @@ function generateProgressiveGameHistory(phase: string, maxActions: number = 20) 
     });
   }
 
-  if (phase.includes('btn_fold') || maxActions >= 9) {
+  if (phase.includes('call') || maxActions >= 7) {
     baseActions.push({
       id: 'GH-9',
-      playerId: 'Player5',
-      playerName: 'Player5',
-      action: 'FOLD',
-      amount: 0,
+      playerId: 'Player2',
+      playerName: 'Player2',
+      action: 'CALL',
+      amount: 22,
       phase: 'preflop',
       handNumber: 1,
       actionSequence: 9,
@@ -197,13 +228,13 @@ function generateProgressiveGameHistory(phase: string, maxActions: number = 20) 
     });
   }
 
-  if (phase.includes('allin') || maxActions >= 10) {
+  if (phase.includes('4bet') || maxActions >= 8) {
     baseActions.push({
       id: 'GH-10',
-      playerId: 'Player2',
-      playerName: 'Player2',
-      action: 'ALL_IN',
-      amount: 76,
+      playerId: 'Player4',
+      playerName: 'Player4',
+      action: 'RAISE',
+      amount: 60,
       phase: 'preflop',
       handNumber: 1,
       actionSequence: 10,
@@ -211,13 +242,13 @@ function generateProgressiveGameHistory(phase: string, maxActions: number = 20) 
     });
   }
 
-  if (phase.includes('call_allin') || maxActions >= 11) {
+  if (phase.includes('btn_fold') || maxActions >= 9) {
     baseActions.push({
       id: 'GH-11',
-      playerId: 'Player4',
-      playerName: 'Player4',
-      action: 'CALL',
-      amount: 40,
+      playerId: 'Player5',
+      playerName: 'Player5',
+      action: 'FOLD',
+      amount: 0,
       phase: 'preflop',
       handNumber: 1,
       actionSequence: 11,
@@ -225,17 +256,45 @@ function generateProgressiveGameHistory(phase: string, maxActions: number = 20) 
     });
   }
 
+  if (phase.includes('allin') || maxActions >= 10) {
+    baseActions.push({
+      id: 'GH-12',
+      playerId: 'Player2',
+      playerName: 'Player2',
+      action: 'ALL_IN',
+      amount: 76,
+      phase: 'preflop',
+      handNumber: 1,
+      actionSequence: 12,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  if (phase.includes('call_allin') || maxActions >= 11) {
+    baseActions.push({
+      id: 'GH-13',
+      playerId: 'Player4',
+      playerName: 'Player4',
+      action: 'CALL',
+      amount: 40,
+      phase: 'preflop',
+      handNumber: 1,
+      actionSequence: 13,
+      timestamp: new Date().toISOString()
+    });
+  }
+
   // Add flop/turn/river actions if needed
   if (phase.includes('flop') || maxActions >= 12) {
     baseActions.push({
-      id: 'GH-12',
+      id: 'GH-14',
       playerId: 'System',
       playerName: 'System',
       action: 'FLOP_REVEAL',
       amount: 0,
       phase: 'flop',
       handNumber: 1,
-      actionSequence: 12,
+      actionSequence: 14,
       timestamp: new Date().toISOString()
     });
   }
@@ -243,14 +302,14 @@ function generateProgressiveGameHistory(phase: string, maxActions: number = 20) 
   // Round 1 Winner Record (GH-13)
   if (phase.includes('tournament') || phase.includes('championship') || maxActions >= 13) {
     baseActions.push({
-      id: 'GH-13',
+      id: 'GH-15',
       playerId: 'Player4',
       playerName: 'Player4',
       action: 'HAND_WIN',
       amount: 200,
       phase: 'showdown',
       handNumber: 1,
-      actionSequence: 13,
+      actionSequence: 15,
       timestamp: new Date().toISOString()
     });
   }
@@ -1958,6 +2017,44 @@ router.post('/auto-seat', async (req, res) => {
       return res.status(400).json({ success: false, error: `Failed to sit down: ${sitDownResult.error}` });
     } else {
       console.log(`✅ TEST API: Player ${playerName} seated as player`);
+
+      // NEW: Record SIT_DOWN action in game history
+      try {
+        const currentHandNumber = gameState!.handNumber || 1;
+
+        // Find last action sequence for this hand
+        const lastAction = await prisma.tableAction.findFirst({
+          where: {
+            tableId: targetTableId,
+            handNumber: currentHandNumber
+          },
+          orderBy: { actionSequence: 'desc' }
+        });
+
+        const nextSequence = (lastAction?.actionSequence || 0) + 1;
+
+        // Create action record
+        await prisma.tableAction.create({
+          data: {
+            tableId: targetTableId,
+            playerId: playerName,
+            type: 'SIT_DOWN',
+            amount: buyIn,
+            phase: gameState!.phase || 'waiting',
+            handNumber: currentHandNumber,
+            actionSequence: nextSequence,
+            gameStateBefore: JSON.stringify({
+              pot: gameState!.pot,
+              playersCount: gameState!.players.length - 1
+            }),
+            gameStateAfter: null
+          }
+        });
+        console.log(`✅ TEST API: Recorded SIT_DOWN action for ${playerName} (seq: ${nextSequence})`);
+      } catch (historyError) {
+        console.error('⚠️ TEST API: Failed to record SIT_DOWN action:', historyError);
+        // Continue anyway as the seat action itself succeeded
+      }
     }
 
     console.log(`✅ TEST API DIRECT: Player ${playerName} added to game state at table ${tableId}, seat ${seatNumber}`);
