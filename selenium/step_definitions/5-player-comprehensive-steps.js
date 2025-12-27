@@ -4818,3 +4818,42 @@ Given('certain order cards set as testing data', async function () {
     throw error;
   }
 });
+
+Given('cards for tournament round {int} are set as {string}', async function (round, filename) {
+  console.log(`🃏 Loading ordered card sets for round ${round} from ${filename}...`);
+
+  try {
+    const fixturePath = path.join(__dirname, `../fixtures/${filename}`);
+
+    if (!fs.existsSync(fixturePath)) {
+      throw new Error(`Card fixture file not found at: ${fixturePath}`);
+    }
+
+    const fixtureData = JSON.parse(fs.readFileSync(fixturePath, 'utf8'));
+    const decks = fixtureData.decks;
+
+    console.log(`🃏 Round ${round}: Found ${decks.length} decks in fixture. Sending to backend...`);
+
+    // Send to backend
+    const response = await fetch('http://localhost:3001/api/test/queue-deck', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tableId: 1, // Default table 1
+        decks: decks
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      console.log(`✅ Round ${round}: Successfully queued ${decks.length} decks for tournament scenario`);
+    } else {
+      throw new Error(`Failed to queue decks: ${result.error}`);
+    }
+
+  } catch (error) {
+    console.error(`❌ Error setting testing card data for round ${round}: ${error.message}`);
+    throw error;
+  }
+});

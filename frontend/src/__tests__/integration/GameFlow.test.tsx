@@ -55,7 +55,7 @@ describe('Game Flow Integration Tests', () => {
     jest.clearAllMocks();
     (cookieService.getNickname as jest.Mock).mockReturnValue('Test Player');
     (cookieService.getSeatNumber as jest.Mock).mockReturnValue('0');
-    
+
     // Mock socket connection status
     (socketService.getSocket as jest.Mock).mockReturnValue({
       connected: true,
@@ -82,10 +82,10 @@ describe('Game Flow Integration Tests', () => {
     });
 
     // Mock other socket event handlers
-    (socketService.onError as jest.Mock).mockImplementation(() => () => {});
-    (socketService.onSeatUpdate as jest.Mock).mockImplementation(() => () => {});
-    (socketService.onSeatError as jest.Mock).mockImplementation(() => () => {});
-    (socketService.onOnlineUsersUpdate as jest.Mock).mockImplementation(() => () => {});
+    (socketService.onError as jest.Mock).mockImplementation(() => () => { });
+    (socketService.onSeatUpdate as jest.Mock).mockImplementation(() => () => { });
+    (socketService.onSeatError as jest.Mock).mockImplementation(() => () => { });
+    (socketService.onOnlineUsersUpdate as jest.Mock).mockImplementation(() => () => { });
   });
 
   const renderWithProviders = (ui: React.ReactElement) => {
@@ -114,7 +114,7 @@ describe('Game Flow Integration Tests', () => {
 
     // Get game state callback
     const gameStateCallback = (socketService.onGameState as jest.Mock).mock.calls[0][0];
-    
+
     // Update game state
     await act(async () => {
       gameStateCallback(mockGameState);
@@ -122,7 +122,7 @@ describe('Game Flow Integration Tests', () => {
 
     // Verify game state is displayed
     expect(screen.getByText(mockGameState.players[0].name)).toBeInTheDocument();
-    expect(container.querySelector(`[data-active="true"]`)).toBeInTheDocument();
+    expect(container.querySelector(`[data-is-me="true"]`)).toBeInTheDocument();
   });
 
   it('player can change status to away and back', async () => {
@@ -144,9 +144,9 @@ describe('Game Flow Integration Tests', () => {
     });
 
     // Find and click the player seat
-    const playerSeat = screen.getByText(mockGameState.players[0].name).closest('[data-active="true"]');
+    const playerSeat = screen.getByText(mockGameState.players[0].name).closest('[data-is-me="true"]');
     expect(playerSeat).toBeInTheDocument();
-    
+
     if (playerSeat) {
       await act(async () => {
         fireEvent.click(playerSeat);
@@ -193,9 +193,9 @@ describe('Game Flow Integration Tests', () => {
     });
 
     // Find and click the player seat
-    const playerSeat = screen.getByText(mockGameState.players[0].name).closest('[data-active="true"]');
+    const playerSeat = screen.getByText(mockGameState.players[0].name).closest('[data-is-me="true"]');
     expect(playerSeat).toBeInTheDocument();
-    
+
     if (playerSeat) {
       await act(async () => {
         fireEvent.click(playerSeat);

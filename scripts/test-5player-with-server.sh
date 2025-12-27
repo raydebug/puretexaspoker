@@ -132,7 +132,7 @@ if [ "$SERVER_READY" = true ] || [ $SERVER_READY -eq 0 ]; then
     
     # Run tests
     cd "$PROJECT_ROOT/selenium"
-    HEADLESS=true SELENIUM_WAIT_TIMEOUT=30000 NETWORK_TIMEOUT=30000 \
+    SELENIUM_WAIT_TIMEOUT=30000 NETWORK_TIMEOUT=30000 \
     npx cucumber-js features/5-player-comprehensive-game-scenario.feature \
       --require step_definitions/2-player-game-steps.js \
       --require step_definitions/5-player-comprehensive-steps.js \

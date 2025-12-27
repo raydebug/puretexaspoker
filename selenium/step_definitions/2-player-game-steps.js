@@ -124,8 +124,8 @@ Given('I have exactly 2 players ready to join a poker game', { timeout: 30000 },
 
     try {
       const options = new chrome.Options();
-      if (process.env.HEADLESS === 'true') {
-        options.addArguments('--headless');
+      if (process.env.HEADLESS !== 'false') {
+        options.addArguments('--headless=new');
       }
       options.addArguments('--no-sandbox');
       options.addArguments('--disable-dev-shm-usage');
@@ -153,7 +153,8 @@ Given('I have exactly 2 players ready to join a poker game', { timeout: 30000 },
         console.log('🎯 Browser ${playerName} localStorage nickname set to: ' + localStorage.getItem('nickname'));
       `);
 
-      console.log(`✅ Browser instance created for ${playerName} with localStorage nickname set`);
+      const isHeadless = process.env.HEADLESS !== 'false';
+      console.log(`✅ Browser instance created for ${playerName} with localStorage nickname set (${isHeadless ? 'headless' : 'windowed'})`);
     } catch (error) {
       console.error(`❌ Failed to create browser for ${playerName}: ${error.message}`);
     }

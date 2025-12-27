@@ -225,6 +225,8 @@ const PlayerSeat = styled.div<{ position: number }>`
   text-align: center;
   transition: all 0.3s ease;
   position: relative;
+  background-color: rgba(0, 0, 0, 0.5);
+  border: 2px solid transparent;
   
   ${({ position }: { position: number }) => {
     switch (position) {
@@ -237,14 +239,16 @@ const PlayerSeat = styled.div<{ position: number }>`
     }
   }}
   
-  &[data-active="true"] {
-    background-color: rgba(255, 215, 0, 0.2);
-    border: 2px solid #ffd700;
+  &[data-turn="true"] {
+    background-color: rgba(255, 215, 0, 0.3);
+    border: 3px solid #ffd700;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
   }
   
-  &[data-active="false"] {
-    background-color: rgba(0, 0, 0, 0.5);
-    border: 2px solid transparent;
+  &[data-is-me="true"] {
+    background-color: rgba(0, 123, 255, 0.2);
+    border: 2px solid #007bff;
+    box-shadow: inset 0 0 10px rgba(0, 123, 255, 0.3);
   }
   
   &[data-away="true"] {
@@ -421,17 +425,17 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     position: { x: 0, y: 0 },
     player: null
   });
-  
+
   // Ref to the table element for calculating positions
   const tableRef = useRef<HTMLDivElement>(null);
-  
+
   // State to track active chip animations
   const [chipAnimations, setChipAnimations] = useState<ChipAnimationState[]>([]);
-  
+
   // Winner popup state
   const [showWinnerPopup, setShowWinnerPopup] = useState(false);
-  const [winnerInfo, setWinnerInfo] = useState<{name: string, amount: number} | null>(null);
-  
+  const [winnerInfo, setWinnerInfo] = useState<{ name: string, amount: number } | null>(null);
+
   // Last game state for comparison to detect changes
   const lastGameStateRef = useRef<GameState | null>(null);
 
@@ -441,14 +445,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       lastGameStateRef.current = { ...gameState };
       return;
     }
-    
+
     // Find players who have increased their bets
     gameState.players.forEach(player => {
       const previousPlayer = lastGameStateRef.current?.players.find(p => p && p.id === player.id);
-      
+
       if (previousPlayer && player.currentBet > previousPlayer.currentBet) {
         const betAmount = player.currentBet - previousPlayer.currentBet;
-        
+
         // Add new chip animation
         setChipAnimations(prev => [
           ...prev,
@@ -460,7 +464,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         ]);
       }
     });
-    
+
     // Update ref for next comparison
     lastGameStateRef.current = { ...gameState };
   }, [gameState]);
@@ -468,10 +472,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   // Detect round winner and show popup
   useEffect(() => {
     if (!lastGameStateRef.current) return;
-    
+
     const prevState = lastGameStateRef.current;
     const currentState = gameState;
-    
+
     // Detect when phase changes from showdown to waiting (hand completed)
     if (prevState.phase === 'showdown' && currentState.phase === 'waiting') {
       // Find the winner by checking who won chips
@@ -479,15 +483,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         const prevPlayer = prevState.players.find(p => p.id === player.id);
         return prevPlayer && player.chips > prevPlayer.chips;
       });
-      
+
       if (winners.length > 0) {
         const winner = winners[0]; // Take first winner (main winner)
         const prevChips = prevState.players.find(p => p.id === winner.id)?.chips || 0;
         const wonAmount = winner.chips - prevChips;
-        
+
         setWinnerInfo({ name: winner.name, amount: wonAmount });
         setShowWinnerPopup(true);
-        
+
         // Hide popup after 3 seconds
         setTimeout(() => {
           setShowWinnerPopup(false);
@@ -520,20 +524,20 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       <div data-testid="game-status" className="game-status">
         {gameState.phase}
       </div>
-      
+
       <TableCenter>
         <PhaseIndicator data-testid="phase-indicator">
           {gameState.phase.charAt(0).toUpperCase() + gameState.phase.slice(1)}
         </PhaseIndicator>
-        
+
         <CommunityCards data-testid="community-cards">
           {(gameState.communityCards || []).map((card, index) => (
             <AnimatedCard key={index} card={card} delay={index * 0.2} />
           ))}
         </CommunityCards>
-        
+
         <Pot data-testid="pot-amount">Main Pot: ${gameState.pot}</Pot>
-        
+
         {gameState.sidePots && gameState.sidePots.length > 0 && (
           <SidePots data-testid="side-pots">
             {gameState.sidePots.map((sidePot, index) => (
@@ -548,18 +552,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             ))}
           </SidePots>
         )}
-        
+
         {gameState.currentBet > 0 && (
-          <div data-testid="current-bet" style={{ 
-            color: '#ff6b6b', 
-            fontWeight: 'bold', 
+          <div data-testid="current-bet" style={{
+            color: '#ff6b6b',
+            fontWeight: 'bold',
             fontSize: '0.9rem',
             marginTop: '5px'
           }}>
             To Call: ${gameState.currentBet}
           </div>
         )}
-        
+
         {gameState.phase === 'showdown' && gameState.handEvaluation && (
           <div data-testid="hand-evaluation" style={{
             background: 'rgba(0, 0, 0, 0.8)',
@@ -572,7 +576,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             {gameState.handEvaluation}
           </div>
         )}
-        
+
         {gameState.winner && (
           <div data-testid="winner-announcement" style={{
             background: 'linear-gradient(135deg, #4caf50, #2e7d32)',
@@ -585,7 +589,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             🏆 Winner: {gameState.winner} 🏆
           </div>
         )}
-        
+
         {gameState.isHandComplete && (
           <div data-testid="hand-complete" style={{
             background: 'rgba(255, 152, 0, 0.8)',
@@ -599,7 +603,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           </div>
         )}
       </TableCenter>
-      
+
       {/* Showdown Results Overlay */}
       {gameState.phase === 'showdown' && gameState.showdownResults && gameState.showdownResults.length > 0 && (
         <ShowdownResults data-testid="showdown-results">
@@ -625,21 +629,23 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           ))}
         </ShowdownResults>
       )}
-      
+
       {(gameState.players || []).map((player, index) => {
-        const isCurrentPlayer = player.id === currentPlayer?.id;
-        
+        const isMe = player.id === currentPlayer?.id;
+        const isTurnPlayer = player.id === gameState.currentPlayerId;
+
         return (
           <PlayerSeat
             key={player.id}
             position={index}
-            data-active={isCurrentPlayer}
+            data-turn={isTurnPlayer}
+            data-is-me={isMe}
             data-away={player.isAway}
             data-testid={`seat-${index}`}
             onClick={(e) => handleSeatClick(e, player)}
           >
             {player.isAway && <AwayIndicator>Away</AwayIndicator>}
-            <Avatar 
+            <Avatar
               avatar={player.avatar}
               size="medium"
               isActive={player.id === gameState.currentPlayerId}
@@ -653,7 +659,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           </PlayerSeat>
         );
       })}
-      
+
       <div className="betting-controls">
         <button data-testid="check-button" onClick={() => onPlayerAction?.('check', currentPlayer?.id)}>
           Check
@@ -670,31 +676,31 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           </button>
         )}
       </div>
-      
+
       {chipAnimations.map((animation, index) => {
         const player = (gameState.players || []).find(p => p && p.id === animation.playerId);
         if (!player || !tableRef.current) return null;
-        
+
         const playerElement = tableRef.current.querySelector(`div[data-player-id="${player.id}"]`);
         const potElement = tableRef.current.querySelector('.pot');
-        
+
         if (!playerElement || !potElement) return null;
-        
+
         const playerRect = playerElement.getBoundingClientRect();
         const potRect = potElement.getBoundingClientRect();
         const tableRect = tableRef.current.getBoundingClientRect();
-        
+
         // Calculate positions relative to the table
         const startPosition = {
           x: playerRect.left - tableRect.left + (playerRect.width / 2),
           y: playerRect.top - tableRect.top + (playerRect.height / 2)
         };
-        
+
         const endPosition = {
           x: potRect.left - tableRect.left + (potRect.width / 2),
           y: potRect.top - tableRect.top + (potRect.height / 2)
         };
-        
+
         return (
           <ChipAnimation
             key={`${animation.playerId}-${animation.timestamp}`}
@@ -703,14 +709,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             endPosition={endPosition}
             animationType="bet"
             onComplete={() => {
-              setChipAnimations(prev => 
+              setChipAnimations(prev =>
                 prev.filter(a => a.timestamp !== animation.timestamp)
               );
             }}
           />
         );
       })}
-      
+
       {menuState.isOpen && menuState.player && (
         <SeatMenu
           position={menuState.position}
@@ -719,7 +725,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           onClose={() => setMenuState(prev => ({ ...prev, isOpen: false }))}
         />
       )}
-      
+
       {/* Winner Popup */}
       <WinnerPopup show={showWinnerPopup} data-testid="winner-popup">
         <span className="winner-icon">🏆</span>

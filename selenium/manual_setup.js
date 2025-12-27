@@ -7,13 +7,15 @@ const {
 global.players = {};
 global.clearGlobalPlayers = () => { global.players = {}; };
 
-// Ensure we are not in headless mode for manual testing
-process.env.HEADLESS = 'false';
+// Respect HEADLESS environment variable, defaulting to headless if not set
+// (The default is now handled in shared-test-utilities.js)
+// process.env.HEADLESS = 'false'; 
 
 async function main() {
     try {
         console.log('🚀 Starting Manual Setup...');
-        console.log('ℹ️  This script will open 6 Chrome windows (5 Players + 1 Observer).');
+        const isHeadless = process.env.HEADLESS !== 'false';
+        console.log(`ℹ️  This script will start 6 Chrome instances (5 Players + 1 Observer) in ${isHeadless ? 'HEADLESS' : 'WINDOWED'} mode.`);
 
         // 1. Reset Database
         console.log('🔄 Resetting database...');

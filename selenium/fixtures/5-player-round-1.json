@@ -1,0 +1,67 @@
+{
+    "description": "Card deck for 5-player tournament Round 1",
+    "decks": [
+        [
+            {
+                "rank": "A",
+                "suit": "spades"
+            },
+            {
+                "rank": "K",
+                "suit": "spades"
+            },
+            {
+                "rank": "Q",
+                "suit": "hearts"
+            },
+            {
+                "rank": "J",
+                "suit": "hearts"
+            },
+            {
+                "rank": "7",
+                "suit": "clubs"
+            },
+            {
+                "rank": "2",
+                "suit": "spades"
+            },
+            {
+                "rank": "10",
+                "suit": "diamonds"
+            },
+            {
+                "rank": "10",
+                "suit": "clubs"
+            },
+            {
+                "rank": "A",
+                "suit": "hearts"
+            },
+            {
+                "rank": "Q",
+                "suit": "diamonds"
+            },
+            {
+                "rank": "A",
+                "suit": "clubs"
+            },
+            {
+                "rank": "8",
+                "suit": "spades"
+            },
+            {
+                "rank": "5",
+                "suit": "hearts"
+            },
+            {
+                "rank": "K",
+                "suit": "diamonds"
+            },
+            {
+                "rank": "9",
+                "suit": "clubs"
+            }
+        ]
+    ]
+}

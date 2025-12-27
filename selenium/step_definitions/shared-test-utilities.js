@@ -76,8 +76,8 @@ async function seatPlayerShared(tableId, playerName, seatNumber, buyIn = 100) {
  */
 async function createBrowserInstanceShared(uniqueId = null) {
   const options = new chrome.Options();
-  if (process.env.HEADLESS === 'true') {
-    options.addArguments('--headless');
+  if (process.env.HEADLESS !== 'false') {
+    options.addArguments('--headless=new');
   }
 
   // For parallel browser creation, completely avoid user data directory conflicts
@@ -155,7 +155,8 @@ async function createBrowserInstanceShared(uniqueId = null) {
     // Force garbage collection to free memory
     await driver.executeScript('if (window.gc) { window.gc(); }');
 
-    console.log(`🖥️ Browser window created and tested successfully (1920x1080)`);
+    const isHeadless = process.env.HEADLESS !== 'false';
+    console.log(`🖥️ Browser instance created and tested successfully (1920x1080, ${isHeadless ? 'headless' : 'windowed'})`);
   } catch (testError) {
     console.log(`⚠️ Browser creation test failed: ${testError.message}`);
     try {

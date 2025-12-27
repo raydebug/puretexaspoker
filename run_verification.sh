@@ -57,7 +57,7 @@ echo "✅ Backend started successfully"
 # Run tests
 echo "🧪 Running Cucumber tests..."
 cd selenium
-export HEADLESS=true
+# export HEADLESS=true (now default in test utilities)
 export SELENIUM_WAIT_TIMEOUT=30000
 export NETWORK_TIMEOUT=30000
 

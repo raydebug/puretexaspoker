@@ -6,7 +6,6 @@ Feature: 5-Player 3-Round Tournament with Comprehensive Coverage
 
   Background:
     Given the database is reset to a clean state
-    And certain order cards set as testing data
     And the User table is seeded with test players
     And I initialize tournament state tracking for 5 players:
       | Player  | Seat | Position | Starting Stack | Status |
@@ -32,6 +31,7 @@ Feature: 5-Player 3-Round Tournament with Comprehensive Coverage
   @tournament-3-round
   Scenario: 3-Round 5-Player Tournament with Player Elimination
     # Round 1
+    And cards for tournament round 1 are set as "5-player-round-1.json"
     And I start tournament round 1 with blinds $5/$10
     And I manually start the game for table 1
     Then the game starts with tournament round 1 blinds structure:
@@ -120,6 +120,7 @@ Feature: 5-Player 3-Round Tournament with Comprehensive Coverage
     And I capture screenshot "R1_river_round1_complete" showing final tournament state
 
     # Round 2
+    And cards for tournament round 2 are set as "5-player-round-2.json"
     And I start tournament round 2 with blinds $10/$20
     And I manually start the game for table 1 round 2
     Then the game starts with tournament round 2 blinds structure:
@@ -194,6 +195,7 @@ Feature: 5-Player 3-Round Tournament with Comprehensive Coverage
     And I capture screenshot "R2_river_complete" showing final state
 
     # Round 3
+    And cards for tournament round 3 are set as "5-player-round-3.json"
     And I start tournament round 3 with blinds $20/$40
     And I manually start the game for table 1 round 3
     Then the game starts with tournament round 3 blinds structure:

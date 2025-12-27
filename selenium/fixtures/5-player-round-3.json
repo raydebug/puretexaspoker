@@ -1,0 +1,51 @@
+{
+    "description": "Card deck for 5-player tournament Round 3",
+    "decks": [
+        [
+            {
+                "rank": "A",
+                "suit": "spades"
+            },
+            {
+                "rank": "A",
+                "suit": "diamonds"
+            },
+            {
+                "rank": "K",
+                "suit": "hearts"
+            },
+            {
+                "rank": "Q",
+                "suit": "clubs"
+            },
+            {
+                "rank": "9",
+                "suit": "spades"
+            },
+            {
+                "rank": "9",
+                "suit": "diamonds"
+            },
+            {
+                "rank": "7",
+                "suit": "spades"
+            },
+            {
+                "rank": "J",
+                "suit": "clubs"
+            },
+            {
+                "rank": "4",
+                "suit": "diamonds"
+            },
+            {
+                "rank": "8",
+                "suit": "hearts"
+            },
+            {
+                "rank": "J",
+                "suit": "hearts"
+            }
+        ]
+    ]
+}
