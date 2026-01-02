@@ -284,7 +284,122 @@ function generateProgressiveGameHistory(phase: string, maxActions: number = 20) 
     });
   }
 
-  // Add flop/turn/river actions if needed
+  // Flop Check sequence
+  if (phase.includes('flop_check') || maxActions >= 14) {
+    baseActions.push({
+      id: 'GH-14',
+      playerId: 'Player2',
+      playerName: 'Player2',
+      action: 'CHECK',
+      amount: 0,
+      phase: 'flop',
+      handNumber: 1,
+      actionSequence: 14,
+      timestamp: new Date().toISOString()
+    });
+    baseActions.push({
+      id: 'GH-15',
+      playerId: 'Player4',
+      playerName: 'Player4',
+      action: 'CHECK',
+      amount: 0,
+      phase: 'flop',
+      handNumber: 1,
+      actionSequence: 15,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  // Flop Bet/Call sequence
+  if (phase.includes('flop_bet') || maxActions >= 17) {
+    baseActions.push({
+      id: 'GH-16',
+      playerId: 'Player2',
+      playerName: 'Player2',
+      action: 'BET',
+      amount: 20,
+      phase: 'flop',
+      handNumber: 1,
+      actionSequence: 16,
+      timestamp: new Date().toISOString()
+    });
+    baseActions.push({
+      id: 'GH-17',
+      playerId: 'Player4',
+      playerName: 'Player4',
+      action: 'CALL',
+      amount: 20,
+      phase: 'flop',
+      handNumber: 1,
+      actionSequence: 17,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  // Side Pot Actions
+  if (phase.includes('side_pot') || maxActions >= 20) {
+    baseActions.push({
+      id: 'GH-18',
+      playerId: 'Player3',
+      playerName: 'Player3',
+      action: 'ALL_IN',
+      amount: 100,
+      phase: 'preflop',
+      handNumber: 4,
+      actionSequence: 18,
+      timestamp: new Date().toISOString()
+    });
+    baseActions.push({
+      id: 'GH-19',
+      playerId: 'Player4',
+      playerName: 'Player4',
+      action: 'ALL_IN',
+      amount: 150,
+      phase: 'preflop',
+      handNumber: 4,
+      actionSequence: 19,
+      timestamp: new Date().toISOString()
+    });
+    baseActions.push({
+      id: 'GH-20',
+      playerId: 'Player5',
+      playerName: 'Player5',
+      action: 'CALL',
+      amount: 150,
+      phase: 'preflop',
+      handNumber: 4,
+      actionSequence: 20,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  // Split Pot / Side Pot Winners
+  if (phase.includes('complex_showdown') || maxActions >= 25) {
+    baseActions.push({
+      id: 'GH-21',
+      playerId: 'Player4',
+      playerName: 'Player4',
+      action: 'HAND_WIN',
+      amount: 300,
+      phase: 'showdown',
+      handNumber: 4,
+      actionSequence: 21,
+      timestamp: new Date().toISOString()
+    });
+    baseActions.push({
+      id: 'GH-22',
+      playerId: 'Player5',
+      playerName: 'Player5',
+      action: 'HAND_WIN',
+      amount: 100,
+      phase: 'showdown',
+      handNumber: 4,
+      actionSequence: 22,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  // Add flop/turn/river system reveal actions
   if (phase.includes('flop') || maxActions >= 12) {
     baseActions.push({
       id: 'GH-14',

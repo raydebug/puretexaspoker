@@ -287,3 +287,35 @@ Feature: 5-Player 3-Round Tournament with Comprehensive Coverage
     And I capture final screenshot "tournament_complete_evidence"
     Then I should see exactly 28 game history entries
     Then all browser instances should be closed
+
+  @post-flop-complex
+  Scenario: Post-Flop Action and Complex Pot Scenarios
+    # Hand 1: Post-flop Check/Bet sequence
+    And cards for tournament round 1 are set as "5-player-round-1.json"
+    And I start tournament round 1 with blinds $1/$2
+    When the flop is dealt: A♣, 8♠, 5♥
+    And Player2 checks
+    And Player4 checks
+    And I verify enhanced game history shows "CHECK" action by "Player2"
+    And I verify enhanced game history shows "CHECK" action by "Player4"
+    And Player2 bets $20
+    And Player4 calls $20 more
+    And I verify enhanced game history shows "BET" action by "Player2" with amount "$20"
+    And I verify enhanced game history shows "CALL" action by "Player4" with amount "$20"
+    And I capture screenshot "complex_post_flop_action"
+
+    # Hand 2: Side Pot and Split Pot scenario
+    And I update tournament state: complex pot scenario starting
+    When Player3 goes all-in with remaining $100
+    And Player4 goes all-in with remaining $150
+    And Player5 calls all-in for remaining $150
+    Then the pot should be $400
+    And the side pot 1 should be $100
+    And the championship showdown begins
+    And Player4 should win with "flush"
+    And Player5 should win with "straight"
+    And I verify enhanced game history shows "HAND_WIN" action by "Player4" with amount "$300"
+    And I verify enhanced game history shows "HAND_WIN" action by "Player5" with amount "$100"
+    And I capture screenshot "complex_pot_results"
+    Then I should see exactly 22 game history entries
+    And all browser instances should be closed

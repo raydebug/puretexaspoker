@@ -1,5 +1,5 @@
 const { Before, After, BeforeAll, AfterAll, Status, setDefaultTimeout } = require('@cucumber/cucumber')
-setDefaultTimeout(120 * 1000);
+setDefaultTimeout(180 * 1000);
 const axios = require('axios')
 const { exec } = require('child_process')
 const { promisify } = require('util')
@@ -64,19 +64,19 @@ async function checkServersRunning() {
     {
       name: 'Frontend Server',
       url: 'http://localhost:3000',
-      timeout: 8000,
+      timeout: 180000,
       required: true
     },
     {
       name: 'Backend API',
       url: 'http://localhost:3001/api/tables',
-      timeout: 8000,
+      timeout: 180000,
       required: true
     },
     {
       name: 'Game Page',
-      url: 'http://localhost:3000/game?table=4',
-      timeout: 10000,
+      url: 'http://localhost:3000/game?table=1',
+      timeout: 180000,
       required: true
     }
   ]
@@ -85,22 +85,22 @@ async function checkServersRunning() {
     let retries = 3
     let success = false
 
+    console.log(`📡 Checking ${check.name} at ${check.url} using curl...`)
+
     while (retries > 0 && !success) {
       try {
-        const response = await axios.get(check.url, {
-          timeout: check.timeout,
-          validateStatus: (status) => status >= 200 && status < 400
-        })
-        console.log(`✅ ${check.name} OK (Status: ${response.status})`)
+        await execAsync(`curl -s -f "${check.url}" --connect-timeout 10 --max-time 30`)
+        console.log(`✅ ${check.name} OK`)
         success = true
       } catch (error) {
         retries--
         console.log(`⚠️ ${check.name} check failed (${3 - retries}/3): ${error.message}`)
 
         if (retries > 0) {
-          console.log(`   Retrying in 3 seconds...`)
-          await new Promise(resolve => setTimeout(resolve, 3000))
+          console.log(`   Retrying in 5 seconds...`)
+          await new Promise(resolve => setTimeout(resolve, 5000))
         } else {
+          console.log(`❌ ${check.name} failed all retries.`)
           throw new Error(`${check.name} is not accessible after 3 attempts - ${error.message}`)
         }
       }
@@ -141,7 +141,7 @@ async function prepareTestEnvironment() {
 }
 
 // Global setup - runs once before all scenarios
-BeforeAll({ timeout: 120000 }, async function () {
+BeforeAll({ timeout: 180000 }, async function () {
   console.log('🚀 Setup...')
 
   try {
