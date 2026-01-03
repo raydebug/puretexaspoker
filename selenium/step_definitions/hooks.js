@@ -294,16 +294,8 @@ After({ timeout: 60000 }, async function (scenario) {
     console.log('🏊‍♂️ Preserving Chrome instances for persistent browser pool')
 
     // Additional cleanup for failed scenarios
-    if (scenarioStatus === Status.FAILED) {
-      console.log('💥 Scenario failed - performing extra cleanup...')
-
-      // Clear any remaining processes
-      try {
-        await execAsync('pkill -f "node.*selenium\\|chromedriver" 2>/dev/null || true')
-      } catch (error) {
-        // Ignore cleanup errors
-      }
-    }
+    // PERSISTENT POOL: Avoid killing chromedriver on failure to keep pool alive
+    console.log('💥 Scenario failed - performing scenario-level cleanup (preserving chromedriver for pool)...')
   }
 
   // Memory cleanup

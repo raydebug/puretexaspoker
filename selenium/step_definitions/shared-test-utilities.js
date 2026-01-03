@@ -477,9 +477,23 @@ let browserPoolInitialized = false;
  * @returns {Promise<boolean>} Success status
  */
 async function initializeBrowserPool() {
+  // Initialize global browser pool - created once and reused
   if (browserPoolInitialized && globalBrowserPool.length === 6) {
-    console.log('🏊‍♂️ Browser pool already initialized with 6 instances');
-    return true;
+    console.log('🏊‍♂️ Checking health of 6 browser instances in pool...');
+    let allHealthy = true;
+    for (const browser of globalBrowserPool) {
+      if (!await checkBrowserHealth(browser.driver)) {
+        console.log(`🩺 Browser ${browser.id} is unhealthy!`);
+        allHealthy = false;
+        break;
+      }
+    }
+    if (allHealthy) {
+      console.log('✅ All 6 browser instances are healthy');
+      return true;
+    }
+    console.log('⚠️ Some browsers are unhealthy, re-initializing pool...');
+    browserPoolInitialized = false;
   }
 
   console.log('🏊‍♂️ Initializing fixed browser pool (6 instances)...');

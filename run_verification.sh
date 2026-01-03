@@ -62,9 +62,7 @@ export SELENIUM_WAIT_TIMEOUT=30000
 export NETWORK_TIMEOUT=30000
 
 npx cucumber-js features/5-player-comprehensive-game-scenario.feature \
-  --require step_definitions/2-player-game-steps.js \
-  --require step_definitions/5-player-comprehensive-steps.js \
-  --require step_definitions/hooks.js \
+  --require step_definitions/**/*.js \
   --format @cucumber/pretty-formatter \
   --format json:reports/cucumber-report.json
 

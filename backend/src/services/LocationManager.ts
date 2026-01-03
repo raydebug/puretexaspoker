@@ -19,11 +19,11 @@ export interface UserLocation {
 
 export class LocationManager {
   private static instance: LocationManager;
-  
+
   // In-memory cache for real-time location tracking
   private userLocations = new Map<string, UserLocation>();
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): LocationManager {
     if (!LocationManager.instance) {
@@ -37,7 +37,7 @@ export class LocationManager {
    */
   async updateUserLocation(playerId: string, nickname: string, table: number | null, seat: number | null = null): Promise<void> {
     console.log(`LocationManager: Updating ${nickname} (${playerId}) to table: ${table}, seat: ${seat}`);
-    
+
     const userLocation: UserLocation = {
       playerId,
       nickname,
@@ -107,7 +107,7 @@ export class LocationManager {
   getObserversAtTable(tableId: number): UserLocation[] {
     const observers = Array.from(this.userLocations.values())
       .filter(user => user.table === tableId && user.seat === null);
-    
+
     // Deduplicate by nickname (keep most recent)
     const uniqueObservers = new Map<string, UserLocation>();
     for (const observer of observers) {
@@ -116,7 +116,18 @@ export class LocationManager {
         uniqueObservers.set(observer.nickname, observer);
       }
     }
-    
+
+    // CRITICAL FIX: Filter out anyone who is currently a player at this table
+    const playersAtTable = this.getPlayersAtTable(tableId);
+    const playerNicknames = new Set(playersAtTable.map(p => p.nickname));
+
+    // Remove observers who are also players
+    for (const [nickname] of uniqueObservers) {
+      if (playerNicknames.has(nickname)) {
+        uniqueObservers.delete(nickname);
+      }
+    }
+
     return Array.from(uniqueObservers.values());
   }
 
@@ -127,7 +138,7 @@ export class LocationManager {
   getPlayersAtTable(tableId: number): UserLocation[] {
     const players = Array.from(this.userLocations.values())
       .filter(user => user.table === tableId && user.seat !== null);
-    
+
     // Deduplicate by nickname (keep most recent)
     const uniquePlayers = new Map<string, UserLocation>();
     for (const player of players) {
@@ -136,7 +147,7 @@ export class LocationManager {
         uniquePlayers.set(player.nickname, player);
       }
     }
-    
+
     return Array.from(uniquePlayers.values());
   }
 
@@ -162,7 +173,7 @@ export class LocationManager {
   isUserObservingTable(playerId: string, tableId?: number): boolean {
     const location = this.getUserLocation(playerId);
     if (!location) return false;
-    
+
     const isObserving = location.table !== null && location.seat === null;
     if (tableId !== undefined) {
       return isObserving && location.table === tableId;
@@ -176,7 +187,7 @@ export class LocationManager {
   isUserPlayingAtTable(playerId: string, tableId?: number): boolean {
     const location = this.getUserLocation(playerId);
     if (!location) return false;
-    
+
     const isPlaying = location.table !== null && location.seat !== null;
     if (tableId !== undefined) {
       return isPlaying && location.table === tableId;
@@ -221,7 +232,7 @@ export class LocationManager {
         toRemove.push(playerId);
       }
     }
-    
+
     if (toRemove.length > 0) {
       console.log(`LocationManager: Removing ${toRemove.length} instances of nickname "${nickname}"`);
       toRemove.forEach(playerId => {
@@ -235,13 +246,13 @@ export class LocationManager {
    */
   async moveFromObserverToSeat(playerId: string, nickname: string, tableId: number, seatNumber: number): Promise<void> {
     console.log(`LocationManager: Moving ${nickname} from observer to seat ${seatNumber} at table ${tableId}`);
-    
+
     // First remove any existing instances of this nickname to prevent duplicates
     this.removeUserByNickname(nickname);
-    
+
     // Then update to seated position
     await this.updateUserLocation(playerId, nickname, tableId, seatNumber);
-    
+
     console.log(`LocationManager: Successfully moved ${nickname} to seat ${seatNumber} (no longer observer)`);
   }
 
@@ -252,7 +263,7 @@ export class LocationManager {
     const observers = this.getObserversAtTable(tableId);
     const nicknameSeen = new Set<string>();
     const toRemove: string[] = [];
-    
+
     for (const observer of observers) {
       if (nicknameSeen.has(observer.nickname)) {
         // This is a duplicate - mark for removal
@@ -262,12 +273,12 @@ export class LocationManager {
         nicknameSeen.add(observer.nickname);
       }
     }
-    
+
     // Remove duplicates
     toRemove.forEach(playerId => {
       this.userLocations.delete(playerId);
     });
-    
+
     if (toRemove.length > 0) {
       console.log(`LocationManager: Removed ${toRemove.length} duplicate observers from table ${tableId}`);
     }
@@ -279,7 +290,7 @@ export class LocationManager {
   getLocationDisplay(playerId: string): string {
     const location = this.getUserLocation(playerId);
     if (!location) return 'unknown';
-    
+
     if (location.table === null) return 'lobby';
     if (location.seat === null) return `table-${location.table} (observer)`;
     return `table-${location.table} seat-${location.seat}`;
@@ -290,7 +301,7 @@ export class LocationManager {
    */
   getLocationSummary(): { [locationKey: string]: string[] } {
     const summary: { [locationKey: string]: string[] } = {};
-    
+
     for (const user of this.userLocations.values()) {
       let locationKey: string;
       if (user.table === null) {
@@ -300,7 +311,7 @@ export class LocationManager {
       } else {
         locationKey = `table-${user.table}-players`;
       }
-      
+
       if (!summary[locationKey]) {
         summary[locationKey] = [];
       }
@@ -341,7 +352,7 @@ export class LocationManager {
 
       // Use Map to deduplicate by nickname (keep most recent only)
       const uniquePlayersByNickname = new Map<string, typeof players[0]>();
-      
+
       for (const player of players) {
         const existingPlayer = uniquePlayersByNickname.get(player.nickname);
         if (!existingPlayer || player.updatedAt > existingPlayer.updatedAt) {
@@ -380,16 +391,16 @@ export class LocationManager {
 
     const tableMatch = location.match(/^table-(\d+)$/);
     if (tableMatch) {
-      return { 
-        type: 'table-observer', 
-        tableId: parseInt(tableMatch[1], 10) 
+      return {
+        type: 'table-observer',
+        tableId: parseInt(tableMatch[1], 10)
       };
     }
 
     const seatMatch = location.match(/^table-(\d+)-seat-(\d+)$/);
     if (seatMatch) {
-      return { 
-        type: 'table-player', 
+      return {
+        type: 'table-player',
         tableId: parseInt(seatMatch[1], 10),
         seatNumber: parseInt(seatMatch[2], 10)
       };

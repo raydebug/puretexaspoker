@@ -135,7 +135,7 @@ export class SocketService {
       this.socket.on('tableState', callback);
       return () => this.socket?.off('tableState', callback);
     }
-    return () => {};
+    return () => { };
   }
 
   // Add setPlayerAway method
@@ -175,29 +175,29 @@ export class SocketService {
       }) as ExtendedSocket;
 
       this.setupListeners();
-      
+
       // Start heartbeat monitoring
       this.startHeartbeatMonitoring();
-      
+
       // CRITICAL FIX: Wait for actual connection before resolving
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => {
           reject(new Error('Socket connection timeout'));
         }, 10000);
-        
+
         this.socket!.on('connect', () => {
           clearTimeout(timeout);
           console.log('🔌 FRONTEND: Socket connection established successfully');
           resolve();
         });
-        
+
         this.socket!.on('connect_error', (error) => {
           clearTimeout(timeout);
           console.error('❌ FRONTEND: Socket connection error:', error);
           reject(error);
         });
       });
-      
+
     } catch (error) {
       console.error('❌ FRONTEND: Socket connection failed:', error);
       throw error;
@@ -250,13 +250,13 @@ export class SocketService {
     // Handle successful connection
     socket.on('connect', () => {
       this.onSuccessfulConnection();
-      
+
       // Log initial user status
       this.currentUserId = socket.id || null;
       console.log(`🔌 FRONTEND: Socket connected with ID: ${socket.id}`);
       console.log(`📍 FRONTEND: Initial location: table=${this.currentUserTable}, seat=${this.currentUserSeat}`);
       this.logCurrentUserStatus();
-      
+
       // Process any queued retries
       this.processRetryQueue();
     });
@@ -283,13 +283,13 @@ export class SocketService {
       console.log('🎯 FRONTEND: Broadcasting observer update to UI components');
     });
 
-    socket.on('location:usersAtTable', (data: { 
-      tableId: number; 
-      totalUsers: number; 
-      observers: Array<{ playerId: string; nickname: string }>; 
-      players: Array<{ playerId: string; nickname: string; seat: number }>; 
-      observersCount: number; 
-      playersCount: number; 
+    socket.on('location:usersAtTable', (data: {
+      tableId: number;
+      totalUsers: number;
+      observers: Array<{ playerId: string; nickname: string }>;
+      players: Array<{ playerId: string; nickname: string; seat: number }>;
+      observersCount: number;
+      playersCount: number;
     }) => {
       console.log('🔄 FRONTEND: Received unified location:usersAtTable event:', {
         tableId: data.tableId,
@@ -299,25 +299,25 @@ export class SocketService {
         observersNicknames: data.observers?.map(o => o.nickname) || [],
         playersNicknames: data.players?.map(p => `${p.nickname}(seat${p.seat})`) || []
       });
-      
+
       // **CLEAN SYNC**: Replace our local arrays with the authoritative server data
       if (data.observers) {
         this.observers = data.observers.map(o => o.nickname);
         console.log('🔄 FRONTEND: Synced observers list from server:', this.observers);
       }
-      
+
       if (data.players && this.gameState) {
         // Update players list in game state if needed (but gameState is primary source)
         console.log('🔄 FRONTEND: Players list from server:', data.players.map(p => `${p.nickname}(seat${p.seat})`));
       }
-      
+
       // Emit update with clean lists (no overlaps, no duplicates)
       this.emitOnlineUsersUpdate();
     });
 
     socket.on('seatTaken', (data: { seatNumber: number; playerId: string; gameState: any }) => {
       console.log('DEBUG: Frontend received seatTaken event:', data);
-      
+
       // Update location if this is for the current user
       if (this.socket?.id === data.playerId) {
         // Set player state first
@@ -334,17 +334,17 @@ export class SocketService {
           this.logCurrentUserStatus();
         }
       }
-      
+
       // Update game state immediately
       if (data.gameState) {
         this.gameState = data.gameState;
         this.emitGameStateUpdate(data.gameState);
-        
+
         // CRITICAL FIX: Ensure UI state consistency across all browser instances
         console.log('🔄 FRONTEND: Forcing UI state synchronization after seatTaken');
         this.forceSynchronizeUIState(data.gameState);
       }
-      
+
       // Remove from observers list after player state is set
       if (data.gameState && data.gameState.players) {
         const playerWhoTookSeat = data.gameState.players.find((p: any) => p && p.id === data.playerId);
@@ -371,7 +371,7 @@ export class SocketService {
           } else {
             this.gameState.players.push(data.player);
           }
-          
+
           this.emitGameStateUpdate(this.gameState);
           this.emitOnlineUsersUpdate(); // Update the online users list
         }
@@ -405,28 +405,28 @@ export class SocketService {
         currentPlayer: this.currentPlayer,
         gameState: this.gameState
       });
-      
+
       // Update user location
       this.currentUserTable = data.tableId;
       this.currentUserSeat = data.seatNumber;
       this.isPlayer = true;
       this.isObserver = false;
-      
+
       console.log('🎯 FRONTEND: Updated user location after autoSeatSuccess:', {
         table: this.currentUserTable,
         seat: this.currentUserSeat,
         isPlayer: this.isPlayer,
         isObserver: this.isObserver
       });
-      
+
       // Find the current player in the game state
       if (this.gameState && this.gameState.players) {
         const nickname = localStorage.getItem('nickname');
         console.log('🎯 FRONTEND: Looking for player with nickname:', nickname);
         console.log('🎯 FRONTEND: Available players in game state:', (this.gameState.players || []).map(p => ({ name: p.name, id: p.id })));
-        
+
         const currentPlayer = this.gameState.players.find(p => p.name === nickname);
-        
+
         if (currentPlayer) {
           this.currentPlayer = currentPlayer;
           console.log('🎯 FRONTEND: Set current player from autoSeatSuccess:', currentPlayer);
@@ -437,7 +437,7 @@ export class SocketService {
       } else {
         console.log('🎯 FRONTEND: No game state available when autoSeatSuccess received');
       }
-      
+
       // Remove from observers list
       const nickname = localStorage.getItem('nickname');
       if (nickname) {
@@ -445,7 +445,7 @@ export class SocketService {
         this.emitOnlineUsersUpdate();
         console.log('🎯 FRONTEND: Removed from observers list:', nickname);
       }
-      
+
       console.log('🎯 FRONTEND: Auto-seat completed successfully for table', data.tableId, 'seat', data.seatNumber);
     });
 
@@ -464,7 +464,7 @@ export class SocketService {
           const existingPlayerIndex = this.gameState.players.findIndex(p => p && p.id === data.player.id);
           if (existingPlayerIndex === -1) {
             this.gameState.players.push(data.player);
-            
+
             this.emitGameStateUpdate(this.gameState);
             this.emitOnlineUsersUpdate(); // Update the online users list
           }
@@ -484,14 +484,14 @@ export class SocketService {
           if (!this.observers.includes(player.name)) {
             this.observers = [...this.observers, player.name];
           }
-          
+
           // Remove from players list
           this.gameState.players = this.gameState.players.filter(p => p && p.id !== playerId);
-          
+
           console.log('DEBUG: Player left and moved to observers:', player.name);
           console.log('DEBUG: Current observers:', this.observers);
           console.log('DEBUG: Remaining players:', this.gameState.players.length);
-          
+
           // Emit update with proper current state
           this.emitGameStateUpdate(this.gameState);
           this.emitOnlineUsersUpdate();
@@ -552,33 +552,34 @@ export class SocketService {
       console.log('🧪 FRONTEND: Test game state data:', data.gameState);
       console.log('🧪 FRONTEND: Current gameId:', this.currentGameId);
       console.log('🧪 FRONTEND: Socket connected:', socket.connected);
-      
+
       if (data.gameState) {
         // Update local game state
         this.gameState = data.gameState;
         this.currentGameId = data.gameId;
-        
+
         // Clear current player if we're setting up test data
         this.currentPlayer = null;
-        
+
         // Emit the game state update to all listeners
         this.emitGameStateUpdate(data.gameState);
-        
+
         // Log for debugging
         console.log(`🧪 FRONTEND: Updated game state with ${data.gameState.players.length} test players`);
-        
+
         // Force update online users with test players
         if (data.gameState.players && data.gameState.players.length > 0) {
           const playerNames = data.gameState.players.map(p => p.name);
           console.log('🧪 FRONTEND: Test player names:', playerNames);
-          
-          // Update observers with test players
-          this.observers = [...playerNames, 'TestPlayer'];
+
+          // Update observers with test players - ONLY add explicit observers, NOT players
+          // CRITICAL FIX: Do NOT add active players to observers list
+          this.observers = ['TestObserver', 'Observer'];
           this.emitOnlineUsersUpdate();
         }
-        
+
         console.log('🧪 FRONTEND: Test game state injection completed');
-        
+
         // Force a page refresh of component state
         if (typeof window !== 'undefined' && (window as any).location) {
           console.log('🧪 FRONTEND: Triggering component re-render via storage event');
@@ -596,20 +597,20 @@ export class SocketService {
         seatNumber: data.seatNumber,
         playersCount: data.gameState.players?.length || 0
       });
-      
+
       if (data.gameState) {
         console.log('🔄 FRONTEND: Players in forced sync:', data.gameState.players.map(p => `${p.name} (seat ${p.seatNumber})`));
-        
+
         // Update local game state
         this.gameState = data.gameState;
         this.players = data.gameState.players.filter(p => p !== null);
-        
+
         // Emit the game state update to all listeners
         this.emitGameStateUpdate(data.gameState);
-        
+
         // Force UI synchronization
         this.forceSynchronizeUIState(data.gameState);
-        
+
         console.log('🔄 FRONTEND: Force sync completed - UI should show all players');
       }
     });
@@ -622,33 +623,33 @@ export class SocketService {
         reason: data.reason,
         players: data.players.map(p => `${p.name} (seat ${p.seatNumber})`)
       });
-      
+
       // Update players list
       this.players = data.players;
-      
+
       // Update game state if we have one
       if (this.gameState) {
         this.gameState.players = data.players;
         this.emitGameStateUpdate(this.gameState);
       }
-      
+
       // Force UI synchronization
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('playersListUpdate', { 
-          detail: { 
+        window.dispatchEvent(new CustomEvent('playersListUpdate', {
+          detail: {
             players: data.players,
             totalPlayers: data.totalPlayers,
             reason: data.reason,
             timestamp: data.timestamp
-          } 
+          }
         }));
       }
-      
+
       console.log('👥 FRONTEND: Players list update completed');
     });
 
     // === ENHANCED GAME STATE SYNC ===
-    
+
     // Handle heartbeat response
     socket.on('pong', (data: { timestamp: number }) => {
       console.log('💓 FRONTEND: Received heartbeat pong:', data);
@@ -702,29 +703,29 @@ export class SocketService {
     }
 
     // PROFESSIONAL TURN ORDER ENFORCEMENT - Handle turn order violations
-    socket.on('game:turnOrderViolation', (data: { 
-      action: string; 
-      error: string; 
-      gameId: string; 
-      playerId: string; 
-      timestamp: number; 
-      amount?: number; 
-      totalAmount?: number; 
+    socket.on('game:turnOrderViolation', (data: {
+      action: string;
+      error: string;
+      gameId: string;
+      playerId: string;
+      timestamp: number;
+      amount?: number;
+      totalAmount?: number;
     }) => {
       console.log('❌ FRONTEND: Turn order violation received:', data);
-      
+
       // Show immediate error feedback to the user
-      this.emitError({ 
+      this.emitError({
         message: `Turn Order Violation: ${data.error}`,
         context: 'turn_order_violation'
       });
-      
+
       // Log the violation for debugging
       console.log(`🚫 TURN ORDER VIOLATION: Player ${data.playerId} attempted ${data.action} - ${data.error}`);
-      
+
       // Emit system message for in-game chat
       this.emitSystemMessage(`Turn Order Violation: ${data.error}`);
-      
+
       // Track turn violations for analytics (if needed)
       if (typeof window !== 'undefined' && (window as any).gameAnalytics) {
         (window as any).gameAnalytics.trackTurnViolation({
@@ -739,18 +740,18 @@ export class SocketService {
     // Handle game action success confirmations
     socket.on('game:actionSuccess', (data: { action: string; gameId: string; amount?: number; totalAmount?: number }) => {
       console.log('✅ FRONTEND: Game action successful:', data);
-      
+
       // Provide positive feedback for successful actions
       this.emitSystemMessage(`Action ${data.action} completed successfully${data.amount ? ` for ${data.amount}` : ''}${data.totalAmount ? ` (total: ${data.totalAmount})` : ''}`);
     });
 
     // ENHANCED AUTOMATION: Handle automatic phase transitions
-    socket.on('automaticFlop', (data: { 
-      gameId: string; 
-      fromPhase: string; 
-      toPhase: string; 
-      message: string; 
-      communityCards: any[]; 
+    socket.on('automaticFlop', (data: {
+      gameId: string;
+      fromPhase: string;
+      toPhase: string;
+      message: string;
+      communityCards: any[];
       isAutomatic: boolean;
       timestamp: number;
     }) => {
@@ -758,12 +759,12 @@ export class SocketService {
       this.emitSystemMessage(`🎴 ${data.message}`);
     });
 
-    socket.on('automaticTurn', (data: { 
-      gameId: string; 
-      fromPhase: string; 
-      toPhase: string; 
-      message: string; 
-      communityCards: any[]; 
+    socket.on('automaticTurn', (data: {
+      gameId: string;
+      fromPhase: string;
+      toPhase: string;
+      message: string;
+      communityCards: any[];
       isAutomatic: boolean;
       timestamp: number;
     }) => {
@@ -771,12 +772,12 @@ export class SocketService {
       this.emitSystemMessage(`🎴 ${data.message}`);
     });
 
-    socket.on('automaticRiver', (data: { 
-      gameId: string; 
-      fromPhase: string; 
-      toPhase: string; 
-      message: string; 
-      communityCards: any[]; 
+    socket.on('automaticRiver', (data: {
+      gameId: string;
+      fromPhase: string;
+      toPhase: string;
+      message: string;
+      communityCards: any[];
       isAutomatic: boolean;
       timestamp: number;
     }) => {
@@ -784,11 +785,11 @@ export class SocketService {
       this.emitSystemMessage(`🎴 ${data.message}`);
     });
 
-    socket.on('automaticShowdown', (data: { 
-      gameId: string; 
-      fromPhase: string; 
-      toPhase: string; 
-      message: string; 
+    socket.on('automaticShowdown', (data: {
+      gameId: string;
+      fromPhase: string;
+      toPhase: string;
+      message: string;
       isAutomatic: boolean;
       timestamp: number;
     }) => {
@@ -796,11 +797,11 @@ export class SocketService {
       this.emitSystemMessage(`🎯 ${data.message}`);
     });
 
-    socket.on('gameComplete', (data: { 
-      gameId: string; 
-      fromPhase: string; 
-      toPhase: string; 
-      message: string; 
+    socket.on('gameComplete', (data: {
+      gameId: string;
+      fromPhase: string;
+      toPhase: string;
+      message: string;
       isAutomatic: boolean;
       timestamp: number;
     }) => {
@@ -809,11 +810,11 @@ export class SocketService {
     });
 
     // Handle general phase transitions for backwards compatibility
-    socket.on('phaseTransition', (data: { 
-      gameId: string; 
-      fromPhase: string; 
-      toPhase: string; 
-      message: string; 
+    socket.on('phaseTransition', (data: {
+      gameId: string;
+      fromPhase: string;
+      toPhase: string;
+      message: string;
       isAutomatic: boolean;
     }) => {
       console.log('🔄 FRONTEND: Phase transition:', data);
@@ -827,11 +828,11 @@ export class SocketService {
       console.log('DEBUG: Frontend received tableJoined event:', data);
       console.log('DEBUG: Frontend socket still connected:', socket.connected);
       console.log('DEBUG: Frontend socket ID:', socket.id);
-      
+
       // Reset the joining flag immediately when table join is successful
       this.isJoiningTable = false;
       console.log('DEBUG: isJoiningTable flag reset to false after successful tableJoined');
-      
+
       // Update location based on role
       if (data.role === 'observer') {
         this.currentUserTable = data.tableId;
@@ -841,17 +842,17 @@ export class SocketService {
         // For players, we'll get the exact seat from the seatTaken event
         console.log(`🎯 FRONTEND: Joined as player at table ${data.tableId}, waiting for seat assignment`);
       }
-      
+
       if (data.gameId) {
         // Store the game ID for this session
         this.currentGameId = data.gameId;
         console.log('DEBUG: Frontend stored gameId:', this.currentGameId);
-        
+
         // CRITICAL FIX: Join the game room for WebSocket events
         console.log(`🔌 FRONTEND: Joining WebSocket room game:${this.currentGameId}`);
         socket.emit('joinRoom', `game:${this.currentGameId}`);
       }
-      
+
       this.logCurrentUserStatus();
     });
 
@@ -868,18 +869,18 @@ export class SocketService {
       console.log('DEBUG: Frontend playerId received:', data.playerId);
       console.log('DEBUG: Frontend socket still connected:', socket.connected);
       console.log('DEBUG: Frontend socket ID:', socket.id);
-      
+
       this.currentGameId = data.gameId;
       this.gameState = data.gameState;
-      
+
       // CRITICAL FIX: Join the game room for WebSocket events
       console.log(`🔌 FRONTEND: Joining WebSocket room game:${this.currentGameId} in gameJoined`);
       socket.emit('joinRoom', `game:${this.currentGameId}`);
-      
+
       // Set the current player
       // Check if user is joining as an observer or as a player
-      const currentPlayer = data.gameState && data.gameState.players && data.playerId 
-        ? data.gameState.players.find(p => p && p.id === data.playerId) 
+      const currentPlayer = data.gameState && data.gameState.players && data.playerId
+        ? data.gameState.players.find(p => p && p.id === data.playerId)
         : null;
       if (currentPlayer) {
         console.log('DEBUG: Frontend found and setting currentPlayer:', currentPlayer);
@@ -894,7 +895,7 @@ export class SocketService {
         console.log('DEBUG: Frontend no playerId provided - viewing game as guest');
         this.currentPlayer = null;
       }
-      
+
       // Emit the updated game state
       this.emitGameStateUpdate(data.gameState);
       console.log('DEBUG: Frontend emitted gameStateUpdate');
@@ -903,20 +904,20 @@ export class SocketService {
     socket.on('tableError', (error: string) => {
       console.log('DEBUG: Frontend received tableError event:', error);
       console.log('DEBUG: Frontend socket still connected:', socket.connected);
-      
+
       // Reset the joining flag on error
       this.isJoiningTable = false;
       console.log('DEBUG: isJoiningTable flag reset to false after tableError');
-      
+
       this.emitError({ message: error, context: 'table:error' });
     });
 
     socket.on('nicknameError', (data: { message: string; suggestedNames?: string[] }) => {
       console.log('DEBUG: Frontend received nicknameError event:', data);
-      this.emitError({ 
-        message: data.message, 
+      this.emitError({
+        message: data.message,
         context: 'nickname:error',
-        suggestedNames: data.suggestedNames 
+        suggestedNames: data.suggestedNames
       });
     });
 
@@ -924,8 +925,8 @@ export class SocketService {
       console.error('Socket connection error:', error);
       this.isConnecting = false;
       this.connectionLock = false;
-      this.handleSocketError({ 
-        message: 'Failed to connect to server', 
+      this.handleSocketError({
+        message: 'Failed to connect to server',
         event: 'connection',
         severity: 'critical',
         retryable: true
@@ -934,12 +935,12 @@ export class SocketService {
 
     socket.on('error', (error) => {
       console.error('Socket error:', error);
-      
+
       // Handle structured error responses from server
       if (typeof error === 'object' && error.message) {
         this.handleSocketError(error);
       } else {
-        this.handleSocketError({ 
+        this.handleSocketError({
           message: typeof error === 'string' ? error : error.message || 'Unknown socket error',
           severity: 'error',
           retryable: false
@@ -970,27 +971,27 @@ export class SocketService {
 
     socket.on('player:removedFromSeat', (data: { playerId: string; nickname: string; seatNumber: number; reason: string }) => {
       console.log('DEBUG: Frontend received player:removedFromSeat event:', data);
-      
+
       if (this.gameState) {
         // Remove player from game state
         const removedPlayer = this.gameState.players.find(p => p && p.id === data.playerId);
         if (removedPlayer) {
           // Remove from players list
           this.gameState.players = this.gameState.players.filter(p => p && p.id !== data.playerId);
-          
+
           // Add to observers if not already there
           if (!this.observers.includes(data.nickname)) {
             this.observers = [...this.observers, data.nickname];
           }
-          
+
           // Emit updates
           this.emitGameStateUpdate(this.gameState);
           this.emitOnlineUsersUpdate();
-          
+
           console.log(`DEBUG: Moved player ${data.nickname} from seat ${data.seatNumber} to observers due to: ${data.reason}`);
         }
       }
-      
+
       this.emitSystemMessage(`Player ${data.nickname} was removed from seat ${data.seatNumber} (${data.reason})`);
     });
 
@@ -999,10 +1000,10 @@ export class SocketService {
       console.log('🔌 FRONTEND: Socket ID at disconnect:', socket.id);
       console.log('🔌 FRONTEND: CurrentPlayer at disconnect:', this.currentPlayer);
       console.log('🔌 FRONTEND: GameState at disconnect:', this.gameState);
-      
+
       // Enhanced disconnect handling to prevent test failures
       this.handleDisconnect();
-      
+
       // In test mode, attempt to reconnect immediately
       if (this.isTestMode) {
         console.log('🧪 FRONTEND: Test mode detected - attempting immediate reconnection...');
@@ -1042,9 +1043,9 @@ export class SocketService {
     // Check if nickname is stored and emit a login event
     const savedNickname = cookieService.getNickname();
     const savedSeatNumber = cookieService.getSeatNumber();
-    
+
     console.log('DEBUG: Connection established with saved nickname:', savedNickname, 'seat:', savedSeatNumber);
-    
+
     // Request lobby tables on successful connection
     this.requestLobbyTables();
 
@@ -1070,7 +1071,7 @@ export class SocketService {
       this.socket.disconnect();
       this.socket = null;
       this.isConnected = false;
-      
+
       if (this.heartbeatInterval) {
         clearInterval(this.heartbeatInterval);
         this.heartbeatInterval = undefined;
@@ -1123,7 +1124,7 @@ export class SocketService {
       const players = Array.isArray(this.gameState?.players) ? this.gameState.players : [];
       const observers = Array.isArray(this.observers) ? this.observers : [];
       const totalUsers = players.length + observers.length;
-      
+
       if (this.onlineUsersCallback) {
         // Check if callback expects two parameters (players, observers)
         if (this.onlineUsersCallback.length === 2) {
@@ -1150,7 +1151,7 @@ export class SocketService {
    */
   public handleLocationUpdate(data: { playerId: string; nickname: string; location?: string; table?: number | null; seat?: number | null }) {
     const { playerId, nickname } = data;
-    
+
     // Create a unique key for this location update to prevent duplicate processing
     const updateKey = `${playerId}-${nickname}-${data.table}-${data.seat}-${data.location}`;
     if (this.processedLocationUpdates.has(updateKey)) {
@@ -1158,17 +1159,17 @@ export class SocketService {
       return;
     }
     this.processedLocationUpdates.add(updateKey);
-    
+
     // Clean up old processed updates (keep only last 100 to prevent memory leak)
     if (this.processedLocationUpdates.size > 100) {
       const entries = Array.from(this.processedLocationUpdates);
       entries.slice(0, 50).forEach(key => this.processedLocationUpdates.delete(key));
     }
-    
+
     // Use new table/seat format directly
     let table: number | null;
     let seat: number | null;
-    
+
     if (data.table !== undefined && data.seat !== undefined) {
       // New format - use table/seat directly
       table = data.table;
@@ -1194,35 +1195,35 @@ export class SocketService {
       console.warn('Invalid location update data:', data);
       return;
     }
-    
+
     // Check if this update is for the current user
     const isCurrentUser = this.socket?.id === playerId;
-    
+
     if (isCurrentUser) {
       this.currentUserTable = table;
       this.currentUserSeat = seat;
       console.log(`🎯 FRONTEND: Current user location updated to: table=${table}, seat=${seat}`);
       console.log(`🎯 FRONTEND: Current user (${nickname}) is now at: ${this.parseTableSeatForDisplay(table, seat)}`);
-      
+
       // Automatic navigation based on location
       this.handleLocationBasedNavigation(table, seat);
     }
-    
+
     // Determine user's new state based on table/seat
     if (table === null) {
       // User moved to lobby - remove from observers and players
       this.observers = this.observers.filter(observer => observer !== nickname);
       this.emitOnlineUsersUpdate();
-      
+
     } else if (seat === null) {
       // User is observing a table (table=X, seat=null)
       console.log(`🎯 FRONTEND: User ${nickname} is observing table ${table}`);
       console.log(`🎯 FRONTEND: Current observers before adding:`, this.observers);
-      
+
       // CRITICAL BUG FIX: Check if this user is already a seated player before adding to observers
       const currentUserNickname = localStorage.getItem('nickname');
       const isCurrentUserAlreadySeated = this.gameState?.players?.some(p => p.name === nickname);
-      
+
       if (isCurrentUserAlreadySeated) {
         console.log(`🚨 FRONTEND: PREVENTING BUG - ${nickname} is already a seated player, NOT adding to observers`);
         console.log(`🚨 FRONTEND: Current players:`, this.gameState?.players?.map(p => p.name));
@@ -1234,7 +1235,7 @@ export class SocketService {
       }
       console.log(`🎯 FRONTEND: Current observers after processing:`, this.observers);
       this.emitOnlineUsersUpdate();
-      
+
     } else {
       // User took a seat (table=X, seat=Y)
       // Remove from observers if they were observing
@@ -1244,10 +1245,10 @@ export class SocketService {
       console.log(`🎯 FRONTEND: Observers after removal:`, this.observers);
       this.emitOnlineUsersUpdate();
     }
-    
+
     console.log(`DEBUG: Frontend processed location update for ${nickname}: table=${table}, seat=${seat}`);
     console.log(`DEBUG: Frontend observers after update:`, this.observers);
-    
+
     // Log current user status every location update
     this.logCurrentUserStatus();
   }
@@ -1258,7 +1259,7 @@ export class SocketService {
   private handleLocationBasedNavigation(table: number | null, seat: number | null) {
     // Only navigate if in browser environment
     if (typeof window === 'undefined') return;
-    
+
     if (table === null) {
       // If user is in lobby but not on lobby page, redirect
       if (!navigationService.isOnLobby()) {
@@ -1272,7 +1273,7 @@ export class SocketService {
       if (!navigationService.isOnGamePage()) {
         console.log(`🚀 FRONTEND: User is at table ${table} (seat=${seat}), but not on game page - navigating`);
         console.log(`🚀 FRONTEND: Current path: ${navigationService.getCurrentPath()}`);
-        
+
         // Use the current game ID if available (preserve existing navigation)
         const currentGameId = navigationService.getCurrentGameId();
         if (currentGameId) {
@@ -1298,12 +1299,12 @@ export class SocketService {
   private parseTableSeatForDisplay(table: number | null, seat: number | null): string {
     if (table === null) {
       return 'Lobby (browsing tables)';
-        }
-    
+    }
+
     if (seat === null) {
       return `Table ${table} (observing)`;
     }
-    
+
     return `Table ${table}, Seat ${seat}`;
   }
 
@@ -1325,10 +1326,10 @@ export class SocketService {
    */
   private processRetryQueue() {
     if (!this.socket || !this.socket.connected) return;
-    
+
     const itemsToRetry = [...this.retryQueue];
     this.retryQueue = [];
-    
+
     itemsToRetry.forEach(item => {
       if (item.attempts < 3) {
         this.socket?.emit(item.event, item.data);
@@ -1356,7 +1357,7 @@ export class SocketService {
         }
       }
     }
-    
+
     this.gameStateListeners.forEach(callback => callback(gameState));
   }
 
@@ -1412,20 +1413,20 @@ export class SocketService {
   private handleDisconnect() {
     this.isConnected = false;
     console.log('🔌 FRONTEND: Socket disconnected - cleaning up state');
-    
+
     // Clear heartbeat interval
     if (this.heartbeatInterval) {
       clearInterval(this.heartbeatInterval);
       this.heartbeatInterval = undefined;
     }
-    
+
     // In test mode, preserve game state to prevent test failures
     if (this.isTestMode) {
       console.log('🧪 FRONTEND: Test mode - preserving game state during disconnect');
       // Don't clear game state in test mode to prevent test failures
       return;
     }
-    
+
     // In normal mode, reset connection state
     console.log('🔌 FRONTEND: Normal mode - resetting connection state');
     this.resetConnectionState();
@@ -1473,7 +1474,7 @@ export class SocketService {
   leaveTable(gameId?: string, playerId?: string) {
     if (this.socket && this.socket.connected) {
       console.log('🔄 SOCKET: Leaving table and returning to lobby');
-      
+
       if (gameId && playerId) {
         // Specific player leaving a specific game
         this.socket.emit('player:leaveTable', { gameId, playerId });
@@ -1481,16 +1482,16 @@ export class SocketService {
         // General leave table - use tableId 0 as a special case to indicate "leave any table"
         this.socket.emit('leaveTable', { tableId: 0 });
       }
-      
+
       // Reset local state
       this.resetConnectionState();
-      
+
       // Update location to lobby
       const nickname = localStorage.getItem('nickname');
       if (nickname) {
-        this.socket.emit('updateUserLocation', { 
-          tableId: null, 
-          nickname: nickname 
+        this.socket.emit('updateUserLocation', {
+          tableId: null,
+          nickname: nickname
         });
       }
     }
@@ -1609,13 +1610,13 @@ export class SocketService {
     console.log(`🔧 FRONTEND: Joining table ${tableId} with buyIn ${buyIn || 200}, testMode: ${isTestMode}`);
     this.socket.emit('joinTable', { tableId, buyIn: buyIn || 200, playerName, isTestMode });
     this.currentTableId = tableId;
-    
+
     // Also join the WebSocket room to receive game state updates
     // In table-only architecture, tableId serves as gameId
     const gameId = tableId.toString();
     this.joinRoom(`table:${gameId}`);
     this.joinRoom(`game:${gameId}`); // For backward compatibility
-    
+
     console.log(`🔧 FRONTEND: Joined WebSocket rooms table:${gameId} and game:${gameId}`);
   }
 
@@ -1625,15 +1626,15 @@ export class SocketService {
   takeSeat(seatNumber: number, buyIn: number) {
     console.log(`🎯 SOCKET: takeSeat called - socket exists: ${!!this.socket}, connected: ${this.socket?.connected}`);
     console.log(`🎯 SOCKET: takeSeat parameters - seatNumber: ${seatNumber}, buyIn: ${buyIn}`);
-    
+
     if (!this.socket) {
       throw new Error('Socket not initialized. Please connect first.');
     }
-    
+
     if (!this.socket.connected) {
       throw new Error('Socket not connected. Please wait for connection or try again.');
     }
-    
+
     console.log(`🎯 SOCKET: Emitting takeSeat event with seatNumber: ${seatNumber}, buyIn: ${buyIn}`);
     this.socket.emit('takeSeat', { seatNumber, buyIn });
   }
@@ -1752,14 +1753,14 @@ export class SocketService {
    */
   emitGameAction(action: string, amount?: number) {
     if (this.socket && this.socket.connected && this.gameState) {
-      const data: any = { 
-        gameId: this.gameState.id, 
+      const data: any = {
+        gameId: this.gameState.id,
         playerId: this.currentPlayer?.id
       };
       if (amount !== undefined) {
         data.amount = amount;
       }
-      
+
       // Emit specific event based on action type
       switch (action) {
         case 'bet':
@@ -1881,31 +1882,31 @@ export class SocketService {
       console.log('🔄 FRONTEND: Forcing UI state synchronization');
       console.log('🔄 FRONTEND: Game state players:', gameState.players?.length || 0);
       console.log('🔄 FRONTEND: Current observers:', this.observers.length);
-      
+
       // Update players list from game state
       if (gameState.players) {
         this.players = gameState.players.filter(p => p !== null);
         console.log('🔄 FRONTEND: Updated players list:', this.players.map(p => `${p.name} (seat ${p.seatNumber})`));
       }
-      
+
       // Emit immediate updates to all UI components
       this.emitGameStateUpdate(gameState);
       this.emitOnlineUsersUpdate();
-      
+
       // Force component re-render by dispatching custom event
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('forceUISync', { 
-          detail: { 
-            gameState, 
-            players: this.players, 
+        window.dispatchEvent(new CustomEvent('forceUISync', {
+          detail: {
+            gameState,
+            players: this.players,
             observers: this.observers,
             timestamp: Date.now()
-          } 
+          }
         }));
       }
-      
+
       console.log('🔄 FRONTEND: UI state synchronization completed');
-      
+
     } catch (error) {
       console.error('❌ FRONTEND: UI state synchronization failed:', error);
     }
