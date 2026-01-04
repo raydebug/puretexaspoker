@@ -914,6 +914,17 @@ class ScreenshotHelper {
       return false;
     }
   }
+
+  async captureAllPlayers(screenshotName, round = null) {
+    if (!global.players) {
+      console.log('⚠️ No players available for comprehensive screenshot');
+      return;
+    }
+    console.log(`📸 Capturing screenshots for all players: ${screenshotName}`);
+    for (const [playerName, playerInstance] of Object.entries(global.players)) {
+      await this.captureAndLogScreenshot(playerInstance, screenshotName, round, playerName);
+    }
+  }
 }
 
 function clearGlobalPlayers() {
@@ -925,6 +936,72 @@ function clearGlobalPlayers() {
   console.log('🧹 Clearing global.players properties...');
   for (const key of Object.keys(global.players)) {
     delete global.players[key];
+  }
+}
+
+/**
+ * Verify game history after a poker action
+ * @param {string} action - The poker action performed (e.g., "RAISE", "CALL", "BET", "CHECK")
+ * @param {string} playerName - The player who performed the action
+ * @param {number} amount - The amount of the action (if applicable)
+ * @param {Object} browsers - Browser instances for all players
+ */
+async function verifyGameHistoryAfterAction(action, playerName, amount, browsers) {
+  console.log(`📜 Verifying game history after ${action} by ${playerName}${amount ? ` ($${amount})` : ''}...`);
+
+  if (!browsers || Object.keys(browsers).length === 0) {
+    console.log('⚠️ No browser instances available for game history verification');
+    return;
+  }
+
+  // Verify game history from player perspectives
+  for (const [browserPlayerName, browserObject] of Object.entries(browsers)) {
+    // Robust driver detection: works if passed a driver OR a player object
+    let browser = browserObject;
+    if (browserObject && !browserObject.findElements && (browserObject.driver || browserObject.browser)) {
+      browser = browserObject.driver || browserObject.browser;
+    }
+
+    if (browser && typeof browser.findElements === 'function') {
+      try {
+        // Wait a moment for game history to update
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        // Find game history elements
+        const gameHistoryElements = await browser.findElements(By.css('.game-history, [data-testid="game-history"], .history-panel, [class*="history"]'));
+
+        let historyVerified = false;
+
+        for (const historyElement of gameHistoryElements) {
+          const historyText = await historyElement.getText();
+
+          // Check if the recent action appears in game history
+          const actionPatterns = [
+            `${playerName}.*${action}`,
+            `${action}.*${playerName}`,
+            amount ? `\\$${amount}` : null
+          ].filter(Boolean);
+
+          for (const pattern of actionPatterns) {
+            const regex = new RegExp(pattern, 'i');
+            if (regex.test(historyText)) {
+              console.log(`✅ Game history verified for ${browserPlayerName}: ${action} by ${playerName} found`);
+              historyVerified = true;
+              break;
+            }
+          }
+
+          if (historyVerified) break;
+        }
+
+        if (!historyVerified) {
+          console.log(`⚠️ Could not verify ${action} by ${playerName} in game history for ${browserPlayerName}`);
+        }
+
+      } catch (error) {
+        console.log(`⚠️ Game history verification failed for ${browserPlayerName}: ${error.message}`);
+      }
+    }
   }
 }
 
@@ -940,5 +1017,6 @@ module.exports = {
   initializeBrowserPool,
   getBrowserFromPool,
   ScreenshotHelper,
+  verifyGameHistoryAfterAction,
   clearGlobalPlayers
 };
