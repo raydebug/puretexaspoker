@@ -72,6 +72,8 @@ selenium/*.jpeg
 selenium/*.gif
 selenium/*.html
 selenium/*.log
+selenium/*.txt
+final_run_output.txt
 
 # Allow test reports to be tracked in git - REMOVED
 
