@@ -70,7 +70,7 @@ router.post('/:tableId/join', async (req, res) => {
     }
 
     // Sit down as player with buy-in
-    const sitResult = tableManager.sitDown(tableNumber, playerId, actualBuyIn);
+    const sitResult = await tableManager.sitDown(tableNumber, playerId, actualBuyIn);
     if (!sitResult.success) {
       return res.status(400).json({ error: sitResult.error });
     }
@@ -301,7 +301,7 @@ router.get('/:tableId/actions/history', async (req, res) => {
           { actionSequence: 'asc' },
           { timestamp: 'asc' }
         ],
-        take: 50 // Limit to last 50 actions
+        take: 200 // Limit to last 200 actions
       });
 
       console.log(`✅ Retrieved ${actions.length} actions for table ${tableNumber}`);
@@ -388,63 +388,11 @@ router.get('/:tableId/actions/history', async (req, res) => {
       });
 
     } catch (dbError) {
-      console.log(`⚠️ Database query failed, returning mock data for table ${tableNumber}`);
+      console.error(`❌ Database query failed for game history:`, dbError);
 
-      // Return mock action history data for testing
-      const mockActions = [
-        {
-          id: '1',
-          playerId: 'Player1',
-          playerName: 'Player1',
-          action: 'SIT_DOWN',
-          amount: 100,
-          phase: 'waiting',
-          handNumber: 1,
-          actionSequence: 1,
-          timestamp: new Date().toISOString()
-        },
-        {
-          id: '2',
-          playerId: 'Player2',
-          playerName: 'Player2',
-          action: 'SIT_DOWN',
-          amount: 100,
-          phase: 'waiting',
-          handNumber: 1,
-          actionSequence: 2,
-          timestamp: new Date().toISOString()
-        },
-        {
-          id: '3',
-          playerId: 'Player1',
-          playerName: 'Player1',
-          action: 'small blind',
-          amount: 1,
-          phase: 'preflop',
-          handNumber: 1,
-          actionSequence: 3,
-          timestamp: new Date().toISOString()
-        },
-        {
-          id: '4',
-          playerId: 'Player2',
-          playerName: 'Player2',
-          action: 'big blind',
-          amount: 2,
-          phase: 'preflop',
-          handNumber: 1,
-          actionSequence: 4,
-          timestamp: new Date().toISOString()
-        }
-      ];
-
-      res.status(200).json({
-        success: true,
-        actionHistory: mockActions,
-        tableId: tableNumber,
-        handNumber: handNumber ? parseInt(handNumber as string) : null,
-        count: mockActions.length,
-        note: 'Mock data returned due to database limitations'
+      res.status(500).json({
+        success: false,
+        error: 'Failed to retrieve game history from database'
       });
     }
 

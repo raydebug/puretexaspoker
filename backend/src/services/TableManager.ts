@@ -296,11 +296,11 @@ class TableManager {
     return true;
   }
 
-  public sitDown(
+  public async sitDown(
     tableId: number,
     playerId: string,
     buyIn: number
-  ): { success: boolean; error?: string } {
+  ): Promise<{ success: boolean; error?: string }> {
     const table = this.tables.get(tableId);
     if (!table) {
       return { success: false, error: 'Table not found' };
@@ -345,6 +345,36 @@ class TableManager {
     };
     updatedTable.status = updatedTable.players >= updatedTable.maxPlayers ? 'full' : 'active';
     this.tables.set(tableId, updatedTable);
+
+    // Record SIT_DOWN action in game history
+    try {
+      const gameState = this.tableGameStates.get(tableId);
+      const handNumber = gameState?.handNumber || 1;
+      const phase = gameState?.phase || 'waiting';
+      const actionSequence = await this.getNextActionSequence(tableId, handNumber);
+
+      await prisma.tableAction.create({
+        data: {
+          tableId: tableId,
+          playerId: playerId, // playerId is nickname here
+          type: 'SIT_DOWN',
+          amount: buyIn,
+          phase: phase,
+          handNumber: handNumber,
+          actionSequence: actionSequence,
+          gameStateBefore: JSON.stringify({
+            status: updatedTable.status,
+            phase,
+            chips: buyIn
+          }),
+          gameStateAfter: null
+        }
+      });
+      console.log(`✅ SIT_DOWN action recorded: ${playerId} sits with $${buyIn}`);
+    } catch (error) {
+      console.error('❌ Failed to record SIT_DOWN action:', error);
+      // Continue even if logging fails, as the core action succeeded
+    }
 
     return { success: true };
   }

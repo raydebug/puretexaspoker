@@ -82,13 +82,14 @@ class PlayerTimeoutService {
    * Handle when a player times out (automatically fold them)
    */
   private async handlePlayerTimeout(gameId: string, playerId: string, playerName: string): Promise<void> {
-    console.log(`⏰ Player ${playerName} (${playerId}) timed out - auto-folding`);
-
+    console.log(`⏰ Player ${playerName} (${playerId}) timed out - auto-folding (Logic disabled in Table-Only architecture)`);
+    /*
     try {
       // Remove from active timeouts
       this.activeTimeouts.delete(playerId);
 
       // Get the game
+      // @ts-ignore - gameManager no longer exists in table-only architecture
       const gameService = gameManager.getGame(gameId);
       if (!gameService) {
         console.error(`❌ Game ${gameId} not found for timeout handling`);
@@ -141,6 +142,7 @@ class PlayerTimeoutService {
         });
       }
     }
+    */
   }
 
   /**

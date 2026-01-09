@@ -41,7 +41,7 @@ export function registerConsolidatedHandlers(io: Server) {
   const broadcastGameState = (tableId: number, gameState: any, reason: string = 'update') => {
     const roomId = `table:${tableId}`;
     const syncKey = `table:${tableId}`;
-    
+
     // Track sync state
     gameStateSync.set(syncKey, {
       lastUpdate: Date.now(),
@@ -74,10 +74,10 @@ export function registerConsolidatedHandlers(io: Server) {
 
     // Emit to table room
     io.to(roomId).emit('gameState', frontendGameState);
-    
+
     // Also emit to all clients for debugging/fallback
     io.emit('gameState', frontendGameState);
-    
+
     // Emit sync confirmation
     io.to(roomId).emit('gameStateSync', {
       tableId,
@@ -92,12 +92,12 @@ export function registerConsolidatedHandlers(io: Server) {
     const interval = setInterval(() => {
       const now = Date.now();
       const heartbeatTimeout = 60000; // 60 seconds
-      
+
       for (const [socketId, user] of authenticatedUsers.entries()) {
         if (now - user.lastHeartbeat > heartbeatTimeout) {
           console.log(`💓 [SOCKET] User ${user.nickname} heartbeat timeout, removing from tracking`);
           authenticatedUsers.delete(socketId);
-          
+
           // Leave table if at one
           if (user.location !== 'lobby') {
             tableManager.leaveTable(user.location, socketId);
@@ -105,7 +105,7 @@ export function registerConsolidatedHandlers(io: Server) {
           }
         }
       }
-      
+
       // Clean up stale game state sync records
       for (const [key, sync] of gameStateSync.entries()) {
         if (now - sync.lastUpdate > 300000) { // 5 minutes
@@ -161,23 +161,19 @@ export function registerConsolidatedHandlers(io: Server) {
           return;
         }
 
-        // Create a new player record in database or find existing one
+        // Create or update player record in database using upsert for atomicity
         const trimmedNickname = nickname.trim();
-        let player = await prisma.player.findUnique({
-          where: { id: trimmedNickname }
+        const player = await prisma.player.upsert({
+          where: { id: trimmedNickname },
+          update: { updatedAt: new Date() },
+          create: {
+            id: trimmedNickname,
+            nickname: trimmedNickname,
+            chips: 1000,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
         });
-        
-        if (!player) {
-          player = await prisma.player.create({
-            data: { 
-              id: trimmedNickname,     // Use nickname as primary key
-              nickname: trimmedNickname,
-              chips: 1000, // Default chips for new players
-              createdAt: new Date(),
-              updatedAt: new Date()
-            }
-          });
-        }
 
         // Store authenticated user with player ID and heartbeat
         authenticatedUsers.set(socket.id, {
@@ -190,7 +186,7 @@ export function registerConsolidatedHandlers(io: Server) {
 
         socket.emit('authenticated', { nickname: nickname.trim() });
         broadcastOnlineUsersUpdate();
-        
+
         console.log(`[SOCKET] User authenticated: ${nickname} (Player ID: ${player.id})`);
       } catch (error) {
         handleError(socket, error as Error, 'authenticate');
@@ -201,7 +197,7 @@ export function registerConsolidatedHandlers(io: Server) {
     socket.on('joinTable', async ({ tableId, buyIn = 200, playerName, isTestMode = false }) => {
       try {
         let user = authenticatedUsers.get(socket.id);
-        
+
         // For test mode, create a mock user if not authenticated
         if (!user && isTestMode && playerName) {
           console.log(`[SOCKET] Test mode joinTable for ${playerName} without authentication`);
@@ -244,10 +240,10 @@ export function registerConsolidatedHandlers(io: Server) {
 
         // Emit success
         socket.emit('tableJoined', { tableId, role: 'observer', buyIn });
-        
+
         // Broadcast table update
         broadcastTables();
-        
+
         console.log(`[SOCKET] User ${user.nickname} joined table ${tableId} as observer`);
       } catch (error) {
         handleError(socket, error as Error, 'joinTable');
@@ -301,7 +297,7 @@ export function registerConsolidatedHandlers(io: Server) {
         }
 
         // Take seat in TableManager
-        const result = tableManager.sitDown(user.location as number, user.nickname, buyIn);
+        const result = await tableManager.sitDown(user.location as number, user.nickname, buyIn);
         if (!result.success) {
           throw new Error(result.error || 'Failed to take seat');
         }
@@ -319,18 +315,18 @@ export function registerConsolidatedHandlers(io: Server) {
         // CRITICAL FIX: Update LocationManager to reflect the user now has a seat
         // This prevents seated players from appearing in the observers list
         locationManager.updateUserLocation(
-          user.playerId, 
-          user.nickname, 
-          user.location as number, 
+          user.playerId,
+          user.nickname,
+          user.location as number,
           seatNumber
         );
 
         // Emit success
         socket.emit('seatTaken', { tableId: user.location, seatNumber, buyIn });
-        
+
         // Broadcast table update
         broadcastTables();
-        
+
         console.log(`[SOCKET] User ${user.nickname} took seat ${seatNumber} at table ${user.location}`);
       } catch (error) {
         handleError(socket, error as Error, 'takeSeat');
@@ -341,7 +337,7 @@ export function registerConsolidatedHandlers(io: Server) {
     socket.on('autoSeat', async ({ tableId, seatNumber, buyIn = 200, playerName, isTestMode = false }) => {
       try {
         let user = authenticatedUsers.get(socket.id);
-        
+
         // For test mode, create a mock user if not authenticated
         if (!user && isTestMode && playerName) {
           console.log(`[SOCKET] Test mode auto-seat for ${playerName} without authentication`);
@@ -383,10 +379,10 @@ export function registerConsolidatedHandlers(io: Server) {
         if (playerSeat) {
           // Player is already seated - emit success
           console.log(`[SOCKET] Emitting autoSeatSuccess event to socket ${socket.id} for user ${user.nickname} (already seated)`);
-          socket.emit('autoSeatSuccess', { 
-            tableId, 
-            seatNumber: playerSeat.seatNumber, 
-            buyIn: playerSeat.buyIn 
+          socket.emit('autoSeatSuccess', {
+            tableId,
+            seatNumber: playerSeat.seatNumber,
+            buyIn: playerSeat.buyIn
           });
           console.log(`[SOCKET] autoSeatSuccess event emitted successfully`);
           console.log(`[SOCKET] User ${user.nickname} already seated at seat ${playerSeat.seatNumber} at table ${tableId}`);
@@ -409,7 +405,7 @@ export function registerConsolidatedHandlers(io: Server) {
         const table = tableManager.getTable(tableId);
         const tablePlayers = tableManager.getTablePlayers(tableId);
         const isObserver = tablePlayers.some(p => p.nickname === user.nickname && p.role === 'observer');
-        
+
         if (isObserver) {
           console.log(`[SOCKET] User ${user.nickname} already at table ${tableId} as observer, proceeding to seat`);
         } else {
@@ -427,7 +423,7 @@ export function registerConsolidatedHandlers(io: Server) {
         }
 
         // Take seat immediately
-        const sitResult = tableManager.sitDown(tableId, user.nickname, buyIn);
+        const sitResult = await tableManager.sitDown(tableId, user.nickname, buyIn);
         if (!sitResult.success) {
           throw new Error(sitResult.error || 'Failed to take seat');
         }
@@ -447,9 +443,9 @@ export function registerConsolidatedHandlers(io: Server) {
         // CRITICAL FIX: Update LocationManager to reflect the user now has a seat
         // This prevents seated players from appearing in the observers list
         locationManager.updateUserLocation(
-          user.playerId, 
-          user.nickname, 
-          tableId, 
+          user.playerId,
+          user.nickname,
+          tableId,
           seatNumber
         );
 
@@ -501,7 +497,7 @@ export function registerConsolidatedHandlers(io: Server) {
         }
 
         socket.emit('gameStarted', { tableId });
-        
+
         console.log(`[SOCKET] Game started at table ${tableId}`);
       } catch (error) {
         handleError(socket, error as Error, 'startGame');
@@ -528,7 +524,7 @@ export function registerConsolidatedHandlers(io: Server) {
         }
 
         socket.emit('actionSuccess', { action, tableId });
-        
+
         console.log(`[SOCKET] User ${user.nickname} performed ${action} at table ${tableId}`);
       } catch (error) {
         handleError(socket, error as Error, 'playerAction');
@@ -585,7 +581,7 @@ export function registerConsolidatedHandlers(io: Server) {
 
         socket.emit('tableLeft', { tableId: user.location });
         broadcastTables();
-        
+
         console.log(`[SOCKET] User ${user.nickname} left table ${user.location}`);
       } catch (error) {
         handleError(socket, error as Error, 'leaveTable');
@@ -599,16 +595,16 @@ export function registerConsolidatedHandlers(io: Server) {
         if (user) {
           // Remove from authenticated users
           authenticatedUsers.delete(socket.id);
-          
+
           // Leave table if at one
           if (user.location !== 'lobby') {
             tableManager.leaveTable(user.location, socket.id);
             await locationManager.removeUser(socket.id);
           }
-          
+
           broadcastOnlineUsersUpdate();
           broadcastTables();
-          
+
           console.log(`[SOCKET] User ${user.nickname} disconnected`);
         }
       } catch (error) {

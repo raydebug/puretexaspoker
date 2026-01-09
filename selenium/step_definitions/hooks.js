@@ -6,7 +6,6 @@ const { promisify } = require('util')
 const path = require('path')
 const fs = require('fs')
 const { cleanupBrowserPool } = require('./shared-test-utilities')
-const { testUtils } = require('../mocks/mockBackendServer')
 
 const execAsync = promisify(exec)
 
@@ -155,34 +154,16 @@ BeforeAll({ timeout: 180000 }, async function () {
     await prepareTestEnvironment()
 
     // Step 2.5: Start mock backend if MOCK_BACKEND=true
-    if (process.env.MOCK_BACKEND === 'true') {
-      console.log('🎭 Starting mock backend server...')
-      try {
-        await testUtils.start(3001)
-        console.log('✅ Mock backend server started successfully')
 
-        // Verify mock server health
-        await testUtils.checkHealth()
-        console.log('✅ Mock backend health check passed')
+    // Step 2: Wait for environment to stabilize
+    await new Promise(resolve => setTimeout(resolve, 5000))
 
-        // Wait for mock server to be fully ready
-        await new Promise(resolve => setTimeout(resolve, 2000))
-
-      } catch (error) {
-        console.error('❌ Failed to start mock backend:', error.message)
-        throw new Error(`Mock backend startup failed: ${error.message}`)
-      }
-    } else {
-      // Step 2: Wait for environment to stabilize
-      await new Promise(resolve => setTimeout(resolve, 5000))
-
-      // Step 3: Verify servers are running (mandatory for real backend)
-      try {
-        await checkServersRunning()
-      } catch (error) {
-        console.log(`❌ Server check failed: ${error.message}`)
-        throw new Error(`Cannot run tests - backend server required: ${error.message}`)
-      }
+    // Step 3: Verify servers are running (mandatory for real backend)
+    try {
+      await checkServersRunning()
+    } catch (error) {
+      console.log(`❌ Server check failed: ${error.message}`)
+      throw new Error(`Cannot run tests - backend server required: ${error.message}`)
     }
 
     // Step 4: Test environment ready
@@ -312,15 +293,7 @@ AfterAll({ timeout: 60000 }, async function () {
 
   try {
     // Stop mock backend server if it was started
-    if (process.env.MOCK_BACKEND === 'true') {
-      console.log('🎭 Stopping mock backend server...')
-      try {
-        await testUtils.stop()
-        console.log('✅ Mock backend server stopped successfully')
-      } catch (error) {
-        console.log(`⚠️ Mock backend cleanup failed: ${error.message}`)
-      }
-    }
+
 
     // DELAY BROWSER CLEANUP: Wait a moment for test completion before cleanup
     console.log('⏳ Waiting 2 seconds for test completion before browser cleanup...')

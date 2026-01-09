@@ -33,7 +33,7 @@
     "test:2player:quick": "npx cucumber-js selenium/features/2-player-complete-game-scenario.feature --tags @quick-2-player --require selenium/step_definitions/**/*.js --require selenium/support/**/*.js --format @cucumber/pretty-formatter --format json:selenium/reports/cucumber-report.json",
     "test:2player:optimized": "REUSE_BROWSERS=true HEADLESS=false npm run test:2player",
     "cleanup:force": "./scripts/force-cleanup-servers.sh",
-    "test:5player:full": "./scripts/test-5player-with-server.sh",
+    "test:5player:full": "./run_verification.sh",
     "test:5player:full:concurrent": "concurrently --kill-others-on-fail --success first \"npm run backend\" \"wait-on http://localhost:3001 --timeout 30000 && cd selenium && HEADLESS=true SELENIUM_WAIT_TIMEOUT=30000 NETWORK_TIMEOUT=30000 npx cucumber-js features/5-player-comprehensive-game-scenario.feature --require step_definitions/2-player-game-steps.js --require step_definitions/5-player-comprehensive-steps.js --require step_definitions/hooks.js --format @cucumber/pretty-formatter\"",
     "test:5player:full:headed": "concurrently --kill-others-on-fail --success first \"npm run backend\" \"wait-on http://localhost:3001 && cd selenium && HEADLESS=false SELENIUM_WAIT_TIMEOUT=30000 NETWORK_TIMEOUT=30000 npx cucumber-js features/5-player-comprehensive-game-scenario.feature --require step_definitions/2-player-game-steps.js --require step_definitions/5-player-comprehensive-steps.js --require step_definitions/hooks.js --format @cucumber/pretty-formatter\"",
     "test:5player:mock": "concurrently --kill-others-on-fail --success first \"npm run frontend\" \"wait-on http://localhost:3000 && HEADLESS=true MOCK_BACKEND=true npx cucumber-js selenium/features/5-player-comprehensive-game-scenario.feature --require selenium/step_definitions/5-player-comprehensive-steps.js --require selenium/step_definitions/hooks.js --format @cucumber/pretty-formatter --tags '@comprehensive-5-player'\"",
@@ -45,9 +45,6 @@
     "test:all": "npm run test:selenium:all",
     "frontend": "cd frontend && npm start",
     "backend": "cd backend && npm start",
-    "start-servers": "node scripts/start-servers.js",
-    "start": "concurrently \"npm run backend\" \"npm run frontend\"",
-    "build": "concurrently \"cd backend && npm run build\" \"cd frontend && npm run build\"",
     "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
     "dev:all": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\""
   },

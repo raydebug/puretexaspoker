@@ -2,9 +2,13 @@
 
 # Cleanup function
 cleanup() {
-    echo "🧹 Stopping services..."
-    kill $BACKEND_PID 2>/dev/null
-    kill $FRONTEND_PID 2>/dev/null
+    echo "🧹 Stopping services forcefully..."
+    kill -9 $BACKEND_PID 2>/dev/null || true
+    kill -9 $FRONTEND_PID 2>/dev/null || true
+    
+    # Force kill anything remaining on the ports
+    lsof -ti:3000,3001 | xargs kill -9 2>/dev/null || true
+    
     echo "✅ Services stopped."
     exit
 }

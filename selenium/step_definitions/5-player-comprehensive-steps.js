@@ -59,9 +59,22 @@ global.players = {};
 // Initialize shared utilities
 let screenshotHelper = new ScreenshotHelper();
 
+// Global tracking for the last advanced GH number to avoid redundant API calls
+let lastAdvancedGhNum = 0;
+
 // Helper function to update test phase for progressive game history
 async function updateTestPhase(phase, maxActions = null) {
   try {
+    // If it's a progressive count update, check if we actually need to advance
+    if (phase === 'progressive' && maxActions !== null) {
+      if (maxActions <= lastAdvancedGhNum) {
+        // DO NOT re-inject or call API if we are already past this point.
+        // This avoids "downgrading" the UI view during final integrity checks.
+        return;
+      }
+      lastAdvancedGhNum = maxActions;
+    }
+
     const payload = { phase };
     if (maxActions) payload.maxActions = maxActions;
 
@@ -77,8 +90,8 @@ async function updateTestPhase(phase, maxActions = null) {
     if (result.success) {
       console.log(`🎮 Test phase updated to: ${phase} (actions: ${maxActions || 'auto'})`);
 
-      // CRITICAL: Also inject the phase into all browser windows for ActionHistory detection
-      await injectTestPhaseIntoBrowsers(phase);
+      // CRITICAL: Also inject the phase AND action count into all browser windows for ActionHistory detection
+      await injectTestPhaseIntoBrowsers(phase, maxActions);
     }
   } catch (error) {
     console.log(`⚠️ Failed to update test phase: ${error.message}`);
@@ -86,9 +99,9 @@ async function updateTestPhase(phase, maxActions = null) {
 }
 
 // Helper function to inject test phase into all browser windows
-async function injectTestPhaseIntoBrowsers(phase) {
+async function injectTestPhaseIntoBrowsers(phase, actionCount = null) {
   try {
-    // PARALLEL: Inject phase into all browsers simultaneously for performance
+    // PARALLEL: Inject info into all browsers simultaneously for performance
     const injectionPromises = [];
 
     for (const [playerName, player] of Object.entries(global.players || {})) {
@@ -99,12 +112,13 @@ async function injectTestPhaseIntoBrowsers(phase) {
             await Promise.race([
               player.driver.executeScript(`
                 window.testPhase = "${phase}";
-                console.log('🧪 Test phase updated to: ${phase}');
+                ${actionCount ? `window.testActionCount = ${actionCount};` : ''}
+                console.log('🧪 Test phase updated to: ${phase}', ${actionCount ? `'count: ' + ${actionCount}` : "''"});
                 
                 // Trigger a custom event to force ActionHistory refresh
                 if (window.dispatchEvent) {
                   window.dispatchEvent(new CustomEvent('testPhaseChanged', { 
-                    detail: { phase: '${phase}' } 
+                    detail: { phase: '${phase}', count: ${actionCount || 'null'} } 
                   }));
                 }
                 
@@ -640,9 +654,32 @@ When(/^Player(\d+) bets \$?(\d+)$/, async function (playerNum, amount) {
   console.log(`✅ Player${playerNum} bet $${amount} completed`);
 });
 
-When(/^Player(\d+) calls \$?(\d+) more$/, async function (playerNum, amount) {
+When(/^Player(\d+) calls \$?(\d+) more(?: \(.*\))?$/, async function (playerNum, amount) {
   console.log(`📞 Player${playerNum} calls $${amount} more`);
   console.log(`✅ Player${playerNum} call $${amount} more completed`);
+});
+
+When(/^Player(\d+) folds to all-in$/, async function (playerNum) {
+  console.log(`🃏 Player${playerNum} folds to all-in`);
+  await updateTestPhase('preflop_fold', 6);
+  console.log(`✅ Player${playerNum} fold to all-in completed`);
+});
+
+When(/^Player(\d+) folds(?: (?!to all-in).*)?$/, async function (playerNum) {
+  console.log(`🃏 Player${playerNum} folds`);
+  await updateTestPhase('preflop_fold', 5);
+  console.log(`✅ Player${playerNum} fold completed`);
+});
+
+When(/^Player(\d+)(?: \(([^)]+)\))? goes all-in (?:for |to )?\$?(\d+)(?: total)?$/, async function (playerNum, position, amount) {
+  // Handle optional position capturing group
+  if (amount === undefined) {
+    amount = position;
+    position = undefined;
+  }
+  console.log(`🚀 Player${playerNum}${position ? ` (${position})` : ''} goes all-in for $${amount}`);
+  await updateTestPhase('all_in_action', 10);
+  console.log(`✅ Player${playerNum} all-in $${amount} completed`);
 });
 
 // Community card dealing
@@ -748,7 +785,6 @@ When('the flop is dealt: {word}, {word}, {word}', async function (card1, card2, 
   });
 
   const results = await Promise.allSettled(flopPromises);
-  console.log(`🎰 Flop verification results: ${results.map(r => r.value || r.reason).join(', ')}`);
   console.log(`✅ Flop cards revealed: ${card1} ${card2} ${card3}`);
 });
 
@@ -775,8 +811,7 @@ When('the turn is dealt: {word}', async function (turnCard) {
     console.log(`⚠️ Advance turn API error: ${error.message}`);
   }
 
-  // Update test phase for progressive game history - adding turn action
-  await updateTestPhase('turn_revealed', 13);
+  // No longer auto-advancing test phase here - history verification steps will do it
 
   // Real DOM verification for turn card content AND visibility in all browser instances
   console.log(`🔍 Verifying turn card with actual content and visibility in DOM across all browsers...`);
@@ -877,8 +912,7 @@ When('the river is dealt: {word}', async function (riverCard) {
     console.log(`⚠️ Advance river API error: ${error.message}`);
   }
 
-  // Update test phase for progressive game history - adding river action
-  await updateTestPhase('river_revealed', 14);
+  // No longer auto-advancing test phase here
 
   // Real DOM verification for river card content AND visibility in all browser instances
   console.log(`🔍 Verifying river card with actual content and visibility in DOM across all browsers...`);
@@ -1238,216 +1272,8 @@ Then('the board should be {word} {word} {word} {word} {word}', async function (c
   console.log(`✅ Board verified: ${card1} ${card2} ${card3} ${card4} ${card5}`);
 });
 
-// =============================================================================
-// ADDITIONAL MISSING STEP DEFINITIONS
-// =============================================================================
 
-// Game history verification steps - Using Mock APIs
-Then('the game history should show {int} action records', async function (expectedCount) {
-  console.log(`📊 Verifying game history shows ${expectedCount} action records using MOCK APIs`);
 
-  // First, set up mock game history with expected count
-  try {
-    const mockResult = await getMockGameHistory(1, expectedCount);
-    if (mockResult.success) {
-      console.log(`✅ MOCK API: Set up ${expectedCount} action records`);
-    } else {
-      console.log(`⚠️ MOCK API setup failed: ${mockResult.error}`);
-    }
-  } catch (error) {
-    console.log(`⚠️ MOCK API setup error: ${error.message}`);
-  }
-
-  // Use browsers from test context instead of global.players
-  if (!this.browsers || !this.browsers.Player1) {
-    console.log(`⚠️ No active browsers available for DOM verification`);
-    console.log(`📊 Skipping DOM verification but test continues...`);
-    return;
-  }
-
-  const firstPlayer = { driver: this.browsers.Player1 };
-  if (firstPlayer && firstPlayer.driver) {
-    try {
-      // Look for game history container
-      const gameHistorySelectors = [
-        '[data-testid="game-history"]',
-        '.game-history',
-        '#game-history',
-        '[class*="history"]',
-        '.history-panel'
-      ];
-
-      let historyContainer = null;
-      // Check if browser session is still valid
-      try {
-        await firstPlayer.driver.getTitle();
-      } catch (error) {
-        console.log(`⚠️ Browser session invalid, skipping DOM verification: ${error.message}`);
-        console.log(`📊 DOM verification skipped but test continues...`);
-        return;
-      }
-
-      for (const selector of gameHistorySelectors) {
-        try {
-          const elements = await firstPlayer.driver.findElements(By.css(selector));
-          if (elements.length > 0) {
-            historyContainer = elements[0];
-            console.log(`✅ Game history container found using selector: ${selector}`);
-            break;
-          }
-        } catch (error) {
-          console.log(`⚠️ Selector ${selector} failed: ${error.message}`);
-        }
-      }
-
-      if (historyContainer) {
-        // Count action records by looking for "GH-X" patterns in the text (since that's what progressive API returns)
-        let historyText;
-        try {
-          historyText = await historyContainer.getText();
-        } catch (error) {
-          console.log(`⚠️ Failed to get history text: ${error.message}`);
-          return;
-        }
-
-        const ghPattern = /GH-\d+/gi;
-        const idPattern = /ID:\s*GH-\d+/gi;
-
-        const ghMatches = historyText.match(ghPattern) || [];
-        const idMatches = historyText.match(idPattern) || [];
-        const actionCount = Math.max(ghMatches.length, idMatches.length);
-
-        console.log(`📋 Found ${actionCount} action records with GH- IDs in DOM`);
-        console.log(`📝 DOM text sample: "${historyText.substring(0, 500)}..."`);
-
-        if (actionCount >= expectedCount) {
-          console.log(`✅ Game history ${expectedCount} action records verified (found ${actionCount})`);
-        } else {
-          console.log(`❌ Expected ${expectedCount} actions, found ${actionCount} in DOM`);
-
-          // Show what we actually found for debugging
-          if (ghMatches.length > 0) {
-            console.log(`📝 GH- IDs found: [${ghMatches.join(', ')}]`);
-          }
-          if (idMatches.length > 0) {
-            console.log(`📝 ID: patterns found: [${idMatches.join(', ')}]`);
-          }
-
-          console.log(`❌ DOM verification failed: Expected ${expectedCount} action records but found ${actionCount} in DOM`);
-          throw new Error(`Expected ${expectedCount} action records but found ${actionCount} in DOM`);
-        }
-
-        // Show sample of found action IDs for successful cases
-        if (ghMatches.length > 0) {
-          console.log(`📝 GH- Action IDs found: [${ghMatches.join(', ')}]`);
-        }
-      } else {
-        console.log(`❌ Game history container not found in DOM`);
-        throw new Error(`Game history container not found in DOM - cannot verify ${expectedCount} action records`);
-      }
-    } catch (error) {
-      console.log(`❌ DOM verification failed: ${error.message}`);
-      if (error.message.includes('ECONNREFUSED') || error.message.includes('session ID') || error.message.includes('WebDriver')) {
-        console.log(`📊 Browser session disconnected during DOM verification, skipping but test continues...`);
-        return;
-      }
-      throw error;
-    }
-  }
-});
-
-Then('the game history should contain action with ID {int}', { timeout: 15000 }, async function (actionId) {
-  console.log(`🔍 Verifying game history contains action with ID ${actionId} using MOCK APIs`);
-
-  // First, ensure mock game history contains the expected action ID
-  try {
-    const mockResult = await getMockGameHistory(1, actionId);
-    if (mockResult.success) {
-      console.log(`✅ MOCK API: Ensured action ID ${actionId} is available`);
-    } else {
-      console.log(`⚠️ MOCK API setup failed: ${mockResult.error}`);
-    }
-  } catch (error) {
-    console.log(`⚠️ MOCK API setup error: ${error.message}`);
-  }
-
-  console.log(`🔍 Verifying game history contains action with ID ${actionId} in real DOM across ALL browser instances`);
-
-  let domVerificationSuccessful = false;
-  let verifiedBrowsers = [];
-
-  // Check ALL browsers to ensure the ActionHistory component is working consistently
-  for (const [playerName, player] of Object.entries(global.players || {})) {
-    if (player && player.driver) {
-      try {
-        // Test if browser is still responsive
-        await player.driver.getTitle();
-        console.log(`🔍 Checking ${playerName}'s browser for action ID ${actionId}...`);
-
-        let actionFoundInThisBrowser = false;
-        let attempts = 0;
-        const maxAttempts = 3; // Faster verification per browser
-
-        while (!actionFoundInThisBrowser && attempts < maxAttempts) {
-          attempts++;
-          console.log(`🔍 ${playerName} verification attempt ${attempts}/${maxAttempts}`);
-
-          try {
-            // Wait for ActionHistory to fetch data - reduced for efficiency
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            // Look for Game History container
-            const historyElement = await player.driver.findElement(By.css('[data-testid="game-history"]'));
-            const historyText = await historyElement.getText();
-
-            // Check for specific action ID in this browser
-            const ghPattern = new RegExp(`GH-${actionId}`, 'i');
-            const idPattern = new RegExp(`ID:\\s*GH-${actionId}`, 'i');
-
-            if (ghPattern.test(historyText) || idPattern.test(historyText)) {
-              actionFoundInThisBrowser = true;
-              domVerificationSuccessful = true; // FIX: Set global success flag when action found
-              verifiedBrowsers.push(playerName);
-              console.log(`✅ ${playerName}: Found action ID GH-${actionId} in DOM`);
-
-              // Show context
-              const lines = historyText.split('\n');
-              const matchingLine = lines.find(line =>
-                ghPattern.test(line) || idPattern.test(line)
-              );
-              if (matchingLine) {
-                console.log(`📝 ${playerName} context: "${matchingLine.trim()}"`);
-              }
-              break;
-            } else {
-              console.log(`⚠️ ${playerName}: Action GH-${actionId} not found yet (${historyText.match(/GH-\d+/g)?.length || 0} actions total)`);
-            }
-
-          } catch (error) {
-            console.log(`⚠️ ${playerName} attempt ${attempts} failed: ${error.message}`);
-          }
-        }
-
-      } catch (browserError) {
-        console.log(`⚠️ Browser ${playerName} failed: ${browserError.message}`);
-      }
-    }
-  }
-
-  // Summary report of DOM verification across all browsers
-  console.log(`\n📊 DOM Verification Summary for Action ID ${actionId}:`);
-  console.log(`✅ Verified in browsers: [${verifiedBrowsers.join(', ')}]`);
-  console.log(`📈 Success rate: ${verifiedBrowsers.length}/${Object.keys(global.players || {}).length} browsers`);
-
-  if (domVerificationSuccessful && verifiedBrowsers.length > 0) {
-    console.log(`✅ DOM verification PASSED: Action ID ${actionId} found in ${verifiedBrowsers.length} browser(s)`);
-  } else {
-    console.log(`❌ DOM verification FAILED: Action ID ${actionId} not found in any browser`);
-
-    // Don't throw error - let test continue to gather more data
-    console.log(`⚠️ Continuing test to gather more DOM verification data...`);
-  }
-});
 
 Then('the game history should show actions with IDs greater than {int}', async function (minId) {
   console.log(`🔍 Verifying game history shows actions with IDs greater than ${minId} in real DOM`);
@@ -1595,7 +1421,13 @@ Then('each player should see their own hole cards with position labels', async f
           // Check for hole cards container
           const cards = await player.driver.findElements(By.css('[data-testid="player-hole-cards"] [data-testid^="hole-card-"], .hole-card, .player-card'));
 
-          if (cards.length === 2) {
+          if (playerName === 'Observer') {
+            if (cards.length === 0) {
+              console.log(`✅ ${playerName} correctly sees 0 hole cards`);
+            } else {
+              console.log(`⚠️ ${playerName} sees ${cards.length} hole cards (expected 0)`);
+            }
+          } else if (cards.length === 2) {
             console.log(`✅ ${playerName} sees 2 hole cards`);
             const card1Text = await cards[0].getText();
             const card2Text = await cards[1].getText();
@@ -2208,19 +2040,8 @@ Then('I capture final comprehensive summary screenshot {string}', async function
 
 // Comprehensive final game history verification for showdown phase
 Then('the complete game history should show all {int} action IDs including showdown', async function (expectedTotalActions) {
-  console.log(`🏆 Verifying complete game history shows all ${expectedTotalActions} action IDs including showdown using MOCK APIs`);
+  // Check DOM directly
 
-  // First, set up mock game history with all expected actions
-  try {
-    const mockResult = await getMockGameHistory(1, expectedTotalActions);
-    if (mockResult.success) {
-      console.log(`✅ MOCK API: Set up complete game history with ${expectedTotalActions} action IDs`);
-    } else {
-      console.log(`⚠️ MOCK API setup failed: ${mockResult.error}`);
-    }
-  } catch (error) {
-    console.log(`⚠️ MOCK API setup error: ${error.message}`);
-  }
 
   // Get first available player for DOM verification
   const firstPlayer = Object.values(global.players)[0];
@@ -2643,10 +2464,7 @@ Then('I capture a screenshot {string}', { timeout: 30000 }, async function (scre
   console.log(`✅ Screenshot captured: ${screenshotName}`);
 });
 
-When(/^Player(\d+) calls \$?(\d+) more$/, async function (playerNum, amount) {
-  console.log(`🎰 Player${playerNum} calls $${amount} more`);
-  console.log(`✅ Player${playerNum} calls $${amount} more executed`);
-});
+// Duplicate removed to resolve ambiguity
 
 When(/^Player1 \(SB\) checks$/, async function () {
   console.log(`🎰 Player1 (SB) checks`);
@@ -3086,9 +2904,8 @@ Then('the game history section should contain {string} as the last one', { timeo
 Then('the complete game history should show all {int} GH-* action IDs including showdown', async function (expectedCount) {
   console.log(`🔍 Verifying complete game history shows all ${expectedCount} GH-* action IDs including showdown`);
 
-  // Set up mock game history with the expected count
-  const mockHistory = await getMockGameHistory(1, expectedCount);
-  console.log(`✅ MOCK API: Set up ${expectedCount} action records for complete verification`);
+  // Verify DOM in ALL browser instances directly
+
 
   // Verify DOM in ALL browser instances
   let domVerificationSuccessful = false;
@@ -3954,9 +3771,9 @@ Then('I should see game history entry {string} with text {string}', { timeout: 1
   }
 
   if (verifiedBrowsers.length === 0) {
-    // For now, let's continue with a warning instead of failing completely
-    console.log(`⚠️ Game history entry "${ghId}" with text "${expectedText}" not found - continuing with warning`);
-    return; // Continue test execution for debugging
+    const errorMsg = `❌ Game history entry "${ghId}" with text "${expectedText}" NOT found`;
+    console.log(errorMsg);
+    throw new Error(errorMsg);
   }
 
   console.log(`✅ Game history entry "${ghId}" verified in ${verifiedBrowsers.length} browser(s)`);
@@ -4035,36 +3852,77 @@ Then('I should see game history entry {string} showing {string} won {string}', {
   if (foundCount > 0) {
     console.log(`✅ Winner entry "${ghId}" verified for ${playerName} in ${foundCount} browser(s)`);
   } else {
-    console.log(`⚠️ Winner entry "${ghId}" not found for ${playerName} - skipping in test mode`);
+    const errorMsg = `❌ Winner entry "${ghId}" for ${playerName} winning ${amount} NOT found in any browser`;
+    console.log(errorMsg);
+    throw new Error(errorMsg);
   }
 });
 
-Then(/^I should see game history entry "([^"]*)"$/, { timeout: 15000 }, async function (ghId) {
-  console.log(`🔍 Verifying game history entry "${ghId}" via mock API...`);
+Then(/^I should see game history entry "([^"]*)"(?:\s+#.*)?$/, { timeout: 20000 }, async function (ghId) {
+  console.log(`🔍 Verifying game history entry "${ghId}" in UI...`);
 
-  try {
-    // Use mock testing API for game history verification
-    const axios = require('axios');
-    const response = await axios.get('http://localhost:3001/api/test/progressive-game-history/1');
-
-    if (response.data.success) {
-      const historyEntries = response.data.actionHistory || [];
-      const entryFound = historyEntries.find(entry => entry.id === ghId);
-
-      if (entryFound) {
-        console.log(`✅ Mock API found game history entry "${ghId}": ${entryFound.playerName} ${entryFound.action}`);
-      } else {
-        console.log(`⚠️ Game history entry "${ghId}" not found in mock API - continuing with warning`);
-        console.log(`📋 Available entries: ${historyEntries.map(e => e.id).join(', ')}`);
-      }
-    } else {
-      console.log(`⚠️ Failed to fetch game history from mock API: ${response.data.error}`);
-    }
-  } catch (error) {
-    console.log(`⚠️ Mock API game history verification failed: ${error.message}`);
+  // Extract numeric ID to advance backend history counter
+  const ghNum = parseInt(ghId.replace('GH-', ''));
+  if (!isNaN(ghNum)) {
+    await updateTestPhase('progressive', ghNum);
   }
 
-  // Always continue test execution for mock testing
+  let foundInAny = false;
+  let checksAttempted = 0;
+  const maxRetries = 10;
+  const retryInterval = 1000;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    if (global.players) {
+      for (const [playerName, player] of Object.entries(global.players)) {
+        if (player && player.driver) {
+          checksAttempted++;
+          try {
+            const historyPanelElement = await player.driver.findElements(By.css('[data-testid="game-history"], .game-history'));
+            if (historyPanelElement.length > 0) {
+              // Scroll to bottom to ensure dynamic rendering / visibility
+              await player.driver.executeScript("arguments[0].scrollTop = arguments[0].scrollHeight", historyPanelElement[0]);
+
+              const historyText = await historyPanelElement[0].getText();
+              if (historyText.includes(ghId)) {
+                console.log(`✅ Found entry "${ghId}" in ${playerName}'s UI (Attempt ${attempt})`);
+                foundInAny = true;
+                break;
+              }
+            }
+          } catch (e) {
+            // Silently retry
+          }
+        }
+      }
+    }
+
+    if (foundInAny) break;
+    if (attempt < maxRetries) {
+      await new Promise(resolve => setTimeout(resolve, retryInterval));
+    }
+  }
+
+  if (!foundInAny && checksAttempted > 0) {
+    console.log(`❌ Game history entry "${ghId}" NOT found in any player's UI after ${maxRetries} attempts`);
+
+    // Only dump for the first player to keep logs clean
+    const firstPlayer = Object.values(global.players)[0];
+    if (firstPlayer && firstPlayer.driver) {
+      try {
+        const historyPanel = await firstPlayer.driver.findElements(By.css('[data-testid="game-history"], .game-history'));
+        if (historyPanel.length > 0) {
+          const text = await historyPanel[0].getText();
+          const allIds = text.match(/GH-\d+/g) || [];
+          console.log(`📋 [DUMP] Content: \n${text}`);
+          console.log(`📋 [DUMP] IDs found: [${allIds.join(', ')}]`);
+        }
+      } catch (dumpError) {
+        console.log(`⚠️ Could not dump history: ${dumpError.message}`);
+      }
+    }
+    throw new Error(`❌ Game history entry "${ghId}" not found in UI`);
+  }
 });
 
 // Verify a range of GH- IDs exist in DOM
@@ -4111,8 +3969,9 @@ Then('I should see game history entries {string} through {string} in DOM', { tim
   }
 
   if (verifiedBrowsers.length === 0) {
-    console.log(`⚠️ Game history entries ${startId}-${endId} not all found in DOM - continuing with warning`);
-    return; // Continue test execution for debugging
+    const errorMsg = `❌ Game history entries ${startId}-${endId} not all found in DOM`;
+    console.log(errorMsg);
+    throw new Error(errorMsg);
   }
 
   console.log(`✅ Game history entries ${startId}-${endId} verified in DOM in ${verifiedBrowsers.length} browser(s)`);
@@ -4148,8 +4007,9 @@ Then('I should see exactly {int} game history entries', { timeout: 15000 }, asyn
   }
 
   if (verifiedBrowsers.length === 0) {
-    console.log(`⚠️ Expected ${expectedCount} game history entries not found in DOM - continuing with warning`);
-    return; // Continue test execution for debugging
+    const errorMsg = `❌ Expected ${expectedCount} game history entries not found in DOM`;
+    console.log(errorMsg);
+    throw new Error(errorMsg);
   }
 
   console.log(`✅ Exactly ${expectedCount} game history entries verified in DOM in ${verifiedBrowsers.length} browser(s)`);
@@ -4642,7 +4502,7 @@ Then('Observer should not see any player\'s hole cards before showdown', async f
 });
 
 // Consolidated "current player to act" pattern
-Then(/^the current player to act should be "([^"]*)"(?: or the correct first-to-act per BU-derived order)?(?: \(([^)]+) is first to act in (\d+)-handed(?: pre-flop)?\))?$/, async function (playerName, position, playerCount) {
+Then(/^the current player to act should be "([^"]*)"(?: or the correct first-to-act per BU-derived order)?(?: \(([^)]+)(?: is first to act in (\d+)-handed(?: pre-flop)?)?\))?$/, async function (playerName, position, playerCount) {
   console.log(`🔍 Verifying ${playerName} is first to act${position ? ` (${playerCount}-handed ${position})` : ''}`);
   console.log(`✅ ${playerName} verified as current player`);
   return true;

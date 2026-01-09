@@ -1,9 +1,36 @@
 #!/bin/bash
 
-# Kill any existing processes
-echo "🧹 Cleaning up old processes..."
-lsof -ti:3001 | xargs kill -9 2>/dev/null
-lsof -ti:3000 | xargs kill -9 2>/dev/null
+# Cleanup function to ensure all processes are terminated
+cleanup() {
+  local exit_code=$?
+  echo "🧹 Cleaning up services (Exit code: $exit_code)..."
+  
+  # Kill background PIDs if they exist
+  [ ! -z "$BACKEND_PID" ] && kill $BACKEND_PID 2>/dev/null || true
+  [ ! -z "$FRONTEND_PID" ] && kill $FRONTEND_PID 2>/dev/null || true
+  
+  # Force cleanup using the robust method to ensure everything is dead
+  if [ -f "./scripts/force-cleanup-servers.sh" ]; then
+    ./scripts/force-cleanup-servers.sh > /dev/null 2>&1
+  fi
+  
+  echo "✅ Cleanup complete."
+  echo "___COMMAND_TERMINATED___"
+  exit $exit_code
+}
+
+# Register cleanup to run on script exit or interruption
+trap cleanup EXIT INT TERM
+
+# Force cleanup of any existing processes to prevent port conflicts
+echo "🔥 Force closing all existing servers to prevent port conflicts..."
+./scripts/force-cleanup-servers.sh
+
+# Cleanup old logs and reports
+echo "🧹 Cleaning up old logs and reports..."
+rm -f backend_log.txt frontend_log.txt selenium/output.log
+rm -rf selenium/reports/*.json
+rm -rf selenium/screenshots/*.png
 
 # Create necessary directories
 echo "📂 Creating directories..."
@@ -24,35 +51,43 @@ npm start > ../frontend_log.txt 2>&1 &
 FRONTEND_PID=$!
 cd ..
 
-# Manual wait loop for both services
-echo "⏳ Waiting for services..."
+# Enhanced server readiness verification
+echo "⏳ Waiting for servers to be ready..."
 
-# Wait for backend
-for i in {1..60}; do
-  if curl -s http://localhost:3001/api/test/test-route > /dev/null; then
-    echo "✅ Backend is up!"
-    break
-  fi
-  echo -n "."
-  sleep 1
+# Check backend API endpoint with retry logic
+BACKEND_READY=false
+for i in {1..20}; do
+    echo -n "."
+    if curl -s --connect-timeout 2 --max-time 5 http://localhost:3001/api/tables > /dev/null 2>&1; then
+        echo -e "\n✅ Backend API responding!"
+        BACKEND_READY=true
+        break
+    else
+        sleep 2
+    fi
 done
 
-# Wait for frontend (simple TCP check via nc or curl)
-for i in {1..60}; do
-  if curl -s http://localhost:3000 > /dev/null; then
-    echo "✅ Frontend is up!"
-    break
-  fi
-  echo -n "."
-  sleep 1
+# Check frontend with retry logic
+FRONTEND_READY=false
+for i in {1..20}; do
+    echo -n "."
+    if curl -s --connect-timeout 2 --max-time 5 http://localhost:3000 > /dev/null 2>&1; then
+        echo -e "\n✅ Frontend responding!"
+        FRONTEND_READY=true
+        break
+    else
+        sleep 2
+    fi
 done
 
-if [ $? -ne 0 ]; then
-  echo "❌ Backend failed to start. Check backend_log.txt"
-  cat backend_log.txt
-  exit 1
+# Verify both servers are ready
+if [ "$BACKEND_READY" = false ] || [ "$FRONTEND_READY" = false ]; then
+    echo -e "\n❌ One or both servers failed to start within time limit."
+    echo "Check backend_log.txt and frontend_log.txt for details."
+    exit 1
 fi
-echo "✅ Backend started successfully"
+
+echo "✅ Both servers are ready! Starting tests..."
 
 # Run tests
 echo "🧪 Running Cucumber tests..."
@@ -61,7 +96,9 @@ cd selenium
 export SELENIUM_WAIT_TIMEOUT=30000
 export NETWORK_TIMEOUT=30000
 
-npx cucumber-js features/5-player-comprehensive-game-scenario.feature \
+# Added timeout command to ensure cucumber itself doesn't hang indefinitely
+# Using 10 minutes (600 seconds) as a safety margin
+timeout 600 npx cucumber-js features/5-player-comprehensive-game-scenario.feature \
   --require step_definitions/**/*.js \
   --format @cucumber/pretty-formatter \
   --format json:reports/cucumber-report.json
@@ -90,9 +127,5 @@ fi
 SCREENSHOT_COUNT=$(find selenium/screenshots -name "*.png" | wc -l)
 echo "📸 Found $SCREENSHOT_COUNT screenshots in selenium/screenshots"
 
-# Clean up services
-echo "🧹 Stopping services..."
-kill $BACKEND_PID 2>/dev/null
-kill $FRONTEND_PID 2>/dev/null
-
+# No marker here, handled by EXIT trap if we exit normally or via cleanup
 exit $TEST_EXIT_CODE

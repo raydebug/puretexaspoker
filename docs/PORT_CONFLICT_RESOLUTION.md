@@ -29,14 +29,20 @@ This will force-kill all development servers and free up ports 3000 and 3001.
 ## 🛠️ Available Tools
 
 ### 1. Automatic Cleanup (Recommended)
-The test script `test-5player-with-server.sh` now includes automatic port conflict resolution:
+The main verification script now includes automatic port conflict resolution:
+
+```bash
+./run_verification.sh
+```
+
+Or via npm:
 
 ```bash
 npm run test:5player:full
 ```
 
 **What it does:**
-- ✅ Force kills existing processes on ports 3000 and 3001
+- ✅ Force kills existing processes on ports 3000 and 3001 using `./scripts/force-cleanup-servers.sh`
 - ✅ Verifies ports are free before starting servers
 - ✅ Provides detailed logging of cleanup actions
 - ✅ Automatically cleans up after test completion
@@ -105,30 +111,28 @@ The force cleanup process terminates:
 - Any process using port 3000 (Frontend)
 - Any process using port 3001 (Backend)
 
-## 📊 Enhanced Test Script Features
+## 📊 Enhanced Verification Script Features
 
-The `test-5player-with-server.sh` script now includes:
+The `run_verification.sh` script now includes:
 
 ### Pre-Run Cleanup
 ```bash
 🔥 Force closing all existing servers to prevent port conflicts...
-🗑️ Killing Node.js server processes...
-🗑️ Force killing processes on ports 3000 and 3001...
-🔍 Verifying ports are available...
-✅ Port 3000 is free
-✅ Port 3001 is free
+🗑️ Killing Node.js server processes by pattern...
+🔥 Force killing processes on target ports...
+✅ Port 3000 is free and available
+✅ Port 3001 is free and available
 ```
 
 ### Post-Run Cleanup
 ```bash
 🧹 Enhanced cleanup - ensuring all processes are terminated...
-🗑️ Force killing any remaining processes...
-✅ Enhanced cleanup complete!
+✅ All services stopped and ports freed.
 ```
 
 ## 🚀 Best Practices
 
-### 1. Always Use the Enhanced Test Script
+### 1. Always Use the Main Verification Script
 ```bash
 npm run test:5player:full
 ```
