@@ -100,8 +100,8 @@ export function registerConsolidatedHandlers(io: Server) {
 
           // Leave table if at one
           if (user.location !== 'lobby') {
-            tableManager.leaveTable(user.location, socketId);
-            locationManager.removeUser(socketId);
+            tableManager.leaveTable(user.location, user.nickname);
+            locationManager.removeUser(user.playerId);
           }
         }
       }
@@ -226,7 +226,7 @@ export function registerConsolidatedHandlers(io: Server) {
         }
 
         // Join table in TableManager
-        const result = tableManager.joinTable(tableId, socket.id, user.nickname);
+        const result = tableManager.joinTable(tableId, user.nickname, user.nickname);
         if (!result.success) {
           throw new Error(result.error || 'Failed to join table');
         }
@@ -240,6 +240,17 @@ export function registerConsolidatedHandlers(io: Server) {
 
         // Emit success
         socket.emit('tableJoined', { tableId, role: 'observer', buyIn });
+
+        // Send initial game state to joining user
+        const gameState = tableManager.getTableGameState(tableId);
+        if (gameState) {
+          const broadcastState = {
+            ...gameState,
+            communityCards: gameState.board || []
+          };
+          socket.emit('gameState', broadcastState);
+          console.log(`[SOCKET] Sent initial game state to ${user.nickname} for table ${tableId}`);
+        }
 
         // Broadcast table update
         broadcastTables();
@@ -410,7 +421,7 @@ export function registerConsolidatedHandlers(io: Server) {
           console.log(`[SOCKET] User ${user.nickname} already at table ${tableId} as observer, proceeding to seat`);
         } else {
           // Auto-seat: Join table and take seat in one operation
-          const joinResult = tableManager.joinTable(tableId, socket.id, user.nickname);
+          const joinResult = tableManager.joinTable(tableId, user.nickname, user.nickname);
           if (!joinResult.success) {
             throw new Error(joinResult.error || 'Failed to join table');
           }
@@ -456,6 +467,17 @@ export function registerConsolidatedHandlers(io: Server) {
         console.log(`[SOCKET] Emitting autoSeatSuccess event to socket ${socket.id} for user ${user.nickname}`);
         socket.emit('autoSeatSuccess', { tableId, seatNumber, buyIn });
         console.log(`[SOCKET] autoSeatSuccess event emitted successfully`);
+
+        // Send initial game state to joining user
+        const gameState = tableManager.getTableGameState(tableId);
+        if (gameState) {
+          const broadcastState = {
+            ...gameState,
+            communityCards: gameState.board || []
+          };
+          socket.emit('gameState', broadcastState);
+          console.log(`[SOCKET] Sent initial game state to ${user.nickname} for table ${tableId} (autoSeat)`);
+        }
 
         // Emit to table room
         socket.to(`table:${tableId}`).emit('playerJoined', {
@@ -513,7 +535,7 @@ export function registerConsolidatedHandlers(io: Server) {
         }
 
         // Perform action in TableManager
-        const result = await tableManager.playerAction(tableId, socket.id, action, amount);
+        const result = await tableManager.playerAction(tableId, user.nickname, action, amount);
         if (!result.success) {
           throw new Error(result.error || 'Action failed');
         }
@@ -542,7 +564,12 @@ export function registerConsolidatedHandlers(io: Server) {
         // Get current game state from TableManager
         const gameState = tableManager.getTableGameState(tableId);
         if (gameState) {
-          socket.emit('gameState', gameState);
+          // Ensure communityCards is present for frontend compatibility
+          const broadcastState = {
+            ...gameState,
+            communityCards: gameState.board || []
+          };
+          socket.emit('gameState', broadcastState);
           console.log(`[SOCKET] Sent game state to ${user.nickname} for table ${tableId}`);
         } else {
           socket.emit('gameStateError', { error: 'No game state available' });
@@ -565,15 +592,15 @@ export function registerConsolidatedHandlers(io: Server) {
         }
 
         // Leave table in TableManager
-        tableManager.leaveTable(user.location, socket.id);
+        tableManager.leaveTable(user.location, user.nickname);
 
         // Remove from database
         await prisma.playerTable.deleteMany({
-          where: { playerId: socket.id }
+          where: { playerId: user.nickname }
         });
 
         // Update location
-        await locationManager.removeUser(socket.id);
+        await locationManager.removeUser(user.nickname);
         user.location = 'lobby';
 
         // Leave table room
@@ -598,8 +625,8 @@ export function registerConsolidatedHandlers(io: Server) {
 
           // Leave table if at one
           if (user.location !== 'lobby') {
-            tableManager.leaveTable(user.location, socket.id);
-            await locationManager.removeUser(socket.id);
+            tableManager.leaveTable(user.location, user.nickname);
+            await locationManager.removeUser(user.nickname);
           }
 
           broadcastOnlineUsersUpdate();

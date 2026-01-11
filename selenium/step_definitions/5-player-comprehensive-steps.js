@@ -157,6 +157,67 @@ async function injectTestPhaseIntoBrowsers(phase, actionCount = null) {
   }
 }
 
+// Helper to perform test player action with state update
+async function performTestPlayerAction(playerNum, action, amount, isTotal = false) {
+  const tableId = 1;
+  const numericAmount = amount ? parseFloat(amount) : 0;
+  let finalAmount = numericAmount;
+  const playerName = `Player${playerNum}`;
+
+  console.log(`🧪 performTestPlayerAction: ${playerName} ${action} ${amount} (isTotal: ${isTotal})`);
+
+  if (isTotal && amount) {
+    // Fetch state to calculate delta
+    try {
+      const stateRes = await fetch(`http://localhost:3001/api/test/get_game_state`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tableId })
+      });
+      const stateData = await stateRes.json();
+      if (stateData.success && stateData.gameState) {
+        const player = stateData.gameState.players.find(p => p.name === playerName || p.id === playerName);
+        if (player) {
+          const currentBet = player.currentBet || 0;
+          finalAmount = numericAmount - currentBet;
+          if (finalAmount < 0) finalAmount = 0;
+          console.log(`   Detailed Calc: Target ${numericAmount} - Current ${currentBet} = Delta ${finalAmount}`);
+        } else {
+          console.log(`   ⚠️ Player ${playerName} not found in state for delta calc`);
+        }
+      }
+    } catch (e) {
+      console.error("   ⚠️ Failed to fetch state for delta calc", e.message);
+    }
+  }
+
+  // Convert standard actions to backend types
+  let backendAction = action.toUpperCase();
+  if (backendAction === 'RAISES TO' || backendAction === 'GOES ALL-IN FOR') backendAction = 'RAISE';
+  if (backendAction === 'CALLS') backendAction = 'CALL';
+  if (backendAction === 'CHECKS') backendAction = 'CHECK';
+
+  try {
+    const response = await fetch(`http://localhost:3001/api/test/test_player_action/${tableId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nickname: playerName,
+        action: backendAction,
+        amount: finalAmount
+      })
+    });
+    const resJson = await response.json();
+    if (!resJson.success) {
+      console.error(`   ❌ Action failed: ${resJson.error}`);
+    } else {
+      console.log(`   ✅ Action applied via API`);
+    }
+  } catch (e) {
+    console.error(`   ❌ API call failed: ${e.message}`);
+  }
+}
+
 // =============================================================================
 // BASIC STEP DEFINITIONS - DATABASE AND SETUP
 // =============================================================================
@@ -614,19 +675,28 @@ When(/^Player(\d+)(?: \(([^)]+)\))? (calls|raises to|goes all-in for|folds) \$?(
   const apiAction = actionMap[action.toLowerCase()] || action.toUpperCase();
   const playerName = `Player${playerNum}`;
 
-  console.log(`🧪 Executing ${apiAction} via API for ${playerName}${position ? ` at ${position}` : ''}`);
+  // Determine if amount is Total or Delta
+  // "raises to" -> Total
+  // "goes all-in for" -> Total (usually)
+  // "calls" -> Delta (calls $X, calls $X more)
+  const isTotal = (action.toLowerCase().includes('raises to') || action.toLowerCase().includes('goes all-in for'));
+
+  await performTestPlayerAction(playerNum, apiAction, amount, isTotal);
+
   console.log(`✅ ${playerName} ${action} completed`);
 });
 
 // Pattern: "Player5 folds A♥Q♦" or "Player5 (UTG+1) folds A♥Q♦" or "Player1 (BU/BTN) folds A♠K♠ to all-in"
 When(/^Player(\d+)(?: \(([^)]+)\))? folds ([^ ]+)(?: to all-in)?$/, async function (playerNum, position, cards) {
   console.log(`🂠 Player${playerNum} ${position ? `(${position}) ` : ''}folds ${cards}`);
+  await performTestPlayerAction(playerNum, 'FOLD', 0);
   console.log(`✅ Player${playerNum} fold completed`);
 });
 
 // Pattern: "Player4 calls $10 more (already at $10)"
 When(/^Player(\d+) calls \$?(\d+) more \(already at \$?(\d+)\)$/, async function (playerNum, amount, total) {
   console.log(`📞 Player${playerNum} calls $${amount} more (already at $${total})`);
+  await performTestPlayerAction(playerNum, 'CALL', amount, false);
   console.log(`✅ Player${playerNum} call completed`);
 });
 
@@ -639,34 +709,40 @@ When(/^Player(\d+) \(([^)]+)\) goes all-in for \$?(\d+) total with weak hand ([^
 // Pattern: "Player4 calls $90 more (all-in) with pocket 10s"
 When(/^Player(\d+) calls \$?(\d+) more \(all-in\) with pocket (\w+)s$/, async function (playerNum, amount, pocketRank) {
   console.log(`🎲 Player${playerNum} calls $${amount} more (all-in) with pocket ${pocketRank}s`);
+  await performTestPlayerAction(playerNum, 'CALL', amount, false);
   console.log(`✅ Player${playerNum} call all-in completed`);
 });
 
 When(/^Player(\d+) checks$/, async function (playerNum) {
   console.log(`✋ Player${playerNum} checks`);
+  await performTestPlayerAction(playerNum, 'CHECK', 0);
   await updateTestPhase('flop_check', 15);
   console.log(`✅ Player${playerNum} check completed`);
 });
 
 When(/^Player(\d+) bets \$?(\d+)$/, async function (playerNum, amount) {
   console.log(`💰 Player${playerNum} bets $${amount}`);
+  await performTestPlayerAction(playerNum, 'BET', amount, false);
   await updateTestPhase('flop_bet', 17);
   console.log(`✅ Player${playerNum} bet $${amount} completed`);
 });
 
 When(/^Player(\d+) calls \$?(\d+) more(?: \(.*\))?$/, async function (playerNum, amount) {
   console.log(`📞 Player${playerNum} calls $${amount} more`);
+  await performTestPlayerAction(playerNum, 'CALL', amount, false);
   console.log(`✅ Player${playerNum} call $${amount} more completed`);
 });
 
 When(/^Player(\d+) folds to all-in$/, async function (playerNum) {
   console.log(`🃏 Player${playerNum} folds to all-in`);
+  await performTestPlayerAction(playerNum, 'FOLD', 0);
   await updateTestPhase('preflop_fold', 6);
   console.log(`✅ Player${playerNum} fold to all-in completed`);
 });
 
 When(/^Player(\d+) folds(?: (?!to all-in).*)?$/, async function (playerNum) {
   console.log(`🃏 Player${playerNum} folds`);
+  await performTestPlayerAction(playerNum, 'FOLD', 0);
   await updateTestPhase('preflop_fold', 5);
   console.log(`✅ Player${playerNum} fold completed`);
 });
@@ -678,6 +754,7 @@ When(/^Player(\d+)(?: \(([^)]+)\))? goes all-in (?:for |to )?\$?(\d+)(?: total)?
     position = undefined;
   }
   console.log(`🚀 Player${playerNum}${position ? ` (${position})` : ''} goes all-in for $${amount}`);
+  await performTestPlayerAction(playerNum, 'RAISE', amount, true);
   await updateTestPhase('all_in_action', 10);
   console.log(`✅ Player${playerNum} all-in $${amount} completed`);
 });
@@ -1916,10 +1993,39 @@ Then('the enhanced game history should show initial state:', async function (dat
 // Final 8 undefined steps for 100% coverage
 
 // Consolidated pot patterns
-Then(/^the (?:total )?pot should be \$?(\d+)(?: with (?:enhanced )?display "(.*)")?$/, async function (amount, display) {
-  console.log(`🏺 Pot verification: $${amount}${display ? ` with display ${display}` : ''}`);
-  console.log(`✅ Pot $${amount} verified`);
-  return true;
+Then(/^the (?:total )?pot should be \$?(\d+)(?: with (?:enhanced )?display "(.*)")?$/, { timeout: 15000 }, async function (expectedAmount, display) {
+  const amount = parseInt(expectedAmount);
+  console.log(`🏺 Verifying Pot: expected $${amount}${display ? ` (display: ${display})` : ''}`);
+
+  const driver = await getDriverSafe();
+  if (!driver) throw new Error('❌ No healthy driver available for pot verification');
+
+  let foundTexts = [];
+  const maxRetries = 5;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const potElements = await driver.findElements(By.css('[data-testid="pot-amount"]'));
+      foundTexts = [];
+      for (const el of potElements) {
+        const text = await el.getText();
+        foundTexts.push(text);
+        // Look for the dollar amount explicitly
+        const match = text.match(/\$(\d+)/);
+        if (match) {
+          const foundAmount = parseInt(match[1]);
+          if (foundAmount === amount) {
+            console.log(`✅ Pot $${amount} verified in UI (Text: "${text}")`);
+            return;
+          }
+        }
+      }
+    } catch (e) {
+      console.log(`⚠️ Attempt ${attempt} failed to check pot: ${e.message}`);
+    }
+    if (attempt < maxRetries) await new Promise(r => setTimeout(r, 1000));
+  }
+
+  throw new Error(`❌ Pot mismatch: expected $${amount}, found in UI: [${foundTexts.join(', ')}]`);
 });
 
 // Redundant pot step removed
@@ -2236,74 +2342,100 @@ Then('I close all browsers and cleanup test environment', { timeout: 30000 }, as
 // MISSING PLAYER ACTION STEP DEFINITIONS
 // =============================================================================
 
+// Helper function to perform player actions
+async function performPlayerAction(playerAlias, actionType, amount = 0) {
+  console.log(`🤖 Action Helper: ${playerAlias} attempting to ${actionType} ${amount ? amount : ''}`);
+
+  const player = global.players[playerAlias];
+  if (!player) {
+    console.log(`❌ Action Failed: Player ${playerAlias} not found in global state`);
+    return;
+  }
+
+  const driver = player.browser || player.driver;
+  if (!driver) {
+    console.log(`❌ Action Failed: No driver found for ${playerAlias}`);
+    return;
+  }
+
+  try {
+    // Wait for turn indicator or action buttons to be active
+    // This is optional but improves stability
+    await driver.wait(until.elementLocated(By.css('.action-controls, .player-controls')), 5000).catch(() => {
+      console.log(`⚠️ Warning: Action controls might not be visible for ${playerAlias}`);
+    });
+
+    if (actionType === 'FOLD') {
+      const btn = await driver.wait(until.elementLocated(By.xpath("//button[contains(text(), 'FOLD')]")), 5000);
+      await btn.click();
+    }
+    else if (actionType === 'CALL' || actionType === 'CHECK') {
+      // "CHECK" and "CALL" are often the same button position or labeled dynamically
+      // We look for button containing specific text
+      const btn = await driver.wait(until.elementLocated(By.xpath(`//button[contains(text(), '${actionType}')]`)), 5000);
+      await btn.click();
+    }
+    else if (actionType === 'RAISE' || actionType === 'BET') {
+      // For raise, we might need to input the amount first
+      // Assuming there is an input field or we just click raise if amount is pre-selected (unlikely for specific amounts)
+      // Let's look for the input field
+      if (amount > 0) {
+        try {
+          const input = await driver.findElement(By.css('input[type="number"], .bet-input'));
+          await input.clear();
+          await input.sendKeys(amount.toString());
+        } catch (e) {
+          console.log(`⚠️ Could not set raise amount: ${e.message} - processing with default/current value`);
+        }
+      }
+
+      const btn = await driver.wait(until.elementLocated(By.xpath(`//button[contains(text(), '${actionType}')]`)), 5000);
+      await btn.click();
+    }
+
+    console.log(`✅ Action Success: ${playerAlias} ${actionType} executed`);
+    await driver.sleep(1000); // Wait for processing
+
+  } catch (error) {
+    console.log(`❌ Action Error for ${playerAlias}: ${error.message}`);
+    // Optional: Take screenshot on failure
+  }
+}
+
 // Specific player action patterns that were undefined
 When(/^Player3 \(UTG\) raises to \$?(\d+)$/, async function (amount) {
   console.log(`🎰 Player3 (UTG) raises to $${amount}`);
-  console.log(`✅ Player3 UTG raise to $${amount} executed`);
+  await performPlayerAction('Player3', 'RAISE', amount);
 });
 
 When(/^Player4 \(CO\) calls \$?(\d+)$/, async function (amount) {
   console.log(`🎰 Player4 (CO) calls $${amount}`);
-  console.log(`✅ Player4 CO call $${amount} executed`);
+  await performPlayerAction('Player4', 'CALL', amount);
 });
 
 When(/^Player5 \(BTN\) folds$/, async function () {
   console.log(`🎰 Player5 (BTN) folds`);
-
-  // Get the player's browser and perform actual fold action
-  const player = global.players['Player5'];
-  if (player && player.browser) {
-    try {
-      // Wait for FOLD button to be available and click it
-      const foldButton = await player.browser.wait(until.elementLocated(By.xpath("//button[contains(text(), 'FOLD')]")), 10000);
-      await foldButton.click();
-      console.log(`🎯 Player5 clicked FOLD button successfully`);
-
-      // Wait a moment for the action to be processed
-      await player.browser.sleep(1000);
-    } catch (error) {
-      console.log(`⚠️ Failed to click FOLD for Player5: ${error.message}`);
-    }
-  }
-
-  console.log(`✅ Player5 BTN fold executed`);
+  await performPlayerAction('Player5', 'FOLD');
 });
 
 When(/^Player1 \(SB\) folds$/, async function () {
   console.log(`🎰 Player1 (SB) folds`);
-
-  // Get the player's browser and perform actual fold action
-  const player = global.players['Player1'];
-  if (player && player.browser) {
-    try {
-      // Wait for FOLD button to be available and click it
-      const foldButton = await player.browser.wait(until.elementLocated(By.xpath("//button[contains(text(), 'FOLD')]")), 10000);
-      await foldButton.click();
-      console.log(`🎯 Player1 clicked FOLD button successfully`);
-
-      // Wait a moment for the action to be processed
-      await player.browser.sleep(1000);
-    } catch (error) {
-      console.log(`⚠️ Failed to click FOLD for Player1: ${error.message}`);
-    }
-  }
-
-  console.log(`✅ Player1 SB fold executed`);
+  await performPlayerAction('Player1', 'FOLD');
 });
 
 When(/^Player2 \(BB\) raises to \$?(\d+) \(3-bet with AA\)$/, async function (amount) {
   console.log(`🎰 Player2 (BB) raises to $${amount} (3-bet with AA)`);
-  console.log(`✅ Player2 BB 3-bet to $${amount} executed`);
+  await performPlayerAction('Player2', 'RAISE', amount);
 });
 
 When(/^Player3 \(UTG\) calls \$?(\d+)$/, async function (amount) {
   console.log(`🎰 Player3 (UTG) calls $${amount}`);
-  console.log(`✅ Player3 UTG call $${amount} executed`);
+  await performPlayerAction('Player3', 'CALL', amount);
 });
 
 When(/^Player4 \(CO\) folds$/, async function () {
   console.log(`🎰 Player4 (CO) folds`);
-  console.log(`✅ Player4 CO fold executed`);
+  await performPlayerAction('Player4', 'FOLD');
 });
 
 When(/^Player2 \(BB\) checks with AA \(trap\)$/, async function () {
@@ -3153,6 +3285,29 @@ const startTournamentRoundLogic = async function (roundNumber, smallBlind, bigBl
   // Update test phase for game history visibility
   await updateTestPhase(`round_${roundNumber}_start`, 1);
 
+  // CRITICAL: Synchronize backend table blinds for table 1 to match the round
+  try {
+    console.log(`📡 Syncing backend table 1 blinds: SB $${smallBlind}, BB $${bigBlind}`);
+    const syncResponse = await fetch('http://localhost:3001/api/test/test_update_mock_table/1', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        updates: {
+          smallBlind: parseInt(smallBlind),
+          bigBlind: parseInt(bigBlind)
+        }
+      })
+    });
+    const syncResult = await syncResponse.json();
+    if (syncResult.success) {
+      console.log(`✅ Backend table 1 blinds synchronized successfully`);
+    } else {
+      console.log(`⚠️ Failed to sync backend blinds: ${syncResult.error}`);
+    }
+  } catch (error) {
+    console.log(`⚠️ Error syncing backend blinds: ${error.message}`);
+  }
+
   console.log(`✅ Tournament round ${roundNumber} state initialized`);
 };
 
@@ -3887,6 +4042,8 @@ Then(/^I should see game history entry "([^"]*)"(?:\s+#.*)?$/, { timeout: 20000 
               if (historyText.includes(ghId)) {
                 console.log(`✅ Found entry "${ghId}" in ${playerName}'s UI (Attempt ${attempt})`);
                 foundInAny = true;
+                // Capture screenshot for the player who found it as evidence
+                await screenshotHelper.captureAndLogScreenshot(player, `history_entry_${ghId}`);
                 break;
               }
             }
@@ -4096,16 +4253,106 @@ Then('game history entries should be in chronological order', async function () 
   }
 });
 
-Then('the total tournament chips should be ${int}', async function (expectedTotal) {
-  console.log(`💰 Verifying total tournament chips is ${expectedTotal}`);
-  // In no-fee mode, this is a theoretical invariant
-  console.log(`✅ Sum of chips verified as ${expectedTotal}`);
+Then('the total tournament chips should be ${int}', { timeout: 15000 }, async function (expectedTotal) {
+  console.log(`💰 Verifying total tournament chips (stacks + pot) is ${expectedTotal}`);
+
+  const driver = await getDriverSafe();
+  if (!driver) throw new Error('❌ No healthy driver available for total tournament chips verification');
+
+  let currentTotal = 0;
+  const maxRetries = 5;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // Get all stack elements
+      const stackElements = await driver.findElements(By.css('[data-testid*="-chips"]'));
+      let chipsSum = 0;
+      for (const el of stackElements) {
+        const text = await el.getText();
+        const match = text.match(/\$?(\d+)/);
+        if (match) chipsSum += parseInt(match[1]);
+      }
+
+      // Get pot element
+      let potAmount = 0;
+      try {
+        const potEl = await driver.findElement(By.css('[data-testid="pot-amount"]'));
+        const potText = await potEl.getText();
+        const potMatch = potText.match(/\$?(\d+)/);
+        if (potMatch) potAmount = parseInt(potMatch[1]);
+      } catch (e) {
+        // No pot element found is fine (pot = 0)
+      }
+
+      const total = chipsSum + potAmount;
+      if (total === expectedTotal) {
+        console.log(`✅ Total chips (Stacks: $${chipsSum} + Pot: $${potAmount}) verified as $${expectedTotal}`);
+        return;
+      }
+      currentTotal = total;
+      console.log(`⚠️ Attempt ${attempt}: Found Stacks $${chipsSum} + Pot $${potAmount} = $${total}, expected $${expectedTotal}`);
+    } catch (e) {
+      console.log(`⚠️ Attempt ${attempt} failed: ${e.message}`);
+    }
+    if (attempt < maxRetries) await new Promise(r => setTimeout(r, 1000));
+  }
+  throw new Error(`❌ Total tournament chips mismatch: expected $${expectedTotal}, found $${currentTotal} (Stacks + Pot) in UI`);
 });
 
-Then('the sum of all player stacks should be ${int}', async function (expectedTotal) {
+Then('the sum of all player stacks should be ${int}', { timeout: 15000 }, async function (expectedTotal) {
   console.log(`💰 Verifying sum of player stacks is ${expectedTotal}`);
-  // In no-fee mode, this is a theoretical invariant
-  console.log(`✅ Sum of stacks verified as ${expectedTotal}`);
+
+  const driver = await getDriverSafe();
+  if (!driver) throw new Error('❌ No healthy driver available for total stacks verification');
+
+  let currentTotal = 0;
+  let currentStacks = 0;
+  let currentPot = 0;
+  const maxRetries = 5;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const stackElements = await driver.findElements(By.css('[data-testid*="-chips"]'));
+      let stacksSum = 0;
+      let count = 0;
+
+      for (const el of stackElements) {
+        const text = await el.getText();
+        const match = text.match(/\$?(\d+)/);
+        if (match) {
+          stacksSum += parseInt(match[1]);
+          count++;
+        }
+      }
+
+      // ALSO check for pot if stacks alone don't match (chip conservation)
+      let potAmount = 0;
+      try {
+        const potEl = await driver.findElement(By.css('[data-testid="pot-amount"]'));
+        const potText = await potEl.getText();
+        const potMatch = potText.match(/\$?(\d+)/);
+        if (potMatch) potAmount = parseInt(potMatch[1]);
+      } catch (e) { }
+
+      const total = stacksSum + potAmount;
+
+      if (total === expectedTotal) {
+        if (potAmount > 0) {
+          console.log(`✅ Total chips (Stacks: $${stacksSum} + Pot: $${potAmount}) verified as $${expectedTotal}`);
+        } else {
+          console.log(`✅ Sum of all ${count} visible player stacks verified as ${expectedTotal}`);
+        }
+        return;
+      }
+      currentTotal = total;
+      currentStacks = stacksSum;
+      currentPot = potAmount;
+      console.log(`⚠️ Attempt ${attempt}: Found ${count} stacks totaling $${stacksSum} (Pot: $${potAmount}, Total: $${total}), expected $${expectedTotal}`);
+    } catch (e) {
+      console.log(`⚠️ Attempt ${attempt} failed to calculate total stacks: ${e.message}`);
+    }
+    if (attempt < maxRetries) await new Promise(r => setTimeout(r, 1000));
+  }
+
+  throw new Error(`❌ Total chips mismatch: expected $${expectedTotal}, found $${currentTotal} (Stacks: $${currentStacks} + Pot: $${currentPot}) in UI`);
 });
 
 Then('no player stack should be negative', async function () {
@@ -4533,9 +4780,45 @@ Then('the BU (dealer button) should be at position {int}', async function (posit
   return true;
 });
 
-Then('Player{int} stack should be ${int}', async function (playerNum, expectedStack) {
-  console.log(`💰 Verifying Player${playerNum} stack is $${expectedStack}`);
-  return true;
+Then('Player{int} stack should be ${int}', { timeout: 15000 }, async function (playerNum, expectedStack) {
+  const playerName = `Player${playerNum}`;
+  console.log(`💰 Verifying ${playerName} stack: expected $${expectedStack}`);
+
+  const driver = await getDriverSafe();
+  if (!driver) throw new Error('❌ No healthy driver available for stack verification');
+
+  let lastFoundDetails = '';
+  const maxRetries = 5;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const stackElements = await driver.findElements(By.css(`[data-testid*="player-"][data-testid*="chips"], [data-testid*="${playerName}"][data-testid*="chips"]`));
+
+      let foundDetails = [];
+      for (const el of stackElements) {
+        const testId = await el.getAttribute('data-testid');
+        const text = await el.getText();
+        foundDetails.push(`${testId}: "${text}"`);
+
+        if (testId.includes(playerName) || testId.includes(`player-${playerName}`)) {
+          // Prefer dollar match, fallback to just number
+          const match = text.match(/\$(\d+)/) || text.match(/(\d+)/);
+          if (match) {
+            const foundStack = parseInt(match[match.length - 1]);
+            if (foundStack === expectedStack) {
+              console.log(`✅ ${playerName} stack $${expectedStack} verified in UI (Text: "${text}")`);
+              return;
+            }
+          }
+        }
+      }
+      lastFoundDetails = foundDetails.join(', ');
+    } catch (e) {
+      console.log(`⚠️ Attempt ${attempt} failed to check stack for ${playerName}: ${e.message}`);
+    }
+    if (attempt < maxRetries) await new Promise(r => setTimeout(r, 1000));
+  }
+
+  throw new Error(`❌ ${playerName} stack mismatch: expected $${expectedStack}, found in UI: [${lastFoundDetails}]`);
 });
 
 Then('the pot should equal previous pot + ${int}', async function (addedAmount) {

@@ -387,11 +387,19 @@ router.put('/test_update_mock_table/:tableId', async (req, res) => {
     }
 
     const table = tableManager.getTable(targetTableId);
-
     if (!table) {
       return res.status(404).json({
         success: false,
         error: 'Table not found'
+      });
+    }
+
+    // Apply updates to the table object
+    if (updates) {
+      Object.keys(updates).forEach(key => {
+        if (key in table) {
+          (table as any)[key] = updates[key];
+        }
       });
     }
 
@@ -428,21 +436,113 @@ router.post('/test_player_action/:tableId', async (req, res) => {
       });
     }
 
-    const table = tableManager.getTable(targetTableId);
+    const gameState = tableManager.getTableGameState(targetTableId);
 
-    if (!table) {
+    if (!gameState) {
       return res.status(404).json({
         success: false,
-        error: 'Table not found'
+        error: 'Table game state not found'
       });
     }
 
-    console.log(`🧪 TEST API: Player ${nickname} performed ${action} on table ${targetTableId}`);
+    // Find player by ID or nickname
+    // In test environment, id often equals nickname
+    const player = gameState.players.find(p =>
+      p.id === playerId ||
+      p.name === nickname ||
+      p.id === nickname ||
+      p.name === playerId
+    );
+
+    if (!player) {
+      return res.status(404).json({
+        success: false,
+        error: `Player not found (ID: ${playerId}, Nickname: ${nickname})`
+      });
+    }
+
+    console.log(`🧪 TEST API: Processing ${action} for ${player.name} on table ${targetTableId}`);
+
+    const actionUpper = action.toUpperCase();
+    let actionAmount = amount ? parseFloat(amount) : 0;
+
+    // Apply state changes based on action
+    let stateChanged = false;
+
+    if (actionUpper === 'CALL') {
+      // For CALL, the amount provided should be the delta (additional amount to put in)
+      // But we should verify it matches the expected call amount
+      const expectedCallAmount = gameState.currentBet - player.currentBet;
+      console.log(`🧪 CALL verification: expectedCallAmount=${expectedCallAmount}, providedAmount=${actionAmount}, playerCurrentBet=${player.currentBet}, gameCurrentBet=${gameState.currentBet}`);
+      
+      // Use the provided amount (as delta) to update state
+      if (player.chips >= actionAmount) {
+        player.chips -= actionAmount;
+        player.currentBet += actionAmount;
+        gameState.pot += actionAmount;
+        stateChanged = true;
+        console.log(`✅ Applied CALL: -${actionAmount} chips, +${actionAmount} pot, new currentBet=${player.currentBet}, new pot=${gameState.pot}`);
+      } else {
+        console.warn(`⚠️ Player ${player.name} has insufficient chips (${player.chips}) for CALL ${actionAmount}`);
+        // Proceed anyway for FORCE actions
+        player.chips -= actionAmount;
+        player.currentBet += actionAmount;
+        gameState.pot += actionAmount;
+        stateChanged = true;
+      }
+    } else if (actionUpper === 'BET' || actionUpper === 'RAISE' || actionUpper === 'ALL_IN') {
+      // Logic for chip deduction and pot addition
+      if (player.chips >= actionAmount) {
+        player.chips -= actionAmount;
+        player.currentBet += actionAmount;
+        gameState.pot += actionAmount;
+
+        // Update table current bet if this raise exceeds it
+        if (player.currentBet > gameState.currentBet) {
+          gameState.currentBet = player.currentBet;
+        }
+
+        stateChanged = true;
+        console.log(`✅ Applied ${action}: -${actionAmount} chips, +${actionAmount} pot`);
+      } else {
+        console.warn(`⚠️ Player ${player.name} has insufficient chips (${player.chips}) for ${action} ${actionAmount}`);
+        // Proceed anyway for FORCE actions, potentially allowing negative? 
+        // Better to allow it for tests or cap it? 
+        // Let's allow strictly what is asked but log warning.
+        player.chips -= actionAmount;
+        player.currentBet += actionAmount;
+        gameState.pot += actionAmount;
+        stateChanged = true;
+      }
+    } else if (actionUpper === 'FOLD') {
+      player.isActive = false;
+      player.cards = []; // Clear cards on fold?
+      stateChanged = true;
+      console.log(`✅ Applied FOLD for ${player.name}`);
+    }
+
+    if (stateChanged) {
+      // Broadcast updates
+      const io = (global as any).socketIO;
+      if (io) {
+        const broadcastState = {
+          ...gameState,
+          communityCards: gameState.board || []
+        };
+
+        // Emit to table room
+        io.to(`table:${targetTableId}`).emit('gameState', broadcastState);
+        // Fallback
+        io.emit('gameState', broadcastState);
+
+        console.log(`📡 TEST API: Broadcasted updated state for table ${targetTableId}`);
+      }
+    }
 
     res.json({
       success: true,
-      table,
-      message: `Player ${nickname} performed ${action}`
+      gameState,
+      message: `Player ${player.name} performed ${action}`
     });
   } catch (error) {
     console.error('❌ TEST API: Error performing player action:', error);
@@ -1626,17 +1726,32 @@ router.post('/auto-seat', async (req, res) => {
       where: { id: playerName },
       update: {
         nickname: playerName,
-        chips: buyIn,
-        table: targetTableId,
-        seat: parseInt(seatNumber),
         updatedAt: new Date()
       },
       create: {
         id: playerName,
         nickname: playerName,
-        chips: buyIn,
-        table: targetTableId,
-        seat: parseInt(seatNumber)
+        chips: 1000
+      }
+    });
+
+    // Create/Update PlayerTable record to ensure consistency with TableManager.init
+    await prisma.playerTable.upsert({
+      where: {
+        tableId_seatNumber: {
+          tableId: targetTableId,
+          seatNumber: parseInt(seatNumber)
+        }
+      },
+      update: {
+        playerId: playerName,
+        buyIn: buyIn
+      },
+      create: {
+        playerId: playerName,
+        tableId: targetTableId,
+        seatNumber: parseInt(seatNumber),
+        buyIn: buyIn
       }
     });
 
@@ -1671,12 +1786,12 @@ router.post('/auto-seat', async (req, res) => {
     }
 
     // Now sit down to become an actual player
-    const sitDownResult = await tableManager.sitDown(targetTableId, playerName, buyIn);
+    const sitDownResult = await tableManager.sitDown(targetTableId, playerName, buyIn, parseInt(seatNumber));
     if (!sitDownResult.success) {
       console.log(`⚠️ TEST API: sitDown failed: ${sitDownResult.error}`);
       return res.status(400).json({ success: false, error: `Failed to sit down: ${sitDownResult.error}` });
     } else {
-      console.log(`✅ TEST API: Player ${playerName} seated as player`);
+      console.log(`✅ TEST API: Player ${playerName} seated as player with seat ${seatNumber}`);
 
       // NEW: Record SIT_DOWN action in game history
       try {
@@ -1724,7 +1839,12 @@ router.post('/auto-seat', async (req, res) => {
     // Emit socket event for real-time updates
     const io = (global as any).socketIO;
     if (io) {
-      io.to(`table:${tableId}`).emit('gameState', gameState!);
+      // Ensure communityCards is present for frontend compatibility
+      const broadcastState = {
+        ...gameState!,
+        communityCards: gameState!.board || []
+      };
+      io.to(`table:${tableId}`).emit('gameState', broadcastState);
       io.to(`table:${tableId}`).emit('playerJoined', {
         tableId: targetTableId,
         player: newPlayer
@@ -1985,9 +2105,13 @@ router.post('/trigger-showdown', async (req, res) => {
     await (tableManager as any).determineWinner(tableId, tableGameState);
 
     // Emit updated game state
-    const io = req.app.get('io');
+    const io = (global as any).socketIO || req.app.get('io');
     if (io) {
-      io.to(`table:${tableId}`).emit('gameState', tableGameState);
+      const broadcastState = {
+        ...tableGameState,
+        communityCards: tableGameState.board || []
+      };
+      io.to(`table:${tableId}`).emit('gameState', broadcastState);
       console.log(`📡 Emitted showdown game state to table:${tableId}`);
     }
 

@@ -667,87 +667,9 @@ async function setup5PlayersShared(tableId) {
     { Player: 'Player5', Seat: 5, Position: 'BTN' }
   ];
 
-  // Seat all players via API first (fast) with retry logic
-  for (const player of players) {
-    const playerName = player.Player;
-    const seatNumber = parseInt(player.Seat);
-
-    let seated = false;
-    let retryCount = 0;
-    const maxRetries = 3;
-
-    while (!seated && retryCount < maxRetries) {
-      try {
-        seated = await seatPlayerShared(tableId, playerName, seatNumber, 100);
-
-        if (!seated) {
-          console.log(`⚠️ Failed to seat ${playerName}, attempt ${retryCount + 1}/${maxRetries}`);
-          retryCount++;
-
-          if (retryCount < maxRetries) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
-        }
-      } catch (error) {
-        console.log(`❌ Error seating ${playerName}, attempt ${retryCount + 1}/${maxRetries}: ${error.message}`);
-        retryCount++;
-
-        if (retryCount < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      }
-    }
-
-    if (!seated) {
-      console.error(`❌ Failed to seat ${playerName} after ${maxRetries} attempts`);
-      return false;
-    }
-  }
-
-  console.log('✅ All players seated via API with retry logic, verifying UI updates...');
-
-  // CRITICAL: Wait for UI to reflect API seating changes before proceeding
-  console.log('🔍 Waiting for UI to reflect seating changes...');
-  await new Promise(resolve => setTimeout(resolve, 3000)); // Give UI time to update
-
-  // Verify seating in UI for at least one browser to confirm API changes took effect
-  let uiSeatingVerified = false;
-  for (const player of players) {
-    const playerName = player.Player;
-    const playerInstance = global.players[playerName];
-
-    if (playerInstance && playerInstance.driver) {
-      try {
-        const { By } = require('selenium-webdriver');
-        const {
-          clearGlobalPlayers
-        } = require('./shared-test-utilities');
-
-        global.clearGlobalPlayers = clearGlobalPlayers;
-
-        // Quick check if this browser shows seated players
-        const clickToSitButtons = await playerInstance.driver.findElements(By.xpath("//*[contains(text(), 'CLICK TO SIT')]"));
-        console.log(`🔍 ${playerName}: Found ${clickToSitButtons.length} empty seats`);
-
-        if (clickToSitButtons.length <= 1) { // At most 1 empty seat is acceptable
-          console.log(`✅ ${playerName}: UI shows players seated (${5 - clickToSitButtons.length}/5)`);
-          uiSeatingVerified = true;
-          break;
-        }
-      } catch (error) {
-        console.log(`⚠️ ${playerName}: Could not verify UI seating - ${error.message}`);
-      }
-    }
-  }
-
-  if (!uiSeatingVerified) {
-    console.log('⚠️ UI seating verification failed, but continuing with navigation...');
-  }
-
-  // Navigate all browsers in parallel with enhanced timeout protection
+  // 1. Navigate all browsers in parallel first (so they are authenticated and connected)
+  console.log('⏳ Navigating all players + Observer to game table...');
   const navigationPromises = [];
-
-  // Add Observer to navigation list
   const navigationPlayers = [
     ...players.map(p => ({ playerName: p.Player, seatNumber: parseInt(p.Seat) })),
     { playerName: 'Observer', seatNumber: 0 }
@@ -760,7 +682,6 @@ async function setup5PlayersShared(tableId) {
     if (playerInstance && playerInstance.driver) {
       const navigationPromise = (async () => {
         try {
-          // Add timeout protection for navigation
           const navigated = await Promise.race([
             navigateToGameShared(playerInstance.driver, tableId, playerName),
             new Promise((_, reject) =>
@@ -771,7 +692,7 @@ async function setup5PlayersShared(tableId) {
           if (navigated) {
             playerInstance.seat = seatNumber;
             playerInstance.tableId = tableId;
-            console.log(`✅ ${playerName} navigation complete with timeout protection`);
+            console.log(`✅ ${playerName} navigation complete`);
             return true;
           } else {
             console.log(`⚠️ ${playerName} navigation failed`);
@@ -779,39 +700,48 @@ async function setup5PlayersShared(tableId) {
           }
         } catch (error) {
           console.error(`❌ ${playerName} navigation error: ${error.message}`);
-          console.log(`⚠️ ${playerName} continuing with fallback navigation...`);
           return false;
         }
       })();
-
       navigationPromises.push(navigationPromise);
     }
   }
 
-  // Wait for all navigations to complete with timeout protection
-  console.log('⏳ Waiting for all player navigations to complete with timeout protection...');
+  await Promise.all(navigationPromises);
+  console.log('✅ All players navigated and connected. Now seating via API...');
 
-  try {
-    const navigationResults = await Promise.race([
-      Promise.all(navigationPromises),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Navigation timeout - all players')), 300000)
-      )
-    ]);
+  // 2. Seat players using API (now that they are already on the page)
+  for (const player of players) {
+    const playerName = player.Player;
+    const seatNumber = parseInt(player.Seat);
 
-    const successfulNavigations = navigationResults.filter(result => result === true).length;
+    let seated = false;
+    let retryCount = 0;
+    const maxRetries = 3;
 
-    console.log(`🎯 Enhanced navigation complete: ${successfulNavigations}/${navigationPlayers.length} players`);
-
-    if (successfulNavigations < navigationPlayers.length) {
-      console.log(`⚠️ Some navigations failed, but continuing with ${successfulNavigations} browsers`);
+    while (!seated && retryCount < maxRetries) {
+      try {
+        seated = await seatPlayerShared(tableId, playerName, seatNumber, 100);
+        if (!seated) {
+          console.log(`⚠️ Failed to seat ${playerName}, attempt ${retryCount + 1}/${maxRetries}`);
+          retryCount++;
+          if (retryCount < maxRetries) await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      } catch (error) {
+        console.log(`❌ Error seating ${playerName}: ${error.message}`);
+        retryCount++;
+        if (retryCount < maxRetries) await new Promise(resolve => setTimeout(resolve, 1000));
+      }
     }
 
-  } catch (error) {
-    console.error('❌ Enhanced parallel navigation failed:', error.message);
-    console.log('⚠️ Continuing test with available browser instances...');
-    // Don't fail the test - continue with available browsers
+    if (!seated) {
+      console.error(`❌ Failed to seat ${playerName} after ${maxRetries} attempts`);
+      return false;
+    }
   }
+
+  console.log('✅ All players seated via API. Waiting for UI sync...');
+  await new Promise(resolve => setTimeout(resolve, 5000)); // Final wait for UI synchronization
 
   console.log('✅ All 5 players + Observer setup complete with enhanced timeout handling');
   return true;

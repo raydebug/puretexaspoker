@@ -30,6 +30,7 @@ interface TablePlayer {
   nickname: string;
   role: 'player' | 'observer';
   chips: number;
+  seatNumber?: number;
 }
 
 interface TableGameState {
@@ -166,7 +167,8 @@ class TableManager {
             id: pt.player.nickname, // Use nickname as ID for simple matching
             nickname: pt.player.nickname,
             role: 'player', // All seated players are 'player' role
-            chips: pt.buyIn
+            chips: pt.buyIn,
+            seatNumber: pt.seatNumber
           });
 
           // Update table player count
@@ -293,13 +295,40 @@ class TableManager {
 
     players.delete(playerId);
     this.tables.set(tableId, updatedTable);
+
+    // CRITICAL: Update game state to remove player
+    const gameState = this.tableGameStates.get(tableId);
+    if (gameState) {
+      gameState.players = gameState.players.filter(p => p.id !== playerId);
+
+      // If no players left, reset state
+      if (gameState.players.length === 0) {
+        gameState.status = 'waiting';
+        gameState.phase = 'waiting';
+        gameState.pot = 0;
+        gameState.board = [];
+        gameState.currentPlayerId = null;
+      }
+
+      // Broadcast updated state
+      const io = (global as any).socketIO;
+      if (io) {
+        const broadcastState = {
+          ...gameState,
+          communityCards: gameState.board || []
+        };
+        io.to(`table:${tableId}`).emit('gameState', broadcastState);
+      }
+    }
+
     return true;
   }
 
   public async sitDown(
     tableId: number,
     playerId: string,
-    buyIn: number
+    buyIn: number,
+    seatNumber?: number
   ): Promise<{ success: boolean; error?: string }> {
     const table = this.tables.get(tableId);
     if (!table) {
@@ -336,6 +365,7 @@ class TableManager {
     // Update player role and chips
     player.role = 'player';
     player.chips = buyIn;
+    player.seatNumber = seatNumber;
 
     // Update table counts
     const updatedTable = {
@@ -374,6 +404,48 @@ class TableManager {
     } catch (error) {
       console.error('❌ Failed to record SIT_DOWN action:', error);
       // Continue even if logging fails, as the core action succeeded
+    }
+
+    // CRITICAL: Update the game state players list immediately so the UI reflects the change
+    const gameState = this.tableGameStates.get(tableId);
+    if (gameState) {
+      // Check if player already in gameState.players
+      const existingIdx = gameState.players.findIndex(p => p.id === playerId);
+      const playerUpdate = {
+        id: playerId,
+        name: player.nickname,
+        seatNumber: seatNumber || (gameState.players.length + 1),
+        position: seatNumber ? (seatNumber - 1) : gameState.players.length,
+        chips: buyIn,
+        currentBet: 0,
+        isDealer: false,
+        isAway: false,
+        isActive: true,
+        cards: [],
+        avatar: {
+          type: 'initials' as const,
+          initials: player.nickname.substring(0, 2).toUpperCase(),
+          color: '#4CAF50'
+        }
+      };
+
+      if (existingIdx >= 0) {
+        gameState.players[existingIdx] = playerUpdate;
+      } else {
+        gameState.players.push(playerUpdate);
+      }
+      gameState.players.sort((a, b) => a.seatNumber - b.seatNumber);
+
+      // Broadcast updated state
+      const io = (global as any).socketIO;
+      if (io) {
+        const broadcastState = {
+          ...gameState,
+          communityCards: gameState.board || []
+        };
+        io.to(`table:${tableId}`).emit('gameState', broadcastState);
+        console.log(`📡 TableManager: Seating update broadcast for table ${tableId}`);
+      }
     }
 
     return { success: true };
@@ -429,6 +501,9 @@ class TableManager {
       // Generate simple card order hash for transparency
       const cardOrderHash = this.generateSimpleCardOrderHash(tableId);
 
+      // Sort seated players by their assigned seat numbers
+      const sortedBySeat = [...seatedPlayers].sort((a, b) => (a.seatNumber || 0) - (b.seatNumber || 0));
+
       // Initialize game state
       const newGameState: TableGameState = {
         ...gameState,
@@ -437,10 +512,10 @@ class TableManager {
         pot: 0,
         deck: this.deckService.createNewDeck(),
         board: [],
-        players: seatedPlayers.map((p, index) => ({
+        players: sortedBySeat.map((p, index) => ({
           id: p.nickname, // Use nickname as ID for simple matching
           name: p.nickname,
-          seatNumber: index + 1,
+          seatNumber: p.seatNumber || (index + 1),
           position: index,
           chips: p.chips,
           currentBet: 0,
@@ -454,7 +529,7 @@ class TableManager {
             color: '#4CAF50'
           }
         })),
-        currentPlayerId: seatedPlayers[2]?.nickname || seatedPlayers[0]?.nickname || null, // Use nickname as ID
+        currentPlayerId: sortedBySeat[2]?.nickname || sortedBySeat[0]?.nickname || null, // Use nickname as ID
         dealerPosition: 0,
         smallBlindPosition: 1,
         bigBlindPosition: 2,
@@ -595,14 +670,21 @@ class TableManager {
       const io = (global as any).socketIO;
       if (io) {
         console.log(`📡 TableManager: Emitting game state to rooms for table ${tableId}`);
+
+        // CRITICAL: Ensure communityCards is present for frontend compatibility
+        const broadcastState = {
+          ...newGameState,
+          communityCards: newGameState.board || []
+        };
+
         // Emit only to table-based rooms (table-only architecture)
-        io.to(`table:${tableId}`).emit('gameState', newGameState);
+        io.to(`table:${tableId}`).emit('gameState', broadcastState);
         // Also emit to all clients for debugging/fallback
-        io.emit('gameState', newGameState);
+        io.emit('gameState', broadcastState);
         // Emit game started event to table room only
         const gameStartedData = {
           tableId,
-          gameState: newGameState,
+          gameState: broadcastState,
           message: `Game started at table ${tableId} with ${newGameState.players.length} players`
         };
         io.to(`table:${tableId}`).emit('gameStarted', gameStartedData);
@@ -756,11 +838,17 @@ class TableManager {
       if (io) {
         console.log(`📡 TableManager: Player action processed - emitting updated game state for table ${tableId}`);
 
+        // Ensure communityCards is present for frontend compatibility
+        const broadcastState = {
+          ...gameState,
+          communityCards: gameState.board || []
+        };
+
         // Emit to table-based rooms (table-only architecture)
-        io.to(`table:${tableId}`).emit('gameState', gameState);
+        io.to(`table:${tableId}`).emit('gameState', broadcastState);
 
         // Also emit to all clients for debugging/fallback
-        io.emit('gameState', gameState);
+        io.emit('gameState', broadcastState);
 
         console.log(`📡 TableManager: WebSocket game state update emitted after player action`);
       }
@@ -813,40 +901,69 @@ class TableManager {
 
     // Deal community cards
     let communityCards: any[] = [];
+    let dealtCardAction = '';
     if (nextPhase === 'flop') {
       communityCards = this.deckService.dealCards(3, gameState.deck);
       gameState.board = communityCards;
-    } else if (nextPhase === 'turn' || nextPhase === 'river') {
+      dealtCardAction = 'FLOP_DEALT';
+    } else if (nextPhase === 'turn') {
       communityCards = this.deckService.dealCards(1, gameState.deck);
       gameState.board.push(...communityCards);
+      dealtCardAction = 'TURN_DEALT';
+    } else if (nextPhase === 'river') {
+      communityCards = this.deckService.dealCards(1, gameState.deck);
+      gameState.board.push(...communityCards);
+      dealtCardAction = 'RIVER_DEALT';
     }
 
-    // Record phase transition in game history
+    // Record card dealt event in game history
     try {
-      const actionSequence = await this.getNextActionSequence(tableId, gameState.handNumber);
+      let currentSeq = await this.getNextActionSequence(tableId, gameState.handNumber);
 
+      // 1. Record FLOP_DEALT / TURN_DEALT / RIVER_DEALT
+      if (dealtCardAction) {
+        await prisma.tableAction.create({
+          data: {
+            tableId: tableId,
+            playerId: 'System',
+            type: dealtCardAction,
+            amount: null,
+            phase: nextPhase,
+            handNumber: gameState.handNumber || 1,
+            actionSequence: currentSeq,
+            gameStateBefore: JSON.stringify({
+              prevPhase: prevPhase,
+              pot: gameState.pot,
+              phase: nextPhase
+            }),
+            gameStateAfter: null
+          }
+        });
+        console.log(`✅ ${dealtCardAction} recorded (sequence: ${currentSeq})`);
+        currentSeq++;
+      }
+
+      // 2. Record ACTION_START (first to act in this phase)
       await prisma.tableAction.create({
         data: {
           tableId: tableId,
           playerId: 'System',
-          type: 'PHASE_TRANSITION',
+          type: 'ACTION_START',
           amount: null,
           phase: nextPhase,
           handNumber: gameState.handNumber || 1,
-          actionSequence: actionSequence,
+          actionSequence: currentSeq,
           gameStateBefore: JSON.stringify({
-            prevPhase: prevPhase,
+            currentPhase: nextPhase,
             pot: gameState.pot,
-            phase: nextPhase,
-            communityCards: communityCards.map(card => `${card.value}${card.suit}`)
+            firstToAct: gameState.currentPlayerId || 'unknown'
           }),
           gameStateAfter: null
         }
       });
-
-      console.log(`✅ Phase transition recorded: ${prevPhase} → ${nextPhase} (sequence: ${actionSequence})`);
+      console.log(`✅ ACTION_START recorded for ${nextPhase} (sequence: ${currentSeq})`);
     } catch (error) {
-      console.error('❌ Failed to record phase transition:', error);
+      console.error('❌ Failed to record phase transition events:', error);
     }
 
     // Set first to act
@@ -882,17 +999,21 @@ class TableManager {
       console.log(`📡 TableManager: Phase transition to ${nextPhase} - emitting updated game state for table ${tableId}`);
 
       // Emit to table-based rooms (table-only architecture)
-      io.to(`table:${tableId}`).emit('gameState', gameState);
+      const broadcastState = {
+        ...gameState,
+        communityCards: gameState.board || []
+      };
+      io.to(`table:${tableId}`).emit('gameState', broadcastState);
 
       // Also emit to all clients for debugging/fallback
-      io.emit('gameState', gameState);
+      io.emit('gameState', broadcastState);
 
       // Emit specific phase transition event
       const phaseTransitionData = {
         tableId,
         fromPhase: phaseOrder[currentIndex],
         toPhase: nextPhase,
-        gameState: gameState,
+        gameState: broadcastState,
         message: `Phase transitioned from ${phaseOrder[currentIndex]} to ${nextPhase}`,
         communityCards: gameState.board,
         isAutomatic: true,

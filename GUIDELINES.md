@@ -8,6 +8,7 @@ This document serves as the unified rulebook for project development, testing, a
 - **Plan → Implement:** Identify issues, design a solution, then implement.
 - **Commit Practices:** Git commit each improvement with a message ≤ 200 characters. Keep communication, documentation, and code tidy/compact.
 - **Documentation:** Maintain `PROJECT_OVERVIEW.md`, `test_results_history.md`, and `API_DOCS.md`. Update `README.md` and `task.md` with significant changes.
+- **Start of Session:** Always read `task.md` first to resume work and understand the current context.
 
 ## 2. Language & Communication Policy
 - **Communication Language:** Use **Chinese** for all direct communication with the user.
