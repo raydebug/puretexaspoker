@@ -212,11 +212,34 @@ async function performTestPlayerAction(playerNum, action, amount, isTotal = fals
       console.error(`   ❌ Action failed: ${resJson.error}`);
     } else {
       console.log(`   ✅ Action applied via API`);
+      
+      // Capture screenshot for player action with GH ID
+      const actionGHId = getNextActionGHId();
+      if (actionGHId) {
+        const browser = await getDriverSafe();
+        if (browser) {
+          // Convert action to lowercase for screenshot naming
+          const actionType = backendAction.toLowerCase();
+          const screenshotName = `${actionType}_${actionGHId}`;
+          try {
+            await screenshotHelper.captureAndLogScreenshot(
+              browser,
+              screenshotName,
+              tournamentState.currentRound,
+              playerName
+            );
+            console.log(`   📸 Captured screenshot: ${screenshotName}`);
+          } catch (screenshotErr) {
+            console.log(`   ⚠️ Screenshot capture failed: ${screenshotErr.message}`);
+          }
+        }
+      }
     }
   } catch (e) {
     console.error(`   ❌ API call failed: ${e.message}`);
   }
 }
+
 
 // =============================================================================
 // BASIC STEP DEFINITIONS - DATABASE AND SETUP
@@ -3159,7 +3182,8 @@ let tournamentState = {
   eliminatedPlayers: [],
   blinds: { small: 5, big: 10 },
   roundHistory: [],
-  lastDealtGHId: null  // Track the latest dealt event GH ID for screenshot naming
+  lastDealtGHId: null,  // Track the latest dealt event GH ID for screenshot naming
+  actionCounter: 0  // Track sequential action number for GH ID mapping
 };
 
 // Initialize tournament state tracking
@@ -3174,7 +3198,8 @@ const initializeTournamentState = async function (playerCount, playersTable) {
     eliminatedPlayers: [],
     blinds: { small: 5, big: 10 },
     roundHistory: [],
-    lastDealtGHId: null  // Track the latest dealt event GH ID
+    lastDealtGHId: null,  // Track the latest dealt event GH ID
+    actionCounter: 0  // Track sequential action number for GH ID mapping
   };
 
   // Process players table and initialize active players
@@ -3338,6 +3363,15 @@ const getDealtEventGHId = function (dealtType, round) {
   const roundIndex = (round || tournamentState.currentRound) - 1;
   const id = baseIds[dealtType.toLowerCase()]?.[roundIndex] || null;
   return id ? `GH-${id}` : null;
+};
+
+// Helper function to get the next action's GH ID and increment counter
+// Maps sequential action numbers to GH IDs based on the game progression
+const getNextActionGHId = function () {
+  // Increment counter for the next action
+  tournamentState.actionCounter++;
+  const ghNumber = tournamentState.actionCounter;
+  return ghNumber <= 64 ? `GH-${ghNumber}` : null;
 };
 
 // Start tournament round with blinds
