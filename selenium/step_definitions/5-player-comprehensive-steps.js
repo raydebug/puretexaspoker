@@ -4043,7 +4043,7 @@ Then(/^I should see game history entry "([^"]*)"(?:\s+#.*)?$/, { timeout: 20000 
                 console.log(`✅ Found entry "${ghId}" in ${playerName}'s UI (Attempt ${attempt})`);
                 foundInAny = true;
                 // Capture screenshot for the player who found it as evidence
-                await screenshotHelper.captureAndLogScreenshot(player, `history_entry_${ghId}`);
+                await screenshotHelper.captureAndLogScreenshot(player.driver, `history_entry_${ghId}`, tournamentState.currentRound, playerName);
                 break;
               }
             }
