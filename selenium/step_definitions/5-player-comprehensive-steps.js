@@ -862,7 +862,14 @@ When('the flop is dealt: {word}, {word}, {word}', async function (card1, card2, 
   });
 
   const results = await Promise.allSettled(flopPromises);
-  console.log(`✅ Flop cards revealed: ${card1} ${card2} ${card3}`);
+  
+  // Record the flop dealt GH ID for screenshot naming
+  const flopGHId = getDealtEventGHId('flop', tournamentState.currentRound);
+  if (flopGHId) {
+    tournamentState.lastDealtGHId = flopGHId;
+  }
+  
+  console.log(`✅ Flop cards revealed: ${card1} ${card2} ${card3} (${flopGHId})`);
 });
 
 When('the turn is dealt: {word}', async function (turnCard) {
@@ -962,8 +969,15 @@ When('the turn is dealt: {word}', async function (turnCard) {
   });
 
   const results = await Promise.allSettled(turnPromises);
+  
+  // Record the turn dealt GH ID for screenshot naming
+  const turnGHId = getDealtEventGHId('turn', tournamentState.currentRound);
+  if (turnGHId) {
+    tournamentState.lastDealtGHId = turnGHId;
+  }
+  
   console.log(`🎴 Turn verification results: ${results.map(r => r.value || r.reason).join(', ')}`);
-  console.log(`✅ Turn card revealed: ${turnCard}`);
+  console.log(`✅ Turn card revealed: ${turnCard} (${turnGHId})`);
 });
 
 When('the river is dealt: {word}', async function (riverCard) {
@@ -1064,8 +1078,15 @@ When('the river is dealt: {word}', async function (riverCard) {
   });
 
   const results = await Promise.allSettled(riverPromises);
+  
+  // Record the river dealt GH ID for screenshot naming
+  const riverGHId = getDealtEventGHId('river', tournamentState.currentRound);
+  if (riverGHId) {
+    tournamentState.lastDealtGHId = riverGHId;
+  }
+  
   console.log(`🎲 River verification results: ${results.map(r => r.value || r.reason).join(', ')}`);
-  console.log(`✅ River card revealed: ${riverCard}`);
+  console.log(`✅ River card revealed: ${riverCard} (${riverGHId})`);
 });
 
 When('the showdown begins', async function () {
@@ -3110,7 +3131,8 @@ let tournamentState = {
   activePlayers: [],
   eliminatedPlayers: [],
   blinds: { small: 5, big: 10 },
-  roundHistory: []
+  roundHistory: [],
+  lastDealtGHId: null  // Track the latest dealt event GH ID for screenshot naming
 };
 
 // Initialize tournament state tracking
@@ -3124,7 +3146,8 @@ const initializeTournamentState = async function (playerCount, playersTable) {
     activePlayers: [],
     eliminatedPlayers: [],
     blinds: { small: 5, big: 10 },
-    roundHistory: []
+    roundHistory: [],
+    lastDealtGHId: null  // Track the latest dealt event GH ID
   };
 
   // Process players table and initialize active players
@@ -3273,6 +3296,22 @@ When(/^I update tournament state: (.*)$/, async function (stateDescription) {
 // Duplicates removed
 
 // Duplicate removed - using pattern at line 2572
+
+// Helper function to get the GH ID for dealt events
+// Based on the pattern from testRoutes.ts: GH-10/30/50 for FLOP, GH-13/33/53 for TURN, GH-16/36/56 for RIVER
+const getDealtEventGHId = function (dealtType, round) {
+  // Round 1: Flop=GH-10, Turn=GH-13, River=GH-16
+  // Round 2: Flop=GH-30, Turn=GH-33, River=GH-36
+  // Round 3: Flop=GH-50, Turn=GH-53, River=GH-56
+  const baseIds = {
+    'flop': [10, 30, 50],
+    'turn': [13, 33, 53],
+    'river': [16, 36, 56]
+  };
+  const roundIndex = (round || tournamentState.currentRound) - 1;
+  const id = baseIds[dealtType.toLowerCase()]?.[roundIndex] || null;
+  return id ? `GH-${id}` : null;
+};
 
 // Start tournament round with blinds
 const startTournamentRoundLogic = async function (roundNumber, smallBlind, bigBlind) {
@@ -4042,7 +4081,7 @@ Then(/^I should see game history entry "([^"]*)"(?:\s+#.*)?$/, { timeout: 20000 
               if (historyText.includes(ghId)) {
                 console.log(`✅ Found entry "${ghId}" in ${playerName}'s UI (Attempt ${attempt})`);
                 foundInAny = true;
-                // Capture screenshot for the player who found it as evidence
+                // Capture screenshot for the player who found it as evidence, with GH ID in filename
                 await screenshotHelper.captureAndLogScreenshot(player.driver, `history_entry_${ghId}`, tournamentState.currentRound, playerName);
                 break;
               }
