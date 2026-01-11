@@ -867,6 +867,15 @@ When('the flop is dealt: {word}, {word}, {word}', async function (card1, card2, 
   const flopGHId = getDealtEventGHId('flop', tournamentState.currentRound);
   if (flopGHId) {
     tournamentState.lastDealtGHId = flopGHId;
+    // Capture flop dealt event screenshot with GH ID
+    const browser = await getDriverSafe();
+    if (browser) {
+      try {
+        await screenshotHelper.captureAndLogScreenshot(browser, `flop_dealt_${flopGHId}`, tournamentState.currentRound);
+      } catch (error) {
+        console.log(`⚠️ Flop dealt screenshot failed: ${error.message}`);
+      }
+    }
   }
   
   console.log(`✅ Flop cards revealed: ${card1} ${card2} ${card3} (${flopGHId})`);
@@ -974,6 +983,15 @@ When('the turn is dealt: {word}', async function (turnCard) {
   const turnGHId = getDealtEventGHId('turn', tournamentState.currentRound);
   if (turnGHId) {
     tournamentState.lastDealtGHId = turnGHId;
+    // Capture turn dealt event screenshot with GH ID
+    const browser = await getDriverSafe();
+    if (browser) {
+      try {
+        await screenshotHelper.captureAndLogScreenshot(browser, `turn_dealt_${turnGHId}`, tournamentState.currentRound);
+      } catch (error) {
+        console.log(`⚠️ Turn dealt screenshot failed: ${error.message}`);
+      }
+    }
   }
   
   console.log(`🎴 Turn verification results: ${results.map(r => r.value || r.reason).join(', ')}`);
@@ -1083,6 +1101,15 @@ When('the river is dealt: {word}', async function (riverCard) {
   const riverGHId = getDealtEventGHId('river', tournamentState.currentRound);
   if (riverGHId) {
     tournamentState.lastDealtGHId = riverGHId;
+    // Capture river dealt event screenshot with GH ID
+    const browser = await getDriverSafe();
+    if (browser) {
+      try {
+        await screenshotHelper.captureAndLogScreenshot(browser, `river_dealt_${riverGHId}`, tournamentState.currentRound);
+      } catch (error) {
+        console.log(`⚠️ River dealt screenshot failed: ${error.message}`);
+      }
+    }
   }
   
   console.log(`🎲 River verification results: ${results.map(r => r.value || r.reason).join(', ')}`);
