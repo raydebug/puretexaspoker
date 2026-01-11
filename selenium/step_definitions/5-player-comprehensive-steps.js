@@ -3382,6 +3382,18 @@ const startTournamentRoundLogic = async function (roundNumber, smallBlind, bigBl
   tournamentState.currentRound = parseInt(roundNumber);
   tournamentState.blinds = { small: parseInt(smallBlind), big: parseInt(bigBlind) };
 
+  // Log current tournament state for verification
+  console.log(`👥 Active players: ${tournamentState.activePlayers.map(p => `${p.name}($${p.stack})`).join(', ') || 'None'}`);
+  console.log(`❌ Eliminated players: ${tournamentState.eliminatedPlayers.map(p => `${p.name}(R${p.eliminatedInRound})`).join(', ') || 'None'}`);
+  
+  // Verify that eliminated players have 0 chips
+  const incorrectEliminated = tournamentState.eliminatedPlayers.filter(p => p.stack !== 0);
+  if (incorrectEliminated.length > 0) {
+    const error = `❌ CHIP CONSERVATION ERROR: Eliminated players have non-zero chips: ${incorrectEliminated.map(p => `${p.name}($${p.stack})`).join(', ')}`;
+    console.log(error);
+    throw new Error(error);
+  }
+
   // Update test phase for game history visibility
   await updateTestPhase(`round_${roundNumber}_start`, 1);
 
@@ -3408,7 +3420,7 @@ const startTournamentRoundLogic = async function (roundNumber, smallBlind, bigBl
     console.log(`⚠️ Error syncing backend blinds: ${error.message}`);
   }
 
-  console.log(`✅ Tournament round ${roundNumber} state initialized`);
+  console.log(`✅ Tournament round ${roundNumber} state initialized with ${tournamentState.activePlayers.length} active players`);
 };
 
 When(/^I start tournament round (\d+) with blinds \$?(\d+)\/\$?(\d+)$/, { timeout: 15000 }, async function (roundNumber, smallBlind, bigBlind) {
@@ -3451,6 +3463,16 @@ Then('exactly one player should have the BU marker in the UI', async function ()
 
 Then('the BU \\(dealer button) should be {string}', async function (playerName) {
   console.log(`🔘 Verifying BU is ${playerName}`);
+  
+  // Check if BU player is not eliminated
+  const isEliminated = tournamentState.eliminatedPlayers.some(p => p.name === playerName);
+  if (isEliminated) {
+    const error = `❌ ${playerName} is at BU but is eliminated! This is invalid.`;
+    console.log(error);
+    throw new Error(error);
+  }
+  
+  console.log(`✅ BU marker for ${playerName} verified (not eliminated)`);
   const browser = await getDriverSafe();
   if (browser) {
     // Basic check - skip strict verification for speed in comprehensive test
@@ -3577,10 +3599,11 @@ When('Player{int} should be eliminated from the tournament', async function (pla
     const eliminatedPlayer = tournamentState.activePlayers.splice(playerIndex, 1)[0];
     eliminatedPlayer.status = 'Eliminated';
     eliminatedPlayer.eliminatedInRound = tournamentState.currentRound;
+    eliminatedPlayer.stack = 0;  // Ensure stack is 0 when eliminated
     tournamentState.eliminatedPlayers.push(eliminatedPlayer);
 
-    console.log(`❌ ${playerName} eliminated in round ${tournamentState.currentRound}`);
-    console.log(`👥 Remaining players: ${tournamentState.activePlayers.length}`);
+    console.log(`❌ ${playerName} eliminated in round ${tournamentState.currentRound} with $${eliminatedPlayer.stack}`);
+    console.log(`👥 Remaining active players: ${tournamentState.activePlayers.length}`);
   }
 });
 
@@ -3593,8 +3616,35 @@ Then('tournament round {int} should be complete with results:', async function (
   console.log(`🏆 Verifying tournament round ${roundNumber} completion`);
 
   const results = resultsTable.hashes();
+  
+  // Verify each player's status and chips match expected
   for (const result of results) {
-    console.log(`📊 ${result.Player}: ${result.Status} - ${result.Stack}`);
+    const playerName = result.Player;
+    const expectedStatus = result.Status;
+    const expectedStack = parseInt(result.Stack.replace('$', ''));
+    
+    console.log(`📊 ${playerName}: ${expectedStatus} - ${result.Stack}`);
+    
+    // Check if player is in expected list
+    if (expectedStatus === 'Eliminated') {
+      const eliminated = tournamentState.eliminatedPlayers.find(p => p.name === playerName);
+      if (!eliminated) {
+        console.log(`⚠️ ${playerName} should be eliminated but not found in eliminated list`);
+      } else if (eliminated.stack !== 0) {
+        const error = `❌ CHIP ERROR: ${playerName} is eliminated but has $${eliminated.stack} instead of $0`;
+        console.log(error);
+        throw new Error(error);
+      } else {
+        console.log(`✅ ${playerName} correctly eliminated with $0`);
+      }
+    } else if (expectedStatus === 'Active') {
+      const active = tournamentState.activePlayers.find(p => p.name === playerName);
+      if (!active) {
+        console.log(`⚠️ ${playerName} should be active but not found in active list`);
+      } else {
+        console.log(`✅ ${playerName} active with $${active.stack}`);
+      }
+    }
   }
 
   // Record round in history
@@ -3607,6 +3657,7 @@ Then('tournament round {int} should be complete with results:', async function (
   });
 
   console.log(`✅ Tournament round ${roundNumber} complete and recorded`);
+  console.log(`👥 Active: ${tournamentState.activePlayers.length} | Eliminated: ${tournamentState.eliminatedPlayers.length}`);
 });
 
 // Verify remaining players
@@ -4964,6 +5015,20 @@ Then('all start/next-hand controls should be disabled for all clients', async fu
 
 Then('eliminated players should have exactly ${int} chips', async function (amount) {
   console.log(`💰 Verifying eliminated players have $${amount}`);
+  
+  // Check tournament state for eliminated players
+  console.log(`❌ Eliminated players: ${tournamentState.eliminatedPlayers.map(p => `${p.name}($${p.stack})`).join(', ') || 'None'}`);
+  
+  // Verify each eliminated player has 0 chips
+  for (const eliminatedPlayer of tournamentState.eliminatedPlayers) {
+    if (eliminatedPlayer.stack !== 0) {
+      const error = `❌ ${eliminatedPlayer.name} is eliminated but has $${eliminatedPlayer.stack} (expected $${amount})`;
+      console.log(error);
+      throw new Error(error);
+    }
+  }
+  
+  console.log(`✅ All eliminated players verified with $${amount}`);
   return true;
 });
 
