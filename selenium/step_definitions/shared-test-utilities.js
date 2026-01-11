@@ -816,6 +816,15 @@ class ScreenshotHelper {
 
       // Fallback to Global
       if (!playerTag) playerTag = 'Global';
+
+      // SPECIAL CASE: screenshots that represent globally dealt community cards
+      // (e.g. "flop_dealt", "turn_dealt", "river_dealt") should be
+      // treated as global evidence and not tied to a specific player.
+      const screenshotLower = (screenshotName || '').toLowerCase();
+      const isDealtEvent = /\bdealt\b/.test(screenshotLower) || screenshotLower.endsWith('_dealt');
+      if (isDealtEvent) {
+        playerTag = 'Global';
+      }
       filenameParts.push(playerTag);
 
       // Deduplicate: If screenshotName starts with playerTag matching (case insensitive)
