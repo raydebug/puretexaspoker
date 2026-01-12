@@ -16,6 +16,8 @@ const router = express.Router();
 // Global test state to track current game phase for progressive history
 let currentTestPhase = 'setup';
 let testActionCounter = 0;
+let realGameHistoryCounter = 0; // Real counter for actual game history records
+let actualGameHistory: any[] = []; // Store real game history from actual actions
 
 // Test-only API endpoints with test_ prefix
 // These APIs are only for testing purposes and should not be used in production
@@ -95,17 +97,33 @@ router.get('/progressive-game-history/:tableId', async (req, res) => {
   try {
     const { tableId } = req.params;
 
-    // Generate progressive actions based on current test phase
-    const progressiveActions = generateProgressiveGameHistory(currentTestPhase, testActionCounter);
+    // Return REAL game history first, then fallback to generated if needed
+    const realHistoryForTable = actualGameHistory.filter(h => h.tableId === parseInt(tableId));
+    
+    if (realHistoryForTable.length > 0) {
+      console.log(`🧪 TEST: Returning REAL game history for table ${tableId}, total: ${realHistoryForTable.length} actions`);
+      res.json({
+        success: true,
+        actionHistory: realHistoryForTable,
+        tableId: parseInt(tableId),
+        currentPhase: currentTestPhase,
+        totalActions: realHistoryForTable.length,
+        source: 'REAL'
+      });
+      return;
+    }
 
-    console.log(`🧪 TEST: Progressive history for table ${tableId}, phase: ${currentTestPhase}, actions: ${progressiveActions.length}`);
+    // Fallback: Generate progressive actions based on current test phase
+    const progressiveActions = generateProgressiveGameHistory(currentTestPhase, testActionCounter);
+    console.log(`🧪 TEST: Falling back to GENERATED history for table ${tableId}, phase: ${currentTestPhase}, actions: ${progressiveActions.length}`);
 
     res.json({
       success: true,
       actionHistory: progressiveActions,
       tableId: parseInt(tableId),
       currentPhase: currentTestPhase,
-      totalActions: progressiveActions.length
+      totalActions: progressiveActions.length,
+      source: 'GENERATED'
     });
   } catch (error) {
     console.error('❌ TEST API Error getting progressive history:', error);
@@ -117,117 +135,30 @@ router.get('/progressive-game-history/:tableId', async (req, res) => {
  * Generate progressive game history based on test phase
  */
 /**
- * Generate progressive game history based on test phase
- * Strictly ordered list of 64 actions for the 5-player comprehensive test
+ * Generate minimal fallback game history (only used if no real history exists)
+ * Now that we capture real game history, this is just a safety fallback
  */
 function generateProgressiveGameHistory(phase: string, maxActions: number = 20) {
   const timestamp = new Date().toISOString();
-
-  // Define all 64 actions sequentially
-  const allActions = [
-    // GH-1 to GH-2: Round 1 Blinds
-    { id: 'GH-1', playerId: 'Player2', playerName: 'Player2', action: 'SMALL_BLIND', amount: 5, phase: 'preflop', handNumber: 1, actionSequence: 1, timestamp },
-    { id: 'GH-2', playerId: 'Player3', playerName: 'Player3', action: 'BIG_BLIND', amount: 10, phase: 'preflop', handNumber: 1, actionSequence: 2, timestamp },
-
-    // GH-3 to GH-9: Round 1 Preflop actions
-    { id: 'GH-3', playerId: 'Player4', playerName: 'Player4', action: 'CALL', amount: 10, phase: 'preflop', handNumber: 1, actionSequence: 3, timestamp },
-    { id: 'GH-4', playerId: 'Player5', playerName: 'Player5', action: 'FOLD', amount: 0, phase: 'preflop', handNumber: 1, actionSequence: 4, timestamp },
-    { id: 'GH-5', playerId: 'Player1', playerName: 'Player1', action: 'RAISE', amount: 25, phase: 'preflop', handNumber: 1, actionSequence: 5, timestamp },
-    { id: 'GH-6', playerId: 'Player2', playerName: 'Player2', action: 'FOLD', amount: 0, phase: 'preflop', handNumber: 1, actionSequence: 6, timestamp },
-    { id: 'GH-7', playerId: 'Player3', playerName: 'Player3', action: 'ALL_IN', amount: 100, phase: 'preflop', handNumber: 1, actionSequence: 7, timestamp },
-    { id: 'GH-8', playerId: 'Player4', playerName: 'Player4', action: 'CALL', amount: 90, phase: 'preflop', handNumber: 1, actionSequence: 8, timestamp },
-    { id: 'GH-9', playerId: 'Player1', playerName: 'Player1', action: 'FOLD', amount: 0, phase: 'preflop', handNumber: 1, actionSequence: 9, timestamp },
-
-    // GH-10 to GH-12: Flop runout
-    { id: 'GH-10', playerId: 'System', playerName: 'System', action: 'FLOP_DEALT', amount: 0, phase: 'flop', handNumber: 1, actionSequence: 10, timestamp },
-    { id: 'GH-11', playerId: 'System', playerName: 'System', action: 'ACTION_START', amount: 0, phase: 'flop', handNumber: 1, actionSequence: 11, timestamp },
-    { id: 'GH-12', playerId: 'System', playerName: 'System', action: 'AUTO_ADVANCE', amount: 0, phase: 'flop', handNumber: 1, actionSequence: 12, timestamp },
-
-    // GH-13 to GH-15: Turn runout
-    { id: 'GH-13', playerId: 'System', playerName: 'System', action: 'TURN_DEALT', amount: 0, phase: 'turn', handNumber: 1, actionSequence: 13, timestamp },
-    { id: 'GH-14', playerId: 'System', playerName: 'System', action: 'ACTION_START', amount: 0, phase: 'turn', handNumber: 1, actionSequence: 14, timestamp },
-    { id: 'GH-15', playerId: 'System', playerName: 'System', action: 'AUTO_ADVANCE', amount: 0, phase: 'turn', handNumber: 1, actionSequence: 15, timestamp },
-
-    // GH-16 to GH-18: River runout
-    { id: 'GH-16', playerId: 'System', playerName: 'System', action: 'RIVER_DEALT', amount: 0, phase: 'river', handNumber: 1, actionSequence: 16, timestamp },
-    { id: 'GH-17', playerId: 'System', playerName: 'System', action: 'ACTION_START', amount: 0, phase: 'river', handNumber: 1, actionSequence: 17, timestamp },
-    { id: 'GH-18', playerId: 'System', playerName: 'System', action: 'AUTO_ADVANCE', amount: 0, phase: 'river', handNumber: 1, actionSequence: 18, timestamp },
-
-    // GH-19 to GH-23: Round 1 Showdown
-    { id: 'GH-19', playerId: 'System', playerName: 'System', action: 'SHOWDOWN_START', amount: 0, phase: 'showdown', handNumber: 1, actionSequence: 19, timestamp },
-    { id: 'GH-20', playerId: 'Player4', playerName: 'Player4', action: 'REVEAL', amount: 0, phase: 'showdown', handNumber: 1, actionSequence: 20, timestamp },
-    { id: 'GH-21', playerId: 'Player3', playerName: 'Player3', action: 'REVEAL', amount: 0, phase: 'showdown', handNumber: 1, actionSequence: 21, timestamp },
-    { id: 'GH-22', playerId: 'Player4', playerName: 'Player4', action: 'HAND_WIN', amount: 230, phase: 'showdown', handNumber: 1, actionSequence: 22, timestamp },
-    { id: 'GH-23', playerId: 'Player3', playerName: 'Player3', action: 'ELIMINATE', amount: 0, phase: 'showdown', handNumber: 1, actionSequence: 23, timestamp },
-
-    // GH-24 to GH-25: Round 2 Blinds
-    { id: 'GH-24', playerId: 'Player2', playerName: 'Player2', action: 'SMALL_BLIND', amount: 10, phase: 'preflop', handNumber: 2, actionSequence: 24, timestamp },
-    { id: 'GH-25', playerId: 'Player4', playerName: 'Player4', action: 'BIG_BLIND', amount: 20, phase: 'preflop', handNumber: 2, actionSequence: 25, timestamp },
-
-    // GH-26 to GH-29: Round 2 Preflop actions
-    { id: 'GH-26', playerId: 'Player5', playerName: 'Player5', action: 'FOLD', amount: 0, phase: 'preflop', handNumber: 2, actionSequence: 26, timestamp },
-    { id: 'GH-27', playerId: 'Player1', playerName: 'Player1', action: 'ALL_IN', amount: 75, phase: 'preflop', handNumber: 2, actionSequence: 27, timestamp },
-    { id: 'GH-28', playerId: 'Player2', playerName: 'Player2', action: 'CALL', amount: 65, phase: 'preflop', handNumber: 2, actionSequence: 28, timestamp },
-    { id: 'GH-29', playerId: 'Player4', playerName: 'Player4', action: 'FOLD', amount: 0, phase: 'preflop', handNumber: 2, actionSequence: 29, timestamp },
-
-    // GH-30 to GH-32: Round 2 Flop runout
-    { id: 'GH-30', playerId: 'System', playerName: 'System', action: 'FLOP_DEALT', amount: 0, phase: 'flop', handNumber: 2, actionSequence: 30, timestamp },
-    { id: 'GH-31', playerId: 'System', playerName: 'System', action: 'ACTION_START', amount: 0, phase: 'flop', handNumber: 2, actionSequence: 31, timestamp },
-    { id: 'GH-32', playerId: 'System', playerName: 'System', action: 'AUTO_ADVANCE', amount: 0, phase: 'flop', handNumber: 2, actionSequence: 32, timestamp },
-
-    // GH-33 to GH-35: Round 2 Turn runout
-    { id: 'GH-33', playerId: 'System', playerName: 'System', action: 'TURN_DEALT', amount: 0, phase: 'turn', handNumber: 2, actionSequence: 33, timestamp },
-    { id: 'GH-34', playerId: 'System', playerName: 'System', action: 'ACTION_START', amount: 0, phase: 'turn', handNumber: 2, actionSequence: 34, timestamp },
-    { id: 'GH-35', playerId: 'System', playerName: 'System', action: 'AUTO_ADVANCE', amount: 0, phase: 'turn', handNumber: 2, actionSequence: 35, timestamp },
-
-    // GH-36 to GH-38: Round 2 River runout
-    { id: 'GH-36', playerId: 'System', playerName: 'System', action: 'RIVER_DEALT', amount: 0, phase: 'river', handNumber: 2, actionSequence: 36, timestamp },
-    { id: 'GH-37', playerId: 'System', playerName: 'System', action: 'ACTION_START', amount: 0, phase: 'river', handNumber: 2, actionSequence: 37, timestamp },
-    { id: 'GH-38', playerId: 'System', playerName: 'System', action: 'AUTO_ADVANCE', amount: 0, phase: 'river', handNumber: 2, actionSequence: 38, timestamp },
-
-    // GH-39 to GH-43: Round 2 Showdown
-    { id: 'GH-39', playerId: 'System', playerName: 'System', action: 'SHOWDOWN_START', amount: 0, phase: 'showdown', handNumber: 2, actionSequence: 39, timestamp },
-    { id: 'GH-40', playerId: 'Player2', playerName: 'Player2', action: 'REVEAL', amount: 0, phase: 'showdown', handNumber: 2, actionSequence: 40, timestamp },
-    { id: 'GH-41', playerId: 'Player1', playerName: 'Player1', action: 'REVEAL', amount: 0, phase: 'showdown', handNumber: 2, actionSequence: 41, timestamp },
-    { id: 'GH-42', playerId: 'Player2', playerName: 'Player2', action: 'HAND_WIN', amount: 150, phase: 'showdown', handNumber: 2, actionSequence: 42, timestamp },
-    { id: 'GH-43', playerId: 'Player1', playerName: 'Player1', action: 'ELIMINATE', amount: 0, phase: 'showdown', handNumber: 2, actionSequence: 43, timestamp },
-
-    // GH-44 to GH-45: Round 3 Blinds
-    { id: 'GH-44', playerId: 'Player5', playerName: 'Player5', action: 'SMALL_BLIND', amount: 20, phase: 'preflop', handNumber: 3, actionSequence: 44, timestamp },
-    { id: 'GH-45', playerId: 'Player2', playerName: 'Player2', action: 'BIG_BLIND', amount: 40, phase: 'preflop', handNumber: 3, actionSequence: 45, timestamp },
-
-    // GH-46 to GH-49: Round 3 Preflop actions
-    { id: 'GH-46', playerId: 'Player4', playerName: 'Player4', action: 'RAISE', amount: 100, phase: 'preflop', handNumber: 3, actionSequence: 46, timestamp },
-    { id: 'GH-47', playerId: 'Player5', playerName: 'Player5', action: 'ALL_IN', amount: 80, phase: 'preflop', handNumber: 3, actionSequence: 47, timestamp },
-    { id: 'GH-48', playerId: 'Player2', playerName: 'Player2', action: 'CALL', amount: 60, phase: 'preflop', handNumber: 3, actionSequence: 48, timestamp },
-    { id: 'GH-49', playerId: 'Player4', playerName: 'Player4', action: 'CALL', amount: 0, phase: 'preflop', handNumber: 3, actionSequence: 49, timestamp },
-
-    // GH-50 to GH-52: Round 3 Flop runout
-    { id: 'GH-50', playerId: 'System', playerName: 'System', action: 'FLOP_DEALT', amount: 0, phase: 'flop', handNumber: 3, actionSequence: 50, timestamp },
-    { id: 'GH-51', playerId: 'System', playerName: 'System', action: 'ACTION_START', amount: 0, phase: 'flop', handNumber: 3, actionSequence: 51, timestamp },
-    { id: 'GH-52', playerId: 'System', playerName: 'System', action: 'AUTO_ADVANCE', amount: 0, phase: 'flop', handNumber: 3, actionSequence: 52, timestamp },
-
-    // GH-53 to GH-55: Round 3 Turn runout
-    { id: 'GH-53', playerId: 'System', playerName: 'System', action: 'TURN_DEALT', amount: 0, phase: 'turn', handNumber: 3, actionSequence: 53, timestamp },
-    { id: 'GH-54', playerId: 'System', playerName: 'System', action: 'ACTION_START', amount: 0, phase: 'turn', handNumber: 3, actionSequence: 54, timestamp },
-    { id: 'GH-55', playerId: 'System', playerName: 'System', action: 'AUTO_ADVANCE', amount: 0, phase: 'turn', handNumber: 3, actionSequence: 55, timestamp },
-
-    // GH-56 to GH-58: Round 3 River runout
-    { id: 'GH-56', playerId: 'System', playerName: 'System', action: 'RIVER_DEALT', amount: 0, phase: 'river', handNumber: 3, actionSequence: 56, timestamp },
-    { id: 'GH-57', playerId: 'System', playerName: 'System', action: 'ACTION_START', amount: 0, phase: 'river', handNumber: 3, actionSequence: 57, timestamp },
-    { id: 'GH-58', playerId: 'System', playerName: 'System', action: 'AUTO_ADVANCE', amount: 0, phase: 'river', handNumber: 3, actionSequence: 58, timestamp },
-
-    // GH-59 to GH-64: Round 3 Showdown & Championship
-    { id: 'GH-59', playerId: 'System', playerName: 'System', action: 'SHOWDOWN_START', amount: 0, phase: 'showdown', handNumber: 3, actionSequence: 59, timestamp },
-    { id: 'GH-60', playerId: 'Player2', playerName: 'Player2', action: 'REVEAL', amount: 0, phase: 'showdown', handNumber: 3, actionSequence: 60, timestamp },
-    { id: 'GH-61', playerId: 'Player4', playerName: 'Player4', action: 'REVEAL', amount: 0, phase: 'showdown', handNumber: 3, actionSequence: 61, timestamp },
-    { id: 'GH-62', playerId: 'Player5', playerName: 'Player5', action: 'REVEAL', amount: 0, phase: 'showdown', handNumber: 3, actionSequence: 62, timestamp },
-    { id: 'GH-63', playerId: 'Player2', playerName: 'Player2', action: 'HAND_WIN', amount: 200, phase: 'showdown', handNumber: 3, actionSequence: 63, timestamp },
-    { id: 'GH-64', playerId: 'Player2', playerName: 'Player2', action: 'CHAMPION', amount: 0, phase: 'tournament_end', handNumber: 3, actionSequence: 64, timestamp }
-  ];
-
-  // Return only the actions up to the current maxActions
-  return allActions.slice(0, Math.min(allActions.length, maxActions || 0));
+  
+  // Minimal fallback data - actual history from real actions is preferred
+  const minimalFallback = [];
+  for (let i = 1; i <= Math.min(maxActions, 5); i++) {
+    minimalFallback.push({
+      id: `GH-${i}`,
+      playerId: `Player${i}`,
+      playerName: `Player${i}`,
+      action: i === 1 ? 'SMALL_BLIND' : i === 2 ? 'BIG_BLIND' : 'CALL',
+      amount: i === 1 ? 5 : i === 2 ? 10 : 10,
+      phase: 'preflop',
+      handNumber: 1,
+      actionSequence: i,
+      timestamp
+    });
+  }
+  
+  console.log(`⚠️ FALLBACK: Generating minimal history (real history empty). Requested ${maxActions} actions, providing ${minimalFallback.length}`);
+  return minimalFallback;
 }
 
 // Note: Duplicate progressive history and set-game-phase routes removed
@@ -522,6 +453,30 @@ router.post('/test_player_action/:tableId', async (req, res) => {
     }
 
     if (stateChanged) {
+      // Ensure real counter starts after any previously generated/mock actions
+      if (typeof testActionCounter === 'number' && testActionCounter > realGameHistoryCounter) {
+        realGameHistoryCounter = testActionCounter;
+      }
+      // CREATE REAL GAME HISTORY RECORD
+      realGameHistoryCounter++;
+      const historyId = `GH-${realGameHistoryCounter}`;
+      const historyRecord = {
+        id: historyId,
+        tableId: targetTableId,
+        playerId: player.id,
+        playerName: player.name,
+        action: actionUpper,
+        amount: actionAmount,
+        phase: gameState.phase || 'preflop',
+        handNumber: gameState.handNumber || 1,
+        actionSequence: realGameHistoryCounter,
+        timestamp: new Date().toISOString()
+      };
+      
+      // Store in actual history
+      actualGameHistory.push(historyRecord);
+      console.log(`📝 REAL GAME HISTORY: ${historyId} - ${player.name} ${actionUpper} ${actionAmount > 0 ? `$${actionAmount}` : ''}`);
+
       // Broadcast updates
       const io = (global as any).socketIO;
       if (io) {
@@ -542,7 +497,8 @@ router.post('/test_player_action/:tableId', async (req, res) => {
     res.json({
       success: true,
       gameState,
-      message: `Player ${player.name} performed ${action}`
+      message: `Player ${player.name} performed ${action}`,
+      ghId: actualGameHistory.length > 0 ? actualGameHistory[actualGameHistory.length - 1].id : null
     });
   } catch (error) {
     console.error('❌ TEST API: Error performing player action:', error);
@@ -3101,8 +3057,26 @@ router.get('/mock-game-history/:tableId/count/:count', async (req, res) => {
   try {
     const { tableId, count } = req.params;
     const actionCount = parseInt(count);
+    const tableIdNum = parseInt(tableId);
 
-    // Generate actions up to the specified count
+    // Return REAL game history first if available
+    const realHistoryForTable = actualGameHistory.filter(h => h.tableId === tableIdNum);
+    
+    if (realHistoryForTable.length > 0) {
+      const limitedHistory = realHistoryForTable.slice(0, actionCount);
+      console.log(`🧪 MOCK: Returning REAL history for table ${tableId}, requested: ${actionCount}, actual: ${limitedHistory.length}, source: REAL`);
+      res.json({
+        success: true,
+        actionHistory: limitedHistory,
+        tableId: tableIdNum,
+        count: limitedHistory.length,
+        totalReal: realHistoryForTable.length,
+        source: 'REAL'
+      });
+      return;
+    }
+
+    // Fallback: Generate actions up to the specified count
     const actions = [];
     for (let i = 1; i <= actionCount; i++) {
       actions.push({
@@ -3118,7 +3092,7 @@ router.get('/mock-game-history/:tableId/count/:count', async (req, res) => {
       });
     }
 
-    console.log(`🧪 MOCK: Generated ${actionCount} actions for table ${tableId}`);
+    console.log(`🧪 MOCK: Generated ${actionCount} actions for table ${tableId}, source: GENERATED`);
 
     res.json({
       success: true,
