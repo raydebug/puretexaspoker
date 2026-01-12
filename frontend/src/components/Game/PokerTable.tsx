@@ -124,13 +124,17 @@ const DealerPosition = styled.div`
 `;
 
 const PlayerSeat = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['position', 'isEmpty', 'isButton', 'isAvailable', 'isMe'].includes(prop),
-}) <{ position: number; isEmpty: boolean; isButton: boolean; isAvailable?: boolean; isMe?: boolean }>`
+  shouldForwardProp: (prop) => !['position', 'isEmpty', 'isButton', 'isAvailable', 'isMe', 'isEliminated'].includes(prop),
+}) <{ position: number; isEmpty: boolean; isButton: boolean; isAvailable?: boolean; isMe?: boolean; isEliminated?: boolean }>`
   position: absolute;
   width: 80px;
   height: 80px;
   border-radius: 50%;
   background: ${props => {
+    if (props.isEliminated) {
+      // Eliminated player - dark gray with reduced opacity
+      return 'linear-gradient(145deg, #607D8B, #455A64)';
+    }
     if (props.isEmpty && props.isAvailable) {
       // Available seat - bright green with subtle glow
       return 'linear-gradient(145deg, #4CAF50, #388E3C)';
@@ -147,6 +151,7 @@ const PlayerSeat = styled.div.withConfig({
     return 'linear-gradient(145deg, #FFD700, #F57C00)';
   }};
   border: ${props => {
+    if (props.isEliminated) return '2px dashed #90A4AE';
     if (props.isButton) return '3px solid #ff6b35';
     if (props.isEmpty && props.isAvailable) return '3px solid #66BB6A';
     if (props.isEmpty) return '3px solid #546E7A';
@@ -159,7 +164,12 @@ const PlayerSeat = styled.div.withConfig({
   justify-content: center;
   cursor: ${props => (props.isEmpty && props.isAvailable) ? 'pointer' : 'default'};
   transition: all 0.3s ease;
+  opacity: ${props => props.isEliminated ? 0.6 : 1};
      box-shadow: ${props => {
+    if (props.isEliminated) {
+      // Eliminated - muted shadow
+      return '0 2px 8px rgba(0,0,0,0.6), inset 0 0 10px rgba(0,0,0,0.4)';
+    }
     if (props.isEmpty && props.isAvailable) {
       // Available seats get a bright glow effect
       return '0 4px 20px rgba(76, 175, 80, 0.4), 0 0 10px rgba(102, 187, 106, 0.3)';
@@ -251,26 +261,54 @@ const ButtonIndicator = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
   font-weight: bold;
-  font-size: 10px;
+  color: white;
+  font-size: 14px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+`;
+
+const EliminatedBadge = styled.div`
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(145deg, #EF5350, #C62828);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: bold;
+  white-space: nowrap;
+  border: 1px solid #B71C1C;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
   z-index: 5;
 `;
 
-const PlayerName = styled.div`
+const PlayerName = styled.div<{ isEliminated?: boolean }>`
   font-size: 10px;
   font-weight: bold;
-  color: #1A1A1A;
+  color: ${props => props.isEliminated ? '#90A4AE' : '#1A1A1A'};
   text-align: center;
   margin-bottom: 2px;
   text-shadow: 0 1px 1px rgba(255,255,255,0.3);
   letter-spacing: 0.3px;
+  ${props => props.isEliminated && 'text-decoration: line-through;'}
 `;
 
-const PlayerChips = styled.div`
+const PlayerChips = styled.div<{ isEliminated?: boolean }>`
   font-size: 8px;
-  color: #2E2E2E;
+  color: ${props => props.isEliminated ? '#78909C' : '#2E2E2E'};
+  text-align: center;
+  font-weight: 600;
+  text-shadow: 0 1px 1px rgba(255,255,255,0.2);
+  background: ${props => props.isEliminated ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.1)'};
+  padding: 1px 4px;
+  border-radius: 8px;
+  border: 1px solid rgba(0,0,0,0.2);
+`;
+`;
   text-align: center;
   font-weight: 600;
   text-shadow: 0 1px 1px rgba(255,255,255,0.2);
@@ -445,7 +483,7 @@ const WinnerCelebration = styled.div`
 `;
 
 const PlayerSeatExtended = styled(PlayerSeat).withConfig({
-  shouldForwardProp: (prop) => !['position', 'isEmpty', 'isButton', 'isAvailable', 'isCurrentPlayer', 'isFolded', 'isMe'].includes(prop),
+  shouldForwardProp: (prop) => !['position', 'isEmpty', 'isButton', 'isAvailable', 'isCurrentPlayer', 'isFolded', 'isMe', 'isEliminated'].includes(prop),
 }) <{
   position: number;
   isEmpty: boolean;
@@ -454,6 +492,7 @@ const PlayerSeatExtended = styled(PlayerSeat).withConfig({
   isCurrentPlayer?: boolean;
   isFolded?: boolean;
   isMe?: boolean;
+  isEliminated?: boolean;
 }>`
   ${props => props.isCurrentPlayer && css`
     box-shadow: 0 0 20px rgba(0, 255, 0, 0.8), 0 0 40px rgba(0, 255, 0, 0.4);
@@ -465,6 +504,12 @@ const PlayerSeatExtended = styled(PlayerSeat).withConfig({
     opacity: 0.5;
     filter: grayscale(100%);
     border: 3px solid #666;
+  `}
+  
+  ${props => props.isEliminated && css`
+    opacity: 0.6;
+    filter: grayscale(100%) brightness(0.8);
+    border: 2px dashed #90A4AE;
   `}
 `;
 
@@ -699,6 +744,7 @@ export const PokerTable: React.FC<PokerTableProps> = ({
     const isAvailable = isEmpty; // Empty seats are always available to sit in
     const isCurrentPlayer = !isEmpty && gameState.currentPlayerId === player?.id;
     const isFolded = !isEmpty && !player?.isActive;
+    const isEliminated = !isEmpty && player?.chips === 0;  // Player with 0 chips is eliminated
 
     // Check if this is the current screen's player ("me")
     const nickname = localStorage.getItem('nickname');
@@ -706,7 +752,7 @@ export const PokerTable: React.FC<PokerTableProps> = ({
 
     // Debug logging for decision timer issue
     if (!isEmpty && player) {
-      console.log(`🔍 Seat ${seatNumber}: player.id="${player.id}", playerName="${player.name}", isMe=${isMe}, isCurrentPlayer=${isCurrentPlayer}`);
+      console.log(`🔍 Seat ${seatNumber}: player.id="${player.id}", playerName="${player.name}", isMe=${isMe}, isCurrentPlayer=${isCurrentPlayer}, chips=${player.chips}, isEliminated=${isEliminated}`);
     }
 
     return (
@@ -719,20 +765,23 @@ export const PokerTable: React.FC<PokerTableProps> = ({
         isCurrentPlayer={isCurrentPlayer}
         isFolded={isFolded}
         isMe={isMe}
+        isEliminated={isEliminated}
         onClick={() => handleSeatClick(seatNumber)}
         data-testid={isEmpty ? `available-seat-${seatNumber}` : `seat-${seatNumber}`}
-        className={`${isCurrentPlayer ? 'current-player active-player' : ''} ${isFolded ? 'folded-player' : ''}`}
+        className={`${isCurrentPlayer ? 'current-player active-player' : ''} ${isFolded ? 'folded-player' : ''} ${isEliminated ? 'eliminated-player' : ''}`}
       >
         <PositionLabel isButton={isButton}>{positionName}</PositionLabel>
         {isButton && <ButtonIndicator>D</ButtonIndicator>}
+        {isEliminated && <EliminatedBadge>Out</EliminatedBadge>}
         {isEmpty ? (
           <EmptySeatText isAvailable={true}>
             Click to Sit
           </EmptySeatText>
         ) : (
           <>
-            <PlayerName>{player.name}</PlayerName>
+            <PlayerName isEliminated={isEliminated}>{player.name}</PlayerName>
             <PlayerChips
+              isEliminated={isEliminated}
               data-testid={`player-${player.id}-chips`}
               className="chips player-chips"
             >

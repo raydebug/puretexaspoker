@@ -4170,6 +4170,12 @@ Then(/^I should see game history entry "([^"]*)"(?:\s+#.*)?$/, { timeout: 20000 
   // Extract numeric ID to advance backend history counter
   const ghNum = parseInt(ghId.replace('GH-', ''));
   if (!isNaN(ghNum)) {
+    // Verify that this GH-ID matches the expected progressive sequence
+    const expectedGHNum = tournamentState.actionCounter + 1;
+    if (ghNum !== expectedGHNum && ghNum < 10) {
+      // Only warn for action IDs, not for special dealt IDs (10, 13, 16, etc.)
+      console.warn(`⚠️ GH-ID mismatch: expected GH-${expectedGHNum}, got ${ghId}`);
+    }
     await updateTestPhase('progressive', ghNum);
   }
 
@@ -4193,8 +4199,7 @@ Then(/^I should see game history entry "([^"]*)"(?:\s+#.*)?$/, { timeout: 20000 
               if (historyText.includes(ghId)) {
                 console.log(`✅ Found entry "${ghId}" in ${playerName}'s UI (Attempt ${attempt})`);
                 foundInAny = true;
-                // Capture screenshot for the player who found it as evidence, with GH ID in filename
-                await screenshotHelper.captureAndLogScreenshot(player.driver, `history_entry_${ghId}`, tournamentState.currentRound, playerName);
+                // No verification screenshot here — screenshots are taken when GH-ID is generated during action execution.
                 break;
               }
             }
