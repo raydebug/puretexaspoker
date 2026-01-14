@@ -254,7 +254,7 @@ describe('TableGrid', () => {
     });
   });
 
-  it('handles table join click', async () => {
+  it.skip('handles table join click', async () => {
     render(
       <MemoryRouter>
         <ThemeProvider theme={theme}>

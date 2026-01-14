@@ -582,6 +582,7 @@ class TableManager {
       const smallBlindPlayer = newGameState.players[newGameState.smallBlindPosition];
       const bigBlindPlayer = newGameState.players[newGameState.bigBlindPosition];
 
+      // 1. Post small blind and record in game history
       if (smallBlindPlayer) {
         const smallBlindAmount = Math.min(table.smallBlind, smallBlindPlayer.chips);
         smallBlindPlayer.chips -= smallBlindAmount;
@@ -590,7 +591,8 @@ class TableManager {
 
         // Record small blind action
         try {
-          await prisma.tableAction.create({
+          const sbSeq = await this.getNextActionSequence(tableId, newGameState.handNumber || 1);
+          const sbRecord = await prisma.tableAction.create({
             data: {
               tableId: tableId,
               playerId: smallBlindPlayer.id,
@@ -598,7 +600,7 @@ class TableManager {
               amount: smallBlindAmount,
               phase: 'preflop',
               handNumber: newGameState.handNumber || 1,
-              actionSequence: 1,
+              actionSequence: sbSeq,
               gameStateBefore: JSON.stringify({
                 pot: newGameState.pot - smallBlindAmount,
                 currentBet: 0,
@@ -607,12 +609,13 @@ class TableManager {
               gameStateAfter: null
             }
           });
-          console.log(`✅ Small blind recorded: ${smallBlindPlayer.id} posts $${smallBlindAmount}`);
+          console.log(`✅ Small blind recorded to DB: ${smallBlindPlayer.id} posts $${smallBlindAmount} (DB ID: ${sbRecord.id}, seq: ${sbRecord.actionSequence}, total pots: ${newGameState.pot})`);
         } catch (error) {
           console.error('❌ Failed to record small blind:', error);
         }
       }
 
+      // 2. Post big blind and record in game history
       if (bigBlindPlayer) {
         const bigBlindAmount = Math.min(table.bigBlind, bigBlindPlayer.chips);
         bigBlindPlayer.chips -= bigBlindAmount;
@@ -621,7 +624,9 @@ class TableManager {
 
         // Record big blind action
         try {
-          await prisma.tableAction.create({
+          // IMPORTANT: Use a manual increment if both blasts are immediate to ensure unique sequence IDs
+          const baseSeq = await this.getNextActionSequence(tableId, newGameState.handNumber || 1);
+          const bbRecord = await prisma.tableAction.create({
             data: {
               tableId: tableId,
               playerId: bigBlindPlayer.id,
@@ -629,7 +634,7 @@ class TableManager {
               amount: bigBlindAmount,
               phase: 'preflop',
               handNumber: newGameState.handNumber || 1,
-              actionSequence: 2,
+              actionSequence: baseSeq,
               gameStateBefore: JSON.stringify({
                 pot: newGameState.pot - bigBlindAmount,
                 currentBet: smallBlindPlayer?.currentBet || 0,
@@ -638,7 +643,7 @@ class TableManager {
               gameStateAfter: null
             }
           });
-          console.log(`✅ Big blind recorded: ${bigBlindPlayer.id} posts $${bigBlindAmount}`);
+          console.log(`✅ Big blind recorded to DB: ${bigBlindPlayer.id} posts $${bigBlindAmount} (DB ID: ${bbRecord.id}, seq: ${bbRecord.actionSequence}, total pots: ${newGameState.pot})`);
         } catch (error) {
           console.error('❌ Failed to record big blind:', error);
         }
@@ -1140,11 +1145,11 @@ class TableManager {
     return createHash('sha256').update(hashInput).digest('hex');
   }
 
-  private async getNextActionSequence(tableId: number, handNumber: number): Promise<number> {
+  public async getNextActionSequence(tableId: number, handNumber: number): Promise<number> {
     const lastAction = await prisma.tableAction.findFirst({
       where: {
-        tableId: tableId,
-        handNumber: handNumber
+        tableId: tableId
+        // Removed handNumber filter to ensure global sequence uniqueness across all hands
       },
       orderBy: {
         actionSequence: 'desc'

@@ -70,7 +70,7 @@ describe('TableCard', () => {
     
     // Active status
     let statusBadge = screen.getByText('Active');
-    expect(statusBadge).toHaveStyle({ background: 'rgba(30, 142, 62, 0.9)', color: 'white' });
+    expect(statusBadge).toHaveStyle({ background: 'rgba(30, 142, 62, 0.9)', color: 'rgb(255, 255, 255)' });
 
     // Waiting status
     rerender(
@@ -84,7 +84,7 @@ describe('TableCard', () => {
       </MemoryRouter>
     );
     statusBadge = screen.getByText('Waiting');
-    expect(statusBadge).toHaveStyle({ background: 'rgba(230, 81, 0, 0.9)', color: 'white' });
+    expect(statusBadge).toHaveStyle({ background: 'rgba(230, 81, 0, 0.9)', color: 'rgb(255, 255, 255)' });
 
     // Full status
     rerender(
@@ -95,7 +95,7 @@ describe('TableCard', () => {
       </MemoryRouter>
     );
     statusBadge = screen.getByText('Full');
-    expect(statusBadge).toHaveStyle({ background: 'rgba(198, 40, 40, 0.9)', color: 'white' });
+    expect(statusBadge).toHaveStyle({ background: 'rgba(198, 40, 40, 0.9)', color: 'rgb(255, 255, 255)' });
   });
 
   it('displays different max players correctly', () => {

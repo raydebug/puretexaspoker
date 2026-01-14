@@ -213,9 +213,10 @@ async function performTestPlayerAction(playerNum, action, amount, isTotal = fals
     } else {
       console.log(`   ✅ Action applied via API`);
       
-      // Capture screenshot for player action with GH ID
-      const actionGHId = getNextActionGHId();
+      // Get REAL GH-ID from backend response (now returns actual game history ID)
+      const actionGHId = resJson.ghId;
       if (actionGHId) {
+        console.log(`   🔖 Got real GH-ID from backend: ${actionGHId}`);
         const browser = await getDriverSafe();
         if (browser) {
           // Convert action to lowercase for screenshot naming
@@ -233,6 +234,8 @@ async function performTestPlayerAction(playerNum, action, amount, isTotal = fals
             console.log(`   ⚠️ Screenshot capture failed: ${screenshotErr.message}`);
           }
         }
+      } else {
+        console.warn(`   ⚠️ No GH-ID returned from backend for this action`);
       }
     }
   } catch (e) {
@@ -793,6 +796,7 @@ When('the flop is dealt: {word}, {word}, {word}', async function (card1, card2, 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         tableId: 1,
+        phase: 'flop',
         communityCards: [
           { suit: card1.slice(-1) === '♠' ? 'spades' : card1.slice(-1) === '♥' ? 'hearts' : card1.slice(-1) === '♦' ? 'diamonds' : 'clubs', rank: card1.slice(0, -1) },
           { suit: card2.slice(-1) === '♠' ? 'spades' : card2.slice(-1) === '♥' ? 'hearts' : card2.slice(-1) === '♦' ? 'diamonds' : 'clubs', rank: card2.slice(0, -1) },
@@ -1183,6 +1187,85 @@ Then('I should see enhanced game history: {string}', async function (expectedTex
 
 When('the championship showdown begins', async function () {
   console.log('🎊 Championship showdown begins...');
+  
+  // Call backend API to advance to showdown phase (GH-59: SHOWDOWN_BEGIN)
+  try {
+    const advanceShowdownResponse = await fetch('http://localhost:3001/api/test/advance-phase', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tableId: 1,
+        phase: 'showdown'
+      })
+    });
+
+    if (advanceShowdownResponse.ok) {
+      console.log(`✅ Championship showdown phase advanced via API`);
+    } else {
+      console.log(`⚠️ Advance championship showdown API call failed: ${advanceShowdownResponse.status}`);
+    }
+  } catch (error) {
+    console.log(`⚠️ Advance championship showdown API error: ${error.message}`);
+  }
+  
+  // Record player reveals and winner determination for championship
+  // Round 3 (Championship): Player2 vs Player4, Player2 wins, Player4 eliminated
+  try {
+    const revealingPlayers = ['Player2', 'Player4'];
+    const winnerPlayer = 'Player2';
+    const eliminatedPlayer = 'Player4';
+    
+    // Record reveals (GH-60, GH-61)
+    for (const playerName of revealingPlayers) {
+      const revealResponse = await fetch('http://localhost:3001/api/test/showdown-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tableId: 1,
+          playerName: playerName,
+          action: 'REVEAL'
+        })
+      });
+      if (revealResponse.ok) {
+        console.log(`✅ Recorded reveal for ${playerName}`);
+      }
+    }
+    
+    // Record winner determination (GH-62)
+    if (winnerPlayer) {
+      const winResponse = await fetch('http://localhost:3001/api/test/showdown-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tableId: 1,
+          playerName: winnerPlayer,
+          action: 'WIN'
+        })
+      });
+      if (winResponse.ok) {
+        console.log(`✅ Recorded win for ${winnerPlayer}`);
+      }
+    }
+    
+    // Record elimination (GH-63)
+    if (eliminatedPlayer) {
+      const elimResponse = await fetch('http://localhost:3001/api/test/showdown-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tableId: 1,
+          playerName: eliminatedPlayer,
+          action: 'ELIMINATE'
+        })
+      });
+      if (elimResponse.ok) {
+        console.log(`✅ Recorded elimination for ${eliminatedPlayer}`);
+      }
+    }
+  } catch (error) {
+    console.log(`⚠️ Error recording championship showdown actions: ${error.message}`);
+  }
+  
   await updateTestPhase('complex_showdown', 26);
   console.log('✅ Championship showdown initiated');
 });
@@ -3770,6 +3853,103 @@ Then('I capture final comprehensive screenshot {string} showing full tournament 
 // Tournament-specific showdown steps
 When('the showdown begins for round {int}', async function (roundNumber) {
   console.log(`🏆 Showdown begins for tournament round ${roundNumber}`);
+  
+  // Call backend API to advance to showdown phase (GH-19: SHOWDOWN_BEGIN)
+  try {
+    const advanceShowdownResponse = await fetch('http://localhost:3001/api/test/advance-phase', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tableId: 1,
+        phase: 'showdown'
+      })
+    });
+
+    if (advanceShowdownResponse.ok) {
+      console.log(`✅ Showdown phase advanced via API for round ${roundNumber}`);
+    } else {
+      console.log(`⚠️ Advance showdown API call failed: ${advanceShowdownResponse.status}`);
+    }
+  } catch (error) {
+    console.log(`⚠️ Advance showdown API error: ${error.message}`);
+  }
+  
+  // Record player reveals and winner determination for this round
+  // These actions depend on round number to determine which players are still active
+  try {
+    // Determine active players based on tournament round
+    let revealingPlayers = [];
+    let winnerPlayer = null;
+    let eliminatedPlayer = null;
+    
+    if (roundNumber === 1) {
+      // Round 1: Player4 reveals, Player3 reveals, Player4 wins, Player3 eliminated
+      revealingPlayers = ['Player4', 'Player3'];
+      winnerPlayer = 'Player4';
+      eliminatedPlayer = 'Player3';
+    } else if (roundNumber === 2) {
+      // Round 2: Player2 reveals, Player1 reveals, Player2 wins, Player1 eliminated
+      revealingPlayers = ['Player2', 'Player1'];
+      winnerPlayer = 'Player2';
+      eliminatedPlayer = 'Player1';
+    } else if (roundNumber === 3) {
+      // Round 3 (Championship): Player2 reveals, Player4 reveals, Player2 wins, Player4 eliminated
+      revealingPlayers = ['Player2', 'Player4'];
+      winnerPlayer = 'Player2';
+      eliminatedPlayer = 'Player4';
+    }
+    
+    // Record reveals (GH-20, GH-21, etc.)
+    for (const playerName of revealingPlayers) {
+      const revealResponse = await fetch('http://localhost:3001/api/test/showdown-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tableId: 1,
+          playerName: playerName,
+          action: 'REVEAL'
+        })
+      });
+      if (revealResponse.ok) {
+        console.log(`✅ Recorded reveal for ${playerName}`);
+      }
+    }
+    
+    // Record winner determination (GH-22, GH-24, etc.)
+    if (winnerPlayer) {
+      const winResponse = await fetch('http://localhost:3001/api/test/showdown-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tableId: 1,
+          playerName: winnerPlayer,
+          action: 'WIN'
+        })
+      });
+      if (winResponse.ok) {
+        console.log(`✅ Recorded win for ${winnerPlayer}`);
+      }
+    }
+    
+    // Record elimination (GH-23, GH-25, etc.)
+    if (eliminatedPlayer) {
+      const elimResponse = await fetch('http://localhost:3001/api/test/showdown-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tableId: 1,
+          playerName: eliminatedPlayer,
+          action: 'ELIMINATE'
+        })
+      });
+      if (elimResponse.ok) {
+        console.log(`✅ Recorded elimination for ${eliminatedPlayer}`);
+      }
+    }
+  } catch (error) {
+    console.log(`⚠️ Error recording showdown actions: ${error.message}`);
+  }
+  
   await updateTestPhase(`round${roundNumber}_showdown`);
   console.log(`✅ Tournament round ${roundNumber} showdown initiated`);
 });

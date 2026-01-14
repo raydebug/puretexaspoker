@@ -18,7 +18,9 @@ describe('Tables API Integration Tests', () => {
     // Clear table state before each test
     locationManager.clearAllUsers();
     
-    // Optimized cleanup: only clear player associations, keep tables
+    // Clear all related data in correct foreign key order
+    await prisma.message.deleteMany({});
+    await prisma.tableAction.deleteMany({});
     await prisma.playerTable.deleteMany({});
     
     // Clear TableManager player state but keep table definitions

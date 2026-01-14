@@ -8,6 +8,9 @@ describe('TableManager', () => {
     (tableManager as any).tablePlayers.clear();
 
     // Clear database tables to ensure clean state - delete in correct order due to foreign keys
+    // Must delete in this order: messages -> tableActions -> playerTable -> table
+    await prisma.message.deleteMany({});
+    await prisma.tableAction.deleteMany({});
     await prisma.playerTable.deleteMany({});
     await prisma.table.deleteMany({});
 

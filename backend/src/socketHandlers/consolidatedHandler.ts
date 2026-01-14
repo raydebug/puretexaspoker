@@ -124,6 +124,24 @@ export function registerConsolidatedHandlers(io: Server) {
     io.emit('tablesUpdate', tables);
   };
 
+  // Broadcast all users at a specific table (players and observers)
+  const broadcastUsersAtTable = (tableId: number) => {
+    const tableIdNum = parseInt(tableId as any);
+    const observers = locationManager.getObserversAtTable(tableIdNum).map(u => u.nickname);
+    const players = tableManager.getTablePlayers(tableIdNum);
+
+    console.log(`📡 [SOCKET] Broadcasting users at table ${tableIdNum}:`, {
+      observersCount: observers.length,
+      playersCount: players.length
+    });
+
+    io.to(`table:${tableIdNum}`).emit('location:usersAtTable', {
+      tableId: tableIdNum,
+      observers,
+      players
+    });
+  };
+
   // Broadcast online users count update
   const broadcastOnlineUsersUpdate = () => {
     const totalOnlineUsers = authenticatedUsers.size;
@@ -252,8 +270,9 @@ export function registerConsolidatedHandlers(io: Server) {
           console.log(`[SOCKET] Sent initial game state to ${user.nickname} for table ${tableId}`);
         }
 
-        // Broadcast table update
+        // Broadcast table update and users
         broadcastTables();
+        broadcastUsersAtTable(tableId);
 
         console.log(`[SOCKET] User ${user.nickname} joined table ${tableId} as observer`);
       } catch (error) {
@@ -335,8 +354,9 @@ export function registerConsolidatedHandlers(io: Server) {
         // Emit success
         socket.emit('seatTaken', { tableId: user.location, seatNumber, buyIn });
 
-        // Broadcast table update
+        // Broadcast table update and users
         broadcastTables();
+        broadcastUsersAtTable(user.location as number);
 
         console.log(`[SOCKET] User ${user.nickname} took seat ${seatNumber} at table ${user.location}`);
       } catch (error) {
@@ -490,8 +510,9 @@ export function registerConsolidatedHandlers(io: Server) {
           }
         });
 
-        // Broadcast table update
+        // Broadcast table update and users
         broadcastTables();
+        broadcastUsersAtTable(tableId);
 
       } catch (error) {
         console.error(`[SOCKET] Error in autoSeat:`, error);
@@ -591,8 +612,10 @@ export function registerConsolidatedHandlers(io: Server) {
           throw new Error('Not at a table');
         }
 
+        const originalTableId = user.location as number;
+
         // Leave table in TableManager
-        tableManager.leaveTable(user.location, user.nickname);
+        tableManager.leaveTable(originalTableId, user.nickname);
 
         // Remove from database
         await prisma.playerTable.deleteMany({
@@ -608,8 +631,9 @@ export function registerConsolidatedHandlers(io: Server) {
 
         socket.emit('tableLeft', { tableId: user.location });
         broadcastTables();
+        broadcastUsersAtTable(originalTableId);
 
-        console.log(`[SOCKET] User ${user.nickname} left table ${user.location}`);
+        console.log(`[SOCKET] User ${user.nickname} left table ${originalTableId}`);
       } catch (error) {
         handleError(socket, error as Error, 'leaveTable');
       }
@@ -631,6 +655,9 @@ export function registerConsolidatedHandlers(io: Server) {
 
           broadcastOnlineUsersUpdate();
           broadcastTables();
+          if (user.location !== 'lobby') {
+            broadcastUsersAtTable(user.location as number);
+          }
 
           console.log(`[SOCKET] User ${user.nickname} disconnected`);
         }

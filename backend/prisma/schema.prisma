@@ -176,8 +176,8 @@ model PlayerTable {
 model TableAction {
   id        Int      @id @default(autoincrement())
   tableId   Int
-  playerId  String   // References Player.id (which is now nickname)
-  type      String   // bet, fold, check, raise, call, allIn
+  playerId  String?  // References Player.id (which is now nickname) - nullable for system actions like phase transitions
+  type      String   // bet, fold, check, raise, call, allIn, FLOP_DEALT, TURN_DEALT, RIVER_DEALT
   amount    Int?     // for bets/raises
   phase     String   // preflop, flop, turn, river, showdown
   handNumber Int     @default(1)
@@ -187,7 +187,7 @@ model TableAction {
   gameStateAfter String?  // Game state after action (compressed)
   
   table     Table    @relation(fields: [tableId], references: [id])
-  player    Player   @relation(fields: [playerId], references: [id])
+  player    Player?  @relation(fields: [playerId], references: [id])
   
   @@index([tableId, handNumber, actionSequence])
   @@index([tableId, timestamp])

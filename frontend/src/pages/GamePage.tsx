@@ -469,7 +469,7 @@ const GamePage: React.FC = () => {
             if (nickname && isObserver) {
               // Double-check: make sure the user is not actually seated at this table
               const socketCurrentPlayer = socketService.getCurrentPlayer();
-              const isSeatedPlayer = gameState?.players?.some(p => p.id === socketCurrentPlayer?.id || p.nickname === nickname);
+              const isSeatedPlayer = gameState?.players?.some(p => p.id === socketCurrentPlayer?.id || (p as any).nickname === nickname);
               
               if (!isSeatedPlayer) {
                 console.log('DEBUG: Adding current user to observers list (confirmed not seated):', nickname);
@@ -517,7 +517,7 @@ const GamePage: React.FC = () => {
         // Check if current user is actually seated at this table
         const isUserSeated = gameState.players.some(p => 
           p.name === nickname || 
-          p.nickname === nickname ||
+          (p as any).nickname === nickname ||
           p.id === nickname
         );
         

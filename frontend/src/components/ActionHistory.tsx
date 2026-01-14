@@ -306,9 +306,9 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ gameId, tableId, h
               const testPhase = (window as any).testPhase;
               console.log(`🧪 ActionHistory: Using test phase state: ${testPhase}`);
 
-              // Map test phase to action count
-              if (testPhase.includes('championship')) return 'championship';
-              if (testPhase.includes('tournament')) return 'tournament';
+              // Map test phase to action count - always return 'progressive' for comprehensive tests
+              // to ensure full cumulative history is shown across rounds
+              if (testPhase.includes('championship') || testPhase.includes('tournament') || testPhase.includes('progressive')) return 'progressive';
               if (testPhase.includes('preflop')) return 'preflop';
               if (testPhase.includes('flop')) return 'flop';
               if (testPhase.includes('turn')) return 'turn';
@@ -378,10 +378,25 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ gameId, tableId, h
         const data = await response.json();
 
         if (data.success) {
-          setActions(data.actionHistory || []);
-          console.log(`✅ ActionHistory: Loaded ${data.actionHistory?.length || 0} actions for detected phase '${detectedPhase}' (gameState: '${gameState?.phase}')`);
-          console.log(`🔍 ActionHistory: Action IDs = [${data.actionHistory?.map(a => a.id).join(', ') || 'none'}]`);
-          console.log(`🎯 ActionHistory: Progressive loading - requested ${progressiveActionCount}, got ${data.actionHistory?.length || 0}`);
+          const rawActions = (data as any).actionHistory || [];
+
+          // CRITICAL: Handle potential duplicate GH-IDs from the source (can happen if DB sequences overlap)
+          const uniqueActions: any[] = [];
+          const seenIds = new Set();
+
+          for (const action of rawActions) {
+            if (!seenIds.has(action.id)) {
+              seenIds.add(action.id);
+              uniqueActions.push(action);
+            } else {
+              console.warn(`⚠️ ActionHistory: Skipping duplicate action ID: ${action.id}`);
+            }
+          }
+
+          setActions(uniqueActions);
+          console.log(`✅ ActionHistory: Loaded ${uniqueActions.length} actions for detected phase '${detectedPhase}' (gameState: '${gameState?.phase}')`);
+          console.log(`🔍 ActionHistory: Action IDs = [${uniqueActions.map((a: any) => a.id).join(', ') || 'none'}]`);
+          console.log(`🎯 ActionHistory: Progressive loading - requested ${progressiveActionCount}, got ${uniqueActions.length}`);
         } else {
           throw new Error(data.error || 'Failed to fetch action history');
         }
@@ -434,7 +449,7 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ gameId, tableId, h
     const unsubscribeGameState = socketService.onGameState((gameState) => {
       console.log('🔌 ActionHistory: Received game state update via WebSocket');
       console.log('🎮 ActionHistory: Game state phase:', gameState?.phase);
-      console.log('🎮 ActionHistory: Game state actions count:', gameState?.actionHistory?.length || 'no action history');
+      console.log('🎮 ActionHistory: Game state actions count:', (gameState as any)?.actionHistory?.length || 'no action history');
 
       // Trigger a refresh of action history when game state changes
       setRefreshTrigger(prev => prev + 1);
