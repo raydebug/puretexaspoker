@@ -29,9 +29,10 @@ const Container = styled.div`
   margin: 0;
   border: none;
   border-bottom: 1px solid #333;
-  max-height: 300px;
-  overflow-y: auto;
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
   
   /* Custom scrollbar styling */
   &::-webkit-scrollbar {
@@ -64,6 +65,8 @@ const ActionList = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  flex: 1;
+  overflow-y: auto;
 `;
 
 const ActionItem = styled.div<{ isLatest?: boolean }>`

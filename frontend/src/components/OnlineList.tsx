@@ -9,6 +9,8 @@ const ListContainer = styled.div<{ $compact?: boolean }>`
     padding: 1rem;
     border: none;
     margin: 0;
+    flex: 0 0 auto;
+    min-height: 120px;
   ` : `
     position: fixed;
     right: 2rem;
