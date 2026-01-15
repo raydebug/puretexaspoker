@@ -186,32 +186,21 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ gameId, tableId, h
   // Auto-scroll to the bottom when new actions are added
   const scrollToBottom = useCallback(() => {
     if (containerRef.current) {
-      // Smooth scroll to bottom
-      containerRef.current.scrollTo({
-        top: containerRef.current.scrollHeight,
-        behavior: 'smooth'
-      });
+      // Scroll to bottom immediately to show latest action
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
   }, []);
 
-  // Effect to scroll to bottom when actions change
+  // Effect to scroll to bottom when actions change - triggers immediately for new actions
   useEffect(() => {
     if (actions.length > 0) {
-      // Small delay to ensure DOM is updated, then scroll to show latest action
+      // Scroll immediately to show the latest action
+      scrollToBottom();
+      
+      // Also schedule a secondary scroll with small delay to ensure DOM is fully updated
       const timer = setTimeout(() => {
         scrollToBottom();
-      }, 150);
-
-      return () => clearTimeout(timer);
-    }
-  }, [actions.length, scrollToBottom]);
-
-  // Also scroll when the actions array content changes (not just length)
-  useEffect(() => {
-    if (actions.length > 0) {
-      const timer = setTimeout(() => {
-        scrollToBottom();
-      }, 200);
+      }, 100);
 
       return () => clearTimeout(timer);
     }
