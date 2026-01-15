@@ -553,10 +553,10 @@ Then(/^I capture screenshot "([^"]*)"(?: showing (.*))?$/, { timeout: 60000 }, a
   console.log(`📸 Capturing screenshot "${screenshotName}"${description ? ': ' + description : ''}`);
   
   // Check if this screenshot immediately follows a GH-id verification
-  const lastVerifiedGHId = (global as any).lastVerifiedGHId;
+  const lastVerifiedGHId = global.lastVerifiedGHId;
   if (lastVerifiedGHId) {
     console.log(`✅ Screenshot follows GH-id verification for "${lastVerifiedGHId}", no additional wait needed`);
-    (global as any).lastVerifiedGHId = null; // Clear for next verification
+    global.lastVerifiedGHId = null; // Clear for next verification
   } else {
     // This screenshot is not immediately after verification, so add standard wait
     console.log(`⏳ Screenshot not following verification, waiting 2000ms for UI updates...`);
@@ -4531,7 +4531,10 @@ Then(/^I should see game history entry "([^"]*)"(?:\s+#.*)?$/, { timeout: 20000 
   }
   
   // Store the last verified GH-id for subsequent screenshot
-  (global as any).lastVerifiedGHId = ghId;
+  if (!global.lastVerifiedGHId) {
+    global.lastVerifiedGHId = {};
+  }
+  global.lastVerifiedGHId = ghId;
   console.log(`📸 GH-id "${ghId}" verified and ready for screenshot`);
 });
 
