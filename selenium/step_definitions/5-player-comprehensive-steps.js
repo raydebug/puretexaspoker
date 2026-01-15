@@ -552,11 +552,16 @@ Then('the game starts with enhanced blinds structure:', async function (dataTabl
 Then(/^I capture screenshot "([^"]*)"(?: showing (.*))?$/, { timeout: 60000 }, async function (screenshotName, description) {
   console.log(`📸 Capturing screenshot "${screenshotName}"${description ? ': ' + description : ''}`);
   
-  // CRITICAL: Wait for game history to fully load and render
-  // This includes API fetch, DOM update, and component re-render
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  
-  console.log(`📸 After 2000ms wait, now scrolling and capturing...`);
+  // Check if this screenshot immediately follows a GH-id verification
+  const lastVerifiedGHId = (global as any).lastVerifiedGHId;
+  if (lastVerifiedGHId) {
+    console.log(`✅ Screenshot follows GH-id verification for "${lastVerifiedGHId}", no additional wait needed`);
+    (global as any).lastVerifiedGHId = null; // Clear for next verification
+  } else {
+    // This screenshot is not immediately after verification, so add standard wait
+    console.log(`⏳ Screenshot not following verification, waiting 2000ms for UI updates...`);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+  }
   
   // Ensure game history is scrolled to show latest entry in all browsers
   if (global.players) {
@@ -565,30 +570,24 @@ Then(/^I capture screenshot "([^"]*)"(?: showing (.*))?$/, { timeout: 60000 }, a
         try {
           const historyElements = await player.driver.findElements(By.css('[data-testid="game-history"]'));
           if (historyElements.length > 0) {
-            // First scroll attempt
+            // Scroll to bottom to ensure latest entry is visible
             await player.driver.executeScript("arguments[0].scrollTop = arguments[0].scrollHeight", historyElements[0]);
-            console.log(`📸 ${playerName}: Scrolled game history to bottom`);
             
             // Get the content to verify GH-ids are present
             try {
               const historyText = await historyElements[0].getText();
               const ghMatches = historyText.match(/GH-\d+/g) || [];
-              console.log(`📸 ${playerName}: Game history contains ${ghMatches.length} GH-ids: ${ghMatches.slice(0, 5).join(', ')}${ghMatches.length > 5 ? '...' : ''}`);
+              console.log(`📸 ${playerName}: Game history contains ${ghMatches.length} GH-ids: ${ghMatches.slice(-5).join(', ')}`);
             } catch (textError) {
               console.log(`📸 ${playerName}: Could not read game history text`);
             }
-          } else {
-            console.log(`📸 ${playerName}: No game history element found`);
           }
         } catch (e) {
-          console.log(`📸 ${playerName}: Error during game history scroll: ${e.message}`);
+          console.log(`⚠️ ${playerName}: Error scrolling game history: ${e.message}`);
         }
       }
     }
   }
-  
-  // Wait one more time before final screenshot
-  await new Promise(resolve => setTimeout(resolve, 500));
   
   const browser = await getDriverSafe();
   if (browser) {
@@ -4530,6 +4529,10 @@ Then(/^I should see game history entry "([^"]*)"(?:\s+#.*)?$/, { timeout: 20000 
     }
     throw new Error(`❌ Game history entry "${ghId}" not found in UI`);
   }
+  
+  // Store the last verified GH-id for subsequent screenshot
+  (global as any).lastVerifiedGHId = ghId;
+  console.log(`📸 GH-id "${ghId}" verified and ready for screenshot`);
 });
 
 // Verify a range of GH- IDs exist in DOM
