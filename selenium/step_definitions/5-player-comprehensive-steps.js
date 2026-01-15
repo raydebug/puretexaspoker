@@ -552,28 +552,47 @@ Then('the game starts with enhanced blinds structure:', async function (dataTabl
 Then(/^I capture screenshot "([^"]*)"(?: showing (.*))?$/, { timeout: 60000 }, async function (screenshotName, description) {
   console.log(`📸 Capturing screenshot "${screenshotName}"${description ? ': ' + description : ''}`);
   
-  // Wait a bit for UI to render and game history to update
-  await new Promise(resolve => setTimeout(resolve, 500));
+  // CRITICAL: Wait for game history to fully load and render
+  // This includes API fetch, DOM update, and component re-render
+  await new Promise(resolve => setTimeout(resolve, 2000));
   
-  // Ensure game history is scrolled to show latest entry
+  console.log(`📸 After 2000ms wait, now scrolling and capturing...`);
+  
+  // Ensure game history is scrolled to show latest entry in all browsers
   if (global.players) {
     for (const [playerName, player] of Object.entries(global.players)) {
       if (player && player.driver) {
         try {
           const historyElements = await player.driver.findElements(By.css('[data-testid="game-history"]'));
           if (historyElements.length > 0) {
-            // Scroll to bottom to ensure latest entry is visible
+            // First scroll attempt
             await player.driver.executeScript("arguments[0].scrollTop = arguments[0].scrollHeight", historyElements[0]);
+            console.log(`📸 ${playerName}: Scrolled game history to bottom`);
+            
+            // Get the content to verify GH-ids are present
+            try {
+              const historyText = await historyElements[0].getText();
+              const ghMatches = historyText.match(/GH-\d+/g) || [];
+              console.log(`📸 ${playerName}: Game history contains ${ghMatches.length} GH-ids: ${ghMatches.slice(0, 5).join(', ')}${ghMatches.length > 5 ? '...' : ''}`);
+            } catch (textError) {
+              console.log(`📸 ${playerName}: Could not read game history text`);
+            }
+          } else {
+            console.log(`📸 ${playerName}: No game history element found`);
           }
         } catch (e) {
-          // Ignore scroll errors, not critical for screenshot
+          console.log(`📸 ${playerName}: Error during game history scroll: ${e.message}`);
         }
       }
     }
   }
   
+  // Wait one more time before final screenshot
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
   const browser = await getDriverSafe();
   if (browser) {
+    console.log(`📸 Taking screenshot: ${screenshotName}`);
     await screenshotHelper.captureAndLogScreenshot(browser, screenshotName, tournamentState.currentRound);
   }
 });
@@ -917,8 +936,10 @@ When('the flop is dealt: {word}, {word}, {word}', async function (card1, card2, 
     tournamentState.lastDealtGHId = flopGHId;
     
     // Wait for game history to update with the new GH IDs before taking screenshot
-    // Add generous delay to allow UI to render all GH entries
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Add generous delay to allow API fetch, DOM update, and component re-render
+    console.log(`⏳ Flop deal: Waiting 3000ms for game history API and UI to update...`);
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    console.log(`✅ Flop deal: Game history should be updated, scrolling and capturing`);
     
     // Ensure game history is scrolled to bottom in all browsers
     if (global.players) {
@@ -928,10 +949,10 @@ When('the flop is dealt: {word}, {word}, {word}', async function (card1, card2, 
             const historyElements = await player.driver.findElements(By.css('[data-testid="game-history"]'));
             if (historyElements.length > 0) {
               await player.driver.executeScript("arguments[0].scrollTop = arguments[0].scrollHeight", historyElements[0]);
+              console.log(`📸 ${playerName}: Scrolled game history for flop screenshot`);
             }
           } catch (e) {
-            // Ignore scroll errors
-          }
+            console.log(`⚠️ ${playerName}: Error scrolling for flop screenshot: ${e.message}`);
         }
       }
     }
@@ -940,6 +961,7 @@ When('the flop is dealt: {word}, {word}, {word}', async function (card1, card2, 
     const browser = await getDriverSafe();
     if (browser) {
       try {
+        console.log(`📸 Capturing flop_dealt_${flopGHId}`);
         await screenshotHelper.captureAndLogScreenshot(browser, `flop_dealt_${flopGHId}`, tournamentState.currentRound);
       } catch (error) {
         console.log(`⚠️ Flop dealt screenshot failed: ${error.message}`);
@@ -1054,7 +1076,9 @@ When('the turn is dealt: {word}', async function (turnCard) {
     tournamentState.lastDealtGHId = turnGHId;
     
     // Wait for game history to update with the new GH IDs before taking screenshot
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    console.log(`⏳ Turn deal: Waiting 3000ms for game history API and UI to update...`);
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    console.log(`✅ Turn deal: Game history should be updated, scrolling and capturing`);
     
     // Ensure game history is scrolled to bottom in all browsers
     if (global.players) {
@@ -1064,9 +1088,10 @@ When('the turn is dealt: {word}', async function (turnCard) {
             const historyElements = await player.driver.findElements(By.css('[data-testid="game-history"]'));
             if (historyElements.length > 0) {
               await player.driver.executeScript("arguments[0].scrollTop = arguments[0].scrollHeight", historyElements[0]);
+              console.log(`📸 ${playerName}: Scrolled game history for turn screenshot`);
             }
           } catch (e) {
-            // Ignore scroll errors
+            console.log(`⚠️ ${playerName}: Error scrolling for turn screenshot: ${e.message}`);
           }
         }
       }
@@ -1076,6 +1101,8 @@ When('the turn is dealt: {word}', async function (turnCard) {
     const browser = await getDriverSafe();
     if (browser) {
       try {
+        console.log(`📸 Capturing turn_dealt_${turnGHId}`);
+
         await screenshotHelper.captureAndLogScreenshot(browser, `turn_dealt_${turnGHId}`, tournamentState.currentRound);
       } catch (error) {
         console.log(`⚠️ Turn dealt screenshot failed: ${error.message}`);
@@ -1192,7 +1219,9 @@ When('the river is dealt: {word}', async function (riverCard) {
     tournamentState.lastDealtGHId = riverGHId;
     
     // Wait for game history to update with the new GH IDs before taking screenshot
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    console.log(`⏳ River deal: Waiting 3000ms for game history API and UI to update...`);
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    console.log(`✅ River deal: Game history should be updated, scrolling and capturing`);
     
     // Ensure game history is scrolled to bottom in all browsers
     if (global.players) {
@@ -1202,10 +1231,10 @@ When('the river is dealt: {word}', async function (riverCard) {
             const historyElements = await player.driver.findElements(By.css('[data-testid="game-history"]'));
             if (historyElements.length > 0) {
               await player.driver.executeScript("arguments[0].scrollTop = arguments[0].scrollHeight", historyElements[0]);
+              console.log(`📸 ${playerName}: Scrolled game history for river screenshot`);
             }
           } catch (e) {
-            // Ignore scroll errors
-          }
+            console.log(`⚠️ ${playerName}: Error scrolling for river screenshot: ${e.message}`);
         }
       }
     }
@@ -1214,6 +1243,7 @@ When('the river is dealt: {word}', async function (riverCard) {
     const browser = await getDriverSafe();
     if (browser) {
       try {
+        console.log(`📸 Capturing river_dealt_${riverGHId}`);
         await screenshotHelper.captureAndLogScreenshot(browser, `river_dealt_${riverGHId}`, tournamentState.currentRound);
       } catch (error) {
         console.log(`⚠️ River dealt screenshot failed: ${error.message}`);
