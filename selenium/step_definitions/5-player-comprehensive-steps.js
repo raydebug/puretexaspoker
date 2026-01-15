@@ -551,6 +551,27 @@ Then('the game starts with enhanced blinds structure:', async function (dataTabl
 
 Then(/^I capture screenshot "([^"]*)"(?: showing (.*))?$/, { timeout: 60000 }, async function (screenshotName, description) {
   console.log(`📸 Capturing screenshot "${screenshotName}"${description ? ': ' + description : ''}`);
+  
+  // Wait a bit for UI to render and game history to update
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  // Ensure game history is scrolled to show latest entry
+  if (global.players) {
+    for (const [playerName, player] of Object.entries(global.players)) {
+      if (player && player.driver) {
+        try {
+          const historyElements = await player.driver.findElements(By.css('[data-testid="game-history"]'));
+          if (historyElements.length > 0) {
+            // Scroll to bottom to ensure latest entry is visible
+            await player.driver.executeScript("arguments[0].scrollTop = arguments[0].scrollHeight", historyElements[0]);
+          }
+        } catch (e) {
+          // Ignore scroll errors, not critical for screenshot
+        }
+      }
+    }
+  }
+  
   const browser = await getDriverSafe();
   if (browser) {
     await screenshotHelper.captureAndLogScreenshot(browser, screenshotName, tournamentState.currentRound);
@@ -4361,8 +4382,8 @@ Then(/^I should see game history entry "([^"]*)"(?:\s+#.*)?$/, { timeout: 20000 
 
   let foundInAny = false;
   let checksAttempted = 0;
-  const maxRetries = 10;
-  const retryInterval = 1000;
+  const maxRetries = 15;
+  const retryInterval = 500;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     if (global.players) {
@@ -4379,7 +4400,9 @@ Then(/^I should see game history entry "([^"]*)"(?:\s+#.*)?$/, { timeout: 20000 
               if (historyText.includes(ghId)) {
                 console.log(`✅ Found entry "${ghId}" in ${playerName}'s UI (Attempt ${attempt})`);
                 foundInAny = true;
-                // No verification screenshot here — screenshots are taken when GH-ID is generated during action execution.
+                
+                // After finding, wait a bit more to ensure UI has settled before screenshot
+                await new Promise(resolve => setTimeout(resolve, 300));
                 break;
               }
             }
