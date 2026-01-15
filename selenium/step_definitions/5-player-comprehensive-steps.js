@@ -952,6 +952,7 @@ When('the flop is dealt: {word}, {word}, {word}', async function (card1, card2, 
             }
           } catch (e) {
             console.log(`⚠️ ${playerName}: Error scrolling for flop screenshot: ${e.message}`);
+          }
         }
       }
     }
@@ -1234,6 +1235,7 @@ When('the river is dealt: {word}', async function (riverCard) {
             }
           } catch (e) {
             console.log(`⚠️ ${playerName}: Error scrolling for river screenshot: ${e.message}`);
+          }
         }
       }
     }

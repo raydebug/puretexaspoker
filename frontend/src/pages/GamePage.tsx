@@ -88,6 +88,7 @@ const LeftSidebar = styled.div`
   gap: 0;
   padding: 0;
   background: rgba(0, 0, 0, 0.2);
+  min-height: 0;
 `;
 
 const TableContainer = styled.div`
