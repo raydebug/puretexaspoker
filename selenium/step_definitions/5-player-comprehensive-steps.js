@@ -915,6 +915,27 @@ When('the flop is dealt: {word}, {word}, {word}', async function (card1, card2, 
   const flopGHId = getDealtEventGHId('flop', tournamentState.currentRound);
   if (flopGHId) {
     tournamentState.lastDealtGHId = flopGHId;
+    
+    // Wait for game history to update with the new GH IDs before taking screenshot
+    // Add generous delay to allow UI to render all GH entries
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Ensure game history is scrolled to bottom in all browsers
+    if (global.players) {
+      for (const [playerName, player] of Object.entries(global.players)) {
+        if (player && player.driver) {
+          try {
+            const historyElements = await player.driver.findElements(By.css('[data-testid="game-history"]'));
+            if (historyElements.length > 0) {
+              await player.driver.executeScript("arguments[0].scrollTop = arguments[0].scrollHeight", historyElements[0]);
+            }
+          } catch (e) {
+            // Ignore scroll errors
+          }
+        }
+      }
+    }
+    
     // Capture flop dealt event screenshot with GH ID
     const browser = await getDriverSafe();
     if (browser) {
@@ -1031,6 +1052,26 @@ When('the turn is dealt: {word}', async function (turnCard) {
   const turnGHId = getDealtEventGHId('turn', tournamentState.currentRound);
   if (turnGHId) {
     tournamentState.lastDealtGHId = turnGHId;
+    
+    // Wait for game history to update with the new GH IDs before taking screenshot
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Ensure game history is scrolled to bottom in all browsers
+    if (global.players) {
+      for (const [playerName, player] of Object.entries(global.players)) {
+        if (player && player.driver) {
+          try {
+            const historyElements = await player.driver.findElements(By.css('[data-testid="game-history"]'));
+            if (historyElements.length > 0) {
+              await player.driver.executeScript("arguments[0].scrollTop = arguments[0].scrollHeight", historyElements[0]);
+            }
+          } catch (e) {
+            // Ignore scroll errors
+          }
+        }
+      }
+    }
+    
     // Capture turn dealt event screenshot with GH ID
     const browser = await getDriverSafe();
     if (browser) {
@@ -1149,6 +1190,26 @@ When('the river is dealt: {word}', async function (riverCard) {
   const riverGHId = getDealtEventGHId('river', tournamentState.currentRound);
   if (riverGHId) {
     tournamentState.lastDealtGHId = riverGHId;
+    
+    // Wait for game history to update with the new GH IDs before taking screenshot
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Ensure game history is scrolled to bottom in all browsers
+    if (global.players) {
+      for (const [playerName, player] of Object.entries(global.players)) {
+        if (player && player.driver) {
+          try {
+            const historyElements = await player.driver.findElements(By.css('[data-testid="game-history"]'));
+            if (historyElements.length > 0) {
+              await player.driver.executeScript("arguments[0].scrollTop = arguments[0].scrollHeight", historyElements[0]);
+            }
+          } catch (e) {
+            // Ignore scroll errors
+          }
+        }
+      }
+    }
+    
     // Capture river dealt event screenshot with GH ID
     const browser = await getDriverSafe();
     if (browser) {
