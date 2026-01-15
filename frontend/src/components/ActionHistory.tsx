@@ -197,12 +197,19 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ gameId, tableId, h
       // Scroll immediately to show the latest action
       scrollToBottom();
       
-      // Also schedule a secondary scroll with small delay to ensure DOM is fully updated
-      const timer = setTimeout(() => {
+      // Also schedule multiple scroll attempts with increasing delays to ensure DOM is fully updated
+      const timer1 = setTimeout(() => {
         scrollToBottom();
       }, 100);
+      
+      const timer2 = setTimeout(() => {
+        scrollToBottom();
+      }, 300);
 
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+      };
     }
   }, [actions, scrollToBottom]);
 
@@ -453,6 +460,25 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ gameId, tableId, h
       unsubscribeGameState();
     };
   }, [gameId, tableId]); // Re-setup listeners when game/table changes
+
+  // AUTO-POLLING: Continuously refresh game history to ensure latest updates
+  useEffect(() => {
+    if (!gameId && !tableId) return;
+
+    console.log('⏱️ ActionHistory: Setting up auto-polling for continuous game history updates');
+
+    // Set up interval to poll for updates every 1 second
+    const pollInterval = setInterval(() => {
+      console.log('⏱️ ActionHistory: Auto-polling trigger for fresh game history');
+      setRefreshTrigger(prev => prev + 1);
+    }, 1000);
+
+    // Clean up interval on unmount
+    return () => {
+      clearInterval(pollInterval);
+      console.log('⏱️ ActionHistory: Cleared auto-polling interval');
+    };
+  }, [gameId, tableId]); // Re-setup polling when game/table changes
 
   // TEST MODE INTEGRATION: Listen for test phase changes in testing environment
   useEffect(() => {
