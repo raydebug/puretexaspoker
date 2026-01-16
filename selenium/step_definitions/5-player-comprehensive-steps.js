@@ -4332,6 +4332,9 @@ Then('Player{int} should win with {string} in tournament round {int}', async fun
 Then('I should see game history entry {string} with text {string}', { timeout: 15000 }, async function (ghId, expectedText) {
   console.log(`🔍 Verifying DOM contains game history entry "${ghId}" with text: "${expectedText}"`);
 
+  // CRITICAL: First verify game history has loaded with data
+  await verifyGameHistoryLoaded();
+
   let verifiedBrowsers = [];
 
   for (const [playerName, player] of Object.entries(global.players || {})) {
@@ -4342,7 +4345,7 @@ Then('I should see game history entry {string} with text {string}', { timeout: 1
         const historyText = await historyElement.getText();
 
         // DEBUG: Show full history content
-        console.log(`🔍 DEBUG ${playerName}: Full game history content (${historyText.length} chars):`);
+        console.log(`🔍 DEBUG ${playerName}: Full game history content (${historyText.length} chars)`);
         const lines = historyText.split('\n');
         lines.forEach((line, index) => {
           if (line.trim()) {
@@ -4381,6 +4384,9 @@ Then('I should see game history entry {string} with text {string}', { timeout: 1
 // Verify specific GH- ID exists in DOM regardless of text content
 Then('I should see game history entry {string} showing {string} won ${string}', { timeout: 15000 }, async function (ghId, playerName, amount) {
   console.log(`🔍 Verifying DOM contains winner entry "${ghId}" with text: ${playerName} won ${amount}`);
+
+  // CRITICAL: First verify game history has loaded with data
+  await verifyGameHistoryLoaded();
 
   let verificationResults = [];
 
@@ -4422,6 +4428,9 @@ Then('I should see game history entry {string} showing {string} won ${string}', 
 Then('I should see game history entry {string} showing {string} won {string}', { timeout: 15000 }, async function (ghId, playerName, amount) {
   console.log(`🔍 Verifying DOM contains winner entry: "${ghId}" for ${playerName} winning ${amount}`);
 
+  // CRITICAL: First verify game history has loaded with data
+  await verifyGameHistoryLoaded();
+
   const browsers = [
     global.players?.Player1?.driver,
     global.players?.Player2?.driver,
@@ -4457,8 +4466,82 @@ Then('I should see game history entry {string} showing {string} won {string}', {
   }
 });
 
+/**
+ * Helper function to verify game history has loaded (no "no actions recorded yet" message)
+ * This waits for at least ONE player to have game history data loaded
+ */
+async function verifyGameHistoryLoaded() {
+  console.log('🔍 Checking that at least one game history panel has loaded data...');
+  
+  const maxRetries = 15;
+  const retryInterval = 300;
+  let anyPlayerHasData = false;
+  let emptyMessageCount = 0;
+  let totalPlayersChecked = 0;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    if (!global.players) {
+      console.log('⚠️ No global.players available');
+      return;
+    }
+    
+    anyPlayerHasData = false;
+    emptyMessageCount = 0;
+    totalPlayersChecked = 0;
+    
+    for (const [playerName, player] of Object.entries(global.players)) {
+      if (player && player.driver) {
+        totalPlayersChecked++;
+        try {
+          const historyPanel = await player.driver.findElements(By.css('[data-testid="game-history"], .game-history'));
+          if (historyPanel.length > 0) {
+            const text = await historyPanel[0].getText();
+            
+            // Check for "no actions recorded yet" message
+            if (text.includes('No actions recorded yet') || text.includes('no actions recorded')) {
+              emptyMessageCount++;
+            } else if (text.trim().length > 0) {
+              console.log(`✅ ${playerName}: Game history has data (${text.length} chars)`);
+              anyPlayerHasData = true;
+            }
+          }
+        } catch (e) {
+          // Silently skip if element not found
+        }
+      }
+    }
+    
+    // Success if at least one player has data
+    if (anyPlayerHasData) {
+      console.log(`✅ Game history verified: ${emptyMessageCount}/${totalPlayersChecked} showing empty, at least 1 has data`);
+      return;
+    }
+    
+    // If ALL players are showing empty message, that's an error
+    if (emptyMessageCount === totalPlayersChecked && totalPlayersChecked > 0) {
+      if (attempt < maxRetries) {
+        console.log(`⚠️ All ${totalPlayersChecked} players showing empty message (Attempt ${attempt}/${maxRetries}), retrying...`);
+        await new Promise(resolve => setTimeout(resolve, retryInterval));
+        continue;
+      } else {
+        console.log(`❌ After ${maxRetries} attempts, ALL players still showing "no actions recorded yet"`);
+        throw new Error('❌ Game history did not load on any player after multiple retries');
+      }
+    }
+    
+    if (attempt < maxRetries) {
+      await new Promise(resolve => setTimeout(resolve, retryInterval));
+    }
+  }
+  
+  console.log('✅ Game history verified as loaded with data');
+}
+
 Then(/^I should see game history entry "([^"]*)"(?:\s+#.*)?$/, { timeout: 20000 }, async function (ghId) {
   console.log(`🔍 Verifying game history entry "${ghId}" in UI...`);
+
+  // CRITICAL: First verify game history has loaded with data
+  await verifyGameHistoryLoaded();
 
   // Extract numeric ID to advance backend history counter
   const ghNum = parseInt(ghId.replace('GH-', ''));
