@@ -90,13 +90,15 @@ const ActionItem = styled.div<{ isLatest?: boolean }>`
 `;
 
 const ActionId = styled.div`
-  font-size: 0.7rem;
-  color: #888;
+  font-size: 0.85rem;
+  color: #ffd700;
   font-family: monospace;
-  margin-top: 2px;
-  padding: 1px 4px;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 2px;
+  font-weight: bold;
+  margin-top: 4px;
+  padding: 3px 6px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 215, 0, 0.6);
+  border-radius: 3px;
   display: inline-block;
 `;
 

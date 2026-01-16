@@ -145,7 +145,28 @@ const GamePage: React.FC = () => {
   const [availableSeats, setAvailableSeats] = useState<number[]>([]);
   const [showSeatDialog, setShowSeatDialog] = useState(false);
   const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
-  const [currentTableNumber, setCurrentTableNumber] = useState<number | null>(null);
+  const [currentTableNumber, setCurrentTableNumber] = useState<number | null>(() => {
+    // Initialize with table number immediately from available sources
+    // 1. Try URL search params first (most reliable for auto-seat)
+    const urlParams = new URLSearchParams(window.location.search);
+    const tableParam = urlParams.get('table');
+    if (tableParam) {
+      const num = parseInt(tableParam);
+      console.log('🎯 GamePage: Initialized currentTableNumber from URL param:', num);
+      return num;
+    }
+    
+    // 2. Try tableId from URL path
+    if (tableId && /^\d+$/.test(tableId)) {
+      const num = parseInt(tableId);
+      console.log('🎯 GamePage: Initialized currentTableNumber from tableId:', num);
+      return num;
+    }
+    
+    // 3. Default to table 1 for testing
+    console.log('🎯 GamePage: Defaulting currentTableNumber to 1');
+    return 1;
+  });
   const [pageReady, setPageReady] = useState(false);
 
   
