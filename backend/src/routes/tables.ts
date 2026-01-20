@@ -229,6 +229,36 @@ router.post('/:tableId/spectate', async (req, res) => {
   }
 });
 
+// Start game at a table
+router.post('/:tableId/start', async (req, res) => {
+  try {
+    const { tableId } = req.params;
+    const tableNumber = parseInt(tableId);
+
+    // Validate table ID
+    if (!isValidTableId(tableNumber)) {
+      const availableIds = getAvailableTableIds();
+      return res.status(400).json({ error: `Only tables ${availableIds.join(', ')} are available` });
+    }
+
+    // Start game using TableManager
+    const result = await tableManager.startTableGame(tableNumber);
+
+    if (!result.success) {
+      return res.status(400).json({ error: result.error });
+    }
+
+    res.status(200).json({
+      success: true,
+      gameState: result.gameState
+    });
+
+  } catch (error) {
+    console.error('Error starting game:', error);
+    res.status(500).json({ error: 'Failed to start game' });
+  }
+});
+
 // Get game history for a table
 router.get('/:tableId/game/history', async (req, res) => {
   try {

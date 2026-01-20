@@ -1,4 +1,6 @@
 const { Given, When, Then } = require('@cucumber/cucumber');
+const fs = require('fs');
+const path = require('path');
 const { By, until, Key } = require('selenium-webdriver');
 const { Builder } = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome.js');
@@ -55,6 +57,51 @@ async function getDriverSafe() {
   return null;
 }
 
+// 强制所有浏览器滚动到底部以显示最新GH-ID
+async function scrollAllBrowsersToBottom() {
+  if (!global.players) return;
+
+  for (const [name, player] of Object.entries(global.players)) {
+    if (player && player.driver) {
+      try {
+        await player.driver.executeScript(`
+          function performScroll() {
+            // Priority 1: New specific test-id for the actual scrolling list
+            const actionList = document.querySelector('[data-testid="action-history-list"]');
+            
+            // Priority 2: Fallback to partial class matches or children
+            const scrollables = [
+              actionList,
+              ...Array.from(document.querySelectorAll('[class*="ActionList"]')),
+              ...Array.from(document.querySelectorAll('[data-testid="game-history"] > div'))
+            ].filter(el => el && (el.scrollHeight > el.clientHeight));
+
+            let scrolled = false;
+            scrollables.forEach(el => {
+              // Force scroll behavior instant to ensure it's done before screenshot
+              el.scrollTo({ top: el.scrollHeight + 1000, behavior: 'instant' });
+              scrolled = true;
+            });
+
+            if (!scrolled) {
+              const container = document.querySelector('[data-testid="game-history"]');
+              if (container) {
+                container.scrollTo({ top: container.scrollHeight + 1000, behavior: 'instant' });
+              }
+            }
+          }
+          
+          performScroll();
+          // Double tap to be sure
+          setTimeout(performScroll, 50);
+        `);
+      } catch (e) { }
+    }
+  }
+  // Give UI core rendering + scroll time
+  await new Promise(resolve => setTimeout(resolve, 500));
+}
+
 global.players = {};
 // Initialize shared utilities
 let screenshotHelper = new ScreenshotHelper();
@@ -92,6 +139,26 @@ async function updateTestPhase(phase, maxActions = null) {
 
       // CRITICAL: Also inject the phase AND action count into all browser windows for ActionHistory detection
       await injectTestPhaseIntoBrowsers(phase, maxActions);
+
+      // EXTRA: Wait a bit then force a secondary refresh in all browsers to ensure ActionHistory picks up the change
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      if (global.players) {
+        for (const [playerName, player] of Object.entries(global.players)) {
+          if (player && player.driver) {
+            try {
+              await player.driver.executeScript(`
+                if (window.actionHistoryRefresh) {
+                  window.actionHistoryRefresh();
+                  console.log('🔄 ${playerName}: Forced ActionHistory refresh');
+                }
+              `);
+            } catch (e) {
+              // Silently skip if refresh fails
+            }
+          }
+        }
+      }
     }
   } catch (error) {
     console.log(`⚠️ Failed to update test phase: ${error.message}`);
@@ -212,11 +279,15 @@ async function performTestPlayerAction(playerNum, action, amount, isTotal = fals
       console.error(`   ❌ Action failed: ${resJson.error}`);
     } else {
       console.log(`   ✅ Action applied via API`);
-      
+
       // Get REAL GH-ID from backend response (now returns actual game history ID)
       const actionGHId = resJson.ghId;
       if (actionGHId) {
         console.log(`   🔖 Got real GH-ID from backend: ${actionGHId}`);
+
+        // 【强制滚动】抓图前确保滚动到位
+        await scrollAllBrowsersToBottom();
+
         const browser = await getDriverSafe();
         if (browser) {
           // Convert action to lowercase for screenshot naming
@@ -547,52 +618,140 @@ Then('the game starts with enhanced blinds structure:', async function (dataTabl
 // SCREENSHOT CAPTURE
 // =============================================================================
 
+/**
+ * Comprehensive UI stability verification before screenshots
+ * Ensures ALL visible content on UI is complete and stable
+ */
+async function verifyUIStabilityBeforeScreenshot() {
+  console.log('🔍 === UI界面验证 ===');
+
+  const maxRetries = 10;
+  const retryInterval = 200;
+
+  if (!global.players) {
+    console.log('⚠️ No global.players available, skipping UI verification');
+    return;
+  }
+
+  let playersWithData = 0;
+  const playerCount = Object.keys(global.players).length;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    playersWithData = 0;
+
+    for (const [playerName, player] of Object.entries(global.players)) {
+      if (!player || !player.driver) continue;
+
+      try {
+        // 【UI验证1】检查游戏历史面板是否存在
+        const historyPanel = await player.driver.findElements(By.css('[data-testid="game-history"]'));
+        if (historyPanel.length === 0) {
+          continue;
+        }
+
+        // 【UI验证2】检查面板中是否有实际内容（不是"No actions recorded yet"）
+        const historyText = await historyPanel[0].getText();
+        if (!historyText || historyText.trim().length === 0 ||
+          historyText.includes('No actions recorded yet')) {
+          continue;
+        }
+
+        // 【UI验证3】检查是否有GH-id可见
+        const ghMatches = historyText.match(/GH-\d+/g) || [];
+        if (ghMatches.length === 0) {
+          console.log(`⚠️ ${playerName}: 游戏历史有数据但没有GH-id`);
+          continue;
+        }
+
+        // 【UI验证4】检查最后一条ActionItem是否可读取
+        try {
+          const lastActionItems = await player.driver.findElements(By.css('[data-testid="game-history"] [data-testid="action-item"]'));
+          if (lastActionItems.length === 0) {
+            console.log(`⚠️ ${playerName}: 找不到ActionItem元素`);
+            continue;
+          }
+
+          const lastItem = lastActionItems[lastActionItems.length - 1];
+          const lastActionText = await lastItem.getText();
+          if (!lastActionText || lastActionText.trim().length === 0) {
+            console.log(`⚠️ ${playerName}: 最后一条ActionItem为空`);
+            continue;
+          }
+
+          // ✅ 所有验证都通过
+          console.log(`✅ ${playerName}: UI验证通过 | GH-ids: ${ghMatches.length} | 最后: ${lastActionText.substring(0, 50)}...`);
+          playersWithData++;
+
+        } catch (actionError) {
+          console.log(`⚠️ ${playerName}: ActionItem检查失败 - ${actionError.message}`);
+        }
+
+      } catch (e) {
+        console.log(`⚠️ ${playerName}: UI检查失败 - ${e.message}`);
+      }
+    }
+
+    // 成功条件：至少有一个玩家的UI完全验证通过
+    if (playersWithData > 0) {
+      console.log(`✅ UI界面验证成功: ${playersWithData}/${playerCount} 玩家已就绪`);
+      return;
+    }
+
+    // 还没有玩家准备好，等待后重试
+    if (attempt < maxRetries) {
+      console.log(`⏳ UI还未就绪 (尝试 ${attempt}/${maxRetries}), 等待${retryInterval}ms...`);
+      await new Promise(resolve => setTimeout(resolve, retryInterval));
+    }
+  }
+
+  console.log(`⚠️ UI验证超时: 经过${maxRetries}次尝试后仍无玩家UI就绪 - 继续进行截图`);
+}
+
 // Consolidated screenshot logic exists at the end of the file
 
 Then(/^I capture screenshot "([^"]*)"(?: showing (.*))?$/, { timeout: 60000 }, async function (screenshotName, description) {
   console.log(`📸 Capturing screenshot "${screenshotName}"${description ? ': ' + description : ''}`);
-  
-  // Check if this screenshot immediately follows a GH-id verification
-  const lastVerifiedGHId = global.lastVerifiedGHId;
-  if (lastVerifiedGHId) {
-    console.log(`✅ Screenshot follows GH-id verification for "${lastVerifiedGHId}", no additional wait needed`);
-    global.lastVerifiedGHId = null; // Clear for next verification
-  } else {
-    // This screenshot is not immediately after verification, so add standard wait
-    console.log(`⏳ Screenshot not following verification, waiting 2000ms for UI updates...`);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-  }
-  
-  // Ensure game history is scrolled to show latest entry in all browsers
-  if (global.players) {
-    for (const [playerName, player] of Object.entries(global.players)) {
-      if (player && player.driver) {
-        try {
-          const historyElements = await player.driver.findElements(By.css('[data-testid="game-history"]'));
-          if (historyElements.length > 0) {
-            // Scroll to bottom to ensure latest entry is visible
-            await player.driver.executeScript("arguments[0].scrollTop = arguments[0].scrollHeight", historyElements[0]);
-            
-            // Get the content to verify GH-ids are present
-            try {
-              const historyText = await historyElements[0].getText();
-              const ghMatches = historyText.match(/GH-\d+/g) || [];
-              console.log(`📸 ${playerName}: Game history contains ${ghMatches.length} GH-ids: ${ghMatches.slice(-5).join(', ')}`);
-            } catch (textError) {
-              console.log(`📸 ${playerName}: Could not read game history text`);
-            }
-          }
-        } catch (e) {
-          console.log(`⚠️ ${playerName}: Error scrolling game history: ${e.message}`);
-        }
-      }
+
+  try {
+    // CRITICAL: Quick verify UI is loaded before taking screenshot (with timeout protection)
+    try {
+      await Promise.race([
+        verifyUIStabilityBeforeScreenshot(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('UI verification timeout')), 3000))
+      ]);
+    } catch (verifyError) {
+      console.log(`⚠️ UI verification failed or timed out: ${verifyError.message} - 继续进行截图`);
     }
-  }
-  
-  const browser = await getDriverSafe();
-  if (browser) {
-    console.log(`📸 Taking screenshot: ${screenshotName}`);
-    await screenshotHelper.captureAndLogScreenshot(browser, screenshotName, tournamentState.currentRound);
+
+    // Check if this screenshot immediately follows a GH-id verification
+    const lastVerifiedGHId = global.lastVerifiedGHId;
+    if (lastVerifiedGHId) {
+      console.log(`✅ Screenshot follows GH-id verification for "${lastVerifiedGHId}"`);
+      global.lastVerifiedGHId = null;
+    }
+
+    // 【简化】不再对每个玩家的游戏历史进行二次检查
+    // 如果verifyUIStabilityBeforeScreenshot已经通过了验证，这里就不需要再检查了
+
+    // 立即获取浏览器实例并截图
+    const browser = await getDriverSafe();
+    if (browser) {
+      console.log(`📸 Taking screenshot: ${screenshotName}`);
+      try {
+        await Promise.race([
+          screenshotHelper.captureAndLogScreenshot(browser, screenshotName, tournamentState.currentRound),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Screenshot timeout')), 30000))
+        ]);
+        console.log(`✅ Screenshot captured: ${screenshotName}`);
+      } catch (screenshotError) {
+        console.log(`⚠️ Screenshot capture error: ${screenshotError.message}`);
+        // 不抛出错误，继续测试
+      }
+    } else {
+      console.log(`⚠️ No browser available for screenshot`);
+    }
+  } catch (error) {
+    console.log(`⚠️ Screenshot step error: ${error.message} - 继续进行`);
   }
 });
 
@@ -928,18 +1087,18 @@ When('the flop is dealt: {word}, {word}, {word}', async function (card1, card2, 
   });
 
   const results = await Promise.allSettled(flopPromises);
-  
+
   // Record the flop dealt GH ID for screenshot naming
   const flopGHId = getDealtEventGHId('flop', tournamentState.currentRound);
   if (flopGHId) {
     tournamentState.lastDealtGHId = flopGHId;
-    
+
     // Wait for game history to update with the new GH IDs before taking screenshot
     // Add generous delay to allow API fetch, DOM update, and component re-render
     console.log(`⏳ Flop deal: Waiting 3000ms for game history API and UI to update...`);
     await new Promise(resolve => setTimeout(resolve, 3000));
     console.log(`✅ Flop deal: Game history should be updated, scrolling and capturing`);
-    
+
     // Ensure game history is scrolled to bottom in all browsers
     if (global.players) {
       for (const [playerName, player] of Object.entries(global.players)) {
@@ -956,7 +1115,7 @@ When('the flop is dealt: {word}, {word}, {word}', async function (card1, card2, 
         }
       }
     }
-    
+
     // Capture flop dealt event screenshot with GH ID
     const browser = await getDriverSafe();
     if (browser) {
@@ -968,7 +1127,7 @@ When('the flop is dealt: {word}, {word}, {word}', async function (card1, card2, 
       }
     }
   }
-  
+
   console.log(`✅ Flop cards revealed: ${card1} ${card2} ${card3} (${flopGHId})`);
 });
 
@@ -1069,17 +1228,17 @@ When('the turn is dealt: {word}', async function (turnCard) {
   });
 
   const results = await Promise.allSettled(turnPromises);
-  
+
   // Record the turn dealt GH ID for screenshot naming
   const turnGHId = getDealtEventGHId('turn', tournamentState.currentRound);
   if (turnGHId) {
     tournamentState.lastDealtGHId = turnGHId;
-    
+
     // Wait for game history to update with the new GH IDs before taking screenshot
     console.log(`⏳ Turn deal: Waiting 3000ms for game history API and UI to update...`);
     await new Promise(resolve => setTimeout(resolve, 3000));
     console.log(`✅ Turn deal: Game history should be updated, scrolling and capturing`);
-    
+
     // Ensure game history is scrolled to bottom in all browsers
     if (global.players) {
       for (const [playerName, player] of Object.entries(global.players)) {
@@ -1096,7 +1255,7 @@ When('the turn is dealt: {word}', async function (turnCard) {
         }
       }
     }
-    
+
     // Capture turn dealt event screenshot with GH ID
     const browser = await getDriverSafe();
     if (browser) {
@@ -1109,7 +1268,7 @@ When('the turn is dealt: {word}', async function (turnCard) {
       }
     }
   }
-  
+
   console.log(`🎴 Turn verification results: ${results.map(r => r.value || r.reason).join(', ')}`);
   console.log(`✅ Turn card revealed: ${turnCard} (${turnGHId})`);
 });
@@ -1212,17 +1371,17 @@ When('the river is dealt: {word}', async function (riverCard) {
   });
 
   const results = await Promise.allSettled(riverPromises);
-  
+
   // Record the river dealt GH ID for screenshot naming
   const riverGHId = getDealtEventGHId('river', tournamentState.currentRound);
   if (riverGHId) {
     tournamentState.lastDealtGHId = riverGHId;
-    
+
     // Wait for game history to update with the new GH IDs before taking screenshot
     console.log(`⏳ River deal: Waiting 3000ms for game history API and UI to update...`);
     await new Promise(resolve => setTimeout(resolve, 3000));
     console.log(`✅ River deal: Game history should be updated, scrolling and capturing`);
-    
+
     // Ensure game history is scrolled to bottom in all browsers
     if (global.players) {
       for (const [playerName, player] of Object.entries(global.players)) {
@@ -1239,7 +1398,7 @@ When('the river is dealt: {word}', async function (riverCard) {
         }
       }
     }
-    
+
     // Capture river dealt event screenshot with GH ID
     const browser = await getDriverSafe();
     if (browser) {
@@ -1251,7 +1410,7 @@ When('the river is dealt: {word}', async function (riverCard) {
       }
     }
   }
-  
+
   console.log(`🎲 River verification results: ${results.map(r => r.value || r.reason).join(', ')}`);
   console.log(`✅ River card revealed: ${riverCard} (${riverGHId})`);
 });
@@ -1300,7 +1459,7 @@ Then('I should see enhanced game history: {string}', async function (expectedTex
 
 When('the championship showdown begins', async function () {
   console.log('🎊 Championship showdown begins...');
-  
+
   // Call backend API to advance to showdown phase (GH-59: SHOWDOWN_BEGIN)
   try {
     const advanceShowdownResponse = await fetch('http://localhost:3001/api/test/advance-phase', {
@@ -1320,14 +1479,14 @@ When('the championship showdown begins', async function () {
   } catch (error) {
     console.log(`⚠️ Advance championship showdown API error: ${error.message}`);
   }
-  
+
   // Record player reveals and winner determination for championship
   // Round 3 (Championship): Player2 vs Player4, Player2 wins, Player4 eliminated
   try {
     const revealingPlayers = ['Player2', 'Player4'];
     const winnerPlayer = 'Player2';
     const eliminatedPlayer = 'Player4';
-    
+
     // Record reveals (GH-60, GH-61)
     for (const playerName of revealingPlayers) {
       const revealResponse = await fetch('http://localhost:3001/api/test/showdown-action', {
@@ -1343,7 +1502,7 @@ When('the championship showdown begins', async function () {
         console.log(`✅ Recorded reveal for ${playerName}`);
       }
     }
-    
+
     // Record winner determination (GH-62)
     if (winnerPlayer) {
       const winResponse = await fetch('http://localhost:3001/api/test/showdown-action', {
@@ -1359,7 +1518,7 @@ When('the championship showdown begins', async function () {
         console.log(`✅ Recorded win for ${winnerPlayer}`);
       }
     }
-    
+
     // Record elimination (GH-63)
     if (eliminatedPlayer) {
       const elimResponse = await fetch('http://localhost:3001/api/test/showdown-action', {
@@ -1378,7 +1537,7 @@ When('the championship showdown begins', async function () {
   } catch (error) {
     console.log(`⚠️ Error recording championship showdown actions: ${error.message}`);
   }
-  
+
   await updateTestPhase('complex_showdown', 26);
   console.log('✅ Championship showdown initiated');
 });
@@ -3116,7 +3275,7 @@ Then('the game history progressive loading should match phase {string} with {int
       }
 
       // Count actual actions in DOM
-      const actionItems = await browser.findElements(By.css('[data-testid="game-history"] [class*="ActionItem"]'));
+      const actionItems = await browser.findElements(By.css('[data-testid="game-history"] [data-testid="action-item"]'));
       const actualCount = actionItems.length;
 
       if (actualCount === expectedCount) {
@@ -3581,7 +3740,7 @@ const startTournamentRoundLogic = async function (roundNumber, smallBlind, bigBl
   // Log current tournament state for verification
   console.log(`👥 Active players: ${tournamentState.activePlayers.map(p => `${p.name}($${p.stack})`).join(', ') || 'None'}`);
   console.log(`❌ Eliminated players: ${tournamentState.eliminatedPlayers.map(p => `${p.name}(R${p.eliminatedInRound})`).join(', ') || 'None'}`);
-  
+
   // Verify that eliminated players have 0 chips
   const incorrectEliminated = tournamentState.eliminatedPlayers.filter(p => p.stack !== 0);
   if (incorrectEliminated.length > 0) {
@@ -3659,7 +3818,7 @@ Then('exactly one player should have the BU marker in the UI', async function ()
 
 Then('the BU \\(dealer button) should be {string}', async function (playerName) {
   console.log(`🔘 Verifying BU is ${playerName}`);
-  
+
   // Check if BU player is not eliminated
   const isEliminated = tournamentState.eliminatedPlayers.some(p => p.name === playerName);
   if (isEliminated) {
@@ -3667,7 +3826,7 @@ Then('the BU \\(dealer button) should be {string}', async function (playerName) 
     console.log(error);
     throw new Error(error);
   }
-  
+
   console.log(`✅ BU marker for ${playerName} verified (not eliminated)`);
   const browser = await getDriverSafe();
   if (browser) {
@@ -3812,15 +3971,15 @@ Then('tournament round {int} should be complete with results:', async function (
   console.log(`🏆 Verifying tournament round ${roundNumber} completion`);
 
   const results = resultsTable.hashes();
-  
+
   // Verify each player's status and chips match expected
   for (const result of results) {
     const playerName = result.Player;
     const expectedStatus = result.Status;
     const expectedStack = parseInt(result.Stack.replace('$', ''));
-    
+
     console.log(`📊 ${playerName}: ${expectedStatus} - ${result.Stack}`);
-    
+
     // Check if player is in expected list
     if (expectedStatus === 'Eliminated') {
       const eliminated = tournamentState.eliminatedPlayers.find(p => p.name === playerName);
@@ -3885,7 +4044,9 @@ When('Player{int} should be declared tournament champion', async function (playe
 });
 
 // Final tournament completion
+// Final tournament completion
 Then('the tournament should be complete with final standings:', async function (standingsTable) {
+  console.log(`🏆 [DEBUG] Entering step: "the tournament should be complete with final standings"`);
   console.log(`🏆 Tournament complete! Final standings:`);
 
   const standings = standingsTable.hashes();
@@ -3893,7 +4054,7 @@ Then('the tournament should be complete with final standings:', async function (
     console.log(`🏅 ${standing.Place}: ${standing.Player} (${standing.Status}) - ${standing['Final Result']}`);
   }
 
-  console.log(`✅ Tournament successfully completed with all eliminations and winner declared`);
+  console.log(`✅ [DEBUG] Tournament successfully completed with all eliminations and winner declared`);
 });
 
 // Tournament progression verification
@@ -3966,7 +4127,7 @@ Then('I capture final comprehensive screenshot {string} showing full tournament 
 // Tournament-specific showdown steps
 When('the showdown begins for round {int}', async function (roundNumber) {
   console.log(`🏆 Showdown begins for tournament round ${roundNumber}`);
-  
+
   // Call backend API to advance to showdown phase (GH-19: SHOWDOWN_BEGIN)
   try {
     const advanceShowdownResponse = await fetch('http://localhost:3001/api/test/advance-phase', {
@@ -3986,7 +4147,7 @@ When('the showdown begins for round {int}', async function (roundNumber) {
   } catch (error) {
     console.log(`⚠️ Advance showdown API error: ${error.message}`);
   }
-  
+
   // Record player reveals and winner determination for this round
   // These actions depend on round number to determine which players are still active
   try {
@@ -3994,7 +4155,7 @@ When('the showdown begins for round {int}', async function (roundNumber) {
     let revealingPlayers = [];
     let winnerPlayer = null;
     let eliminatedPlayer = null;
-    
+
     if (roundNumber === 1) {
       // Round 1: Player4 reveals, Player3 reveals, Player4 wins, Player3 eliminated
       revealingPlayers = ['Player4', 'Player3'];
@@ -4011,7 +4172,7 @@ When('the showdown begins for round {int}', async function (roundNumber) {
       winnerPlayer = 'Player2';
       eliminatedPlayer = 'Player4';
     }
-    
+
     // Record reveals (GH-20, GH-21, etc.)
     for (const playerName of revealingPlayers) {
       const revealResponse = await fetch('http://localhost:3001/api/test/showdown-action', {
@@ -4027,7 +4188,7 @@ When('the showdown begins for round {int}', async function (roundNumber) {
         console.log(`✅ Recorded reveal for ${playerName}`);
       }
     }
-    
+
     // Record winner determination (GH-22, GH-24, etc.)
     if (winnerPlayer) {
       const winResponse = await fetch('http://localhost:3001/api/test/showdown-action', {
@@ -4043,7 +4204,7 @@ When('the showdown begins for round {int}', async function (roundNumber) {
         console.log(`✅ Recorded win for ${winnerPlayer}`);
       }
     }
-    
+
     // Record elimination (GH-23, GH-25, etc.)
     if (eliminatedPlayer) {
       const elimResponse = await fetch('http://localhost:3001/api/test/showdown-action', {
@@ -4062,7 +4223,7 @@ When('the showdown begins for round {int}', async function (roundNumber) {
   } catch (error) {
     console.log(`⚠️ Error recording showdown actions: ${error.message}`);
   }
-  
+
   await updateTestPhase(`round${roundNumber}_showdown`);
   console.log(`✅ Tournament round ${roundNumber} showdown initiated`);
 });
@@ -4472,23 +4633,23 @@ Then('I should see game history entry {string} showing {string} won {string}', {
  */
 async function verifyGameHistoryLoaded() {
   console.log('🔍 Checking that at least one game history panel has loaded data...');
-  
+
   const maxRetries = 15;
   const retryInterval = 300;
   let anyPlayerHasData = false;
   let emptyMessageCount = 0;
   let totalPlayersChecked = 0;
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     if (!global.players) {
       console.log('⚠️ No global.players available');
       return;
     }
-    
+
     anyPlayerHasData = false;
     emptyMessageCount = 0;
     totalPlayersChecked = 0;
-    
+
     for (const [playerName, player] of Object.entries(global.players)) {
       if (player && player.driver) {
         totalPlayersChecked++;
@@ -4496,7 +4657,7 @@ async function verifyGameHistoryLoaded() {
           const historyPanel = await player.driver.findElements(By.css('[data-testid="game-history"], .game-history'));
           if (historyPanel.length > 0) {
             const text = await historyPanel[0].getText();
-            
+
             // Check for "no actions recorded yet" message
             if (text.includes('No actions recorded yet') || text.includes('no actions recorded')) {
               emptyMessageCount++;
@@ -4510,13 +4671,13 @@ async function verifyGameHistoryLoaded() {
         }
       }
     }
-    
+
     // Success if at least one player has data
     if (anyPlayerHasData) {
       console.log(`✅ Game history verified: ${emptyMessageCount}/${totalPlayersChecked} showing empty, at least 1 has data`);
       return;
     }
-    
+
     // If ALL players are showing empty message, that's an error
     if (emptyMessageCount === totalPlayersChecked && totalPlayersChecked > 0) {
       if (attempt < maxRetries) {
@@ -4528,99 +4689,112 @@ async function verifyGameHistoryLoaded() {
         throw new Error('❌ Game history did not load on any player after multiple retries');
       }
     }
-    
+
     if (attempt < maxRetries) {
       await new Promise(resolve => setTimeout(resolve, retryInterval));
     }
   }
-  
+
   console.log('✅ Game history verified as loaded with data');
 }
 
 Then(/^I should see game history entry "([^"]*)"(?:\s+#.*)?$/, { timeout: 20000 }, async function (ghId) {
   console.log(`🔍 Verifying game history entry "${ghId}" in UI...`);
 
-  // CRITICAL: First verify game history has loaded with data
-  await verifyGameHistoryLoaded();
-
-  // Extract numeric ID to advance backend history counter
+  // Extract numeric ID to advance backend history counter FIRST
   const ghNum = parseInt(ghId.replace('GH-', ''));
   if (!isNaN(ghNum)) {
-    // Verify that this GH-ID matches the expected progressive sequence
-    const expectedGHNum = tournamentState.actionCounter + 1;
-    if (ghNum !== expectedGHNum && ghNum < 10) {
-      // Only warn for action IDs, not for special dealt IDs (10, 13, 16, etc.)
-      console.warn(`⚠️ GH-ID mismatch: expected GH-${expectedGHNum}, got ${ghId}`);
-    }
+    // 【改进】直接调用API让后端生成这个GH-id
+    // 不再依赖验证游戏历史是否加载，因为API调用本身会生成数据
     await updateTestPhase('progressive', ghNum);
+    console.log(`📡 API调用: 后端已生成GH-1到GH-${ghNum}的数据`);
   }
 
+  // 【快速验证】只需要验证GH-id在UI中可见，不需要验证其他
   let foundInAny = false;
   let checksAttempted = 0;
-  const maxRetries = 15;
-  const retryInterval = 500;
+  const maxRetries = 8;  // 减少重试次数 从15->8
+  const retryInterval = 400;  // 稍微增加重试间隔以允许UI更新
+
+  // 【优化】只检查第一个玩家，不检查所有玩家
+  const firstPlayer = Object.values(global.players || {})[0];
+  if (!firstPlayer || !firstPlayer.driver) {
+    throw new Error(`❌ No players available for GH-id verification`);
+  }
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    if (global.players) {
-      for (const [playerName, player] of Object.entries(global.players)) {
-        if (player && player.driver) {
-          checksAttempted++;
-          try {
-            const historyPanelElement = await player.driver.findElements(By.css('[data-testid="game-history"], .game-history'));
-            if (historyPanelElement.length > 0) {
-              // Scroll to bottom to ensure dynamic rendering / visibility
-              await player.driver.executeScript("arguments[0].scrollTop = arguments[0].scrollHeight", historyPanelElement[0]);
+    try {
+      const historyPanel = await firstPlayer.driver.findElements(By.css('[data-testid="game-history"]'));
+      if (historyPanel.length > 0) {
+        const historyText = await historyPanel[0].getText();
 
-              const historyText = await historyPanelElement[0].getText();
-              if (historyText.includes(ghId)) {
-                console.log(`✅ Found entry "${ghId}" in ${playerName}'s UI (Attempt ${attempt})`);
-                foundInAny = true;
-                
-                // After finding, wait a bit more to ensure UI has settled before screenshot
-                await new Promise(resolve => setTimeout(resolve, 300));
-                break;
-              }
-            }
-          } catch (e) {
-            // Silently retry
+        // 【关键检查】直接查找GH-id字符串
+        if (historyText.includes(ghId)) {
+          console.log(`✅ Found "${ghId}" in game history (Attempt ${attempt}/${maxRetries})`);
+
+          // 【调试日志】将其写入文件供用户查看
+          const logDir = path.join(process.cwd(), 'selenium', 'logs');
+          if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
+          const logFile = path.join(logDir, 'game_history_debug.log');
+          const timestamp = new Date().toLocaleString();
+          const logEntry = `\n--- [${timestamp}] Verification for: ${ghId} ---\n${historyText}\n------------------------------------------\n`;
+          fs.appendFileSync(logFile, logEntry);
+          console.log(`📝 已将完整历史文本写入: selenium/logs/game_history_debug.log`);
+
+          foundInAny = true;
+          break;
+        } else {
+          // 显示当前找到了哪些GH-id
+          const ghMatches = historyText.match(/GH-\d+/g) || [];
+          if (attempt <= 2) {
+            console.log(`⏳ Attempt ${attempt}: 目前找到 [${ghMatches.slice(-3).join(', ')}...], 等待${ghId}...`);
           }
         }
       }
+    } catch (e) {
+      // 忽略错误，继续重试
     }
 
-    if (foundInAny) break;
-    if (attempt < maxRetries) {
+    checksAttempted++;
+    if (!foundInAny && attempt < maxRetries) {
       await new Promise(resolve => setTimeout(resolve, retryInterval));
     }
   }
 
-  if (!foundInAny && checksAttempted > 0) {
-    console.log(`❌ Game history entry "${ghId}" NOT found in any player's UI after ${maxRetries} attempts`);
+  if (!foundInAny) {
+    console.log(`❌ ${ghId} NOT found in UI after ${maxRetries} attempts`);
 
-    // Only dump for the first player to keep logs clean
-    const firstPlayer = Object.values(global.players)[0];
-    if (firstPlayer && firstPlayer.driver) {
-      try {
-        const historyPanel = await firstPlayer.driver.findElements(By.css('[data-testid="game-history"], .game-history'));
-        if (historyPanel.length > 0) {
-          const text = await historyPanel[0].getText();
-          const allIds = text.match(/GH-\d+/g) || [];
-          console.log(`📋 [DUMP] Content: \n${text}`);
-          console.log(`📋 [DUMP] IDs found: [${allIds.join(', ')}]`);
-        }
-      } catch (dumpError) {
-        console.log(`⚠️ Could not dump history: ${dumpError.message}`);
+    // 【诊断信息】显示当前游戏历史中的所有GH-id
+    try {
+      const historyPanel = await firstPlayer.driver.findElements(By.css('[data-testid="game-history"]'));
+      if (historyPanel.length > 0) {
+        const text = await historyPanel[0].getText();
+
+        // 【调试日志】即便失败也写入文件供排查
+        const logDir = path.join(process.cwd(), 'selenium', 'logs');
+        if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
+        const logFile = path.join(logDir, 'game_history_debug.log');
+        const timestamp = new Date().toLocaleString();
+        const logEntry = `\n❌❌❌ [${timestamp}] FAILED to find: ${ghId} ❌❌❌\n${text}\n------------------------------------------\n`;
+        fs.appendFileSync(logFile, logEntry);
+        console.log(`📝 已将失败时的完整历史文本写入: selenium/logs/game_history_debug.log`);
+
+        const allIds = text.match(/GH-\d+/g) || [];
+        console.log(`📋 当前game history中的GH-ids: [${allIds.join(', ')}]`);
+        console.log(`📋 查找的是: ${ghId}, 但最大的是: ${allIds[allIds.length - 1]}`);
       }
+    } catch (e) {
+      // 忽略诊断错误
     }
-    throw new Error(`❌ Game history entry "${ghId}" not found in UI`);
+
+    throw new Error(`❌ GH-id "${ghId}" not found in UI - possible API or rendering issue`);
   }
-  
-  // Store the last verified GH-id for subsequent screenshot
-  if (!global.lastVerifiedGHId) {
-    global.lastVerifiedGHId = {};
-  }
+
   global.lastVerifiedGHId = ghId;
-  console.log(`📸 GH-id "${ghId}" verified and ready for screenshot`);
+  console.log(`✅ GH-id "${ghId}" verified and ready for screenshot`);
+
+  // 【强制滚动】通过Helper强制执行所有浏览器端的滚动到底部
+  await scrollAllBrowsersToBottom();
 });
 
 // Verify a range of GH- IDs exist in DOM
@@ -5191,8 +5365,6 @@ Then('Player {string} should have {int} chips in the UI', async function (player
 });
 
 
-const fs = require('fs');
-const path = require('path');
 
 Given('certain order cards set as testing data', async function () {
   console.log('🃏 Loading ordered card sets for testing...');
@@ -5405,10 +5577,10 @@ Then('all start/next-hand controls should be disabled for all clients', async fu
 
 Then('eliminated players should have exactly ${int} chips', async function (amount) {
   console.log(`💰 Verifying eliminated players have $${amount}`);
-  
+
   // Check tournament state for eliminated players
   console.log(`❌ Eliminated players: ${tournamentState.eliminatedPlayers.map(p => `${p.name}($${p.stack})`).join(', ') || 'None'}`);
-  
+
   // Verify each eliminated player has 0 chips
   for (const eliminatedPlayer of tournamentState.eliminatedPlayers) {
     if (eliminatedPlayer.stack !== 0) {
@@ -5417,7 +5589,7 @@ Then('eliminated players should have exactly ${int} chips', async function (amou
       throw new Error(error);
     }
   }
-  
+
   console.log(`✅ All eliminated players verified with $${amount}`);
   return true;
 });

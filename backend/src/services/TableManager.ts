@@ -57,6 +57,7 @@ class TableManager {
   private tableGameStates: Map<number, TableGameState>;
   private deckService: DeckService;
   private handEvaluator: HandEvaluator;
+  private disconnectTimers: Map<string, { awayTimer: NodeJS.Timeout; kickTimer: NodeJS.Timeout }> = new Map();
 
 
   constructor() {
@@ -68,13 +69,97 @@ class TableManager {
   }
 
   // Test-only: Queue specific decks for a table (array of decks)
-  private queuedDecks: Map<number, Card[][]> = new Map();
+  private queuedDecks: Map<number, Card[][]> = new Map(); // For storing programmed decks for testing
+  private startingTables: Set<number> = new Set(); // Mutex for game starting
 
   public queueDeck(tableId: number, decks: Card[][]): void {
     console.log(`🃏 TableManager: Queuing ${decks.length} decks for table ${tableId}`);
     // Append to existing if any
     const existing = this.queuedDecks.get(tableId) || [];
     this.queuedDecks.set(tableId, [...existing, ...decks]);
+  }
+
+  public handlePlayerDisconnect(tableId: number, playerId: string, onKick: () => void): void {
+    console.log(`🔌 TableManager: Handling disconnect for ${playerId} at table ${tableId}`);
+
+    // Clear any existing timers for this player to be safe
+    if (this.disconnectTimers.has(playerId)) {
+      this.clearDisconnectTimers(playerId);
+    }
+
+    // Timer 1: Mark as Away after 15 seconds
+    const awayTimer = setTimeout(() => {
+      console.log(`⏰ TableManager: 15s timeout - Marking ${playerId} as AWAY`);
+      this.setPlayerAway(tableId, playerId, true);
+    }, 15000); // 15 seconds
+
+    // Timer 2: Kick player after 5 minutes
+    const kickTimer = setTimeout(() => {
+      console.log(`⏰ TableManager: 5m timeout - Kicking ${playerId} from table`);
+      // Perform local cleanup
+      this.leaveTable(tableId, playerId);
+      // Trigger callback to handle external cleanup (LocationManager, DB, etc.)
+      onKick();
+      // Clean up timers
+      this.disconnectTimers.delete(playerId);
+    }, 5 * 60 * 1000); // 5 minutes
+
+    this.disconnectTimers.set(playerId, { awayTimer, kickTimer });
+  }
+
+  public handlePlayerReconnect(tableId: number, playerId: string): void {
+    console.log(`🔌 TableManager: Handling reconnect for ${playerId} at table ${tableId}`);
+
+    if (this.disconnectTimers.has(playerId)) {
+      console.log(`✨ TableManager: Found active disconnect timers for ${playerId} - clearing them`);
+      this.clearDisconnectTimers(playerId);
+
+      // If player was marked as away, mark them as active (not away)
+      const gameState = this.tableGameStates.get(tableId);
+      const player = gameState?.players.find(p => p.id === playerId);
+      if (player && player.isAway) {
+        console.log(`👋 TableManager: Welcoming back ${playerId} - setting status to ACTIVE`);
+        this.setPlayerAway(tableId, playerId, false);
+      }
+    } else {
+      console.log(`TableManager: No active timers for ${playerId} (maybe immediate reconnect or fresh connect)`);
+    }
+  }
+
+  private clearDisconnectTimers(playerId: string): void {
+    const timers = this.disconnectTimers.get(playerId);
+    if (timers) {
+      clearTimeout(timers.awayTimer);
+      clearTimeout(timers.kickTimer);
+      this.disconnectTimers.delete(playerId);
+    }
+  }
+
+  public setPlayerAway(tableId: number, playerId: string, isAway: boolean): void {
+    const gameState = this.tableGameStates.get(tableId);
+    if (gameState) {
+      const player = gameState.players.find(p => p.id === playerId);
+      if (player) {
+        player.isAway = isAway;
+
+        // Broadcast update
+        const io = (global as any).socketIO;
+        if (io) {
+          // Emit generic game state update
+          const broadcastState = {
+            ...gameState,
+            communityCards: gameState.board || []
+          };
+          io.to(`table:${tableId}`).emit('gameState', broadcastState);
+
+          // Emit specific status update
+          io.to(`table:${tableId}`).emit('player:statusUpdated', {
+            playerId,
+            isAway
+          });
+        }
+      }
+    }
   }
 
   public async init(): Promise<void> {
@@ -226,7 +311,15 @@ class TableManager {
   }
 
   public getTableGameState(tableId: number): TableGameState | undefined {
-    return this.tableGameStates.get(tableId);
+    const gameState = this.tableGameStates.get(tableId);
+    if (gameState) {
+      console.log(`🔍 TableManager: getTableGameState for ${tableId} returning state with ${gameState.players.length} players:`,
+        gameState.players.map(p => `${p.name} (Seat ${p.seatNumber})`).join(', ')
+      );
+    } else {
+      console.log(`⚠️ TableManager: getTableGameState for ${tableId} - STATE NOT FOUND`);
+    }
+    return gameState;
   }
 
   public joinTable(
@@ -497,6 +590,20 @@ class TableManager {
       return { success: false, error: 'Need at least 2 players to start' };
     }
 
+    // CRITICAL FIX: Prevent restarting a game that is already in progress
+    if (gameState.status === 'playing') {
+      console.log(`⚠️ TableManager: Request to start game on table ${tableId} ignored - Game already in progress`);
+      return { success: true, gameState: gameState }; // Return idempotently
+    }
+
+    // LOCK: Prevent concurrent start attempts (Race Condition Fix)
+    if (this.startingTables.has(tableId)) {
+      console.log(`⚠️ TableManager: Request to start game on table ${tableId} ignored - Initialization already in progress`);
+      return { success: false, error: 'Game initialization in progress' };
+    }
+
+    this.startingTables.add(tableId);
+
     try {
       // Generate simple card order hash for transparency
       const cardOrderHash = this.generateSimpleCardOrderHash(tableId);
@@ -704,6 +811,9 @@ class TableManager {
     } catch (error) {
       console.error(`❌ Failed to start table ${tableId} game:`, error);
       return { success: false, error: (error as Error).message };
+    } finally {
+      // RELEASE LOCK
+      this.startingTables.delete(tableId);
     }
   }
 

@@ -32,8 +32,27 @@ const Container = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
-  
+  overflow: hidden; /* Container itself shouldn't scroll */
+  min-height: 0;
+`;
+
+const Title = styled.h3`
+  color: #ffd700;
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: bold;
+  flex: 0 0 auto; /* Keep fixed height */
+`;
+
+const ActionList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+  overflow-y: auto; /* List should scroll */
+  min-height: 0;
+  height: 100%; /* Force fill and constraint */
+
   /* Custom scrollbar styling */
   &::-webkit-scrollbar {
     width: 8px;
@@ -52,21 +71,6 @@ const Container = styled.div`
       background: rgba(255, 215, 0, 0.8);
     }
   }
-`;
-
-const Title = styled.h3`
-  color: #ffd700;
-  margin: 0 0 1rem 0;
-  font-size: 1rem;
-  font-weight: bold;
-`;
-
-const ActionList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  flex: 1;
-  overflow-y: auto;
 `;
 
 const ActionItem = styled.div<{ isLatest?: boolean }>`
@@ -187,9 +191,8 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ gameId, tableId, h
 
   // Auto-scroll to the bottom when new actions are added
   const scrollToBottom = useCallback(() => {
-    if (containerRef.current) {
-      // Scroll to bottom immediately to show latest action
-      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    if (actionListRef.current) {
+      actionListRef.current.scrollTop = actionListRef.current.scrollHeight;
     }
   }, []);
 
@@ -198,12 +201,12 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ gameId, tableId, h
     if (actions.length > 0) {
       // Scroll immediately to show the latest action
       scrollToBottom();
-      
+
       // Also schedule multiple scroll attempts with increasing delays to ensure DOM is fully updated
       const timer1 = setTimeout(() => {
         scrollToBottom();
       }, 100);
-      
+
       const timer2 = setTimeout(() => {
         scrollToBottom();
       }, 300);
@@ -294,8 +297,8 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ gameId, tableId, h
             case 'progressive': // Added progressive phase for comprehensive tests
               return 100; // Large cap for multi-round comprehensive tests (up to 64+)
             default:
-              console.log(`⚠️ ActionHistory: Unknown phase '${phase}', defaulting to 11 actions`);
-              return 11; // Default to pre-flop complete
+              console.log(`⚠️ ActionHistory: Unknown phase '${phase}', defaulting to ${isTestEnvironment ? 100 : 11} actions`);
+              return isTestEnvironment ? 100 : 11; // Default to pre-flop complete
           }
         };
 
@@ -420,7 +423,8 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ gameId, tableId, h
       current.handNumber !== last.handNumber
     );
 
-    if ((gameId || tableId) && (hasChanged || refreshTrigger > 0)) {
+    // In test environments, allow refresh even without changes to trigger progressive loading
+    if ((gameId || tableId) && (hasChanged || refreshTrigger > 0 || isTestEnvironment)) {
       // In test environments, allow more API calls but still prevent infinite loops
       const isTestEnvironment =
         window.location.search.includes('test=') ||
@@ -430,11 +434,12 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ gameId, tableId, h
 
       if (isTestEnvironment) {
         testFetchCountRef.current += 1;
-        if (testFetchCountRef.current > 50) {
+        if (testFetchCountRef.current > 100) {
+          // Increased limit from 50 to 100 for comprehensive tournaments
           console.log('🧪 ActionHistory: Test mode API fetch limit reached to prevent infinite loops');
           return;
         }
-        console.log(`🧪 ActionHistory: Test mode API fetch ${testFetchCountRef.current}/50 (refreshTrigger: ${refreshTrigger})`);
+        console.log(`🧪 ActionHistory: Test mode API fetch ${testFetchCountRef.current}/100 (refreshTrigger: ${refreshTrigger}, hasChanged: ${hasChanged})`);
       }
 
       lastFetchRef.current = current;
@@ -587,9 +592,9 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ gameId, tableId, h
       )}
 
       {!loading && !error && actions.length > 0 && (
-        <ActionList ref={actionListRef}>
+        <ActionList ref={actionListRef} data-testid="action-history-list">
           {actions.map((action, index) => (
-            <ActionItem key={action.id} isLatest={index === actions.length - 1}>
+            <ActionItem key={action.id} isLatest={index === actions.length - 1} data-testid="action-item">
               <ActionHeader>
                 <div>
                   <PlayerName>{action.playerName}</PlayerName>

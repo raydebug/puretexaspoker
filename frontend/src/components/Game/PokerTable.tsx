@@ -190,24 +190,24 @@ const PlayerSeat = styled.div.withConfig({
      animation: ${props.position === 2 || props.position === 5 ? breatheVertical : breatheDefault} 3s ease-in-out infinite;
    `}
 
-  // Position 6 player seats around the oval table
+  // Position 6 player seats around the oval table: 3 on left, 3 on right
+  // Top center is reserved for the Dealer.
   ${props => {
     const positions = [
-      { bottom: '80px', left: '80px', transform: 'none' },          // 1. Button/Dealer (BU) - Bottom left
-      { top: '50%', left: '20px', transform: 'translateY(-50%)' },  // 2. Small Blind (SB) - Left
-      { top: '30px', left: '120px', transform: 'none' },            // 3. Big Blind (BB) - Top left
-      { top: '30px', right: '120px', transform: 'none' },           // 4. Under the Gun (UTG) - Top right
-      { top: '50%', right: '20px', transform: 'translateY(-50%)' }, // 5. Under the Gun + 1 (UTG+1) - Right
-      { bottom: '80px', right: '80px', transform: 'none' },         // 6. Cutoff (CO) - Bottom right
+      { bottom: '30px', left: '120px', transform: 'none' },          // 1. Left Bottom
+      { top: '50%', left: '20px', transform: 'translateY(-50%)' },  // 2. Left Middle
+      { top: '30px', left: '120px', transform: 'none' },            // 3. Left Top
+      { top: '30px', right: '120px', transform: 'none' },           // 4. Right Top
+      { top: '50%', right: '20px', transform: 'translateY(-50%)' }, // 5. Right Middle
+      { bottom: '30px', right: '120px', transform: 'none' },        // 6. Right Bottom
     ];
-
-    const pos = positions[props.position - 1];
+    const pos = positions[props.position - 1] || positions[0];
     return `
-      top: ${pos.top};
-      ${pos.right ? `right: ${pos.right};` : ''}
-      ${pos.bottom ? `bottom: ${pos.bottom};` : ''}
-      ${pos.left ? `left: ${pos.left};` : ''}
-      transform: ${pos.transform};
+      bottom: ${pos.bottom || 'auto'};
+      top: ${pos.top || 'auto'};
+      left: ${pos.left || 'auto'};
+      right: ${pos.right || 'auto'};
+      transform: ${pos.transform || 'none'};
     `;
   }}
 
@@ -483,7 +483,7 @@ const WinnerCelebration = styled.div`
 `;
 
 const PlayerSeatExtended = styled(PlayerSeat).withConfig({
-  shouldForwardProp: (prop) => !['position', 'isEmpty', 'isButton', 'isAvailable', 'isCurrentPlayer', 'isFolded', 'isMe', 'isEliminated'].includes(prop),
+  shouldForwardProp: (prop) => !['position', 'isEmpty', 'isButton', 'isAvailable', 'isCurrentPlayer', 'isFolded', 'isMe', 'isEliminated', 'isAway'].includes(prop),
 }) <{
   position: number;
   isEmpty: boolean;
@@ -493,6 +493,7 @@ const PlayerSeatExtended = styled(PlayerSeat).withConfig({
   isFolded?: boolean;
   isMe?: boolean;
   isEliminated?: boolean;
+  isAway?: boolean;
 }>`
   ${props => props.isCurrentPlayer && css`
     box-shadow: 0 0 20px rgba(0, 255, 0, 0.8), 0 0 40px rgba(0, 255, 0, 0.4);
@@ -511,19 +512,15 @@ const PlayerSeatExtended = styled(PlayerSeat).withConfig({
     filter: grayscale(100%) brightness(0.8);
     border: 2px dashed #90A4AE;
   `}
+
+  ${props => props.isAway && css`
+    opacity: 0.7;
+    filter: sepia(0.5);
+    border: 3px dashed #FFA000;
+  `}
 `;
 
-// Texas Hold'em position names for 6 player seats
-const POSITION_NAMES = [
-  'BU',    // 1. Button/Dealer - Bottom left
-  'SB',    // 2. Small Blind - Left
-  'BB',    // 3. Big Blind - Top left
-  'UTG',   // 4. Under the Gun - Top right
-  'UTG+1', // 5. Under the Gun + 1 - Right
-  'CO',    // 6. Cutoff - Bottom right
-];
-
-// Add player hole cards display positioned near player's seat
+// Texas Hold'em hole cards display positioned near player's seat
 const PlayerHoleCards = styled.div<{ seatPosition?: number }>`
   position: absolute;
   display: flex;
@@ -531,21 +528,21 @@ const PlayerHoleCards = styled.div<{ seatPosition?: number }>`
   z-index: 10;
   
   ${props => {
-    // Position hole cards between the seat and center of table (not overlapping seat)
+    // Position hole cards between the seat and center of table
     switch (props.seatPosition) {
-      case 1: // Button/Dealer (BU) - Bottom left → position towards center
-        return `bottom: 120px; left: 180px;`;
-      case 2: // Small Blind (SB) - Left → position towards center
+      case 1: // Left Bottom
+        return `bottom: 110px; left: 180px;`;
+      case 2: // Left Middle
         return `top: 50%; left: 120px; transform: translateY(-50%);`;
-      case 3: // Big Blind (BB) - Top left → position towards center
-        return `top: 120px; left: 180px;`;
-      case 4: // Under the Gun (UTG) - Top right → position towards center
-        return `top: 120px; right: 180px;`;
-      case 5: // Under the Gun + 1 (UTG+1) - Right → position towards center
+      case 3: // Left Top
+        return `top: 110px; left: 180px;`;
+      case 4: // Right Top
+        return `top: 110px; right: 180px;`;
+      case 5: // Right Middle
         return `top: 50%; right: 120px; transform: translateY(-50%);`;
-      case 6: // Cutoff (CO) - Bottom right → position towards center
-        return `bottom: 120px; right: 180px;`;
-      default: // Fallback to bottom center
+      case 6: // Right Bottom
+        return `bottom: 110px; right: 180px;`;
+      default: // Fallback
         return `bottom: 80px; left: 50%; transform: translateX(-50%);`;
     }
   }}
@@ -577,21 +574,21 @@ const HoleCardsLabel = styled.div<{ seatPosition?: number }>`
   white-space: nowrap;
   
   ${props => {
-    // Position label above the hole cards (between seat and center)
+    // Position label above the hole cards
     switch (props.seatPosition) {
-      case 1: // Button/Dealer (BU) - Bottom left → label above cards
-        return `bottom: 180px; left: 180px;`;
-      case 2: // Small Blind (SB) - Left → label above cards
+      case 1: // Left Bottom
+        return `bottom: 170px; left: 180px;`;
+      case 2: // Left Middle
         return `top: 50%; left: 170px; transform: translateY(-50%);`;
-      case 3: // Big Blind (BB) - Top left → label above cards
-        return `top: 90px; left: 180px;`;
-      case 4: // Under the Gun (UTG) - Top right → label above cards
-        return `top: 90px; right: 180px;`;
-      case 5: // Under the Gun + 1 (UTG+1) - Right → label above cards
+      case 3: // Left Top
+        return `top: 70px; left: 180px;`;
+      case 4: // Right Top
+        return `top: 70px; right: 180px;`;
+      case 5: // Right Middle
         return `top: 50%; right: 170px; transform: translateY(-50%);`;
-      case 6: // Cutoff (CO) - Bottom right → label above cards
-        return `bottom: 180px; right: 180px;`;
-      default: // Fallback to above center cards
+      case 6: // Right Bottom
+        return `bottom: 170px; right: 180px;`;
+      default: // Fallback
         return `bottom: 140px; left: 50%; transform: translateX(-50%);`;
     }
   }}
@@ -726,6 +723,7 @@ export const PokerTable: React.FC<PokerTableProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState, currentPlayer, currentUserPlayer, isObserver, playerWithCards, shouldShowUserHoleCards]);
 
+
   const handleSeatClick = (seatNumber: number) => {
     // Allow seat selection if seat is empty and callback is provided
     const player = gameState.players?.find(p => p.seatNumber === seatNumber);
@@ -739,12 +737,37 @@ export const PokerTable: React.FC<PokerTableProps> = ({
   const renderSeat = (seatNumber: number) => {
     const player = gameState.players?.find(p => p.seatNumber === seatNumber);
     const isEmpty = !player;
-    const positionName = POSITION_NAMES[seatNumber - 1] || `Seat ${seatNumber}`; // Add bounds check
+
+    // DYNAMIC ROLE LABELS: Calculate BU, SB, BB based on game state positions
+    let positionName = `Seat ${seatNumber}`;
+    if (!isEmpty && player) {
+      if (player.isDealer) {
+        positionName = 'BU';
+      } else if (seatNumber === gameState.smallBlindPosition) {
+        positionName = 'SB';
+      } else if (seatNumber === gameState.bigBlindPosition) {
+        positionName = 'BB';
+      } else {
+        // Fallback or generic positions if we want (e.g. UTG, CO)
+        // For now let's keep it simple: BU, SB, BB are most important
+        // We can add logic to calculate other positions based on dealer relative index if needed
+        const positions = 6;
+        const dealerIdx = gameState.dealerPosition || 0;
+        const relativeIdx = (seatNumber - 1 - dealerIdx + positions) % positions;
+
+        switch (relativeIdx) {
+          case 3: positionName = 'UTG'; break;
+          case 4: positionName = 'UTG+1'; break;
+          case 5: positionName = 'CO'; break;
+        }
+      }
+    }
     const isButton = player?.isDealer || false; // Button position
     const isAvailable = isEmpty; // Empty seats are always available to sit in
     const isCurrentPlayer = !isEmpty && gameState.currentPlayerId === player?.id;
     const isFolded = !isEmpty && !player?.isActive;
     const isEliminated = !isEmpty && player?.chips === 0;  // Player with 0 chips is eliminated
+    const isAway = !isEmpty && player?.isAway;
 
     // Check if this is the current screen's player ("me")
     const nickname = localStorage.getItem('nickname');
@@ -752,7 +775,7 @@ export const PokerTable: React.FC<PokerTableProps> = ({
 
     // Debug logging for decision timer issue
     if (!isEmpty && player) {
-      console.log(`🔍 Seat ${seatNumber}: player.id="${player.id}", playerName="${player.name}", isMe=${isMe}, isCurrentPlayer=${isCurrentPlayer}, chips=${player.chips}, isEliminated=${isEliminated}`);
+      console.log(`🔍 Seat ${seatNumber}: player.id="${player.id}", playerName="${player.name}", isMe=${isMe}, isCurrentPlayer=${isCurrentPlayer}, chips=${player.chips}, isEliminated=${isEliminated}, isAway=${isAway}`);
     }
 
     return (
@@ -766,13 +789,15 @@ export const PokerTable: React.FC<PokerTableProps> = ({
         isFolded={isFolded}
         isMe={isMe}
         isEliminated={isEliminated}
+        isAway={isAway}
         onClick={() => handleSeatClick(seatNumber)}
         data-testid={isEmpty ? `available-seat-${seatNumber}` : `seat-${seatNumber}`}
-        className={`${isCurrentPlayer ? 'current-player active-player' : ''} ${isFolded ? 'folded-player' : ''} ${isEliminated ? 'eliminated-player' : ''}`}
+        className={`${isCurrentPlayer ? 'current-player active-player' : ''} ${isFolded ? 'folded-player' : ''} ${isEliminated ? 'eliminated-player' : ''} ${isAway ? 'away-player' : ''}`}
       >
         <PositionLabel isButton={isButton}>{positionName}</PositionLabel>
         {isButton && <ButtonIndicator>D</ButtonIndicator>}
         {isEliminated && <EliminatedBadge>Out</EliminatedBadge>}
+        {isAway && <EliminatedBadge style={{ background: '#FFA000', borderColor: '#FF6F00' }}>Away</EliminatedBadge>}
         {isEmpty ? (
           <EmptySeatText isAvailable={true}>
             Click to Sit
@@ -871,6 +896,11 @@ export const PokerTable: React.FC<PokerTableProps> = ({
   return (
     <TableContainer data-testid="poker-table">
       <PokerTableSurface>
+        {/* Static Dealer position always at the top center */}
+        <DealerPosition>
+          <span>DEALER</span>
+        </DealerPosition>
+
         {/* Game Status Display */}
         <GameStatusDisplay data-testid="game-status">
           {gameState.phase && gameState.phase !== 'waiting' ? (

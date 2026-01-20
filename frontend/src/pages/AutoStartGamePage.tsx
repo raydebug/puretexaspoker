@@ -118,11 +118,20 @@ const AutoStartGamePage: React.FC = () => {
           console.log('🎮 AutoStart: Seated players:', seatedPlayers.length);
 
           if (seatedPlayers.length >= minPlayers) {
-            setStatus(`✅ Found ${seatedPlayers.length} players! Starting game...`);
-            setStatusType('success');
-            
-            // Start the game via API call
-            startGameViaAPI(state.id);
+            if (state.status === 'playing') {
+              setStatus('🎮 Game is already in progress! Redirecting...');
+              setStatusType('success');
+
+              setTimeout(() => {
+                navigate(`/game/${state.tableId || state.id}`);
+              }, 2000);
+            } else {
+              setStatus(`✅ Found ${seatedPlayers.length} players! Starting game...`);
+              setStatusType('success');
+
+              // Start the game via API call
+              startGameViaAPI(state.tableId || state.id);
+            }
           } else {
             setStatus(`⏳ Waiting for players... (${seatedPlayers.length}/${minPlayers} seated)`);
             setStatusType('info');
@@ -135,7 +144,7 @@ const AutoStartGamePage: React.FC = () => {
         setStatus(`🏃 Joining table ${tableNumber} as observer...`);
         socketService.emitUserLogin('AutoStartBot');
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
+
         socketService.joinTable(parseInt(tableNumber));
         await new Promise(resolve => setTimeout(resolve, 2000));
 
@@ -160,7 +169,7 @@ const AutoStartGamePage: React.FC = () => {
         setStatusType('loading');
 
         // Call the backend API to start the game
-        const response = await fetch(`http://localhost:3001/api/games/${gameId}/start`, {
+        const response = await fetch(`http://localhost:3001/api/tables/${gameId}/start`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -170,7 +179,7 @@ const AutoStartGamePage: React.FC = () => {
         if (response.ok) {
           setStatus('🎮 Game started successfully! Redirecting...');
           setStatusType('success');
-          
+
           // Wait a moment and then redirect to the game
           setTimeout(() => {
             const actualGameId = navigationService.getCurrentGameId();
@@ -204,13 +213,14 @@ const AutoStartGamePage: React.FC = () => {
     return () => {
       // No manual cleanup needed for public API
     };
-  }, [tableNumber, minPlayers, maxWait, navigate, statusType]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tableNumber, minPlayers, maxWait, navigate]);
 
   return (
     <Container>
       <StatusCard>
         <Title>Auto-Start Game</Title>
-        
+
         <ParameterInfo>
           <div><strong>Table:</strong> {tableNumber}</div>
           <div><strong>Min Players:</strong> {minPlayers}</div>

@@ -80,9 +80,9 @@ const AutoSeatPage: React.FC = () => {
         console.log('🎯 AUTO-SEAT: Already processing, skipping duplicate call');
         return;
       }
-      
+
       setIsProcessing(true);
-      
+
       try {
         // Validate parameters
         if (!playerName || !tableNumber || !seatNumber) {
@@ -93,10 +93,10 @@ const AutoSeatPage: React.FC = () => {
         }
 
         setStatus('🔌 Connecting to server...');
-        
+
         // Connect to WebSocket
         await socketService.connect();
-        
+
         // Wait for connection with longer timeout
         let connectionAttempts = 0;
         const maxConnectionAttempts = 15;
@@ -105,7 +105,7 @@ const AutoSeatPage: React.FC = () => {
           await new Promise(resolve => setTimeout(resolve, 1000));
           connectionAttempts++;
         }
-        
+
         if (!socketService.getSocket()?.connected) {
           setStatus('❌ Failed to connect to server after multiple attempts');
           setStatusType('error');
@@ -114,33 +114,34 @@ const AutoSeatPage: React.FC = () => {
         }
 
         setStatus('🔐 Authenticating...');
-        
+
         // Store nickname for socketService
         localStorage.setItem('nickname', playerName);
-        
+
         // Authenticate with nickname
         socketService.emitUserLogin(playerName);
-        
+
         // Wait for authentication with longer timeout
         await new Promise(resolve => setTimeout(resolve, 2000));
-        
+
         setStatus('🎯 Auto-seating...');
-        
+
         // Set up event listeners for auto-seat response
         let autoSeatCompleted = false;
-        
+
         const handleAutoSeatSuccess = (data: { tableId: number; seatNumber: number; buyIn: number }) => {
-          console.log('🎯 AUTO-SEAT: Received autoSeatSuccess event:', data);
+          console.log(`🎯 AUTO-SEAT [SUCCESS]: Received autoSeatSuccess for ${playerName} at Table ${data.tableId} Seat ${data.seatNumber}`);
           autoSeatCompleted = true;
           setStatus('✅ Auto-seat successful! Redirecting to game...');
           setStatusType('success');
-          
+
           // Redirect to game page
           setTimeout(() => {
-            window.location.href = `/game/${tableNumber}`;
+            console.log(`🎯 AUTO-SEAT: Navigating to /game/${tableNumber}`);
+            navigate(`/game/${tableNumber}`);
           }, 1000);
         };
-        
+
         const handleAutoSeatError = (data: { error: string }) => {
           console.log('🎯 AUTO-SEAT: Received autoSeatError event:', data);
           autoSeatCompleted = true;
@@ -148,18 +149,18 @@ const AutoSeatPage: React.FC = () => {
           setStatusType('error');
           setIsProcessing(false);
         };
-        
+
         // Set up event listeners
         const socket = socketService.getSocket();
         if (socket) {
           socket.on('autoSeatSuccess', handleAutoSeatSuccess);
           socket.on('autoSeatError', handleAutoSeatError);
         }
-        
+
         // Check if we're in test mode (webdriver or test=true parameter)
         const isTestMode = (typeof navigator !== 'undefined' && navigator.webdriver) ||
           (typeof window !== 'undefined' && window.location.search.includes('test=true'));
-        
+
         console.log('🎯 AUTO-SEAT: Sending autoSeat request:', {
           tableNumber: parseInt(tableNumber),
           seatNumber: parseInt(seatNumber),
@@ -167,39 +168,39 @@ const AutoSeatPage: React.FC = () => {
           playerName,
           isTestMode
         });
-        
+
         // Perform auto-seat with test mode parameters
         socketService.autoSeat(parseInt(tableNumber), parseInt(seatNumber), buyInAmount, playerName, isTestMode);
-        
+
         // Wait for auto-seat response with timeout
         const autoSeatTimeout = 15000; // 15 seconds
         const startTime = Date.now();
-        
+
         while (!autoSeatCompleted && (Date.now() - startTime) < autoSeatTimeout) {
           await new Promise(resolve => setTimeout(resolve, 500));
         }
-        
+
         // Clean up event listeners
         if (socket) {
           socket.off('autoSeatSuccess', handleAutoSeatSuccess);
           socket.off('autoSeatError', handleAutoSeatError);
         }
-        
+
         // If no response received, try fallback approaches
         if (!autoSeatCompleted) {
           console.log('🎯 AUTO-SEAT: No response received, trying fallback approaches...');
-          
+
           // Check if we have a current player set
           const currentPlayer = socketService.getCurrentPlayer();
           console.log('🎯 AUTO-SEAT: Current player after auto-seat:', currentPlayer);
-          
+
           if (currentPlayer) {
             setStatus('✅ Auto-seat successful! Redirecting to game...');
             setStatusType('success');
-            
+
             // Redirect to game page
             setTimeout(() => {
-              window.location.href = `/game/${tableNumber}`;
+              navigate(`/game/${tableNumber}`);
             }, 1000);
           } else {
             // Fallback: try to check game state
@@ -210,9 +211,9 @@ const AutoSeatPage: React.FC = () => {
                 console.log('🎯 AUTO-SEAT: Fallback - found player in game state:', player);
                 setStatus('✅ Auto-seat successful! Redirecting to game...');
                 setStatusType('success');
-                
+
                 setTimeout(() => {
-                  window.location.href = `/game/${tableNumber}`;
+                  navigate(`/game/${tableNumber}`);
                 }, 1000);
               } else {
                 setStatus('⚠️ Auto-seat timeout - player not found in game state');
@@ -223,14 +224,14 @@ const AutoSeatPage: React.FC = () => {
               console.log('🎯 AUTO-SEAT: Last resort - forcing redirect to game page');
               setStatus('⚠️ Auto-seat timeout - attempting redirect anyway...');
               setStatusType('success');
-              
+
               setTimeout(() => {
-                window.location.href = `/game/${tableNumber}`;
+                navigate(`/game/${tableNumber}`);
               }, 2000);
             }
           }
         }
-        
+
       } catch (error) {
         console.error('🎯 AUTO-SEAT: Error during auto-seat:', error);
         setStatus(`❌ Auto-seat failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -240,14 +241,15 @@ const AutoSeatPage: React.FC = () => {
       }
     };
 
+    console.log('🎯 AUTO-SEAT: Component mounted, calling performAutoSeat()');
     performAutoSeat();
-  }, []); // Remove isProcessing from dependencies to prevent duplicate calls
+  }, []); // Run ONCE on mount
 
   return (
     <Container>
       <StatusCard>
         <Title>Auto-Seat Player</Title>
-        
+
         <ParameterInfo>
           <div><strong>Player:</strong> {playerName || 'Not provided'}</div>
           <div><strong>Table:</strong> {tableNumber || 'Not provided'}</div>

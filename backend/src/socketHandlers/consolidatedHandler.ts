@@ -193,12 +193,32 @@ export function registerConsolidatedHandlers(io: Server) {
           }
         });
 
+        // CRITICAL FIX: Check if user is already seated (reconnection)
+        // If so, restore their location and trigger reconnect logic
+        const existingSeat = await prisma.playerTable.findFirst({
+          where: { playerId: player.id }
+        });
+
+        let initialLocation: 'lobby' | number = 'lobby';
+
+        if (existingSeat) {
+          console.log(`[SOCKET] User ${nickname} reconnected, restoring session at table ${existingSeat.tableId}`);
+          initialLocation = existingSeat.tableId;
+
+          // Trigger reconnect logic in TableManager (clears Away/Kick timers)
+          tableManager.handlePlayerReconnect(existingSeat.tableId, player.id);
+
+          // Ensure LocationManager is in sync (it should be if we didn't remove them)
+          // But we update it just in case
+          locationManager.updateUserLocation(player.id, player.id, existingSeat.tableId, existingSeat.seatNumber);
+        }
+
         // Store authenticated user with player ID and heartbeat
         authenticatedUsers.set(socket.id, {
           nickname: trimmedNickname,
           socketId: socket.id,
           playerId: player.id, // Store the nickname as player ID
-          location: 'lobby',
+          location: initialLocation,
           lastHeartbeat: Date.now()
         });
 
@@ -238,7 +258,22 @@ export function registerConsolidatedHandlers(io: Server) {
         // Check if user is already at this table
         if (user.location === tableId) {
           // User is already at this table - just emit success
+          // Trigger reconnect logic just in case (e.g. they authenticated but explicit join was called)
+          tableManager.handlePlayerReconnect(tableId, user.nickname);
+
           socket.emit('tableJoined', { tableId, role: 'observer', buyIn });
+
+          // CRITICAL FIX: Send current game state even if already at table (reconnect/refresh scenario)
+          const gameState = tableManager.getTableGameState(tableId);
+          if (gameState) {
+            const broadcastState = {
+              ...gameState,
+              communityCards: gameState.board || []
+            };
+            socket.emit('gameState', broadcastState);
+            console.log(`[SOCKET] Sent initial game state to ${user.nickname} for table ${tableId} (rejoin)`);
+          }
+
           console.log(`[SOCKET] User ${user.nickname} already at table ${tableId}`);
           return;
         }
@@ -409,14 +444,26 @@ export function registerConsolidatedHandlers(io: Server) {
 
         if (playerSeat) {
           // Player is already seated - emit success
-          console.log(`[SOCKET] Emitting autoSeatSuccess event to socket ${socket.id} for user ${user.nickname} (already seated)`);
+          console.log(`[SOCKET] 🟡 Auto-seat: User ${user.nickname} ALREADY SEATED at seat ${playerSeat.seatNumber}. Emitting success immediately.`);
+          console.log(`[SOCKET] Emitting autoSeatSuccess event to socket ${socket.id}`);
           socket.emit('autoSeatSuccess', {
             tableId,
             seatNumber: playerSeat.seatNumber,
             buyIn: playerSeat.buyIn
           });
-          console.log(`[SOCKET] autoSeatSuccess event emitted successfully`);
-          console.log(`[SOCKET] User ${user.nickname} already seated at seat ${playerSeat.seatNumber} at table ${tableId}`);
+          console.log(`[SOCKET] autoSeatSuccess event emitted successfully for ${user.nickname}`);
+
+          // CRITICAL FIX: Send current game state even if already seated
+          const gameState = tableManager.getTableGameState(tableId);
+          if (gameState) {
+            const broadcastState = {
+              ...gameState,
+              communityCards: gameState.board || []
+            };
+            socket.emit('gameState', broadcastState);
+            console.log(`[SOCKET] Sent initial game state to ${user.nickname} for table ${tableId} (autoSeat retry)`);
+          }
+
           return;
         }
 
@@ -649,13 +696,28 @@ export function registerConsolidatedHandlers(io: Server) {
 
           // Leave table if at one
           if (user.location !== 'lobby') {
-            tableManager.leaveTable(user.location, user.nickname);
-            await locationManager.removeUser(user.nickname);
+            console.log(`[SOCKET] User ${user.nickname} disconnected from table ${user.location} - scheduling graceful disconnect`);
+
+            // CRITICAL FIX: Use handlePlayerDisconnect instead of immediate removal
+            // This will mark player as AWAY after 15s, and kick them after 5m
+            tableManager.handlePlayerDisconnect(user.location as number, user.playerId, async () => {
+              console.log(`[SOCKET] Graceful disconnect cleanup for ${user.nickname}`);
+              await locationManager.removeUser(user.nickname);
+            });
+
+            // Do NOT remove from locationManager immediately
+            // Do NOT broadcast "user left" immediately (unless we want to show 'offline' status)
+            // But we DO want to update the online users count list to show they are gone from the general list?
+            // Actually, if they are "Away", they should probably still be counted or shown as Away.
+            // For now, let's keep broadcasting updates so the UI knows the socket dropped
           }
 
           broadcastOnlineUsersUpdate();
           broadcastTables();
           if (user.location !== 'lobby') {
+            // We still broadcast users at table so UI knows socket dropped? 
+            // Actually, if we don't remove them from LocationManager, they will still appear in the list.
+            // This is good.
             broadcastUsersAtTable(user.location as number);
           }
 
